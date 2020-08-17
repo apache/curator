@@ -18,19 +18,23 @@
  */
 package org.apache.curator;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import io.github.artsok.RepeatedIfExceptionsTest;
+import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.Compatibility;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Tag;
 
 public class TestIs36 extends CuratorTestBase
 {
-    @Test(groups = zk36Group)
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Tag(zk36Group)
     public void testIsZk36()
     {
-        Assert.assertTrue(Compatibility.hasGetReachableOrOneMethod());
-        Assert.assertTrue(Compatibility.hasAddrField());
-        Assert.assertTrue(Compatibility.hasPersistentWatchers());
+        assertTrue(Compatibility.hasGetReachableOrOneMethod());
+        assertTrue(Compatibility.hasAddrField());
+        assertTrue(Compatibility.hasPersistentWatchers());
     }
 
     @Override

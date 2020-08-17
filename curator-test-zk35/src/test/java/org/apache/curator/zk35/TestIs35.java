@@ -18,18 +18,19 @@
  */
 package org.apache.curator.zk35;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.apache.curator.utils.Compatibility;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 public class TestIs35
 {
     @Test
     public void testIsZk35()
     {
-        Assert.assertFalse(Compatibility.hasGetReachableOrOneMethod());
-        Assert.assertTrue(Compatibility.hasAddrField());
-        Assert.assertFalse(Compatibility.hasPersistentWatchers());
+        assertFalse(Compatibility.hasGetReachableOrOneMethod());
+        assertTrue(Compatibility.hasAddrField());
+        assertFalse(Compatibility.hasPersistentWatchers());
     }
 }
 

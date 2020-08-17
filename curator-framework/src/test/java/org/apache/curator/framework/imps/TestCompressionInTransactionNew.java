@@ -18,18 +18,20 @@
  */
 package org.apache.curator.framework.imps;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
-import org.testng.Assert;
-import org.testng.annotations.Test;
 
 public class TestCompressionInTransactionNew extends BaseClassForTests
 {
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testSetData() throws Exception
     {
         final String path = "/a";
@@ -43,12 +45,12 @@ public class TestCompressionInTransactionNew extends BaseClassForTests
             //Create uncompressed data in a transaction
             CuratorOp op = client.transactionOp().create().forPath(path, data);
             client.transaction().forOperations(op);
-            Assert.assertEquals(data, client.getData().forPath(path));
+            assertArrayEquals(data, client.getData().forPath(path));
 
             //Create compressed data in transaction
             op = client.transactionOp().setData().compressed().forPath(path, data);
             client.transaction().forOperations(op);
-            Assert.assertEquals(data, client.getData().decompressed().forPath(path));
+            assertArrayEquals(data, client.getData().decompressed().forPath(path));
         }
         finally
         {
@@ -56,7 +58,7 @@ public class TestCompressionInTransactionNew extends BaseClassForTests
         }
     }
     
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testSetCompressedAndUncompressed() throws Exception
     {
         final String path1 = "/a";
@@ -76,18 +78,18 @@ public class TestCompressionInTransactionNew extends BaseClassForTests
             client.transaction().forOperations(op1, op2);
 
             //Check they exist
-            Assert.assertNotNull(client.checkExists().forPath(path1));
-            Assert.assertNotNull(client.checkExists().forPath(path2));
+            assertNotNull(client.checkExists().forPath(path1));
+            assertNotNull(client.checkExists().forPath(path2));
             
             //Set the nodes, path1 compressed, path2 uncompressed.
             op1 = client.transactionOp().setData().compressed().forPath(path1, data1);
             op2 = client.transactionOp().setData().forPath(path2, data2);
             client.transaction().forOperations(op1, op2);
             
-            Assert.assertNotEquals(data1, client.getData().forPath(path1));
-            Assert.assertEquals(data1, client.getData().decompressed().forPath(path1));
+            assertNotEquals(data1, client.getData().forPath(path1));
+            assertArrayEquals(data1, client.getData().decompressed().forPath(path1));
       
-            Assert.assertEquals(data2, client.getData().forPath(path2));            
+            assertArrayEquals(data2, client.getData().forPath(path2));
         }
         finally
         {
@@ -95,7 +97,7 @@ public class TestCompressionInTransactionNew extends BaseClassForTests
         }
     }    
     
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testSimple() throws Exception
     {
         final String path1 = "/a";
@@ -114,11 +116,11 @@ public class TestCompressionInTransactionNew extends BaseClassForTests
 
             client.transaction().forOperations(op1, op2);
 
-            Assert.assertNotEquals(data1, client.getData().forPath(path1));
-            Assert.assertEquals(data1, client.getData().decompressed().forPath(path1));
+            assertNotEquals(data1, client.getData().forPath(path1));
+            assertArrayEquals(data1, client.getData().decompressed().forPath(path1));
             
-            Assert.assertNotEquals(data2, client.getData().forPath(path2));
-            Assert.assertEquals(data2, client.getData().decompressed().forPath(path2));            
+            assertNotEquals(data2, client.getData().forPath(path2));
+            assertArrayEquals(data2, client.getData().decompressed().forPath(path2));
         }
         finally
         {
@@ -131,7 +133,7 @@ public class TestCompressionInTransactionNew extends BaseClassForTests
      * the same transaction
      * @throws Exception
      */
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testCreateCompressedAndUncompressed() throws Exception
     {
         final String path1 = "/a";
@@ -149,10 +151,10 @@ public class TestCompressionInTransactionNew extends BaseClassForTests
             CuratorOp op2 = client.transactionOp().create().forPath(path2, data2);
             client.transaction().forOperations(op1, op2);
 
-            Assert.assertNotEquals(data1, client.getData().forPath(path1));
-            Assert.assertEquals(data1, client.getData().decompressed().forPath(path1));
+            assertNotEquals(data1, client.getData().forPath(path1));
+            assertArrayEquals(data1, client.getData().decompressed().forPath(path1));
       
-            Assert.assertEquals(data2, client.getData().forPath(path2));            
+            assertArrayEquals(data2, client.getData().forPath(path2));
         }
         finally
         {

@@ -18,15 +18,21 @@
  */
 package org.apache.curator.framework.recipes.cache;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.imps.TestCleanState;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.retry.RetryOneTime;
+import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.CloseableUtils;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Tag;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
@@ -34,10 +40,10 @@ import java.util.function.Supplier;
 
 import static org.apache.curator.framework.recipes.cache.CuratorCacheListener.builder;
 
-@Test(groups = CuratorTestBase.zk36Group)
+@Tag(CuratorTestBase.zk36Group)
 public class TestWrappedNodeCache extends CuratorTestBase
 {
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testDeleteThenCreate() throws Exception
     {
         CuratorCache cache = null;
@@ -55,18 +61,18 @@ public class TestWrappedNodeCache extends CuratorTestBase
             Supplier<Optional<ChildData>> rootData = getRootDataProc(cache, "/test/foo");
 
             cache.start();
-            Assert.assertTrue(timing.acquireSemaphore(semaphore));
+            assertTrue(timing.acquireSemaphore(semaphore));
 
-            Assert.assertTrue(rootData.get().isPresent());
-            Assert.assertEquals(rootData.get().get().getData(), "one".getBytes());
+            assertTrue(rootData.get().isPresent());
+            assertArrayEquals(rootData.get().get().getData(), "one".getBytes());
 
             client.delete().forPath("/test/foo");
-            Assert.assertTrue(timing.acquireSemaphore(semaphore));
+            assertTrue(timing.acquireSemaphore(semaphore));
             client.create().forPath("/test/foo", "two".getBytes());
-            Assert.assertTrue(timing.acquireSemaphore(semaphore));
+            assertTrue(timing.acquireSemaphore(semaphore));
 
-            Assert.assertTrue(rootData.get().isPresent());
-            Assert.assertEquals(rootData.get().get().getData(), "two".getBytes());
+            assertTrue(rootData.get().isPresent());
+            assertArrayEquals(rootData.get().get().getData(), "two".getBytes());
         }
         finally
         {
@@ -75,7 +81,7 @@ public class TestWrappedNodeCache extends CuratorTestBase
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testKilledSession() throws Exception
     {
         CuratorCache cache = null;
@@ -103,18 +109,18 @@ public class TestWrappedNodeCache extends CuratorTestBase
             Supplier<Optional<ChildData>> rootData = getRootDataProc(cache, "/test/node");
 
             cache.start();
-            Assert.assertTrue(timing.acquireSemaphore(latch));
+            assertTrue(timing.acquireSemaphore(latch));
 
             client.getZookeeperClient().getZooKeeper().getTestable().injectSessionExpiration();
-            Assert.assertTrue(timing.awaitLatch(lostLatch));
+            assertTrue(timing.awaitLatch(lostLatch));
 
-            Assert.assertTrue(rootData.get().isPresent());
-            Assert.assertEquals(rootData.get().get().getData(), "start".getBytes());
+            assertTrue(rootData.get().isPresent());
+            assertArrayEquals(rootData.get().get().getData(), "start".getBytes());
 
             client.setData().forPath("/test/node", "new data".getBytes());
-            Assert.assertTrue(timing.acquireSemaphore(latch));
-            Assert.assertTrue(rootData.get().isPresent());
-            Assert.assertEquals(rootData.get().get().getData(), "new data".getBytes());
+            assertTrue(timing.acquireSemaphore(latch));
+            assertTrue(rootData.get().isPresent());
+            assertArrayEquals(rootData.get().get().getData(), "new data".getBytes());
         }
         finally
         {
@@ -124,7 +130,7 @@ public class TestWrappedNodeCache extends CuratorTestBase
     }
 
     @SuppressWarnings("ConstantConditions")
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testBasics() throws Exception
     {
         CuratorCache cache = null;
@@ -143,19 +149,19 @@ public class TestWrappedNodeCache extends CuratorTestBase
             NodeCacheListener listener = semaphore::release;
             cache.listenable().addListener(builder().forNodeCache(listener).build());
 
-            Assert.assertNull(rootData.get().orElse(null));
+            assertNull(rootData.get().orElse(null));
 
             client.create().forPath("/test/node", "a".getBytes());
-            Assert.assertTrue(timing.acquireSemaphore(semaphore));
-            Assert.assertEquals(rootData.get().orElse(null).getData(), "a".getBytes());
+            assertTrue(timing.acquireSemaphore(semaphore));
+            assertArrayEquals(rootData.get().orElse(null).getData(), "a".getBytes());
 
             client.setData().forPath("/test/node", "b".getBytes());
-            Assert.assertTrue(timing.acquireSemaphore(semaphore));
-            Assert.assertEquals(rootData.get().orElse(null).getData(), "b".getBytes());
+            assertTrue(timing.acquireSemaphore(semaphore));
+            assertArrayEquals(rootData.get().orElse(null).getData(), "b".getBytes());
 
             client.delete().forPath("/test/node");
-            Assert.assertTrue(timing.acquireSemaphore(semaphore));
-            Assert.assertNull(rootData.get().orElse(null));
+            assertTrue(timing.acquireSemaphore(semaphore));
+            assertNull(rootData.get().orElse(null));
         }
         finally
         {

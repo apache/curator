@@ -19,14 +19,18 @@
 
 package org.apache.curator.framework.recipes.locks;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.imps.TestCleanState;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
-import org.testng.Assert;
-import org.testng.annotations.Test;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
@@ -41,7 +45,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestInterProcessReadWriteLock extends BaseClassForTests
 {
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testGetParticipantNodes() throws Exception
     {
         final int READERS = 20;
@@ -92,7 +96,7 @@ public class TestInterProcessReadWriteLock extends BaseClassForTests
                         @Override
                         public Void call() throws Exception
                         {
-                            Assert.assertTrue(readLatch.await(10, TimeUnit.SECONDS));
+                            assertTrue(readLatch.await(10, TimeUnit.SECONDS));
                             latch.countDown();  // must be before as there can only be one writer
                             lock.writeLock().acquire();
                             try
@@ -109,13 +113,13 @@ public class TestInterProcessReadWriteLock extends BaseClassForTests
                 );
             }
 
-            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+            assertTrue(latch.await(10, TimeUnit.SECONDS));
 
             Collection<String> readers = lock.readLock().getParticipantNodes();
             Collection<String> writers = lock.writeLock().getParticipantNodes();
 
-            Assert.assertEquals(readers.size(), READERS);
-            Assert.assertEquals(writers.size(), WRITERS);
+            assertEquals(readers.size(), READERS);
+            assertEquals(writers.size(), WRITERS);
 
             exitLatch.countDown();
             for ( int i = 0; i < (READERS + WRITERS); ++i )
@@ -129,7 +133,7 @@ public class TestInterProcessReadWriteLock extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testThatUpgradingIsDisallowed() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -139,7 +143,7 @@ public class TestInterProcessReadWriteLock extends BaseClassForTests
 
             InterProcessReadWriteLock lock = new InterProcessReadWriteLock(client, "/lock");
             lock.readLock().acquire();
-            Assert.assertFalse(lock.writeLock().acquire(5, TimeUnit.SECONDS));
+            assertFalse(lock.writeLock().acquire(5, TimeUnit.SECONDS));
 
             lock.readLock().release();
         }
@@ -149,7 +153,7 @@ public class TestInterProcessReadWriteLock extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testThatDowngradingRespectsThreads() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -193,8 +197,8 @@ public class TestInterProcessReadWriteLock extends BaseClassForTests
                         @Override
                         public Object call() throws Exception
                         {
-                            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
-                            Assert.assertFalse(lock.readLock().acquire(5, TimeUnit.SECONDS));
+                            assertTrue(latch.await(10, TimeUnit.SECONDS));
+                            assertFalse(lock.readLock().acquire(5, TimeUnit.SECONDS));
                             return null;
                         }
                     }
@@ -210,7 +214,7 @@ public class TestInterProcessReadWriteLock extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testDowngrading() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -220,7 +224,7 @@ public class TestInterProcessReadWriteLock extends BaseClassForTests
 
             InterProcessReadWriteLock lock = new InterProcessReadWriteLock(client, "/lock");
             lock.writeLock().acquire();
-            Assert.assertTrue(lock.readLock().acquire(5, TimeUnit.SECONDS));
+            assertTrue(lock.readLock().acquire(5, TimeUnit.SECONDS));
             lock.writeLock().release();
 
             lock.readLock().release();
@@ -231,7 +235,7 @@ public class TestInterProcessReadWriteLock extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testBasic() throws Exception
     {
         final int CONCURRENCY = 8;
@@ -291,12 +295,12 @@ public class TestInterProcessReadWriteLock extends BaseClassForTests
 
         System.out.println("Writes: " + writeCount.get() + " - Reads: " + readCount.get() + " - Max Reads: " + maxConcurrentCount.get());
 
-        Assert.assertTrue(writeCount.get() > 0);
-        Assert.assertTrue(readCount.get() > 0);
-        Assert.assertTrue(maxConcurrentCount.get() > 1);
+        assertTrue(writeCount.get() > 0);
+        assertTrue(readCount.get() > 0);
+        assertTrue(maxConcurrentCount.get() > 1);
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testSetNodeData() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -315,11 +319,11 @@ public class TestInterProcessReadWriteLock extends BaseClassForTests
             lock.writeLock().acquire();
 
             List<String> children = client.getChildren().forPath("/lock");
-            Assert.assertEquals(1, children.size());
+            assertEquals(1, children.size());
 
             byte dataInZk[] = client.getData().forPath("/lock/" + children.get(0));
-            Assert.assertNotNull(dataInZk);
-            Assert.assertEquals(new byte[]{1, 2, 3, 4}, dataInZk);
+            assertNotNull(dataInZk);
+            assertArrayEquals(new byte[]{1, 2, 3, 4}, dataInZk);
 
             lock.writeLock().release();
         }
@@ -333,7 +337,7 @@ public class TestInterProcessReadWriteLock extends BaseClassForTests
     {
         try
         {
-            Assert.assertTrue(lock.acquire(10, TimeUnit.SECONDS));
+            assertTrue(lock.acquire(10, TimeUnit.SECONDS));
             int localConcurrentCount;
             synchronized(this)
             {
@@ -344,7 +348,7 @@ public class TestInterProcessReadWriteLock extends BaseClassForTests
                 }
             }
 
-            Assert.assertTrue(localConcurrentCount <= maxAllowed, "" + localConcurrentCount);
+            assertTrue(localConcurrentCount <= maxAllowed, "" + localConcurrentCount);
 
             Thread.sleep(random.nextInt(9) + 1);
         }

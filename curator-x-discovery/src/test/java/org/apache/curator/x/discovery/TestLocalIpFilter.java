@@ -18,9 +18,10 @@
  */
 package org.apache.curator.x.discovery;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
@@ -47,7 +48,7 @@ public class TestLocalIpFilter
                 );
 
             List<InetAddress> allLocalIPs = Lists.newArrayList(ServiceInstanceBuilder.getAllLocalIPs());
-            Assert.assertEquals(allLocalIPs.size(), 0);
+            assertEquals(allLocalIPs.size(), 0);
         }
         finally
         {
@@ -55,6 +56,6 @@ public class TestLocalIpFilter
         }
 
         List<InetAddress> allLocalIPs = Lists.newArrayList(ServiceInstanceBuilder.getAllLocalIPs());
-        Assert.assertTrue(allLocalIPs.size() > 0);
+        assertTrue(allLocalIPs.size() > 0);
     }
 }

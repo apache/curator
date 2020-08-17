@@ -18,15 +18,16 @@
  */
 package org.apache.curator.framework.recipes.barriers;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.Timing;
-import org.testng.Assert;
-import org.testng.annotations.Test;
 import java.io.Closeable;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -43,7 +44,7 @@ public class TestDistributedDoubleBarrier extends BaseClassForTests
 {
     private static final int           QTY = 5;
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void     testMultiClient() throws Exception
     {
         final Timing            timing = new Timing();
@@ -68,7 +69,7 @@ public class TestDistributedDoubleBarrier extends BaseClassForTests
                             client.start();
                             DistributedDoubleBarrier        barrier = new DistributedDoubleBarrier(client, "/barrier", QTY);
 
-                            Assert.assertTrue(barrier.enter(timing.seconds(), TimeUnit.SECONDS));
+                            assertTrue(barrier.enter(timing.seconds(), TimeUnit.SECONDS));
 
                             synchronized(TestDistributedDoubleBarrier.this)
                             {
@@ -80,15 +81,15 @@ public class TestDistributedDoubleBarrier extends BaseClassForTests
                             }
 
                             postEnterLatch.countDown();
-                            Assert.assertTrue(timing.awaitLatch(postEnterLatch));
+                            assertTrue(timing.awaitLatch(postEnterLatch));
 
-                            Assert.assertEquals(count.get(), QTY);
+                            assertEquals(count.get(), QTY);
 
-                            Assert.assertTrue(barrier.leave(timing.seconds(), TimeUnit.SECONDS));
+                            assertTrue(barrier.leave(timing.seconds(), TimeUnit.SECONDS));
                             count.decrementAndGet();
 
                             postLeaveLatch.countDown();
-                            Assert.assertTrue(timing.awaitLatch(postEnterLatch));
+                            assertTrue(timing.awaitLatch(postEnterLatch));
                         }
                         finally
                         {
@@ -106,11 +107,11 @@ public class TestDistributedDoubleBarrier extends BaseClassForTests
         {
             f.get();
         }
-        Assert.assertEquals(count.get(), 0);
-        Assert.assertEquals(max.get(), QTY);
+        assertEquals(count.get(), 0);
+        assertEquals(max.get(), QTY);
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void     testOverSubscribed() throws Exception
     {
         final Timing                    timing = new Timing();
@@ -138,19 +139,19 @@ public class TestDistributedDoubleBarrier extends BaseClassForTests
                                 protected List<String> getChildrenForEntering() throws Exception
                                 {
                                     semaphore.release();
-                                    Assert.assertTrue(timing.awaitLatch(latch));
+                                    assertTrue(timing.awaitLatch(latch));
                                     return super.getChildrenForEntering();
                                 }
                             };
-                            Assert.assertTrue(barrier.enter(timing.seconds(), TimeUnit.SECONDS));
-                            Assert.assertTrue(barrier.leave(timing.seconds(), TimeUnit.SECONDS));
+                            assertTrue(barrier.enter(timing.seconds(), TimeUnit.SECONDS));
+                            assertTrue(barrier.leave(timing.seconds(), TimeUnit.SECONDS));
                             return null;
                         }
                     }
                 );
             }
 
-            Assert.assertTrue(semaphore.tryAcquire(QTY + 1, timing.seconds(), TimeUnit.SECONDS));   // wait until all QTY+1 barriers are trying to enter
+            assertTrue(semaphore.tryAcquire(QTY + 1, timing.seconds(), TimeUnit.SECONDS));   // wait until all QTY+1 barriers are trying to enter
             latch.countDown();
 
             for ( int i = 0; i < (QTY + 1); ++i )
@@ -165,7 +166,7 @@ public class TestDistributedDoubleBarrier extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void     testBasic() throws Exception
     {
         final Timing              timing = new Timing();
@@ -193,7 +194,7 @@ public class TestDistributedDoubleBarrier extends BaseClassForTests
                         {
                             DistributedDoubleBarrier        barrier = new DistributedDoubleBarrier(client, "/barrier", QTY);
 
-                            Assert.assertTrue(barrier.enter(timing.seconds(), TimeUnit.SECONDS));
+                            assertTrue(barrier.enter(timing.seconds(), TimeUnit.SECONDS));
 
                             synchronized(TestDistributedDoubleBarrier.this)
                             {
@@ -205,15 +206,15 @@ public class TestDistributedDoubleBarrier extends BaseClassForTests
                             }
 
                             postEnterLatch.countDown();
-                            Assert.assertTrue(timing.awaitLatch(postEnterLatch));
+                            assertTrue(timing.awaitLatch(postEnterLatch));
 
-                            Assert.assertEquals(count.get(), QTY);
+                            assertEquals(count.get(), QTY);
 
-                            Assert.assertTrue(barrier.leave(10, TimeUnit.SECONDS));
+                            assertTrue(barrier.leave(10, TimeUnit.SECONDS));
                             count.decrementAndGet();
 
                             postLeaveLatch.countDown();
-                            Assert.assertTrue(timing.awaitLatch(postLeaveLatch));
+                            assertTrue(timing.awaitLatch(postLeaveLatch));
 
                             return null;
                         }
@@ -226,8 +227,8 @@ public class TestDistributedDoubleBarrier extends BaseClassForTests
             {
                 f.get();
             }
-            Assert.assertEquals(count.get(), 0);
-            Assert.assertEquals(max.get(), QTY);
+            assertEquals(count.get(), 0);
+            assertEquals(max.get(), QTY);
         }
         finally
         {

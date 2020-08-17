@@ -18,15 +18,21 @@
  */
 package org.apache.curator.x.async.modeled;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Sets;
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.state.ConnectionState;
+import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.x.async.modeled.cached.CachedModeledFramework;
 import org.apache.curator.x.async.modeled.cached.ModeledCacheListener;
 import org.apache.curator.x.async.modeled.models.TestModel;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Tag;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -39,10 +45,10 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@Test(groups = CuratorTestBase.zk35TestCompatibilityGroup)
+@Tag(CuratorTestBase.zk35TestCompatibilityGroup)
 public class TestCachedModeledFramework extends TestModeledFrameworkBase
 {
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testDownServer() throws IOException
     {
         Timing timing = new Timing();
@@ -56,7 +62,7 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase
         try
         {
             client.child(model).set(model);
-            Assert.assertTrue(timing.acquireSemaphore(semaphore));
+            assertTrue(timing.acquireSemaphore(semaphore));
 
             CountDownLatch latch = new CountDownLatch(1);
             rawClient.getConnectionStateListenable().addListener((__, state) -> {
@@ -66,11 +72,11 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase
                 }
             });
             server.stop();
-            Assert.assertTrue(timing.awaitLatch(latch));
+            assertTrue(timing.awaitLatch(latch));
 
             complete(client.child(model).read().whenComplete((value, e) -> {
-                Assert.assertNotNull(value);
-                Assert.assertNull(e);
+                assertNotNull(value);
+                assertNull(e);
             }));
         }
         finally
@@ -79,7 +85,7 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testPostInitializedFilter()
     {
         TestModel model1 = new TestModel("a", "b", "c", 1, BigInteger.ONE);
@@ -93,10 +99,10 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase
         client.start();
         try
         {
-            Assert.assertFalse(timing.forSleepingABit().acquireSemaphore(semaphore));
+            assertFalse(timing.forSleepingABit().acquireSemaphore(semaphore));
 
             client.child("2").set(model2);  // set before cache is started
-            Assert.assertTrue(timing.acquireSemaphore(semaphore));
+            assertTrue(timing.acquireSemaphore(semaphore));
         }
         finally
         {
@@ -104,7 +110,7 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testChildren()
     {
         TestModel parent = new TestModel("a", "b", "c", 20, BigInteger.ONE);
@@ -124,7 +130,7 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase
             complete(client.child("p").child("c2").set(child2));
             complete(client.child("p").child("c1").child("g1").set(grandChild1));
             complete(client.child("p").child("c2").child("g2").set(grandChild2));
-            Assert.assertTrue(timing.awaitLatch(latch));
+            assertTrue(timing.awaitLatch(latch));
 
             complete(client.child("p").children(), (v, e) ->
             {
@@ -132,28 +138,28 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase
                     client.child("p").child("c1").modelSpec().path(),
                     client.child("p").child("c2").modelSpec().path()
                 );
-                Assert.assertEquals(v, paths);
+                assertEquals(v, paths);
             });
 
             complete(client.child("p").childrenAsZNodes(), (v, e) ->
             {
                 Set<TestModel> cachedModels = toSet(v.stream(), ZNode::model);
-                Assert.assertEquals(cachedModels, Sets.newHashSet(child1, child2));
+                assertEquals(cachedModels, Sets.newHashSet(child1, child2));
 
                 // verify that the same nodes are returned from the uncached method
                 complete(ModeledFramework.wrap(async, modelSpec).child("p").childrenAsZNodes(), (v2, e2) -> {
                     Set<TestModel> uncachedModels = toSet(v2.stream(), ZNode::model);
-                    Assert.assertEquals(cachedModels, uncachedModels);
+                    assertEquals(cachedModels, uncachedModels);
                 });
             });
 
-            complete(client.child("p").child("c1").childrenAsZNodes(), (v, e) -> Assert.assertEquals(toSet(v.stream(), ZNode::model), Sets.newHashSet(grandChild1)));
-            complete(client.child("p").child("c2").childrenAsZNodes(), (v, e) -> Assert.assertEquals(toSet(v.stream(), ZNode::model), Sets.newHashSet(grandChild2)));
+            complete(client.child("p").child("c1").childrenAsZNodes(), (v, e) -> assertEquals(toSet(v.stream(), ZNode::model), Sets.newHashSet(grandChild1)));
+            complete(client.child("p").child("c2").childrenAsZNodes(), (v, e) -> assertEquals(toSet(v.stream(), ZNode::model), Sets.newHashSet(grandChild2)));
         }
     }
 
     // note: CURATOR-546
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testAccessCacheDirectly()
     {
         TestModel model = new TestModel("a", "b", "c", 20, BigInteger.ONE);
@@ -164,13 +170,13 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase
 
             client.start();
             complete(client.child("m").set(model));
-            Assert.assertTrue(timing.awaitLatch(latch));
+            assertTrue(timing.awaitLatch(latch));
 
             // call 2 times in a row to validate CURATOR-546
             Optional<ZNode<TestModel>> optZNode = client.cache().currentData(modelSpec.path().child("m"));
-            Assert.assertEquals(optZNode.orElseThrow(() -> new AssertionError("node is missing")).model(), model);
+            assertEquals(optZNode.orElseThrow(() -> new AssertionError("node is missing")).model(), model);
             optZNode = client.cache().currentData(modelSpec.path().child("m"));
-            Assert.assertEquals(optZNode.orElseThrow(() -> new AssertionError("node is missing")).model(), model);
+            assertEquals(optZNode.orElseThrow(() -> new AssertionError("node is missing")).model(), model);
         }
     }
 

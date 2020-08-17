@@ -18,29 +18,32 @@
  */
 package org.apache.curator.framework.imps;
 
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.retry.RetryOneTime;
+import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.test.Timing;
 import org.apache.zookeeper.CreateMode;
-import org.testng.Assert;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import java.util.concurrent.CountDownLatch;
 
 public class TestTtlNodes extends CuratorTestBase
 {
-    @BeforeClass
+    @BeforeAll
     public static void setUpClass() {
         System.setProperty("zookeeper.extendedTypesEnabled", "true");
     }
     
-    @BeforeMethod
+    @BeforeEach
     @Override
     public void setup() throws Exception
     {
@@ -48,7 +51,7 @@ public class TestTtlNodes extends CuratorTestBase
         super.setup();
     }
 
-    @AfterMethod
+    @AfterEach
     @Override
     public void teardown() throws Exception
     {
@@ -56,7 +59,7 @@ public class TestTtlNodes extends CuratorTestBase
         System.clearProperty("znode.container.checkIntervalMs");
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testBasic() throws Exception
     {
         try ( CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)) )
@@ -65,11 +68,11 @@ public class TestTtlNodes extends CuratorTestBase
 
             client.create().withTtl(10).creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT_WITH_TTL).forPath("/a/b/c");
             Thread.sleep(20);
-            Assert.assertNull(client.checkExists().forPath("/a/b/c"));
+            assertNull(client.checkExists().forPath("/a/b/c"));
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testBasicInBackground() throws Exception
     {
         try ( CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)) )
@@ -86,9 +89,9 @@ public class TestTtlNodes extends CuratorTestBase
                 }
             };
             client.create().withTtl(10).creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT_WITH_TTL).inBackground(callback).forPath("/a/b/c");
-            Assert.assertTrue(new Timing().awaitLatch(latch));
+            assertTrue(new Timing().awaitLatch(latch));
             Thread.sleep(20);
-            Assert.assertNull(client.checkExists().forPath("/a/b/c"));
+            assertNull(client.checkExists().forPath("/a/b/c"));
         }
     }
 }

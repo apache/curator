@@ -18,7 +18,11 @@
  */
 package org.apache.curator.framework.recipes.locks;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.ensemble.EnsembleProvider;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -32,8 +36,7 @@ import org.apache.curator.test.TestingCluster;
 import org.apache.curator.test.Timing;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.CloseableUtils;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Tag;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
@@ -47,10 +50,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-@Test(groups = CuratorTestBase.zk35TestCompatibilityGroup)
+@Tag(CuratorTestBase.zk35TestCompatibilityGroup)
 public class TestInterProcessSemaphoreCluster extends BaseClassForTests
 {
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void     testKilledServerWithEnsembleProvider() throws Exception
     {
         final int           CLIENT_QTY = 10;
@@ -168,22 +171,22 @@ public class TestInterProcessSemaphoreCluster extends BaseClassForTests
                 );
             }
 
-            Assert.assertTrue(timing.acquireSemaphore(acquiredSemaphore));
-            Assert.assertEquals(1, acquireCount.get());
+            assertTrue(timing.acquireSemaphore(acquiredSemaphore));
+            assertEquals(1, acquireCount.get());
 
             cluster.close();
             timing.awaitLatch(suspendedLatch);
             timing.forWaiting().sleepABit();
-            Assert.assertEquals(0, acquireCount.get());
+            assertEquals(0, acquireCount.get());
 
             cluster = createAndStartCluster(3);
 
             connectionString.set(cluster.getConnectString());
             timing.forWaiting().sleepABit();
 
-            Assert.assertTrue(timing.acquireSemaphore(acquiredSemaphore));
+            assertTrue(timing.acquireSemaphore(acquiredSemaphore));
             timing.forWaiting().sleepABit();
-            Assert.assertEquals(1, acquireCount.get());
+            assertEquals(1, acquireCount.get());
         }
         finally
         {
@@ -194,7 +197,7 @@ public class TestInterProcessSemaphoreCluster extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void     testCluster() throws Exception
     {
         final int           QTY = 20;
@@ -232,7 +235,7 @@ public class TestInterProcessSemaphoreCluster extends BaseClassForTests
 
             timing.forWaiting().sleepABit();
 
-            Assert.assertNotNull(SemaphoreClient.getActiveClient());
+            assertNotNull(SemaphoreClient.getActiveClient());
 
             final CountDownLatch    latch = new CountDownLatch(1);
             CuratorFramework        client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), timing.session(), timing.connection(), new ExponentialBackoffRetry(100, 3));
@@ -271,7 +274,7 @@ public class TestInterProcessSemaphoreCluster extends BaseClassForTests
                 {
                     break;  // checking that the op count isn't increasing
                 }
-                Assert.assertTrue((System.currentTimeMillis() - startTicks) < timing.forWaiting().milliseconds());
+                assertTrue((System.currentTimeMillis() - startTicks) < timing.forWaiting().milliseconds());
             }
 
             int     thisOpCount = opCount.get();
@@ -289,7 +292,7 @@ public class TestInterProcessSemaphoreCluster extends BaseClassForTests
                 {
                     break;  // checking that semaphore has started working again
                 }
-                Assert.assertTrue((System.currentTimeMillis() - startTicks) < timing.forWaiting().milliseconds());
+                assertTrue((System.currentTimeMillis() - startTicks) < timing.forWaiting().milliseconds());
             }
         }
         finally

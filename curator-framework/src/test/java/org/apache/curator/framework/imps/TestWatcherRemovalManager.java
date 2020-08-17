@@ -18,27 +18,31 @@
  */
 package org.apache.curator.framework.imps;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.retry.RetryOneTime;
+import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.test.Timing;
 import org.apache.curator.test.WatchersDebug;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.testng.Assert;
-import org.testng.annotations.Test;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 
 public class TestWatcherRemovalManager extends CuratorTestBase
 {
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testSameWatcherDifferentPaths1Triggered() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -60,7 +64,7 @@ public class TestWatcherRemovalManager extends CuratorTestBase
             removerClient.create().creatingParentsIfNeeded().forPath("/d/e/f");
 
             Timing timing = new Timing();
-            Assert.assertTrue(timing.awaitLatch(latch));
+            assertTrue(timing.awaitLatch(latch));
             timing.sleepABit();
 
             removerClient.removeWatchers();
@@ -71,7 +75,7 @@ public class TestWatcherRemovalManager extends CuratorTestBase
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testSameWatcherDifferentPaths() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -89,7 +93,7 @@ public class TestWatcherRemovalManager extends CuratorTestBase
             };
             removerClient.checkExists().usingWatcher(watcher).forPath("/a/b/c");
             removerClient.checkExists().usingWatcher(watcher).forPath("/d/e/f");
-            Assert.assertEquals(removerClient.getWatcherRemovalManager().getEntries().size(), 2);
+            assertEquals(removerClient.getWatcherRemovalManager().getEntries().size(), 2);
             removerClient.removeWatchers();
         }
         finally
@@ -98,7 +102,7 @@ public class TestWatcherRemovalManager extends CuratorTestBase
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testSameWatcherDifferentKinds1Triggered() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -122,7 +126,7 @@ public class TestWatcherRemovalManager extends CuratorTestBase
             removerClient.setData().forPath("/a/b/c", "new".getBytes());
 
             Timing timing = new Timing();
-            Assert.assertTrue(timing.awaitLatch(latch));
+            assertTrue(timing.awaitLatch(latch));
             timing.sleepABit();
 
             removerClient.removeWatchers();
@@ -133,7 +137,7 @@ public class TestWatcherRemovalManager extends CuratorTestBase
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testSameWatcherDifferentKinds() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -161,7 +165,7 @@ public class TestWatcherRemovalManager extends CuratorTestBase
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testWithRetry() throws Exception
     {
         server.stop();
@@ -181,13 +185,13 @@ public class TestWatcherRemovalManager extends CuratorTestBase
             try
             {
                 removerClient.checkExists().usingWatcher(w).forPath("/one/two/three");
-                Assert.fail("Should have thrown ConnectionLossException");
+                fail("Should have thrown ConnectionLossException");
             }
             catch ( KeeperException.ConnectionLossException expected )
             {
                 // expected
             }
-            Assert.assertEquals(removerClient.getWatcherRemovalManager().getEntries().size(), 0);
+            assertEquals(removerClient.getWatcherRemovalManager().getEntries().size(), 0);
         }
         finally
         {
@@ -195,7 +199,7 @@ public class TestWatcherRemovalManager extends CuratorTestBase
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testWithRetryInBackground() throws Exception
     {
         server.stop();
@@ -223,8 +227,8 @@ public class TestWatcherRemovalManager extends CuratorTestBase
                 }
             };
             removerClient.checkExists().usingWatcher(w).inBackground(callback).forPath("/one/two/three");
-            Assert.assertTrue(new Timing().awaitLatch(latch));
-            Assert.assertEquals(removerClient.getWatcherRemovalManager().getEntries().size(), 0);
+            assertTrue(new Timing().awaitLatch(latch));
+            assertEquals(removerClient.getWatcherRemovalManager().getEntries().size(), 0);
         }
         finally
         {
@@ -232,7 +236,7 @@ public class TestWatcherRemovalManager extends CuratorTestBase
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testMissingNode() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -251,7 +255,7 @@ public class TestWatcherRemovalManager extends CuratorTestBase
             try
             {
                 removerClient.getData().usingWatcher(w).forPath("/one/two/three");
-                Assert.fail("Should have thrown NoNodeException");
+                fail("Should have thrown NoNodeException");
             }
             catch ( KeeperException.NoNodeException expected )
             {
@@ -265,7 +269,7 @@ public class TestWatcherRemovalManager extends CuratorTestBase
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testMissingNodeInBackground() throws Exception
     {
         final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -294,8 +298,8 @@ public class TestWatcherRemovalManager extends CuratorTestBase
                     }
                 };
                 removerClient.getData().usingWatcher(w).inBackground(callback).forPath("/one/two/three");
-                Assert.assertTrue(new Timing().awaitLatch(latch));
-                Assert.assertEquals(removerClient.getWatcherRemovalManager().getEntries().size(), 0);
+                assertTrue(new Timing().awaitLatch(latch));
+                assertEquals(removerClient.getWatcherRemovalManager().getEntries().size(), 0);
                 removerClient.removeWatchers();
                 return null;
             }
@@ -303,7 +307,7 @@ public class TestWatcherRemovalManager extends CuratorTestBase
         TestCleanState.test(client, proc);
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testBasic() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -318,7 +322,7 @@ public class TestWatcherRemovalManager extends CuratorTestBase
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testBasicNamespace1() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -333,7 +337,7 @@ public class TestWatcherRemovalManager extends CuratorTestBase
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testBasicNamespace2() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.builder()
@@ -352,7 +356,7 @@ public class TestWatcherRemovalManager extends CuratorTestBase
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testBasicNamespace3() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.builder()
@@ -371,7 +375,7 @@ public class TestWatcherRemovalManager extends CuratorTestBase
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testSameWatcher() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -392,9 +396,9 @@ public class TestWatcherRemovalManager extends CuratorTestBase
             };
 
             removerClient.getData().usingWatcher(watcher).forPath("/test");
-            Assert.assertEquals(removerClient.getRemovalManager().getEntries().size(), 1);
+            assertEquals(removerClient.getRemovalManager().getEntries().size(), 1);
             removerClient.getData().usingWatcher(watcher).forPath("/test");
-            Assert.assertEquals(removerClient.getRemovalManager().getEntries().size(), 1);
+            assertEquals(removerClient.getRemovalManager().getEntries().size(), 1);
             removerClient.removeWatchers();
         }
         finally
@@ -403,7 +407,7 @@ public class TestWatcherRemovalManager extends CuratorTestBase
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testTriggered() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -427,12 +431,12 @@ public class TestWatcherRemovalManager extends CuratorTestBase
             };
 
             removerClient.checkExists().usingWatcher(watcher).forPath("/yo");
-            Assert.assertEquals(removerClient.getRemovalManager().getEntries().size(), 1);
+            assertEquals(removerClient.getRemovalManager().getEntries().size(), 1);
             removerClient.create().forPath("/yo");
 
-            Assert.assertTrue(new Timing().awaitLatch(latch));
+            assertTrue(new Timing().awaitLatch(latch));
 
-            Assert.assertEquals(removerClient.getRemovalManager().getEntries().size(), 0);
+            assertEquals(removerClient.getRemovalManager().getEntries().size(), 0);
         }
         finally
         {
@@ -440,7 +444,7 @@ public class TestWatcherRemovalManager extends CuratorTestBase
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testResetFromWatcher() throws Exception
     {
         Timing timing = new Timing();
@@ -478,17 +482,17 @@ public class TestWatcherRemovalManager extends CuratorTestBase
             };
 
             removerClient.checkExists().usingWatcher(watcher).forPath("/yo");
-            Assert.assertEquals(removerClient.getRemovalManager().getEntries().size(), 1);
+            assertEquals(removerClient.getRemovalManager().getEntries().size(), 1);
             removerClient.create().forPath("/yo");
 
-            Assert.assertTrue(timing.awaitLatch(createdLatch));
-            Assert.assertEquals(removerClient.getRemovalManager().getEntries().size(), 1);
+            assertTrue(timing.awaitLatch(createdLatch));
+            assertEquals(removerClient.getRemovalManager().getEntries().size(), 1);
 
             removerClient.delete().forPath("/yo");
 
-            Assert.assertTrue(timing.awaitLatch(deletedLatch));
+            assertTrue(timing.awaitLatch(deletedLatch));
 
-            Assert.assertEquals(removerClient.getRemovalManager().getEntries().size(), 0);
+            assertEquals(removerClient.getRemovalManager().getEntries().size(), 0);
         }
         finally
         {
@@ -515,13 +519,13 @@ public class TestWatcherRemovalManager extends CuratorTestBase
         removerClient.checkExists().usingWatcher(watcher).forPath("/hey");
 
         List<String> existWatches = WatchersDebug.getExistWatches(client.getZookeeperClient().getZooKeeper());
-        Assert.assertEquals(existWatches.size(), 1);
+        assertEquals(existWatches.size(), 1);
 
         removerClient.removeWatchers();
 
-        Assert.assertTrue(new Timing().awaitLatch(latch));
+        assertTrue(new Timing().awaitLatch(latch));
 
         existWatches = WatchersDebug.getExistWatches(client.getZookeeperClient().getZooKeeper());
-        Assert.assertEquals(existWatches.size(), 0);
+        assertEquals(existWatches.size(), 0);
     }
 }

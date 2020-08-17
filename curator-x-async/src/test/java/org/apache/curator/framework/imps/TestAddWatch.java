@@ -18,22 +18,24 @@
  */
 package org.apache.curator.framework.imps;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
+import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.ZookeeperFactory;
 import org.apache.curator.x.async.AsyncCuratorFramework;
 import org.apache.zookeeper.AddWatchMode;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
-import org.testng.Assert;
-import org.testng.annotations.Test;
 import java.util.concurrent.CountDownLatch;
 
 public class TestAddWatch extends CuratorTestBase
 {
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testPersistentRecursiveWatch() throws Exception
     {
         try ( CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)) )
@@ -52,11 +54,11 @@ public class TestAddWatch extends CuratorTestBase
             client.create().forPath("/test/a/b/c");
             client.create().forPath("/test/a/b/c/d");
 
-            Assert.assertTrue(timing.awaitLatch(latch));
+            assertTrue(timing.awaitLatch(latch));
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testPersistentRecursiveDefaultWatch() throws Exception
     {
         CountDownLatch latch = new CountDownLatch(6);   // 5 creates plus the initial sync
@@ -81,7 +83,7 @@ public class TestAddWatch extends CuratorTestBase
             client.create().forPath("/test/a/b/c");
             client.create().forPath("/test/a/b/c/d");
 
-            Assert.assertTrue(timing.awaitLatch(latch));
+            assertTrue(timing.awaitLatch(latch));
         }
     }
 }

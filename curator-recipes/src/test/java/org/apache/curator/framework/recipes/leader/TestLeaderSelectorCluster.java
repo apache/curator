@@ -18,6 +18,12 @@
  */
 package org.apache.curator.framework.recipes.leader;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import io.github.artsok.RepeatedIfExceptionsTest;
+import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -28,8 +34,6 @@ import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.ZKPaths;
-import org.testng.Assert;
-import org.testng.annotations.Test;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -39,7 +43,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
 public class TestLeaderSelectorCluster extends CuratorTestBase
 {
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void     testRestart() throws Exception
     {
         final Timing        timing = new Timing();
@@ -58,7 +62,7 @@ public class TestLeaderSelectorCluster extends CuratorTestBase
                 public void takeLeadership(CuratorFramework client) throws Exception
                 {
                     List<String>        names = client.getChildren().forPath("/leader");
-                    Assert.assertTrue(names.size() > 0);
+                    assertTrue(names.size() > 0);
                     semaphore.release();
                 }
 
@@ -70,12 +74,12 @@ public class TestLeaderSelectorCluster extends CuratorTestBase
             LeaderSelector      selector = new LeaderSelector(client, "/leader", listener);
             selector.autoRequeue();
             selector.start();
-            Assert.assertTrue(timing.acquireSemaphore(semaphore));
+            assertTrue(timing.acquireSemaphore(semaphore));
 
             InstanceSpec connectionInstance = cluster.findConnectionInstance(client.getZookeeperClient().getZooKeeper());
             cluster.killServer(connectionInstance);
 
-            Assert.assertTrue(timing.multiple(4).acquireSemaphore(semaphore));
+            assertTrue(timing.multiple(4).acquireSemaphore(semaphore));
         }
         finally
         {
@@ -84,7 +88,7 @@ public class TestLeaderSelectorCluster extends CuratorTestBase
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void     testLostRestart() throws Exception
     {
         final Timing        timing = new Timing();
@@ -142,7 +146,7 @@ public class TestLeaderSelectorCluster extends CuratorTestBase
             };
             LeaderSelector      selector = new LeaderSelector(client, "/leader", listener);
             selector.start();
-            Assert.assertTrue(timing.multiple(4).acquireSemaphore(semaphore));
+            assertTrue(timing.multiple(4).acquireSemaphore(semaphore));
             if ( error.get() != null )
             {
                 throw new AssertionError(error.get());
@@ -151,11 +155,11 @@ public class TestLeaderSelectorCluster extends CuratorTestBase
             Collection<InstanceSpec>    instances = cluster.getInstances();
             cluster.stop();
 
-            Assert.assertTrue(timing.multiple(4).awaitLatch(lostLatch));
+            assertTrue(timing.multiple(4).awaitLatch(lostLatch));
             timing.sleepABit();
-            Assert.assertFalse(selector.hasLeadership());
+            assertFalse(selector.hasLeadership());
 
-            Assert.assertNotNull(lockNode.get());
+            assertNotNull(lockNode.get());
             
             cluster = new TestingCluster(instances.toArray(new InstanceSpec[instances.size()]));
             cluster.start();
@@ -169,11 +173,11 @@ public class TestLeaderSelectorCluster extends CuratorTestBase
                 // ignore
             }
 
-            Assert.assertTrue(semaphore.availablePermits() == 0);
-            Assert.assertFalse(selector.hasLeadership());
+            assertTrue(semaphore.availablePermits() == 0);
+            assertFalse(selector.hasLeadership());
 
             selector.requeue();
-            Assert.assertTrue(timing.multiple(4).acquireSemaphore(semaphore));
+            assertTrue(timing.multiple(4).acquireSemaphore(semaphore));
         }
         finally
         {

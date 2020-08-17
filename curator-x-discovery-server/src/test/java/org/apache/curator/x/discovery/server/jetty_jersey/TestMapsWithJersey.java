@@ -18,6 +18,7 @@
  */
 package org.apache.curator.x.discovery.server.jetty_jersey;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -39,13 +40,12 @@ import org.apache.curator.x.discovery.server.entity.ServiceInstances;
 import org.apache.curator.x.discovery.server.entity.ServiceNames;
 import org.apache.curator.x.discovery.server.mocks.MockServiceDiscovery;
 import org.apache.curator.x.discovery.strategies.RandomStrategy;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
-import org.testng.Assert;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.MediaType;
 import java.util.Map;
@@ -60,7 +60,7 @@ public class TestMapsWithJersey
     private MapDiscoveryContext context;
     private int port;
 
-    @BeforeMethod
+    @BeforeEach
     public void         setup() throws Exception
     {
         context = new MapDiscoveryContext(new MockServiceDiscovery<Map<String, String>>(), new RandomStrategy<Map<String, String>>(), 1000);
@@ -98,7 +98,7 @@ public class TestMapsWithJersey
         server.start();
     }
     
-    @AfterMethod
+    @AfterEach
     public void         teardown() throws Exception
     {
         server.stop();
@@ -136,18 +136,18 @@ public class TestMapsWithJersey
         resource.path("/v1/service/test/" + service.getId()).type(MediaType.APPLICATION_JSON_TYPE).put(service);
 
         ServiceNames names = resource.path("/v1/service").get(ServiceNames.class);
-        Assert.assertEquals(names.getNames(), Lists.newArrayList("test"));
+        assertEquals(names.getNames(), Lists.newArrayList("test"));
 
         GenericType<ServiceInstances<Map<String, String>>> type = new GenericType<ServiceInstances<Map<String, String>>>(){};
         ServiceInstances<Map<String, String>>    instances = resource.path("/v1/service/test").get(type);
-        Assert.assertEquals(instances.getServices().size(), 1);
-        Assert.assertEquals(instances.getServices().get(0), service);
-        Assert.assertEquals(instances.getServices().get(0).getPayload(), payload);
+        assertEquals(instances.getServices().size(), 1);
+        assertEquals(instances.getServices().get(0), service);
+        assertEquals(instances.getServices().get(0).getPayload(), payload);
 
         // Retrieve a single instance
         GenericType<ServiceInstance<Map<String, String>>> singleInstanceType = new GenericType<ServiceInstance<Map<String, String>>>(){};
         ServiceInstance<Map<String, String>>    instance = resource.path("/v1/service/test/" + service.getId()).get(singleInstanceType);
-        Assert.assertEquals(instance, service);
+        assertEquals(instance, service);
 
     }
 }

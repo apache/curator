@@ -19,8 +19,17 @@
 
 package org.apache.curator.framework.recipes.cache;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.UnhandledErrorListener;
@@ -36,19 +45,16 @@ import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Tag;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.testng.AssertJUnit.assertNotNull;
-
-@Test(groups = CuratorTestBase.zk35TestCompatibilityGroup)
+@Tag(CuratorTestBase.zk35TestCompatibilityGroup)
 public class TestPathChildrenCache extends BaseClassForTests
 {
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testParentContainerMissing() throws Exception
     {
         Timing timing = new Timing();
@@ -64,7 +70,7 @@ public class TestPathChildrenCache extends BaseClassForTests
                     startedLatch.countDown();
                 }
             });
-            Assert.assertTrue(timing.awaitLatch(startedLatch));
+            assertTrue(timing.awaitLatch(startedLatch));
 
             final BlockingQueue<PathChildrenCacheEvent.Type> events = Queues.newLinkedBlockingQueue();
             PathChildrenCacheListener listener = new PathChildrenCacheListener()
@@ -77,23 +83,23 @@ public class TestPathChildrenCache extends BaseClassForTests
             };
             cache.getListenable().addListener(listener);
             cache.start(PathChildrenCache.StartMode.POST_INITIALIZED_EVENT);
-            Assert.assertEquals(events.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.INITIALIZED);
+            assertEquals(events.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.INITIALIZED);
 
             client.create().forPath("/a/b/test/one");
             client.create().forPath("/a/b/test/two");
-            Assert.assertEquals(events.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.CHILD_ADDED);
-            Assert.assertEquals(events.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.CHILD_ADDED);
+            assertEquals(events.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.CHILD_ADDED);
+            assertEquals(events.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.CHILD_ADDED);
 
             client.delete().forPath("/a/b/test/one");
             client.delete().forPath("/a/b/test/two");
             client.delete().forPath("/a/b/test");
-            Assert.assertEquals(events.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.CHILD_REMOVED);
-            Assert.assertEquals(events.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.CHILD_REMOVED);
+            assertEquals(events.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.CHILD_REMOVED);
+            assertEquals(events.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.CHILD_REMOVED);
 
             timing.sleepABit();
 
             client.create().creatingParentContainersIfNeeded().forPath("/a/b/test/new");
-            Assert.assertEquals(events.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.CHILD_ADDED);
+            assertEquals(events.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.CHILD_ADDED);
         }
         finally
         {
@@ -102,7 +108,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testInitializedEvenIfChildDeleted() throws Exception
     {
         final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -143,8 +149,8 @@ public class TestPathChildrenCache extends BaseClassForTests
 
             cache.start(PathChildrenCache.StartMode.POST_INITIALIZED_EVENT);
 
-            Assert.assertTrue(timing.awaitLatch(cacheInitialized));
-            Assert.assertEquals(cache.getCurrentData().size(), 0);
+            assertTrue(timing.awaitLatch(cacheInitialized));
+            assertEquals(cache.getCurrentData().size(), 0);
         }
         finally
         {
@@ -153,7 +159,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testWithBadConnect() throws Exception
     {
         final int serverPort = server.getPort();
@@ -197,7 +203,7 @@ public class TestPathChildrenCache extends BaseClassForTests
             };
             cache.getListenable().addListener(listener);
             cache.start();
-            Assert.assertTrue(timing.awaitLatch(ensurePathLatch));
+            assertTrue(timing.awaitLatch(ensurePathLatch));
 
             final CountDownLatch connectedLatch = new CountDownLatch(1);
             client.getConnectionStateListenable().addListener(new ConnectionStateListener()
@@ -215,15 +221,15 @@ public class TestPathChildrenCache extends BaseClassForTests
 
             server = new TestingServer(serverPort, true);
 
-            Assert.assertTrue(timing.awaitLatch(connectedLatch));
+            assertTrue(timing.awaitLatch(connectedLatch));
 
             client.create().creatingParentContainersIfNeeded().forPath("/baz", new byte[]{1, 2, 3});
 
-            assertNotNull("/baz does not exist", client.checkExists().forPath("/baz"));
+            assertNotNull(client.checkExists().forPath("/baz"), "/baz does not exist");
 
-            Assert.assertTrue(timing.awaitLatch(addedLatch));
+            assertTrue(timing.awaitLatch(addedLatch));
 
-            assertNotNull("cache doesn't see /baz", cache.getCurrentData("/baz"));
+            assertNotNull(cache.getCurrentData("/baz"), "cache doesn't see /baz");
         }
         finally
         {
@@ -231,7 +237,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testPostInitializedForEmpty() throws Exception
     {
         Timing timing = new Timing();
@@ -258,7 +264,7 @@ public class TestPathChildrenCache extends BaseClassForTests
                     }
                 );
             cache.start(PathChildrenCache.StartMode.POST_INITIALIZED_EVENT);
-            Assert.assertTrue(timing.awaitLatch(latch));
+            assertTrue(timing.awaitLatch(latch));
         }
         finally
         {
@@ -267,7 +273,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testAsyncInitialPopulation() throws Exception
     {
         Timing timing = new Timing();
@@ -296,11 +302,11 @@ public class TestPathChildrenCache extends BaseClassForTests
             cache.start(PathChildrenCache.StartMode.POST_INITIALIZED_EVENT);
 
             PathChildrenCacheEvent event = events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS);
-            Assert.assertEquals(event.getType(), PathChildrenCacheEvent.Type.CHILD_ADDED);
+            assertEquals(event.getType(), PathChildrenCacheEvent.Type.CHILD_ADDED);
 
             event = events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS);
-            Assert.assertEquals(event.getType(), PathChildrenCacheEvent.Type.INITIALIZED);
-            Assert.assertEquals(event.getInitialData().size(), 1);
+            assertEquals(event.getType(), PathChildrenCacheEvent.Type.INITIALIZED);
+            assertEquals(event.getInitialData().size(), 1);
         }
         finally
         {
@@ -309,7 +315,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testChildrenInitialized() throws Exception
     {
         Timing timing = new Timing();
@@ -349,12 +355,12 @@ public class TestPathChildrenCache extends BaseClassForTests
 
             cache.start(PathChildrenCache.StartMode.POST_INITIALIZED_EVENT);
 
-            Assert.assertTrue(timing.awaitLatch(addedLatch));
-            Assert.assertTrue(timing.awaitLatch(initLatch));
-            Assert.assertEquals(cache.getCurrentData().size(), 3);
-            Assert.assertEquals(cache.getCurrentData().get(0).getData(), "1".getBytes());
-            Assert.assertEquals(cache.getCurrentData().get(1).getData(), "2".getBytes());
-            Assert.assertEquals(cache.getCurrentData().get(2).getData(), "3".getBytes());
+            assertTrue(timing.awaitLatch(addedLatch));
+            assertTrue(timing.awaitLatch(initLatch));
+            assertEquals(cache.getCurrentData().size(), 3);
+            assertArrayEquals(cache.getCurrentData().get(0).getData(), "1".getBytes());
+            assertArrayEquals(cache.getCurrentData().get(1).getData(), "2".getBytes());
+            assertArrayEquals(cache.getCurrentData().get(2).getData(), "3".getBytes());
         }
         finally
         {
@@ -363,7 +369,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testChildrenInitializedNormal() throws Exception
     {
         Timing timing = new Timing();
@@ -384,7 +390,7 @@ public class TestPathChildrenCache extends BaseClassForTests
                         @Override
                         public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
                         {
-                            Assert.assertNotEquals(event.getType(), PathChildrenCacheEvent.Type.INITIALIZED);
+                            assertNotEquals(event.getType(), PathChildrenCacheEvent.Type.INITIALIZED);
                             if ( event.getType() == PathChildrenCacheEvent.Type.CHILD_ADDED )
                             {
                                 addedLatch.countDown();
@@ -399,11 +405,11 @@ public class TestPathChildrenCache extends BaseClassForTests
 
             cache.start(PathChildrenCache.StartMode.NORMAL);
 
-            Assert.assertTrue(timing.awaitLatch(addedLatch));
-            Assert.assertEquals(cache.getCurrentData().size(), 3);
-            Assert.assertEquals(cache.getCurrentData().get(0).getData(), "1".getBytes());
-            Assert.assertEquals(cache.getCurrentData().get(1).getData(), "2".getBytes());
-            Assert.assertEquals(cache.getCurrentData().get(2).getData(), "3".getBytes());
+            assertTrue(timing.awaitLatch(addedLatch));
+            assertEquals(cache.getCurrentData().size(), 3);
+            assertArrayEquals(cache.getCurrentData().get(0).getData(), "1".getBytes());
+            assertArrayEquals(cache.getCurrentData().get(1).getData(), "2".getBytes());
+            assertArrayEquals(cache.getCurrentData().get(2).getData(), "3".getBytes());
         }
         finally
         {
@@ -412,7 +418,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testUpdateWhenNotCachingData() throws Exception
     {
         Timing timing = new Timing();
@@ -447,10 +453,10 @@ public class TestPathChildrenCache extends BaseClassForTests
             cache.start(PathChildrenCache.StartMode.BUILD_INITIAL_CACHE);
 
             client.create().forPath("/test/foo", "first".getBytes());
-            Assert.assertTrue(timing.awaitLatch(addedLatch));
+            assertTrue(timing.awaitLatch(addedLatch));
 
             client.setData().forPath("/test/foo", "something new".getBytes());
-            Assert.assertTrue(timing.awaitLatch(updatedLatch));
+            assertTrue(timing.awaitLatch(updatedLatch));
         }
         finally
         {
@@ -459,7 +465,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testEnsurePath() throws Exception
     {
         Timing timing = new Timing();
@@ -479,7 +485,7 @@ public class TestPathChildrenCache extends BaseClassForTests
                 }
                 catch ( KeeperException.NoNodeException e )
                 {
-                    Assert.fail("Path should exist", e);
+                    fail("Path should exist", e);
                 }
             }
             timing.sleepABit();
@@ -490,7 +496,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testDeleteThenCreate() throws Exception
     {
         Timing timing = new Timing();
@@ -529,13 +535,13 @@ public class TestPathChildrenCache extends BaseClassForTests
                                 if ( event.getType() == PathChildrenCacheEvent.Type.CHILD_REMOVED )
                                 {
                                     removedLatch.countDown();
-                                    Assert.assertTrue(postRemovedLatch.await(10, TimeUnit.SECONDS));
+                                    assertTrue(postRemovedLatch.await(10, TimeUnit.SECONDS));
                                 }
                                 else
                                 {
                                     try
                                     {
-                                        Assert.assertEquals(event.getData().getData(), "two".getBytes());
+                                        assertArrayEquals(event.getData().getData(), "two".getBytes());
                                     }
                                     finally
                                     {
@@ -548,15 +554,15 @@ public class TestPathChildrenCache extends BaseClassForTests
                 cache.start(PathChildrenCache.StartMode.BUILD_INITIAL_CACHE);
 
                 client.delete().forPath("/test/foo");
-                Assert.assertTrue(timing.awaitLatch(removedLatch));
+                assertTrue(timing.awaitLatch(removedLatch));
                 client.create().forPath("/test/foo", "two".getBytes());
                 postRemovedLatch.countDown();
-                Assert.assertTrue(timing.awaitLatch(dataLatch));
+                assertTrue(timing.awaitLatch(dataLatch));
 
                 Throwable t = error.get();
                 if ( t != null )
                 {
-                    Assert.fail("Assert", t);
+                    fail("Assert", t);
                 }
             }
         }
@@ -566,7 +572,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testRebuildAgainstOtherProcesses() throws Exception
     {
         Timing timing = new Timing();
@@ -622,7 +628,7 @@ public class TestPathChildrenCache extends BaseClassForTests
                                 client.create().forPath("/test/test");
 
                                 List<ChildData> currentData = cache.getCurrentData();
-                                Assert.assertTrue(currentData.size() > 0);
+                                assertTrue(currentData.size() > 0);
 
                                 // simulate another process removing a node while we're rebuilding
                                 client.delete().forPath(currentData.get(0).getPath());
@@ -636,7 +642,7 @@ public class TestPathChildrenCache extends BaseClassForTests
                                     childData = cache.getCurrentData("/test/snafu");
                                     Thread.sleep(1000);
                                 }
-                                Assert.assertEquals(childData.getData(), "original".getBytes());
+                                assertArrayEquals(childData.getData(), "original".getBytes());
                                 client.setData().forPath("/test/snafu", "grilled".getBytes());
 
                                 cache.rebuildTestExchanger.exchange(new Object());
@@ -648,10 +654,10 @@ public class TestPathChildrenCache extends BaseClassForTests
                 cache.start(PathChildrenCache.StartMode.BUILD_INITIAL_CACHE);
                 future.get();
 
-                Assert.assertTrue(timing.awaitLatch(addedLatch));
-                Assert.assertNotNull(cache.getCurrentData("/test/test"));
-                Assert.assertNull(cache.getCurrentData(deletedPath.get()));
-                Assert.assertEquals(cache.getCurrentData("/test/snafu").getData(), "grilled".getBytes());
+                assertTrue(timing.awaitLatch(addedLatch));
+                assertNotNull(cache.getCurrentData("/test/test"));
+                assertNull(cache.getCurrentData(deletedPath.get()));
+                assertArrayEquals(cache.getCurrentData("/test/snafu").getData(), "grilled".getBytes());
             }
         }
         finally
@@ -661,7 +667,7 @@ public class TestPathChildrenCache extends BaseClassForTests
     }
 
     // see https://github.com/Netflix/curator/issues/27 - was caused by not comparing old->new data
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testIssue27() throws Exception
     {
         Timing timing = new Timing();
@@ -694,13 +700,13 @@ public class TestPathChildrenCache extends BaseClassForTests
                 );
             cache.start();
 
-            Assert.assertTrue(timing.acquireSemaphore(semaphore, 3));
+            assertTrue(timing.acquireSemaphore(semaphore, 3));
 
             client.delete().forPath("/base/a");
-            Assert.assertTrue(timing.acquireSemaphore(semaphore, 1));
+            assertTrue(timing.acquireSemaphore(semaphore, 1));
 
             client.create().forPath("/base/a");
-            Assert.assertTrue(timing.acquireSemaphore(semaphore, 1));
+            assertTrue(timing.acquireSemaphore(semaphore, 1));
 
             List<PathChildrenCacheEvent.Type> expected = Lists.newArrayList
                 (
@@ -710,7 +716,7 @@ public class TestPathChildrenCache extends BaseClassForTests
                     PathChildrenCacheEvent.Type.CHILD_REMOVED,
                     PathChildrenCacheEvent.Type.CHILD_ADDED
                 );
-            Assert.assertEquals(expected, events);
+            assertEquals(expected, events);
         }
         finally
         {
@@ -720,7 +726,7 @@ public class TestPathChildrenCache extends BaseClassForTests
     }
 
     // test Issue 27 using new rebuild() method
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testIssue27Alt() throws Exception
     {
         Timing timing = new Timing();
@@ -754,17 +760,17 @@ public class TestPathChildrenCache extends BaseClassForTests
             cache.start(PathChildrenCache.StartMode.BUILD_INITIAL_CACHE);
 
             client.delete().forPath("/base/a");
-            Assert.assertTrue(timing.acquireSemaphore(semaphore, 1));
+            assertTrue(timing.acquireSemaphore(semaphore, 1));
 
             client.create().forPath("/base/a");
-            Assert.assertTrue(timing.acquireSemaphore(semaphore, 1));
+            assertTrue(timing.acquireSemaphore(semaphore, 1));
 
             List<PathChildrenCacheEvent.Type> expected = Lists.newArrayList
                 (
                     PathChildrenCacheEvent.Type.CHILD_REMOVED,
                     PathChildrenCacheEvent.Type.CHILD_ADDED
                 );
-            Assert.assertEquals(expected, events);
+            assertEquals(expected, events);
         }
         finally
         {
@@ -773,7 +779,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testKilledSession() throws Exception
     {
         Timing timing = new Timing();
@@ -820,12 +826,12 @@ public class TestPathChildrenCache extends BaseClassForTests
                 );
 
             client.create().withMode(CreateMode.EPHEMERAL).forPath("/test/me", "data".getBytes());
-            Assert.assertTrue(timing.awaitLatch(childAddedLatch));
+            assertTrue(timing.awaitLatch(childAddedLatch));
 
             client.getZookeeperClient().getZooKeeper().getTestable().injectSessionExpiration();
-            Assert.assertTrue(timing.awaitLatch(lostLatch));
-            Assert.assertTrue(timing.awaitLatch(reconnectedLatch));
-            Assert.assertTrue(timing.awaitLatch(removedLatch));
+            assertTrue(timing.awaitLatch(lostLatch));
+            assertTrue(timing.awaitLatch(reconnectedLatch));
+            assertTrue(timing.awaitLatch(removedLatch));
         }
         finally
         {
@@ -834,7 +840,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testModes() throws Exception
     {
         Timing timing = new Timing();
@@ -858,7 +864,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testRebuildNode() throws Exception
     {
         Timing timing = new Timing();
@@ -885,13 +891,13 @@ public class TestPathChildrenCache extends BaseClassForTests
             };
             cache.start(PathChildrenCache.StartMode.BUILD_INITIAL_CACHE);
 
-            Assert.assertTrue(timing.awaitLatch(latch));
+            assertTrue(timing.awaitLatch(latch));
 
             int saveCounter = counter.get();
             client.setData().forPath("/test/one", "alt".getBytes());
             cache.rebuildNode("/test/one");
-            Assert.assertEquals(cache.getCurrentData("/test/one").getData(), "alt".getBytes());
-            Assert.assertEquals(saveCounter, counter.get());
+            assertArrayEquals(cache.getCurrentData("/test/one").getData(), "alt".getBytes());
+            assertEquals(saveCounter, counter.get());
 
             semaphore.release(1000);
             timing.sleepABit();
@@ -926,25 +932,25 @@ public class TestPathChildrenCache extends BaseClassForTests
 
             client.create().forPath("/test/one", "one".getBytes());
             client.create().forPath("/test/two", "two".getBytes());
-            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+            assertTrue(latch.await(10, TimeUnit.SECONDS));
 
             for ( ChildData data : cache.getCurrentData() )
             {
                 if ( cacheData )
                 {
-                    Assert.assertNotNull(data.getData());
-                    Assert.assertNotNull(data.getStat());
+                    assertNotNull(data.getData());
+                    assertNotNull(data.getStat());
                 }
                 else
                 {
-                    Assert.assertNull(data.getData());
-                    Assert.assertNotNull(data.getStat());
+                    assertNull(data.getData());
+                    assertNotNull(data.getStat());
                 }
             }
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testBasics() throws Exception
     {
         Timing timing = new Timing();
@@ -974,14 +980,14 @@ public class TestPathChildrenCache extends BaseClassForTests
                 cache.start();
 
                 client.create().forPath("/test/one", "hey there".getBytes());
-                Assert.assertEquals(events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_ADDED);
+                assertEquals(events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_ADDED);
 
                 client.setData().forPath("/test/one", "sup!".getBytes());
-                Assert.assertEquals(events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_UPDATED);
-                Assert.assertEquals(new String(cache.getCurrentData("/test/one").getData()), "sup!");
+                assertEquals(events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_UPDATED);
+                assertEquals(new String(cache.getCurrentData("/test/one").getData()), "sup!");
 
                 client.delete().forPath("/test/one");
-                Assert.assertEquals(events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_REMOVED);
+                assertEquals(events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_REMOVED);
             }
         }
         finally
@@ -990,7 +996,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testBasicsOnTwoCachesWithSameExecutor() throws Exception
     {
         Timing timing = new Timing();
@@ -1040,18 +1046,18 @@ public class TestPathChildrenCache extends BaseClassForTests
                     cache2.start();
 
                     client.create().forPath("/test/one", "hey there".getBytes());
-                    Assert.assertEquals(events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_ADDED);
-                    Assert.assertEquals(events2.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_ADDED);
+                    assertEquals(events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_ADDED);
+                    assertEquals(events2.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_ADDED);
 
                     client.setData().forPath("/test/one", "sup!".getBytes());
-                    Assert.assertEquals(events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_UPDATED);
-                    Assert.assertEquals(events2.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_UPDATED);
-                    Assert.assertEquals(new String(cache.getCurrentData("/test/one").getData()), "sup!");
-                    Assert.assertEquals(new String(cache2.getCurrentData("/test/one").getData()), "sup!");
+                    assertEquals(events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_UPDATED);
+                    assertEquals(events2.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_UPDATED);
+                    assertEquals(new String(cache.getCurrentData("/test/one").getData()), "sup!");
+                    assertEquals(new String(cache2.getCurrentData("/test/one").getData()), "sup!");
 
                     client.delete().forPath("/test/one");
-                    Assert.assertEquals(events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_REMOVED);
-                    Assert.assertEquals(events2.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_REMOVED);
+                    assertEquals(events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_REMOVED);
+                    assertEquals(events2.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS), PathChildrenCacheEvent.Type.CHILD_REMOVED);
                 }
             }
         }
@@ -1061,7 +1067,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testDeleteNodeAfterCloseDoesntCallExecutor()
         throws Exception
     {
@@ -1079,16 +1085,16 @@ public class TestPathChildrenCache extends BaseClassForTests
                 client.create().forPath("/test/one", "hey there".getBytes());
 
                 cache.rebuild();
-                Assert.assertEquals(new String(cache.getCurrentData("/test/one").getData()), "hey there");
-                Assert.assertTrue(exec.isExecuteCalled());
+                assertEquals(new String(cache.getCurrentData("/test/one").getData()), "hey there");
+                assertTrue(exec.isExecuteCalled());
 
                 exec.setExecuteCalled(false);
             }
-            Assert.assertFalse(exec.isExecuteCalled());
+            assertFalse(exec.isExecuteCalled());
 
             client.delete().forPath("/test/one");
             timing.sleepABit();
-            Assert.assertFalse(exec.isExecuteCalled());
+            assertFalse(exec.isExecuteCalled());
         }
         finally
         {
@@ -1102,7 +1108,7 @@ public class TestPathChildrenCache extends BaseClassForTests
      * shut down. See CURATOR-121, this was causing misleading warning messages to be logged.
      * @throws Exception
      */
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testInterruptedOperationOnShutdown() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), 30000, 30000, new RetryOneTime(1));
@@ -1137,7 +1143,7 @@ public class TestPathChildrenCache extends BaseClassForTests
 
             latch.await(5, TimeUnit.SECONDS);
 
-            Assert.assertTrue(latch.getCount() == 1, "Unexpected exception occurred");
+            assertTrue(latch.getCount() == 1, "Unexpected exception occurred");
         }
         finally
         {

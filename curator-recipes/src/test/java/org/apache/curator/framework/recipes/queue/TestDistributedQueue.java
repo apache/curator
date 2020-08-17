@@ -18,8 +18,13 @@
  */
 package org.apache.curator.framework.recipes.queue;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -35,8 +40,6 @@ import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.Timing;
 import org.apache.zookeeper.CreateMode;
 import org.mockito.Mockito;
-import org.testng.Assert;
-import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -57,7 +60,7 @@ public class TestDistributedQueue extends BaseClassForTests
 
     private static final QueueSerializer<TestQueueItem>  serializer = new QueueItemSerializer();
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testRetryAfterFailure_Curator56() throws Exception
     {
         /*
@@ -107,9 +110,9 @@ public class TestDistributedQueue extends BaseClassForTests
             queue.put(new TestQueueItem("test"));
 
             retryCounter.await(10, TimeUnit.SECONDS);
-            Assert.assertEquals(retryCounter.getCount(), 0, "Queue item was not consumed. Retry counter is " + retryCounter.getCount());
-            Assert.assertEquals(names.size(), 2);
-            Assert.assertEquals(names.get(0).length(), names.get(1).length(), "name1: " + names.get(0) + " - " + "name2: " + names.get(1));
+            assertEquals(retryCounter.getCount(), 0, "Queue item was not consumed. Retry counter is " + retryCounter.getCount());
+            assertEquals(names.size(), 2);
+            assertEquals(names.get(0).length(), names.get(1).length(), "name1: " + names.get(0) + " - " + "name2: " + names.get(1));
         }
         finally
         {
@@ -118,7 +121,7 @@ public class TestDistributedQueue extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void     testCustomExecutor() throws Exception
     {
         final int       ITERATIONS = 1000;
@@ -200,9 +203,9 @@ public class TestDistributedQueue extends BaseClassForTests
                 queue.put(Integer.toString(i));
             }
 
-            Assert.assertTrue(timing.awaitLatch(latch));
+            assertTrue(timing.awaitLatch(latch));
 
-            Assert.assertTrue(doubleUsed.size() == 0, doubleUsed.toString());
+            assertTrue(doubleUsed.size() == 0, doubleUsed.toString());
         }
         finally
         {
@@ -211,7 +214,7 @@ public class TestDistributedQueue extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void     testPutListener() throws Exception
     {
         final int                   itemQty = 10;
@@ -250,17 +253,17 @@ public class TestDistributedQueue extends BaseClassForTests
             int                 iteration = 0;
             while ( consumer.size() < itemQty )
             {
-                Assert.assertTrue(++iteration < 10);
+                assertTrue(++iteration < 10);
                 Thread.sleep(1000);
             }
 
             int                 i = 0;
             for ( TestQueueItem item : consumer.getItems() )
             {
-                Assert.assertEquals(item.str, Integer.toString(i++));
+                assertEquals(item.str, Integer.toString(i++));
             }
             
-            Assert.assertEquals(listenerCalls.get(), itemQty);
+            assertEquals(listenerCalls.get(), itemQty);
         }
         finally
         {
@@ -269,7 +272,7 @@ public class TestDistributedQueue extends BaseClassForTests
         }
     }
     
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void     testErrorMode() throws Exception
     {
         Timing                    timing = new Timing();
@@ -304,8 +307,8 @@ public class TestDistributedQueue extends BaseClassForTests
                 TestQueueItem       item = new TestQueueItem("1");
                 queue.put(item);
 
-                Assert.assertTrue(timing.awaitLatch(latch.get()));
-                Assert.assertEquals(count.get(), 2);
+                assertTrue(timing.awaitLatch(latch.get()));
+                assertEquals(count.get(), 2);
 
                 queue.setErrorMode(ErrorMode.DELETE);
 
@@ -315,8 +318,8 @@ public class TestDistributedQueue extends BaseClassForTests
                 item = new TestQueueItem("1");
                 queue.put(item);
 
-                Assert.assertFalse(latch.get().await(5, TimeUnit.SECONDS)); // consumer should get called only once
-                Assert.assertEquals(count.get(), 1);
+                assertFalse(latch.get().await(5, TimeUnit.SECONDS)); // consumer should get called only once
+                assertEquals(count.get(), 1);
             }
             finally
             {
@@ -329,7 +332,7 @@ public class TestDistributedQueue extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void     testNoDuplicateProcessing() throws Exception
     {
         final int                 itemQty = 1000;
@@ -409,7 +412,7 @@ public class TestDistributedQueue extends BaseClassForTests
             }
 
             timing.awaitLatch(latch);
-            Assert.assertTrue(duplicateMessages.size() == 0, duplicateMessages.toString());
+            assertTrue(duplicateMessages.size() == 0, duplicateMessages.toString());
         }
         finally
         {
@@ -424,7 +427,7 @@ public class TestDistributedQueue extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void     testSafetyWithCrash() throws Exception
     {
         final int                   itemQty = 100;
@@ -530,12 +533,12 @@ public class TestDistributedQueue extends BaseClassForTests
             int                 i = 0;
             for ( TestQueueItem item : takenItems )
             {
-                Assert.assertEquals(item.str, Integer.toString(i++));
+                assertEquals(item.str, Integer.toString(i++));
             }
 
-            Assert.assertNotNull(thrownItemFromConsumer1.get());
-            Assert.assertTrue((takenItemsForConsumer2.contains(thrownItemFromConsumer1.get())));
-            Assert.assertTrue(Sets.intersection(takenItemsForConsumer1, takenItemsForConsumer2).size() == 0);
+            assertNotNull(thrownItemFromConsumer1.get());
+            assertTrue((takenItemsForConsumer2.contains(thrownItemFromConsumer1.get())));
+            assertTrue(Sets.intersection(takenItemsForConsumer1, takenItemsForConsumer2).size() == 0);
         }
         finally
         {
@@ -561,7 +564,7 @@ public class TestDistributedQueue extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void     testSafetyBasic() throws Exception
     {
         final int                   itemQty = 10;
@@ -593,14 +596,14 @@ public class TestDistributedQueue extends BaseClassForTests
                         for ( int i = 0; i < itemQty; ++i )
                         {
                             TestQueueItem item = consumer.take();
-                            Assert.assertEquals(item.str, Integer.toString(i));
+                            assertEquals(item.str, Integer.toString(i));
                         }
                         latch.countDown();
                         return null;
                     }
                 }
             );
-            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+            assertTrue(latch.await(10, TimeUnit.SECONDS));
         }
         finally
         {
@@ -609,7 +612,7 @@ public class TestDistributedQueue extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void     testPutMulti() throws Exception
     {
         final int                   itemQty = 100;
@@ -643,8 +646,8 @@ public class TestDistributedQueue extends BaseClassForTests
             for ( int i = 0; i < itemQty; ++i )
             {
                 TestQueueItem   queueItem = consumer.take(1, TimeUnit.SECONDS);
-                Assert.assertNotNull(queueItem);
-                Assert.assertEquals(queueItem, new TestQueueItem(Integer.toString(i)));
+                assertNotNull(queueItem);
+                assertEquals(queueItem, new TestQueueItem(Integer.toString(i)));
             }
         }
         finally
@@ -654,7 +657,7 @@ public class TestDistributedQueue extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void     testMultiPutterSingleGetter() throws Exception
     {
         final int                   itemQty = 100;
@@ -679,13 +682,13 @@ public class TestDistributedQueue extends BaseClassForTests
             int                 iteration = 0;
             while ( consumer.size() < itemQty )
             {
-                Assert.assertTrue(++iteration < 10);
+                assertTrue(++iteration < 10);
                 Thread.sleep(1000);
             }
 
             List<TestQueueItem> items = consumer.getItems();
 
-            Assert.assertEquals(com.google.common.collect.Sets.<TestQueueItem>newHashSet(items).size(), items.size()); // check no duplicates
+            assertEquals(com.google.common.collect.Sets.<TestQueueItem>newHashSet(items).size(), items.size()); // check no duplicates
         }
         finally
         {
@@ -694,7 +697,7 @@ public class TestDistributedQueue extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void     testFlush() throws Exception
     {
         final Timing                      timing = new Timing();
@@ -736,10 +739,10 @@ public class TestDistributedQueue extends BaseClassForTests
             queue.start();
 
             queue.put(new TestQueueItem("1"));
-            Assert.assertFalse(queue.flushPuts(timing.forWaiting().seconds(), TimeUnit.SECONDS));
+            assertFalse(queue.flushPuts(timing.forWaiting().seconds(), TimeUnit.SECONDS));
             latch.countDown();
 
-            Assert.assertTrue(queue.flushPuts(timing.forWaiting().seconds(), TimeUnit.SECONDS));
+            assertTrue(queue.flushPuts(timing.forWaiting().seconds(), TimeUnit.SECONDS));
         }
         finally
         {
@@ -753,7 +756,7 @@ public class TestDistributedQueue extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void     testSimple() throws Exception
     {
         final int                   itemQty = 10;
@@ -776,14 +779,14 @@ public class TestDistributedQueue extends BaseClassForTests
             int                 iteration = 0;
             while ( consumer.size() < itemQty )
             {
-                Assert.assertTrue(++iteration < 10);
+                assertTrue(++iteration < 10);
                 Thread.sleep(1000);
             }
 
             int                 i = 0;
             for ( TestQueueItem item : consumer.getItems() )
             {
-                Assert.assertEquals(item.str, Integer.toString(i++));
+                assertEquals(item.str, Integer.toString(i++));
             }
         }
         finally

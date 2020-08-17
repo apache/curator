@@ -18,8 +18,11 @@
  */
 package org.apache.curator.framework.recipes.cache;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
@@ -27,8 +30,6 @@ import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.KeeperException;
-import org.testng.Assert;
-import org.testng.annotations.Test;
 import java.io.Closeable;
 import java.util.List;
 import java.util.Random;
@@ -66,7 +67,7 @@ public abstract class TestEventOrdering<T extends Closeable> extends BaseClassFo
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testEventOrdering() throws Exception
     {
         ExecutorService executorService = Executors.newFixedThreadPool(THREAD_QTY);
@@ -135,7 +136,7 @@ public abstract class TestEventOrdering<T extends Closeable> extends BaseClassFo
                 };
                 executorService.submit(wrapped);
             }
-            Assert.assertTrue(timing.awaitLatch(latch));
+            assertTrue(timing.awaitLatch(latch));
 
             timing.sleepABit();
 
@@ -148,7 +149,7 @@ public abstract class TestEventOrdering<T extends Closeable> extends BaseClassFo
                 eventSuggestedQty += (event.eventType == EventType.ADDED) ? 1 : -1;
             }
             int actualQty = getActualQty(cache);
-            Assert.assertEquals(actualQty, eventSuggestedQty, String.format("actual %s expected %s:\n %s", actualQty, eventSuggestedQty, asString(localEvents)));
+            assertEquals(actualQty, eventSuggestedQty, String.format("actual %s expected %s:\n %s", actualQty, eventSuggestedQty, asString(localEvents)));
         }
         finally
         {

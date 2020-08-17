@@ -18,12 +18,16 @@
  */
 package org.apache.curator.framework.schema;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Maps;
 import com.google.common.io.Resources;
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.transaction.CuratorOp;
@@ -32,24 +36,22 @@ import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.ACL;
-import org.testng.Assert;
-import org.testng.annotations.Test;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
 public class TestSchema extends BaseClassForTests
 {
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testBasics() throws Exception
     {
         SchemaSet schemaSet = loadSchemaSet("schema1.json", null);
         Schema schema = schemaSet.getNamedSchema("test");
-        Assert.assertNotNull(schema);
+        assertNotNull(schema);
         Map<String, String> expectedMetadata = Maps.newHashMap();
         expectedMetadata.put("one", "1");
         expectedMetadata.put("two", "2");
-        Assert.assertEquals(schema.getMetadata(), expectedMetadata);
+        assertEquals(schema.getMetadata(), expectedMetadata);
 
         CuratorFramework client = newClient(schemaSet);
         try
@@ -59,9 +61,9 @@ public class TestSchema extends BaseClassForTests
             try
             {
                 String rawPath = schema.getRawPath();
-                Assert.assertEquals(rawPath, "/a/b/c");
+                assertEquals(rawPath, "/a/b/c");
                 client.create().creatingParentsIfNeeded().forPath(rawPath);
-                Assert.fail("Should've violated schema");
+                fail("Should've violated schema");
             }
             catch ( SchemaViolation dummy )
             {
@@ -76,7 +78,7 @@ public class TestSchema extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testSchemaValidator() throws Exception
     {
         final SchemaValidator schemaValidator = new SchemaValidator()
@@ -104,7 +106,7 @@ public class TestSchema extends BaseClassForTests
             try
             {
                 client.create().forPath("/test", new byte[0]);
-                Assert.fail("Should've violated schema");
+                fail("Should've violated schema");
             }
             catch ( SchemaViolation dummy )
             {
@@ -119,7 +121,7 @@ public class TestSchema extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testMulti() throws Exception
     {
         SchemaSet schemaSet = loadSchemaSet("schema2.json", null);
@@ -131,7 +133,7 @@ public class TestSchema extends BaseClassForTests
             try
             {
                 client.create().creatingParentsIfNeeded().forPath("/a/b/c");
-                Assert.fail("Should've violated schema: test");
+                fail("Should've violated schema: test");
             }
             catch ( SchemaViolation dummy )
             {
@@ -141,7 +143,7 @@ public class TestSchema extends BaseClassForTests
             try
             {
                 client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath("/a/b/c/d/e");
-                Assert.fail("Should've violated schema: test2");
+                fail("Should've violated schema: test2");
             }
             catch ( SchemaViolation dummy )
             {
@@ -154,7 +156,7 @@ public class TestSchema extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testTransaction() throws Exception
     {
         final SchemaValidator schemaValidator = new SchemaValidator()
@@ -190,7 +192,7 @@ public class TestSchema extends BaseClassForTests
             try
             {
                 client.transaction().forOperations(createAPersistent, createAEphemeral);
-                Assert.fail("Should've violated schema");
+                fail("Should've violated schema");
             }
             catch ( SchemaViolation dummy )
             {
@@ -201,7 +203,7 @@ public class TestSchema extends BaseClassForTests
             try
             {
                 client.transaction().forOperations(deleteA);
-                Assert.fail("Should've violated schema");
+                fail("Should've violated schema");
             }
             catch ( SchemaViolation dummy )
             {
@@ -211,7 +213,7 @@ public class TestSchema extends BaseClassForTests
             try
             {
                 client.transaction().forOperations(createBEmptyData);
-                Assert.fail("Should've violated schema");
+                fail("Should've violated schema");
             }
             catch ( SchemaViolation dummy )
             {
@@ -222,7 +224,7 @@ public class TestSchema extends BaseClassForTests
             try
             {
                 client.transaction().forOperations(setBEmptyData);
-                Assert.fail("Should've violated schema");
+                fail("Should've violated schema");
             }
             catch ( SchemaViolation dummy )
             {
@@ -236,21 +238,21 @@ public class TestSchema extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testYaml() throws Exception
     {
         String yaml = Resources.toString(Resources.getResource("schema.yaml"), Charsets.UTF_8);
         JsonNode root = new ObjectMapper(new YAMLFactory()).readTree(yaml);
         List<Schema> schemas = new SchemaSetLoader(root, null).getSchemas();
-        Assert.assertEquals(schemas.size(), 2);
-        Assert.assertEquals(schemas.get(0).getName(), "test");
-        Assert.assertEquals(schemas.get(0).getMetadata().size(), 0);
-        Assert.assertEquals(schemas.get(1).getName(), "test2");
-        Assert.assertEquals(schemas.get(1).getMetadata().size(), 2);
-        Assert.assertEquals(schemas.get(1).getMetadata().get("two"), "2");
+        assertEquals(schemas.size(), 2);
+        assertEquals(schemas.get(0).getName(), "test");
+        assertEquals(schemas.get(0).getMetadata().size(), 0);
+        assertEquals(schemas.get(1).getName(), "test2");
+        assertEquals(schemas.get(1).getMetadata().size(), 2);
+        assertEquals(schemas.get(1).getMetadata().get("two"), "2");
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testOrdering() throws Exception
     {
         SchemaSet schemaSet = loadSchemaSet("schema5.json", null);
@@ -262,7 +264,7 @@ public class TestSchema extends BaseClassForTests
             try
             {
                 client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath("/exact/match");
-                Assert.fail("Should've violated schema");
+                fail("Should've violated schema");
             }
             catch ( SchemaViolation dummy )
             {
@@ -272,7 +274,7 @@ public class TestSchema extends BaseClassForTests
             try
             {
                 client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath("/exact/foo/bar");
-                Assert.fail("Should've violated schema");
+                fail("Should've violated schema");
             }
             catch ( SchemaViolation dummy )
             {
@@ -282,7 +284,7 @@ public class TestSchema extends BaseClassForTests
             try
             {
                 client.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT_SEQUENTIAL).forPath("/exact/other/bar");
-                Assert.fail("Should've violated schema");
+                fail("Should've violated schema");
             }
             catch ( SchemaViolation dummy )
             {

@@ -18,19 +18,22 @@
  */
 package org.apache.curator.framework.imps;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.CompressionProvider;
 import org.apache.curator.retry.RetryOneTime;
-import org.testng.Assert;
-import org.testng.annotations.Test;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestCompression extends BaseClassForTests
 {
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testCompressionProvider() throws Exception
     {
         final byte[]            data = "here's a string".getBytes();
@@ -72,19 +75,19 @@ public class TestCompression extends BaseClassForTests
 
             client.create().compressed().creatingParentsIfNeeded().forPath("/a/b/c", data);
 
-            Assert.assertNotEquals(data, client.getData().forPath("/a/b/c"));
-            Assert.assertEquals(data.length, client.getData().decompressed().forPath("/a/b/c").length);
+            assertNotEquals(data, client.getData().forPath("/a/b/c"));
+            assertEquals(data.length, client.getData().decompressed().forPath("/a/b/c").length);
         }
         finally
         {
             CloseableUtils.closeQuietly(client);
         }
 
-        Assert.assertEquals(compressCounter.get(), 1);
-        Assert.assertEquals(decompressCounter.get(), 1);
+        assertEquals(compressCounter.get(), 1);
+        assertEquals(decompressCounter.get(), 1);
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testSetData() throws Exception
     {
         final byte[]            data = "here's a string".getBytes();
@@ -95,10 +98,10 @@ public class TestCompression extends BaseClassForTests
             client.start();
 
             client.create().creatingParentsIfNeeded().forPath("/a/b/c", data);
-            Assert.assertEquals(data, client.getData().forPath("/a/b/c"));
+            assertArrayEquals(data, client.getData().forPath("/a/b/c"));
 
             client.setData().compressed().forPath("/a/b/c", data);
-            Assert.assertEquals(data.length, client.getData().decompressed().forPath("/a/b/c").length);
+            assertEquals(data.length, client.getData().decompressed().forPath("/a/b/c").length);
         }
         finally
         {
@@ -106,7 +109,7 @@ public class TestCompression extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testSimple() throws Exception
     {
         final byte[]            data = "here's a string".getBytes();
@@ -118,8 +121,8 @@ public class TestCompression extends BaseClassForTests
 
             client.create().compressed().creatingParentsIfNeeded().forPath("/a/b/c", data);
 
-            Assert.assertNotEquals(data, client.getData().forPath("/a/b/c"));
-            Assert.assertEquals(data.length, client.getData().decompressed().forPath("/a/b/c").length);
+            assertNotEquals(data, client.getData().forPath("/a/b/c"));
+            assertEquals(data.length, client.getData().decompressed().forPath("/a/b/c").length);
         }
         finally
         {

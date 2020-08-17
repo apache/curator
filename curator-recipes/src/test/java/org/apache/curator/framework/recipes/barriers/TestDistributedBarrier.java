@@ -18,15 +18,16 @@
  */
 package org.apache.curator.framework.recipes.barriers;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import com.google.common.collect.Lists;
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.zookeeper.KeeperException;
-import org.testng.Assert;
-import org.testng.annotations.Test;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -36,7 +37,7 @@ import java.util.concurrent.TimeUnit;
 
 public class TestDistributedBarrier extends BaseClassForTests
 {
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void     testServerCrash() throws Exception
     {
         final int                         TIMEOUT = 1000;
@@ -66,7 +67,7 @@ public class TestDistributedBarrier extends BaseClassForTests
 
             barrier.waitOnBarrier(TIMEOUT * 2, TimeUnit.SECONDS);
             future.get();
-            Assert.fail();
+            fail();
         }
         catch ( KeeperException.ConnectionLossException expected )
         {
@@ -78,7 +79,7 @@ public class TestDistributedBarrier extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void     testMultiClient() throws Exception
     {
         CuratorFramework            client1 = null;
@@ -150,7 +151,7 @@ public class TestDistributedBarrier extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void     testNoBarrier() throws Exception
     {
         CuratorFramework            client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -159,7 +160,7 @@ public class TestDistributedBarrier extends BaseClassForTests
             client.start();
 
             final DistributedBarrier      barrier = new DistributedBarrier(client, "/barrier");
-            Assert.assertTrue(barrier.waitOnBarrier(10, TimeUnit.SECONDS));
+            assertTrue(barrier.waitOnBarrier(10, TimeUnit.SECONDS));
 
             // just for grins, test the infinite wait
             ExecutorService         service = Executors.newSingleThreadExecutor();
@@ -175,7 +176,7 @@ public class TestDistributedBarrier extends BaseClassForTests
                     }
                 }
             );
-            Assert.assertTrue(future.get(10, TimeUnit.SECONDS) != null);
+            assertTrue(future.get(10, TimeUnit.SECONDS) != null);
         }
         finally
         {
@@ -183,7 +184,7 @@ public class TestDistributedBarrier extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void     testBasic() throws Exception
     {
         CuratorFramework            client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -209,7 +210,7 @@ public class TestDistributedBarrier extends BaseClassForTests
                 }
             );
 
-            Assert.assertTrue(barrier.waitOnBarrier(10, TimeUnit.SECONDS));
+            assertTrue(barrier.waitOnBarrier(10, TimeUnit.SECONDS));
         }
         finally
         {

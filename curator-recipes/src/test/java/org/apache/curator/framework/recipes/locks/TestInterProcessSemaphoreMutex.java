@@ -18,27 +18,32 @@
  */
 package org.apache.curator.framework.recipes.locks;
 
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
-import org.testng.annotations.Test;
+import org.apache.curator.test.BaseClassForTests;
+import org.junit.jupiter.api.Disabled;
 
 public class TestInterProcessSemaphoreMutex extends TestInterProcessMutexBase
 {
     private static final String LOCK_PATH = LOCK_BASE_PATH + "/our-lock";
 
     @Override
-    @Test(enabled = false)
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Disabled
     public void testReentrant()
     {
     }
 
     @Override
-    @Test(enabled = false)
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Disabled
     public void testReentrant2Threads()
     {
     }
 
     @Override
-    @Test(enabled = false)
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Disabled
     public void testReentrantSingleLock()
     {
     }

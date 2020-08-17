@@ -19,8 +19,12 @@
 
 package org.apache.curator.x.discovery.details;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
@@ -31,15 +35,14 @@ import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.x.discovery.ServiceDiscovery;
 import org.apache.curator.x.discovery.ServiceDiscoveryBuilder;
 import org.apache.curator.x.discovery.ServiceInstance;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Tag;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 
-@Test(groups = CuratorTestBase.zk35TestCompatibilityGroup)
+@Tag(CuratorTestBase.zk35TestCompatibilityGroup)
 public class TestServiceDiscovery extends BaseClassForTests
 {
     private static final Comparator<ServiceInstance<Void>> comparator = new Comparator<ServiceInstance<Void>>()
@@ -51,7 +54,7 @@ public class TestServiceDiscovery extends BaseClassForTests
         }
     };
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testCrashedServerMultiInstances() throws Exception
     {
         CuratorFramework client = null;
@@ -78,7 +81,7 @@ public class TestServiceDiscovery extends BaseClassForTests
             discovery.registerService(instance2);
 
             timing.acquireSemaphore(semaphore, 2);
-            Assert.assertEquals(discovery.queryForInstances("test").size(), 2);
+            assertEquals(discovery.queryForInstances("test").size(), 2);
 
             client.getZookeeperClient().getZooKeeper().getTestable().injectSessionExpiration();
             server.stop();
@@ -86,7 +89,7 @@ public class TestServiceDiscovery extends BaseClassForTests
             server.restart();
 
             timing.acquireSemaphore(semaphore, 2);
-            Assert.assertEquals(discovery.queryForInstances("test").size(), 2);
+            assertEquals(discovery.queryForInstances("test").size(), 2);
         }
         finally
         {
@@ -95,7 +98,7 @@ public class TestServiceDiscovery extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testCrashedServer() throws Exception
     {
         CuratorFramework client = null;
@@ -120,7 +123,7 @@ public class TestServiceDiscovery extends BaseClassForTests
             discovery.start();
 
             timing.acquireSemaphore(semaphore);
-            Assert.assertEquals(discovery.queryForInstances("test").size(), 1);
+            assertEquals(discovery.queryForInstances("test").size(), 1);
 
             client.getZookeeperClient().getZooKeeper().getTestable().injectSessionExpiration();
             server.stop();
@@ -128,7 +131,7 @@ public class TestServiceDiscovery extends BaseClassForTests
             server.restart();
 
             timing.acquireSemaphore(semaphore);
-            Assert.assertEquals(discovery.queryForInstances("test").size(), 1);
+            assertEquals(discovery.queryForInstances("test").size(), 1);
         }
         finally
         {
@@ -137,7 +140,7 @@ public class TestServiceDiscovery extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testCrashedInstance() throws Exception
     {
         CuratorFramework client = null;
@@ -153,12 +156,12 @@ public class TestServiceDiscovery extends BaseClassForTests
             discovery = new ServiceDiscoveryImpl<String>(client, "/test", new JsonInstanceSerializer<String>(String.class), instance, false);
             discovery.start();
 
-            Assert.assertEquals(discovery.queryForInstances("test").size(), 1);
+            assertEquals(discovery.queryForInstances("test").size(), 1);
 
             client.getZookeeperClient().getZooKeeper().getTestable().injectSessionExpiration();
             Thread.sleep(timing.multiple(1.5).session());
 
-            Assert.assertEquals(discovery.queryForInstances("test").size(), 1);
+            assertEquals(discovery.queryForInstances("test").size(), 1);
         }
         finally
         {
@@ -167,7 +170,7 @@ public class TestServiceDiscovery extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testMultipleInstances() throws Exception
     {
         final String SERVICE_ONE = "one";
@@ -193,7 +196,7 @@ public class TestServiceDiscovery extends BaseClassForTests
             discovery.registerService(s2_i1);
             discovery.registerService(s2_i2);
 
-            Assert.assertEquals(Sets.newHashSet(discovery.queryForNames()), Sets.newHashSet(SERVICE_ONE, SERVICE_TWO));
+            assertEquals(Sets.newHashSet(discovery.queryForNames()), Sets.newHashSet(SERVICE_ONE, SERVICE_TWO));
 
             List<ServiceInstance<Void>> list = Lists.newArrayList();
             list.add(s1_i1);
@@ -201,7 +204,7 @@ public class TestServiceDiscovery extends BaseClassForTests
             Collections.sort(list, comparator);
             List<ServiceInstance<Void>> queriedInstances = Lists.newArrayList(discovery.queryForInstances(SERVICE_ONE));
             Collections.sort(queriedInstances, comparator);
-            Assert.assertEquals(queriedInstances, list, String.format("Not equal l: %s - d: %s", list, queriedInstances));
+            assertEquals(queriedInstances, list, String.format("Not equal l: %s - d: %s", list, queriedInstances));
 
             list.clear();
 
@@ -210,7 +213,7 @@ public class TestServiceDiscovery extends BaseClassForTests
             Collections.sort(list, comparator);
             queriedInstances = Lists.newArrayList(discovery.queryForInstances(SERVICE_TWO));
             Collections.sort(queriedInstances, comparator);
-            Assert.assertEquals(queriedInstances, list, String.format("Not equal 2: %s - d: %s", list, queriedInstances));
+            assertEquals(queriedInstances, list, String.format("Not equal 2: %s - d: %s", list, queriedInstances));
         }
         finally
         {
@@ -219,7 +222,7 @@ public class TestServiceDiscovery extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testBasic() throws Exception
     {
         CuratorFramework client = null;
@@ -233,11 +236,11 @@ public class TestServiceDiscovery extends BaseClassForTests
             discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/test").client(client).thisInstance(instance).build();
             discovery.start();
 
-            Assert.assertEquals(discovery.queryForNames(), Collections.singletonList("test"));
+            assertEquals(discovery.queryForNames(), Collections.singletonList("test"));
 
             List<ServiceInstance<String>> list = Lists.newArrayList();
             list.add(instance);
-            Assert.assertEquals(discovery.queryForInstances("test"), list);
+            assertEquals(discovery.queryForInstances("test"), list);
         }
         finally
         {
@@ -246,7 +249,7 @@ public class TestServiceDiscovery extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testNoServerOnStart() throws Exception
     {
         Timing timing = new Timing();
@@ -265,11 +268,11 @@ public class TestServiceDiscovery extends BaseClassForTests
 
             server.restart();
             timing.sleepABit();
-            Assert.assertEquals(discovery.queryForNames(), Collections.singletonList("test"));
+            assertEquals(discovery.queryForNames(), Collections.singletonList("test"));
 
             List<ServiceInstance<String>> list = Lists.newArrayList();
             list.add(instance);
-            Assert.assertEquals(discovery.queryForInstances("test"), list);
+            assertEquals(discovery.queryForInstances("test"), list);
         }
         finally
         {
@@ -279,7 +282,7 @@ public class TestServiceDiscovery extends BaseClassForTests
     }
 
     // CURATOR-164
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testUnregisterService() throws Exception
     {
         final String name = "name";
@@ -320,7 +323,7 @@ public class TestServiceDiscovery extends BaseClassForTests
             discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/test").client(client).thisInstance(instance).serializer(slowSerializer).watchInstances(true).build();
             discovery.start();
 
-            Assert.assertFalse(discovery.queryForInstances(name).isEmpty(), "Service should start registered.");
+            assertFalse(discovery.queryForInstances(name).isEmpty(), "Service should start registered.");
 
             server.stop();
             server.restart();
@@ -330,7 +333,7 @@ public class TestServiceDiscovery extends BaseClassForTests
 
             new Timing().sleepABit(); // Wait for the rest of registration to finish.
 
-            Assert.assertTrue(discovery.queryForInstances(name).isEmpty(), "Service should have unregistered.");
+            assertTrue(discovery.queryForInstances(name).isEmpty(), "Service should have unregistered.");
         }
         finally
         {
@@ -339,7 +342,7 @@ public class TestServiceDiscovery extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testCleaning() throws Exception
     {
         CuratorFramework client = null;
@@ -354,7 +357,7 @@ public class TestServiceDiscovery extends BaseClassForTests
             discovery.start();
             discovery.unregisterService(instance);
 
-            Assert.assertEquals(((ServiceDiscoveryImpl)discovery).debugServicesQty(), 0);
+            assertEquals(((ServiceDiscoveryImpl)discovery).debugServicesQty(), 0);
         }
         finally
         {

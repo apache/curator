@@ -19,6 +19,11 @@
 
 package org.apache.curator.framework.imps;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
@@ -28,8 +33,6 @@ import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
-import org.testng.Assert;
-import org.testng.annotations.Test;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CountDownLatch;
@@ -40,7 +43,7 @@ public class TestBlockUntilConnected extends BaseClassForTests
     /**
      * Test the case where we're already connected
      */
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testBlockUntilConnectedCurrentlyConnected() throws Exception
     {
         Timing timing = new Timing();
@@ -66,12 +69,12 @@ public class TestBlockUntilConnected extends BaseClassForTests
 
             client.start();
 
-            Assert.assertTrue(timing.awaitLatch(connectedLatch), "Timed out awaiting latch");
-            Assert.assertTrue(client.blockUntilConnected(1, TimeUnit.SECONDS), "Not connected");
+            assertTrue(timing.awaitLatch(connectedLatch), "Timed out awaiting latch");
+            assertTrue(client.blockUntilConnected(1, TimeUnit.SECONDS), "Not connected");
         }
         catch ( InterruptedException e )
         {
-            Assert.fail("Unexpected interruption");
+            fail("Unexpected interruption");
         }
         finally
         {
@@ -82,7 +85,7 @@ public class TestBlockUntilConnected extends BaseClassForTests
     /**
      * Test the case where we are not currently connected and never have been
      */
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testBlockUntilConnectedCurrentlyNeverConnected()
     {
         CuratorFramework client = CuratorFrameworkFactory.builder().
@@ -93,11 +96,11 @@ public class TestBlockUntilConnected extends BaseClassForTests
         try
         {
             client.start();
-            Assert.assertTrue(client.blockUntilConnected(5, TimeUnit.SECONDS), "Not connected");
+            assertTrue(client.blockUntilConnected(5, TimeUnit.SECONDS), "Not connected");
         }
         catch ( InterruptedException e )
         {
-            Assert.fail("Unexpected interruption");
+            fail("Unexpected interruption");
         }
         finally
         {
@@ -108,7 +111,7 @@ public class TestBlockUntilConnected extends BaseClassForTests
     /**
      * Test the case where we are not currently connected, but have been previously
      */
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testBlockUntilConnectedCurrentlyAwaitingReconnect()
     {
         Timing timing = new Timing();
@@ -137,21 +140,21 @@ public class TestBlockUntilConnected extends BaseClassForTests
             client.start();
 
             //Block until we're connected
-            Assert.assertTrue(client.blockUntilConnected(5, TimeUnit.SECONDS), "Failed to connect");
+            assertTrue(client.blockUntilConnected(5, TimeUnit.SECONDS), "Failed to connect");
 
             //Kill the server
             CloseableUtils.closeQuietly(server);
 
             //Wait until we hit the lost state
-            Assert.assertTrue(timing.awaitLatch(lostLatch), "Failed to reach LOST state");
+            assertTrue(timing.awaitLatch(lostLatch), "Failed to reach LOST state");
 
             server = new TestingServer(server.getPort(), server.getTempDirectory());
 
-            Assert.assertTrue(client.blockUntilConnected(5, TimeUnit.SECONDS), "Not connected");
+            assertTrue(client.blockUntilConnected(5, TimeUnit.SECONDS), "Not connected");
         }
         catch ( Exception e )
         {
-            Assert.fail("Unexpected exception " + e);
+            fail("Unexpected exception " + e);
         }
         finally
         {
@@ -163,7 +166,7 @@ public class TestBlockUntilConnected extends BaseClassForTests
      * Test the case where we are not currently connected and time out before a
      * connection becomes available.
      */
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testBlockUntilConnectedConnectTimeout()
     {
         //Kill the server
@@ -177,11 +180,11 @@ public class TestBlockUntilConnected extends BaseClassForTests
         try
         {
             client.start();
-            Assert.assertFalse(client.blockUntilConnected(5, TimeUnit.SECONDS), "Connected");
+            assertFalse(client.blockUntilConnected(5, TimeUnit.SECONDS), "Connected");
         }
         catch ( InterruptedException e )
         {
-            Assert.fail("Unexpected interruption");
+            fail("Unexpected interruption");
         }
         finally
         {
@@ -193,7 +196,7 @@ public class TestBlockUntilConnected extends BaseClassForTests
      * Test the case where we are not currently connected and the thread gets interrupted
      * prior to a connection becoming available
      */
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testBlockUntilConnectedInterrupt()
     {
         //Kill the server
@@ -222,7 +225,7 @@ public class TestBlockUntilConnected extends BaseClassForTests
             }, 3000);
 
             client.blockUntilConnected(5, TimeUnit.SECONDS);
-            Assert.fail("Expected interruption did not occur");
+            fail("Expected interruption did not occur");
         }
         catch ( InterruptedException e )
         {
@@ -237,7 +240,7 @@ public class TestBlockUntilConnected extends BaseClassForTests
     /**
      * Test that we are actually connected every time that we block until connection is established in a tight loop.
      */
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testBlockUntilConnectedTightLoop() throws InterruptedException
     {
         CuratorFramework client;
@@ -249,7 +252,7 @@ public class TestBlockUntilConnected extends BaseClassForTests
                 client.start();
                 client.blockUntilConnected();
 
-                Assert.assertTrue(client.getZookeeperClient().isConnected(), "Not connected after blocking for connection #" + i);
+                assertTrue(client.getZookeeperClient().isConnected(), "Not connected after blocking for connection #" + i);
             }
             finally
             {

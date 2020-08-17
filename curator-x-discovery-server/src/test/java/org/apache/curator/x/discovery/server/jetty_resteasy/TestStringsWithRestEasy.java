@@ -18,6 +18,7 @@
  */
 package org.apache.curator.x.discovery.server.jetty_resteasy;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.google.common.collect.Lists;
 import com.google.common.io.ByteSource;
 import com.google.common.io.CharStreams;
@@ -29,13 +30,12 @@ import org.apache.curator.x.discovery.server.entity.ServiceNames;
 import org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyBootstrap;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
-import org.testng.Assert;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
 import javax.ws.rs.core.MediaType;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -53,7 +53,7 @@ public class TestStringsWithRestEasy
     private Server server;
     private int port;
 
-    @BeforeMethod
+    @BeforeEach
     public void         setup() throws Exception
     {
         RestEasyApplication.singletonsRef.set(new RestEasySingletons());
@@ -71,7 +71,7 @@ public class TestStringsWithRestEasy
         server.start();
     }
 
-    @AfterMethod
+    @AfterEach
     public void         teardown() throws Exception
     {
         server.stop();
@@ -96,17 +96,17 @@ public class TestStringsWithRestEasy
 
         String json = getJson("http://localhost:" + port + "/v1/service", null);
         ServiceNames names = restEasySingletons.serviceNamesMarshallerSingleton.readFrom(ServiceNames.class, null, null, MediaType.APPLICATION_JSON_TYPE, null, new ByteArrayInputStream(json.getBytes()));
-        Assert.assertEquals(names.getNames(), Lists.newArrayList("test"));
+        assertEquals(names.getNames(), Lists.newArrayList("test"));
 
         json = getJson("http://localhost:" + port + "/v1/service/test", null);
         ServiceInstances<String> instances = restEasySingletons.serviceInstancesMarshallerSingleton.readFrom(null, null, null, null, null, new ByteArrayInputStream(json.getBytes()));
-        Assert.assertEquals(instances.getServices().size(), 1);
-        Assert.assertEquals(instances.getServices().get(0), service);
+        assertEquals(instances.getServices().size(), 1);
+        assertEquals(instances.getServices().get(0), service);
 
         // Retrieve single instance
         json = getJson("http://localhost:" + port + "/v1/service/test/" + service.getId(), null);
         ServiceInstance<String> instance = restEasySingletons.serviceInstanceMarshallerSingleton.readFrom(null, null, null, null, null, new ByteArrayInputStream(json.getBytes()));
-        Assert.assertEquals(instance, service);
+        assertEquals(instance, service);
 
     }
 
@@ -116,7 +116,7 @@ public class TestStringsWithRestEasy
         String          json = getJson("http://localhost:" + port + "/v1/service", null);
         ServiceNames    names = RestEasyApplication.singletonsRef.get().serviceNamesMarshallerSingleton.readFrom(ServiceNames.class, null, null, MediaType.APPLICATION_JSON_TYPE, null, new ByteArrayInputStream(json.getBytes()));
 
-        Assert.assertEquals(names.getNames(), Lists.<String>newArrayList());
+        assertEquals(names.getNames(), Lists.<String>newArrayList());
     }
 
     private String getJson(String urlStr, String body) throws IOException

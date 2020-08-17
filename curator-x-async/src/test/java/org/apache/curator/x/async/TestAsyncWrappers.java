@@ -18,18 +18,21 @@
  */
 package org.apache.curator.x.async;
 
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.curator.retry.RetryOneTime;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.apache.curator.test.BaseClassForTests;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 public class TestAsyncWrappers extends CompletableBaseClassForTests
 {
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testBasic()
     {
         try ( CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)) )
@@ -38,13 +41,13 @@ public class TestAsyncWrappers extends CompletableBaseClassForTests
 
             InterProcessMutex lock = new InterProcessMutex(client, "/one/two");
             complete(AsyncWrappers.lockAsync(lock), (__, e) -> {
-                Assert.assertNull(e);
+                assertNull(e);
                 AsyncWrappers.release(lock);
             });
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testContention() throws Exception
     {
         try ( CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)) )
@@ -57,7 +60,7 @@ public class TestAsyncWrappers extends CompletableBaseClassForTests
             AsyncWrappers.lockAsync(lock1).thenAccept(__ -> {
                 latch.countDown();  // don't release the lock
             });
-            Assert.assertTrue(timing.awaitLatch(latch));
+            assertTrue(timing.awaitLatch(latch));
 
             CountDownLatch latch2 = new CountDownLatch(1);
             AsyncWrappers.lockAsync(lock2, timing.forSleepingABit().milliseconds(), TimeUnit.MILLISECONDS).exceptionally(e -> {
@@ -67,7 +70,7 @@ public class TestAsyncWrappers extends CompletableBaseClassForTests
                 }
                 return null;
             });
-            Assert.assertTrue(timing.awaitLatch(latch2));
+            assertTrue(timing.awaitLatch(latch2));
         }
     }
 }

@@ -20,10 +20,10 @@ package org.apache.curator.framework.recipes.cache;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.test.compatibility.CuratorTestBase;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Tag;
 import java.util.concurrent.BlockingQueue;
 
-@Test(groups = CuratorTestBase.zk36Group)
+@Tag(CuratorTestBase.zk36Group)
 public class TestCuratorCacheEventOrdering extends TestEventOrdering<CuratorCache>
 {
     @Override

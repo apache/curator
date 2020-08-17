@@ -19,17 +19,20 @@
 
 package org.apache.curator.framework.recipes.cache;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
+import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.Compatibility;
-import org.testng.Assert;
-import org.testng.annotations.Test;
 
 public class TestCuratorCacheBridge extends CuratorTestBase
 {
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testImplementationSelection()
     {
         try (CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)))
@@ -37,26 +40,26 @@ public class TestCuratorCacheBridge extends CuratorTestBase
             CuratorCacheBridge cache = CuratorCache.bridgeBuilder(client, "/foo").build();
             if ( Compatibility.hasPersistentWatchers() )
             {
-                Assert.assertTrue(cache instanceof CuratorCacheImpl);
-                Assert.assertTrue(cache.isCuratorCache());
+                assertTrue(cache instanceof CuratorCacheImpl);
+                assertTrue(cache.isCuratorCache());
             }
             else
             {
-                Assert.assertTrue(cache instanceof CompatibleCuratorCacheBridge);
-                Assert.assertFalse(cache.isCuratorCache());
+                assertTrue(cache instanceof CompatibleCuratorCacheBridge);
+                assertFalse(cache.isCuratorCache());
             }
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testForceTreeCache()
     {
         System.setProperty("curator-cache-bridge-force-tree-cache", "true");
         try (CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)))
         {
             CuratorCacheBridge cache = CuratorCache.bridgeBuilder(client, "/foo").build();
-            Assert.assertTrue(cache instanceof CompatibleCuratorCacheBridge);
-            Assert.assertFalse(cache.isCuratorCache());
+            assertTrue(cache instanceof CompatibleCuratorCacheBridge);
+            assertFalse(cache.isCuratorCache());
         }
         finally
         {

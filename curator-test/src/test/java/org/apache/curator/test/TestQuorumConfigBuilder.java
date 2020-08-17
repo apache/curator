@@ -20,10 +20,10 @@
 
 package org.apache.curator.test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.HashMap;
 import java.util.Map;
-import static org.testng.AssertJUnit.assertEquals;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test QuorumConfigBuilder

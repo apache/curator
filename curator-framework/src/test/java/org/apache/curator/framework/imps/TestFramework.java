@@ -18,7 +18,15 @@
  */
 package org.apache.curator.framework.imps;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import com.google.common.collect.Lists;
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -45,10 +53,9 @@ import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
-import org.testng.Assert;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -59,10 +66,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings("deprecation")
-@Test(groups = CuratorTestBase.zk35TestCompatibilityGroup)
+@Tag(CuratorTestBase.zk35TestCompatibilityGroup)
 public class TestFramework extends BaseClassForTests
 {
-    @BeforeMethod(alwaysRun = true)
+    @BeforeEach
     @Override
     public void setup() throws Exception
     {
@@ -70,7 +77,7 @@ public class TestFramework extends BaseClassForTests
         super.setup();
     }
 
-    @AfterMethod(alwaysRun = true)
+    @AfterEach
     @Override
     public void teardown() throws Exception
     {
@@ -115,11 +122,11 @@ public class TestFramework extends BaseClassForTests
         }
 
         Integer polledValue = timeoutQueue.poll(new Timing().milliseconds(), TimeUnit.MILLISECONDS);
-        Assert.assertNotNull(polledValue);
-        Assert.assertEquals(10064, polledValue.intValue());
+        assertNotNull(polledValue);
+        assertEquals(10064, polledValue.intValue());
     }
-    
-    @Test
+
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testSessionLossWithLongTimeout() throws Exception
     {
         final Timing timing = new Timing();
@@ -152,19 +159,19 @@ public class TestFramework extends BaseClassForTests
             
             client.start();
             
-            Assert.assertTrue(timing.awaitLatch(connectedLatch));
+            assertTrue(timing.awaitLatch(connectedLatch));
             
             server.stop();
 
             timing.sleepABit();
-            Assert.assertTrue(timing.awaitLatch(lostLatch));
+            assertTrue(timing.awaitLatch(lostLatch));
             
             server.restart();
-            Assert.assertTrue(timing.awaitLatch(restartedLatch));
+            assertTrue(timing.awaitLatch(restartedLatch));
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testConnectionState() throws Exception
     {
         Timing timing = new Timing();
@@ -183,10 +190,10 @@ public class TestFramework extends BaseClassForTests
             client.getConnectionStateListenable().addListener(listener);
 
             client.start();
-            Assert.assertEquals(queue.poll(timing.multiple(4).seconds(), TimeUnit.SECONDS), ConnectionState.CONNECTED);
+            assertEquals(queue.poll(timing.multiple(4).seconds(), TimeUnit.SECONDS), ConnectionState.CONNECTED);
             server.stop();
-            Assert.assertEquals(queue.poll(timing.multiple(4).seconds(), TimeUnit.SECONDS), ConnectionState.SUSPENDED);
-            Assert.assertEquals(queue.poll(timing.multiple(4).seconds(), TimeUnit.SECONDS), ConnectionState.LOST);
+            assertEquals(queue.poll(timing.multiple(4).seconds(), TimeUnit.SECONDS), ConnectionState.SUSPENDED);
+            assertEquals(queue.poll(timing.multiple(4).seconds(), TimeUnit.SECONDS), ConnectionState.LOST);
         }
         finally
         {
@@ -194,7 +201,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testCreateOrSetData() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -203,16 +210,16 @@ public class TestFramework extends BaseClassForTests
             client.start();
 
             String name = client.create().forPath("/hey", "there".getBytes());
-            Assert.assertEquals(name, "/hey");
+            assertEquals(name, "/hey");
             name = client.create().orSetData().forPath("/hey", "other".getBytes());
-            Assert.assertEquals(name, "/hey");
-            Assert.assertEquals(client.getData().forPath("/hey"), "other".getBytes());
+            assertEquals(name, "/hey");
+            assertArrayEquals(client.getData().forPath("/hey"), "other".getBytes());
 
             name = client.create().orSetData().creatingParentsIfNeeded().forPath("/a/b/c", "there".getBytes());
-            Assert.assertEquals(name, "/a/b/c");
+            assertEquals(name, "/a/b/c");
             name = client.create().orSetData().creatingParentsIfNeeded().forPath("/a/b/c", "what".getBytes());
-            Assert.assertEquals(name, "/a/b/c");
-            Assert.assertEquals(client.getData().forPath("/a/b/c"), "what".getBytes());
+            assertEquals(name, "/a/b/c");
+            assertArrayEquals(client.getData().forPath("/a/b/c"), "what".getBytes());
 
             final BlockingQueue<CuratorEvent> queue = new LinkedBlockingQueue<>();
             BackgroundCallback backgroundCallback = new BackgroundCallback()
@@ -226,15 +233,15 @@ public class TestFramework extends BaseClassForTests
             client.create().orSetData().inBackground(backgroundCallback).forPath("/a/b/c", "another".getBytes());
 
             CuratorEvent event = queue.poll(new Timing().milliseconds(), TimeUnit.MILLISECONDS);
-            Assert.assertNotNull(event);
-            Assert.assertEquals(event.getResultCode(), KeeperException.Code.OK.intValue());
-            Assert.assertEquals(event.getType(), CuratorEventType.CREATE);
-            Assert.assertEquals(event.getPath(), "/a/b/c");
-            Assert.assertEquals(event.getName(), "/a/b/c");
+            assertNotNull(event);
+            assertEquals(event.getResultCode(), KeeperException.Code.OK.intValue());
+            assertEquals(event.getType(), CuratorEventType.CREATE);
+            assertEquals(event.getPath(), "/a/b/c");
+            assertEquals(event.getName(), "/a/b/c");
 
             // callback should only be called once
             CuratorEvent unexpectedEvent = queue.poll(new Timing().milliseconds(), TimeUnit.MILLISECONDS);
-            Assert.assertNull(unexpectedEvent);
+            assertNull(unexpectedEvent);
         }
         finally
         {
@@ -242,7 +249,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testQuietDelete() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -264,8 +271,8 @@ public class TestFramework extends BaseClassForTests
             client.delete().quietly().inBackground(backgroundCallback).forPath("/foo/bar/hey");
 
             Integer code = rc.poll(new Timing().milliseconds(), TimeUnit.MILLISECONDS);
-            Assert.assertNotNull(code);
-            Assert.assertEquals(code.intValue(), KeeperException.Code.OK.intValue());
+            assertNotNull(code);
+            assertEquals(code.intValue(), KeeperException.Code.OK.intValue());
         }
         finally
         {
@@ -273,7 +280,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testNamespaceWithWatcher() throws Exception
     {
         CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
@@ -302,7 +309,7 @@ public class TestFramework extends BaseClassForTests
             client.create().forPath("/base/child");
 
             String path = new Timing2().takeFromQueue(queue);
-            Assert.assertEquals(path, "/base");
+            assertEquals(path, "/base");
         }
         finally
         {
@@ -310,7 +317,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testNamespaceInBackground() throws Exception
     {
         CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
@@ -336,7 +343,7 @@ public class TestFramework extends BaseClassForTests
             client.checkExists().inBackground().forPath("/base");
 
             String path = queue.poll(10, TimeUnit.SECONDS);
-            Assert.assertEquals(path, "/base");
+            assertEquals(path, "/base");
 
             client.getCuratorListenable().removeListener(listener);
 
@@ -350,7 +357,7 @@ public class TestFramework extends BaseClassForTests
             };
             client.getChildren().inBackground(callback).forPath("/base");
             path = queue.poll(10, TimeUnit.SECONDS);
-            Assert.assertEquals(path, "/base");
+            assertEquals(path, "/base");
         }
         finally
         {
@@ -358,7 +365,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testCreateACLSingleAuth() throws Exception
     {
         CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
@@ -388,7 +395,7 @@ public class TestFramework extends BaseClassForTests
             }
             catch ( KeeperException.NoAuthException e )
             {
-                Assert.fail("Auth failed");
+                fail("Auth failed");
             }
             client.close();
 
@@ -402,7 +409,7 @@ public class TestFramework extends BaseClassForTests
             try
             {
                 client.setData().forPath("/test", "test".getBytes());
-                Assert.fail("Should have failed with auth exception");
+                fail("Should have failed with auth exception");
             }
             catch ( KeeperException.NoAuthException e )
             {
@@ -415,21 +422,21 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testACLDeprecatedApis() throws Exception
     {
         CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder()
             .connectString(server.getConnectString())
             .retryPolicy(new RetryOneTime(1));
-        Assert.assertNull(builder.getAuthScheme());
-        Assert.assertNull(builder.getAuthValue());
+        assertNull(builder.getAuthScheme());
+        assertNull(builder.getAuthValue());
 
         builder = builder.authorization("digest", "me1:pass1".getBytes());
-        Assert.assertEquals(builder.getAuthScheme(), "digest");
-        Assert.assertEquals(builder.getAuthValue(), "me1:pass1".getBytes());
+        assertEquals(builder.getAuthScheme(), "digest");
+        assertArrayEquals(builder.getAuthValue(), "me1:pass1".getBytes());
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testCreateACLMultipleAuths() throws Exception
     {
         // Add a few authInfos
@@ -464,7 +471,7 @@ public class TestFramework extends BaseClassForTests
             }
             catch ( KeeperException.NoAuthException e )
             {
-                Assert.fail("Auth failed");
+                fail("Auth failed");
             }
             client.close();
 
@@ -481,7 +488,7 @@ public class TestFramework extends BaseClassForTests
             }
             catch ( KeeperException.NoAuthException e )
             {
-                Assert.fail("Auth failed");
+                fail("Auth failed");
             }
             client.close();
 
@@ -495,7 +502,7 @@ public class TestFramework extends BaseClassForTests
             try
             {
                 client.setData().forPath("/test", "test".getBytes());
-                Assert.fail("Should have failed with auth exception");
+                fail("Should have failed with auth exception");
             }
             catch ( KeeperException.NoAuthException e )
             {
@@ -508,7 +515,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testCreateACLWithReset() throws Exception
     {
         Timing timing = new Timing();
@@ -542,11 +549,11 @@ public class TestFramework extends BaseClassForTests
             client.create().withACL(aclList).forPath("/test", "test".getBytes());
 
             server.stop();
-            Assert.assertTrue(timing.awaitLatch(lostLatch));
+            assertTrue(timing.awaitLatch(lostLatch));
             try
             {
                 client.checkExists().forPath("/");
-                Assert.fail("Connection should be down");
+                fail("Connection should be down");
             }
             catch ( KeeperException.ConnectionLossException e )
             {
@@ -560,7 +567,7 @@ public class TestFramework extends BaseClassForTests
             }
             catch ( KeeperException.NoAuthException e )
             {
-                Assert.fail("Auth failed");
+                fail("Auth failed");
             }
         }
         finally
@@ -569,7 +576,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testCreateParents() throws Exception
     {
         CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
@@ -579,11 +586,11 @@ public class TestFramework extends BaseClassForTests
         {
             client.create().creatingParentsIfNeeded().forPath("/one/two/three", "foo".getBytes());
             byte[] data = client.getData().forPath("/one/two/three");
-            Assert.assertEquals(data, "foo".getBytes());
+            assertArrayEquals(data, "foo".getBytes());
 
             client.create().creatingParentsIfNeeded().forPath("/one/two/another", "bar".getBytes());
             data = client.getData().forPath("/one/two/another");
-            Assert.assertEquals(data, "bar".getBytes());
+            assertArrayEquals(data, "bar".getBytes());
         }
         finally
         {
@@ -591,7 +598,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testOverrideCreateParentContainers() throws Exception
     {
         if ( !checkForContainers() )
@@ -609,14 +616,14 @@ public class TestFramework extends BaseClassForTests
             client.start();
             client.create().creatingParentContainersIfNeeded().forPath("/one/two/three", "foo".getBytes());
             byte[] data = client.getData().forPath("/one/two/three");
-            Assert.assertEquals(data, "foo".getBytes());
+            assertArrayEquals(data, "foo".getBytes());
 
             client.delete().forPath("/one/two/three");
             new Timing().sleepABit();
 
-            Assert.assertNotNull(client.checkExists().forPath("/one/two"));
+            assertNotNull(client.checkExists().forPath("/one/two"));
             new Timing().sleepABit();
-            Assert.assertNotNull(client.checkExists().forPath("/one"));
+            assertNotNull(client.checkExists().forPath("/one"));
         }
         finally
         {
@@ -624,7 +631,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testCreateParentContainers() throws Exception
     {
         if ( !checkForContainers() )
@@ -639,14 +646,14 @@ public class TestFramework extends BaseClassForTests
             client.start();
             client.create().creatingParentContainersIfNeeded().forPath("/one/two/three", "foo".getBytes());
             byte[] data = client.getData().forPath("/one/two/three");
-            Assert.assertEquals(data, "foo".getBytes());
+            assertArrayEquals(data, "foo".getBytes());
 
             client.delete().forPath("/one/two/three");
             new Timing().sleepABit();
 
-            Assert.assertNull(client.checkExists().forPath("/one/two"));
+            assertNull(client.checkExists().forPath("/one/two"));
             new Timing().sleepABit();
-            Assert.assertNull(client.checkExists().forPath("/one"));
+            assertNull(client.checkExists().forPath("/one"));
         }
         finally
         {
@@ -664,7 +671,7 @@ public class TestFramework extends BaseClassForTests
         return true;
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testCreatingParentsTheSame() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -672,17 +679,17 @@ public class TestFramework extends BaseClassForTests
         {
             client.start();
 
-            Assert.assertNull(client.checkExists().forPath("/one/two"));
+            assertNull(client.checkExists().forPath("/one/two"));
             client.create().creatingParentContainersIfNeeded().forPath("/one/two/three");
-            Assert.assertNotNull(client.checkExists().forPath("/one/two"));
+            assertNotNull(client.checkExists().forPath("/one/two"));
 
             client.delete().deletingChildrenIfNeeded().forPath("/one");
-            Assert.assertNull(client.checkExists().forPath("/one"));
+            assertNull(client.checkExists().forPath("/one"));
 
-            Assert.assertNull(client.checkExists().forPath("/one/two"));
+            assertNull(client.checkExists().forPath("/one/two"));
             client.checkExists().creatingParentContainersIfNeeded().forPath("/one/two/three");
-            Assert.assertNotNull(client.checkExists().forPath("/one/two"));
-            Assert.assertNull(client.checkExists().forPath("/one/two/three"));
+            assertNotNull(client.checkExists().forPath("/one/two"));
+            assertNull(client.checkExists().forPath("/one/two/three"));
         }
         finally
         {
@@ -690,7 +697,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testExistsCreatingParents() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -698,11 +705,11 @@ public class TestFramework extends BaseClassForTests
         {
             client.start();
 
-            Assert.assertNull(client.checkExists().forPath("/one/two"));
+            assertNull(client.checkExists().forPath("/one/two"));
             client.checkExists().creatingParentContainersIfNeeded().forPath("/one/two/three");
-            Assert.assertNotNull(client.checkExists().forPath("/one/two"));
-            Assert.assertNull(client.checkExists().forPath("/one/two/three"));
-            Assert.assertNull(client.checkExists().creatingParentContainersIfNeeded().forPath("/one/two/three"));
+            assertNotNull(client.checkExists().forPath("/one/two"));
+            assertNull(client.checkExists().forPath("/one/two/three"));
+            assertNull(client.checkExists().creatingParentContainersIfNeeded().forPath("/one/two/three"));
         }
         finally
         {
@@ -710,7 +717,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testExistsCreatingParentsInBackground() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -718,7 +725,7 @@ public class TestFramework extends BaseClassForTests
         {
             client.start();
 
-            Assert.assertNull(client.checkExists().forPath("/one/two"));
+            assertNull(client.checkExists().forPath("/one/two"));
 
             final CountDownLatch latch = new CountDownLatch(1);
             BackgroundCallback callback = new BackgroundCallback()
@@ -730,10 +737,10 @@ public class TestFramework extends BaseClassForTests
                 }
             };
             client.checkExists().creatingParentContainersIfNeeded().inBackground(callback).forPath("/one/two/three");
-            Assert.assertTrue(new Timing().awaitLatch(latch));
-            Assert.assertNotNull(client.checkExists().forPath("/one/two"));
-            Assert.assertNull(client.checkExists().forPath("/one/two/three"));
-            Assert.assertNull(client.checkExists().creatingParentContainersIfNeeded().forPath("/one/two/three"));
+            assertTrue(new Timing().awaitLatch(latch));
+            assertNotNull(client.checkExists().forPath("/one/two"));
+            assertNull(client.checkExists().forPath("/one/two/three"));
+            assertNull(client.checkExists().creatingParentContainersIfNeeded().forPath("/one/two/three"));
         }
         finally
         {
@@ -741,7 +748,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testEnsurePathWithNamespace() throws Exception
     {
         final String namespace = "jz";
@@ -753,19 +760,19 @@ public class TestFramework extends BaseClassForTests
         {
             EnsurePath ensurePath = new EnsurePath("/pity/the/fool");
             ensurePath.ensure(client.getZookeeperClient());
-            Assert.assertNull(client.getZookeeperClient().getZooKeeper().exists("/jz/pity/the/fool", false));
+            assertNull(client.getZookeeperClient().getZooKeeper().exists("/jz/pity/the/fool", false));
 
             ensurePath = client.newNamespaceAwareEnsurePath("/pity/the/fool");
             ensurePath.ensure(client.getZookeeperClient());
-            Assert.assertNotNull(client.getZookeeperClient().getZooKeeper().exists("/jz/pity/the/fool", false));
+            assertNotNull(client.getZookeeperClient().getZooKeeper().exists("/jz/pity/the/fool", false));
         }
         finally
         {
             CloseableUtils.closeQuietly(client);
         }
     }
-    
-    @Test
+
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testCreateContainersWithNamespace() throws Exception
     {
         final String namespace = "container1";
@@ -776,17 +783,17 @@ public class TestFramework extends BaseClassForTests
             client.start();
             String path = "/path1/path2";
             client.createContainers(path);
-            Assert.assertNotNull(client.checkExists().forPath(path));
-            Assert.assertNotNull(client.getZookeeperClient().getZooKeeper().exists("/" + namespace + path, false));
+            assertNotNull(client.checkExists().forPath(path));
+            assertNotNull(client.getZookeeperClient().getZooKeeper().exists("/" + namespace + path, false));
         }
         finally
         {
             CloseableUtils.closeQuietly(client);
         }
     }
-    
-    
-    @Test
+
+
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testCreateContainersUsingNamespace() throws Exception
     {
         final String namespace = "container2";
@@ -798,8 +805,8 @@ public class TestFramework extends BaseClassForTests
             CuratorFramework nsClient = client.usingNamespace(namespace);
             String path = "/path1/path2";
             nsClient.createContainers(path);
-            Assert.assertNotNull(nsClient.checkExists().forPath(path));
-            Assert.assertNotNull(nsClient.getZookeeperClient().getZooKeeper().exists("/" + namespace + path, false));
+            assertNotNull(nsClient.checkExists().forPath(path));
+            assertNotNull(nsClient.getZookeeperClient().getZooKeeper().exists("/" + namespace + path, false));
         }
         finally
         {
@@ -807,7 +814,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testNamespace() throws Exception
     {
         final String namespace = "TestNamespace";
@@ -818,20 +825,20 @@ public class TestFramework extends BaseClassForTests
         try
         {
             String actualPath = client.create().forPath("/test");
-            Assert.assertEquals(actualPath, "/test");
-            Assert.assertNotNull(client.getZookeeperClient().getZooKeeper().exists("/" + namespace + "/test", false));
-            Assert.assertNull(client.getZookeeperClient().getZooKeeper().exists("/test", false));
+            assertEquals(actualPath, "/test");
+            assertNotNull(client.getZookeeperClient().getZooKeeper().exists("/" + namespace + "/test", false));
+            assertNull(client.getZookeeperClient().getZooKeeper().exists("/test", false));
 
             actualPath = client.usingNamespace(null).create().forPath("/non");
-            Assert.assertEquals(actualPath, "/non");
-            Assert.assertNotNull(client.getZookeeperClient().getZooKeeper().exists("/non", false));
+            assertEquals(actualPath, "/non");
+            assertNotNull(client.getZookeeperClient().getZooKeeper().exists("/non", false));
 
             client.create().forPath("/test/child", "hey".getBytes());
             byte[] bytes = client.getData().forPath("/test/child");
-            Assert.assertEquals(bytes, "hey".getBytes());
+            assertArrayEquals(bytes, "hey".getBytes());
 
             bytes = client.usingNamespace(null).getData().forPath("/" + namespace + "/test/child");
-            Assert.assertEquals(bytes, "hey".getBytes());
+            assertArrayEquals(bytes, "hey".getBytes());
         }
         finally
         {
@@ -839,7 +846,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testCustomCallback() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -862,7 +869,7 @@ public class TestFramework extends BaseClassForTests
                 }
             };
             client.create().inBackground(callback).forPath("/head");
-            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+            assertTrue(latch.await(10, TimeUnit.SECONDS));
         }
         finally
         {
@@ -870,7 +877,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testSync() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -886,7 +893,7 @@ public class TestFramework extends BaseClassForTests
                         {
                             if ( event.getType() == CuratorEventType.SYNC )
                             {
-                                Assert.assertEquals(event.getPath(), "/head");
+                                assertEquals(event.getPath(), "/head");
                                 ((CountDownLatch)event.getContext()).countDown();
                             }
                         }
@@ -894,11 +901,11 @@ public class TestFramework extends BaseClassForTests
                 );
 
             client.create().forPath("/head");
-            Assert.assertNotNull(client.checkExists().forPath("/head"));
+            assertNotNull(client.checkExists().forPath("/head"));
 
             CountDownLatch latch = new CountDownLatch(1);
             client.sync("/head", latch);
-            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+            assertTrue(latch.await(10, TimeUnit.SECONDS));
         }
         finally
         {
@@ -906,7 +913,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testSyncNew() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -914,7 +921,7 @@ public class TestFramework extends BaseClassForTests
         try
         {
             client.create().forPath("/head");
-            Assert.assertNotNull(client.checkExists().forPath("/head"));
+            assertNotNull(client.checkExists().forPath("/head"));
 
             final CountDownLatch latch = new CountDownLatch(1);
             BackgroundCallback callback = new BackgroundCallback()
@@ -929,7 +936,7 @@ public class TestFramework extends BaseClassForTests
                 }
             };
             client.sync().inBackground(callback).forPath("/head");
-            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+            assertTrue(latch.await(10, TimeUnit.SECONDS));
         }
         finally
         {
@@ -937,7 +944,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testBackgroundDelete() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -953,7 +960,7 @@ public class TestFramework extends BaseClassForTests
                         {
                             if ( event.getType() == CuratorEventType.DELETE )
                             {
-                                Assert.assertEquals(event.getPath(), "/head");
+                                assertEquals(event.getPath(), "/head");
                                 ((CountDownLatch)event.getContext()).countDown();
                             }
                         }
@@ -961,12 +968,12 @@ public class TestFramework extends BaseClassForTests
                 );
 
             client.create().forPath("/head");
-            Assert.assertNotNull(client.checkExists().forPath("/head"));
+            assertNotNull(client.checkExists().forPath("/head"));
 
             CountDownLatch latch = new CountDownLatch(1);
             client.delete().inBackground(latch).forPath("/head");
-            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
-            Assert.assertNull(client.checkExists().forPath("/head"));
+            assertTrue(latch.await(10, TimeUnit.SECONDS));
+            assertNull(client.checkExists().forPath("/head"));
         }
         finally
         {
@@ -974,7 +981,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testBackgroundDeleteWithChildren() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -990,7 +997,7 @@ public class TestFramework extends BaseClassForTests
                         {
                             if ( event.getType() == CuratorEventType.DELETE )
                             {
-                                Assert.assertEquals(event.getPath(), "/one/two");
+                                assertEquals(event.getPath(), "/one/two");
                                 ((CountDownLatch)event.getContext()).countDown();
                             }
                         }
@@ -998,12 +1005,12 @@ public class TestFramework extends BaseClassForTests
                 );
 
             client.create().creatingParentsIfNeeded().forPath("/one/two/three/four");
-            Assert.assertNotNull(client.checkExists().forPath("/one/two/three/four"));
+            assertNotNull(client.checkExists().forPath("/one/two/three/four"));
 
             CountDownLatch latch = new CountDownLatch(1);
             client.delete().deletingChildrenIfNeeded().inBackground(latch).forPath("/one/two");
-            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
-            Assert.assertNull(client.checkExists().forPath("/one/two"));
+            assertTrue(latch.await(10, TimeUnit.SECONDS));
+            assertNull(client.checkExists().forPath("/one/two"));
         }
         finally
         {
@@ -1011,7 +1018,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testDelete() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -1019,9 +1026,9 @@ public class TestFramework extends BaseClassForTests
         try
         {
             client.create().forPath("/head");
-            Assert.assertNotNull(client.checkExists().forPath("/head"));
+            assertNotNull(client.checkExists().forPath("/head"));
             client.delete().forPath("/head");
-            Assert.assertNull(client.checkExists().forPath("/head"));
+            assertNull(client.checkExists().forPath("/head"));
         }
         finally
         {
@@ -1029,7 +1036,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testDeleteWithChildren() throws Exception
     {
         CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
@@ -1039,9 +1046,9 @@ public class TestFramework extends BaseClassForTests
         {
             client.create().creatingParentsIfNeeded().forPath("/one/two/three/four/five/six", "foo".getBytes());
             client.delete().deletingChildrenIfNeeded().forPath("/one/two/three/four/five");
-            Assert.assertNull(client.checkExists().forPath("/one/two/three/four/five"));
+            assertNull(client.checkExists().forPath("/one/two/three/four/five"));
             client.delete().deletingChildrenIfNeeded().forPath("/one/two");
-            Assert.assertNull(client.checkExists().forPath("/one/two"));
+            assertNull(client.checkExists().forPath("/one/two"));
         }
         finally
         {
@@ -1049,7 +1056,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testDeleteGuaranteedWithChildren() throws Exception
     {
         CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
@@ -1059,9 +1066,9 @@ public class TestFramework extends BaseClassForTests
         {
             client.create().creatingParentsIfNeeded().forPath("/one/two/three/four/five/six", "foo".getBytes());
             client.delete().guaranteed().deletingChildrenIfNeeded().forPath("/one/two/three/four/five");
-            Assert.assertNull(client.checkExists().forPath("/one/two/three/four/five"));
+            assertNull(client.checkExists().forPath("/one/two/three/four/five"));
             client.delete().guaranteed().deletingChildrenIfNeeded().forPath("/one/two");
-            Assert.assertNull(client.checkExists().forPath("/one/two"));
+            assertNull(client.checkExists().forPath("/one/two"));
         }
         finally
         {
@@ -1069,7 +1076,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testGetSequentialChildren() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -1084,7 +1091,7 @@ public class TestFramework extends BaseClassForTests
             }
 
             List<String> children = client.getChildren().forPath("/head");
-            Assert.assertEquals(children.size(), 10);
+            assertEquals(children.size(), 10);
         }
         finally
         {
@@ -1092,7 +1099,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testBackgroundGetDataWithWatch() throws Exception
     {
         final byte[] data1 = {1, 2, 3};
@@ -1112,15 +1119,15 @@ public class TestFramework extends BaseClassForTests
                         {
                             if ( event.getType() == CuratorEventType.GET_DATA )
                             {
-                                Assert.assertEquals(event.getPath(), "/test");
-                                Assert.assertEquals(event.getData(), data1);
+                                assertEquals(event.getPath(), "/test");
+                                assertArrayEquals(event.getData(), data1);
                                 ((CountDownLatch)event.getContext()).countDown();
                             }
                             else if ( event.getType() == CuratorEventType.WATCHED )
                             {
                                 if ( event.getWatchedEvent().getType() == Watcher.Event.EventType.NodeDataChanged )
                                 {
-                                    Assert.assertEquals(event.getPath(), "/test");
+                                    assertEquals(event.getPath(), "/test");
                                     watchedLatch.countDown();
                                 }
                             }
@@ -1132,12 +1139,12 @@ public class TestFramework extends BaseClassForTests
 
             CountDownLatch backgroundLatch = new CountDownLatch(1);
             client.getData().watched().inBackground(backgroundLatch).forPath("/test");
-            Assert.assertTrue(backgroundLatch.await(10, TimeUnit.SECONDS));
+            assertTrue(backgroundLatch.await(10, TimeUnit.SECONDS));
 
             client.setData().forPath("/test", data2);
-            Assert.assertTrue(watchedLatch.await(10, TimeUnit.SECONDS));
+            assertTrue(watchedLatch.await(10, TimeUnit.SECONDS));
             byte[] checkData = client.getData().forPath("/test");
-            Assert.assertEquals(checkData, data2);
+            assertArrayEquals(checkData, data2);
         }
         finally
         {
@@ -1145,7 +1152,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testBackgroundCreate() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -1161,7 +1168,7 @@ public class TestFramework extends BaseClassForTests
                         {
                             if ( event.getType() == CuratorEventType.CREATE )
                             {
-                                Assert.assertEquals(event.getPath(), "/test");
+                                assertEquals(event.getPath(), "/test");
                                 ((CountDownLatch)event.getContext()).countDown();
                             }
                         }
@@ -1170,7 +1177,7 @@ public class TestFramework extends BaseClassForTests
 
             CountDownLatch latch = new CountDownLatch(1);
             client.create().inBackground(latch).forPath("/test", new byte[]{1, 2, 3});
-            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+            assertTrue(latch.await(10, TimeUnit.SECONDS));
         }
         finally
         {
@@ -1178,7 +1185,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testCreateModes() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -1193,7 +1200,7 @@ public class TestFramework extends BaseClassForTests
             client.start();
 
             byte[] readBytes = client.getData().forPath("/test");
-            Assert.assertEquals(writtenBytes, readBytes);
+            assertArrayEquals(writtenBytes, readBytes);
 
             client.create().withMode(CreateMode.EPHEMERAL).forPath("/ghost", writtenBytes);
 
@@ -1202,29 +1209,29 @@ public class TestFramework extends BaseClassForTests
             client.start();
 
             readBytes = client.getData().forPath("/test");
-            Assert.assertEquals(writtenBytes, readBytes);
+            assertArrayEquals(writtenBytes, readBytes);
             Stat stat = client.checkExists().forPath("/ghost");
-            Assert.assertNull(stat);
+            assertNull(stat);
 
             String realPath = client.create().withMode(CreateMode.PERSISTENT_SEQUENTIAL).forPath("/pseq", writtenBytes);
-            Assert.assertNotSame(realPath, "/pseq");
+            assertNotSame(realPath, "/pseq");
 
             client.close();
             client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
             client.start();
 
             readBytes = client.getData().forPath(realPath);
-            Assert.assertEquals(writtenBytes, readBytes);
+            assertArrayEquals(writtenBytes, readBytes);
 
             realPath = client.create().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath("/eseq", writtenBytes);
-            Assert.assertNotSame(realPath, "/eseq");
+            assertNotSame(realPath, "/eseq");
 
             client.close();
             client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
             client.start();
 
             stat = client.checkExists().forPath(realPath);
-            Assert.assertNull(stat);
+            assertNull(stat);
         }
         finally
         {
@@ -1232,7 +1239,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testSimple() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -1240,7 +1247,7 @@ public class TestFramework extends BaseClassForTests
         try
         {
             String path = client.create().withMode(CreateMode.PERSISTENT).forPath("/test", new byte[]{1, 2, 3});
-            Assert.assertEquals(path, "/test");
+            assertEquals(path, "/test");
         }
         finally
         {
@@ -1248,7 +1255,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testSequentialWithTrailingSeparator() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -1258,7 +1265,7 @@ public class TestFramework extends BaseClassForTests
             client.create().forPath("/test");
             //This should create a node in the form of "/test/00000001"
             String path = client.create().withMode(CreateMode.PERSISTENT_SEQUENTIAL).forPath("/test/");
-            Assert.assertTrue(path.startsWith("/test/"));
+            assertTrue(path.startsWith("/test/"));
         }
         finally
         {

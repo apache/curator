@@ -19,17 +19,19 @@
 
 package org.apache.curator.framework.recipes.cache;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import com.google.common.collect.Iterables;
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.ZKPaths;
-import org.testng.Assert;
-import org.testng.annotations.Test;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-
-import static org.testng.Assert.assertNotNull;
 
 public class TestTreeCacheRandomTree extends BaseTestTreeCache
 {
@@ -57,12 +59,12 @@ public class TestTreeCacheRandomTree extends BaseTestTreeCache
     private final Random random = new Random();
     private boolean withDepth = false;
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testGiantRandomDeepTree() throws Exception {
         doTestGiantRandomDeepTree();
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testGiantRandomDeepTreeWithDepth() throws Exception {
         withDepth = true;
         doTestGiantRandomDeepTree();
@@ -119,7 +121,7 @@ public class TestTreeCacheRandomTree extends BaseTestTreeCache
                 {
                     // Delete myself from parent.
                     TestNode removed = last.children.remove(ZKPaths.getNodeFromPath(node.fullPath));
-                    Assert.assertSame(node, removed);
+                    assertSame(node, removed);
 
                     // Delete from ZK
                     cl.delete().forPath(node.fullPath);
@@ -217,7 +219,7 @@ public class TestTreeCacheRandomTree extends BaseTestTreeCache
             return;
         }
 
-        Assert.assertEquals(cacheChildren.keySet(), expectedNode.children.keySet(), path);
+        assertEquals(cacheChildren.keySet(), expectedNode.children.keySet(), path);
 
         for ( Map.Entry<String, TestNode> entry : expectedNode.children.entrySet() )
         {
@@ -236,6 +238,6 @@ public class TestTreeCacheRandomTree extends BaseTestTreeCache
     {
         String path = expectedNode.fullPath;
         assertNotNull(actualChild, path);
-        Assert.assertEquals(actualChild.getData(), expectedNode.data, path);
+        assertArrayEquals(actualChild.getData(), expectedNode.data, path);
     }
 }

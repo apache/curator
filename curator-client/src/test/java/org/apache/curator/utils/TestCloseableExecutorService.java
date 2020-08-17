@@ -19,11 +19,13 @@
 
 package org.apache.curator.utils;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
-import org.testng.Assert;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -38,13 +40,13 @@ public class TestCloseableExecutorService
 
     private volatile ExecutorService executorService;
 
-    @BeforeMethod
+    @BeforeEach
     public void setup()
     {
         executorService = Executors.newFixedThreadPool(QTY * 2);
     }
 
-    @AfterMethod
+    @AfterEach
     public void tearDown()
     {
         executorService.shutdownNow();
@@ -63,9 +65,9 @@ public class TestCloseableExecutorService
                 submitRunnable(service, startLatch, latch);
             }
 
-            Assert.assertTrue(startLatch.await(3, TimeUnit.SECONDS));
+            assertTrue(startLatch.await(3, TimeUnit.SECONDS));
             service.close();
-            Assert.assertTrue(latch.await(3, TimeUnit.SECONDS));
+            assertTrue(latch.await(3, TimeUnit.SECONDS));
         }
         catch ( AssertionError e )
         {
@@ -111,9 +113,9 @@ public class TestCloseableExecutorService
             );
         }
 
-        Assert.assertTrue(startLatch.await(3, TimeUnit.SECONDS));
+        assertTrue(startLatch.await(3, TimeUnit.SECONDS));
         service.close();
-        Assert.assertTrue(latch.await(3, TimeUnit.SECONDS));
+        assertTrue(latch.await(3, TimeUnit.SECONDS));
     }
 
     @Test
@@ -146,14 +148,14 @@ public class TestCloseableExecutorService
             futures.add(future);
         }
 
-        Assert.assertTrue(startLatch.await(3, TimeUnit.SECONDS));
+        assertTrue(startLatch.await(3, TimeUnit.SECONDS));
 
         for ( Future<?> future : futures )
         {
             future.cancel(true);
         }
 
-        Assert.assertEquals(service.size(), 0);
+        assertEquals(service.size(), 0);
     }
 
     @Test
@@ -187,13 +189,13 @@ public class TestCloseableExecutorService
             futures.add(future);
         }
 
-        Assert.assertTrue(startLatch.await(3, TimeUnit.SECONDS));
+        assertTrue(startLatch.await(3, TimeUnit.SECONDS));
         for ( Future<?> future : futures )
         {
             future.cancel(true);
         }
 
-        Assert.assertEquals(service.size(), 0);
+        assertEquals(service.size(), 0);
     }
 
     @Test
@@ -236,10 +238,10 @@ public class TestCloseableExecutorService
             Thread.sleep(100);
         }
 
-        Assert.assertTrue(startLatch.await(3, TimeUnit.SECONDS));
+        assertTrue(startLatch.await(3, TimeUnit.SECONDS));
         service.close();
-        Assert.assertTrue(latch.await(3, TimeUnit.SECONDS));
-        Assert.assertEquals(outsideLatch.getCount(), 1);
+        assertTrue(latch.await(3, TimeUnit.SECONDS));
+        assertEquals(outsideLatch.getCount(), 1);
     }
 
     private void submitRunnable(CloseableExecutorService service, final CountDownLatch startLatch, final CountDownLatch latch)

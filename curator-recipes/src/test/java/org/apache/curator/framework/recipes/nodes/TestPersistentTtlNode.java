@@ -18,20 +18,26 @@
  */
 package org.apache.curator.framework.recipes.nodes;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
 import org.apache.curator.retry.RetryOneTime;
+import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.ZKPaths;
-import org.testng.Assert;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -42,12 +48,12 @@ public class TestPersistentTtlNode extends CuratorTestBase
     private final Timing timing = new Timing();
     private final long ttlMs = timing.multiple(.10).milliseconds(); // a small number
 
-    @BeforeClass
+    @BeforeAll
     public static void setUpClass() {
         System.setProperty("zookeeper.extendedTypesEnabled", "true");
     }
 
-    @BeforeMethod
+    @BeforeEach
     @Override
     public void setup() throws Exception
     {
@@ -55,7 +61,7 @@ public class TestPersistentTtlNode extends CuratorTestBase
         super.setup();
     }
 
-    @AfterMethod
+    @AfterEach
     @Override
     public void teardown() throws Exception
     {
@@ -63,7 +69,7 @@ public class TestPersistentTtlNode extends CuratorTestBase
         super.teardown();
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testBasic() throws Exception
     {
         try (CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)))
@@ -73,22 +79,22 @@ public class TestPersistentTtlNode extends CuratorTestBase
             try (PersistentTtlNode node = new PersistentTtlNode(client, "/test", ttlMs, new byte[0]))
             {
                 node.start();
-                Assert.assertTrue(node.waitForInitialCreate(timing.session(), TimeUnit.MILLISECONDS));
+                assertTrue(node.waitForInitialCreate(timing.session(), TimeUnit.MILLISECONDS));
 
                 for ( int i = 0; i < 5; ++i )
                 {
                     Thread.sleep(ttlMs + (ttlMs / 2));  // sleep a bit more than the TTL
-                    Assert.assertNotNull(client.checkExists().forPath("/test"));
+                    assertNotNull(client.checkExists().forPath("/test"));
                 }
             }
-            Assert.assertNotNull(client.checkExists().forPath("/test"));
+            assertNotNull(client.checkExists().forPath("/test"));
 
             timing.sleepABit();
-            Assert.assertNull(client.checkExists().forPath("/test"));
+            assertNull(client.checkExists().forPath("/test"));
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testForcedDeleteOfTouchNode() throws Exception
     {
         try (CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)))
@@ -98,7 +104,7 @@ public class TestPersistentTtlNode extends CuratorTestBase
             try (PersistentTtlNode node = new PersistentTtlNode(client, "/test", ttlMs, new byte[0]))
             {
                 node.start();
-                Assert.assertTrue(node.waitForInitialCreate(timing.session(), TimeUnit.MILLISECONDS));
+                assertTrue(node.waitForInitialCreate(timing.session(), TimeUnit.MILLISECONDS));
 
                 for ( int i = 0; i < 5; ++i )
                 {
@@ -107,12 +113,12 @@ public class TestPersistentTtlNode extends CuratorTestBase
                 }
 
                 timing.sleepABit();
-                Assert.assertNotNull(client.checkExists().forPath("/test"));
+                assertNotNull(client.checkExists().forPath("/test"));
             }
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testEventsOnParent() throws Exception
     {
         try (CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)))
@@ -138,23 +144,23 @@ public class TestPersistentTtlNode extends CuratorTestBase
                     cache.getListenable().addListener(listener);
 
                     node.start();
-                    Assert.assertTrue(node.waitForInitialCreate(timing.session(), TimeUnit.MILLISECONDS));
+                    assertTrue(node.waitForInitialCreate(timing.session(), TimeUnit.MILLISECONDS));
                     cache.start(BUILD_INITIAL_CACHE);
 
-                    Assert.assertEquals(changes.availablePermits(), 0);
+                    assertEquals(changes.availablePermits(), 0);
                     timing.sleepABit();
-                    Assert.assertEquals(changes.availablePermits(), 0);
+                    assertEquals(changes.availablePermits(), 0);
 
                     client.setData().forPath("/test", "changed".getBytes());
-                    Assert.assertTrue(timing.acquireSemaphore(changes));
+                    assertTrue(timing.acquireSemaphore(changes));
                     timing.sleepABit();
-                    Assert.assertEquals(changes.availablePermits(), 0);
+                    assertEquals(changes.availablePermits(), 0);
                 }
             }
 
             timing.sleepABit();
 
-            Assert.assertNull(client.checkExists().forPath("/test"));
+            assertNull(client.checkExists().forPath("/test"));
         }
     }
 }

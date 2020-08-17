@@ -19,9 +19,16 @@
 
 package org.apache.curator.framework.recipes.leader;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
@@ -34,8 +41,6 @@ import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
 import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
-import org.testng.Assert;
-import org.testng.annotations.Test;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -47,13 +52,11 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.testng.Assert.fail;
-
 public class TestLeaderSelector extends BaseClassForTests
 {
     private static final String PATH_NAME = "/one/two/me";
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testInterruption() throws Exception
     {
         Timing2 timing = new Timing2();
@@ -86,9 +89,9 @@ public class TestLeaderSelector extends BaseClassForTests
             selector.start();
             Thread leaderThread = timing.takeFromQueue(threadExchange);
             leaderThread.interrupt();
-            Assert.assertTrue(timing.awaitLatch(exitLatch));
+            assertTrue(timing.awaitLatch(exitLatch));
             timing.sleepABit(); // wait for leader selector to clear nodes
-            Assert.assertEquals(0, selector.failedMutexReleaseCount.get());
+            assertEquals(0, selector.failedMutexReleaseCount.get());
         }
         finally
         {
@@ -97,7 +100,7 @@ public class TestLeaderSelector extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testErrorPolicies() throws Exception
     {
         Timing2 timing = new Timing2();
@@ -144,14 +147,14 @@ public class TestLeaderSelector extends BaseClassForTests
             selector = new LeaderSelector(client, "/test", listener);
             selector.start();
 
-            Assert.assertEquals(changes.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.CONNECTED.name());
-            Assert.assertEquals(changes.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), "leader");
+            assertEquals(changes.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.CONNECTED.name());
+            assertEquals(changes.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), "leader");
             server.close();
             List<String> next = Lists.newArrayList();
             next.add(changes.poll(timing.forSessionSleep().milliseconds(), TimeUnit.MILLISECONDS));
             next.add(changes.poll(timing.forSessionSleep().milliseconds(), TimeUnit.MILLISECONDS));
-            Assert.assertTrue(next.equals(Arrays.asList(ConnectionState.SUSPENDED.name(), "release")) || next.equals(Arrays.asList("release", ConnectionState.SUSPENDED.name())), next.toString());
-            Assert.assertEquals(changes.poll(timing.forSessionSleep().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.LOST.name());
+            assertTrue(next.equals(Arrays.asList(ConnectionState.SUSPENDED.name(), "release")) || next.equals(Arrays.asList("release", ConnectionState.SUSPENDED.name())), next.toString());
+            assertEquals(changes.poll(timing.forSessionSleep().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.LOST.name());
 
             selector.close();
             client.close();
@@ -172,14 +175,14 @@ public class TestLeaderSelector extends BaseClassForTests
             selector = new LeaderSelector(client, "/test", listener);
             selector.start();
 
-            Assert.assertEquals(changes.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.CONNECTED.name());
-            Assert.assertEquals(changes.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), "leader");
+            assertEquals(changes.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.CONNECTED.name());
+            assertEquals(changes.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), "leader");
             server.stop();
-            Assert.assertEquals(changes.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.SUSPENDED.name());
+            assertEquals(changes.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.SUSPENDED.name());
             next = Lists.newArrayList();
             next.add(changes.poll(timing.forSessionSleep().milliseconds(), TimeUnit.MILLISECONDS));
             next.add(changes.poll(timing.forSessionSleep().milliseconds(), TimeUnit.MILLISECONDS));
-            Assert.assertTrue(next.equals(Arrays.asList(ConnectionState.LOST.name(), "release")) || next.equals(Arrays.asList("release", ConnectionState.LOST.name())), next.toString());
+            assertTrue(next.equals(Arrays.asList(ConnectionState.LOST.name(), "release")) || next.equals(Arrays.asList("release", ConnectionState.LOST.name())), next.toString());
         }
         finally
         {
@@ -188,7 +191,7 @@ public class TestLeaderSelector extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testLeaderNodeDeleteOnInterrupt() throws Exception
     {
         Timing2 timing = new Timing2();
@@ -241,10 +244,10 @@ public class TestLeaderSelector extends BaseClassForTests
             server.stop();
             leaderThread.interrupt();
             server.restart();
-            Assert.assertTrue(timing.awaitLatch(reconnectedLatch));
+            assertTrue(timing.awaitLatch(reconnectedLatch));
             timing.sleepABit();
 
-            Assert.assertEquals(client.getChildren().forPath("/leader").size(), 0);
+            assertEquals(client.getChildren().forPath("/leader").size(), 0);
         }
         finally
         {
@@ -253,7 +256,7 @@ public class TestLeaderSelector extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testInterruptLeadershipWithRequeue() throws Exception
     {
         Timing timing = new Timing();
@@ -278,10 +281,10 @@ public class TestLeaderSelector extends BaseClassForTests
             selector.autoRequeue();
             selector.start();
 
-            Assert.assertTrue(timing.acquireSemaphore(semaphore));
+            assertTrue(timing.acquireSemaphore(semaphore));
             selector.interruptLeadership();
 
-            Assert.assertTrue(timing.acquireSemaphore(semaphore));
+            assertTrue(timing.acquireSemaphore(semaphore));
         }
         finally
         {
@@ -290,7 +293,7 @@ public class TestLeaderSelector extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testInterruptLeadership() throws Exception
     {
         LeaderSelector selector = null;
@@ -327,9 +330,9 @@ public class TestLeaderSelector extends BaseClassForTests
             selector = new LeaderSelector(client, "/leader", listener);
             selector.start();
 
-            Assert.assertTrue(timing.awaitLatch(isLeaderLatch));
+            assertTrue(timing.awaitLatch(isLeaderLatch));
             selector.interruptLeadership();
-            Assert.assertTrue(timing.awaitLatch(losingLeaderLatch));
+            assertTrue(timing.awaitLatch(losingLeaderLatch));
         }
         finally
         {
@@ -338,7 +341,7 @@ public class TestLeaderSelector extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testRaceAtStateChanged() throws Exception
     {
         LeaderSelector selector = null;
@@ -382,16 +385,16 @@ public class TestLeaderSelector extends BaseClassForTests
 
             selector.start();
 
-            Assert.assertTrue(timing.awaitLatch(debugLeadershipLatch));
+            assertTrue(timing.awaitLatch(debugLeadershipLatch));
             server.stop();
-            Assert.assertTrue(timing.awaitLatch(lostLatch));
+            assertTrue(timing.awaitLatch(lostLatch));
             timing.sleepABit();
             debugLeadershipWaitLatch.countDown();
 
             server.restart();
-            Assert.assertTrue(timing.awaitLatch(reconnectedLatch));
+            assertTrue(timing.awaitLatch(reconnectedLatch));
 
-            Assert.assertFalse(takeLeadershipLatch.await(3, TimeUnit.SECONDS));
+            assertFalse(takeLeadershipLatch.await(3, TimeUnit.SECONDS));
         }
         finally
         {
@@ -400,7 +403,7 @@ public class TestLeaderSelector extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testAutoRequeue() throws Exception
     {
         Timing timing = new Timing();
@@ -429,7 +432,7 @@ public class TestLeaderSelector extends BaseClassForTests
             selector.autoRequeue();
             selector.start();
 
-            Assert.assertTrue(timing.acquireSemaphore(semaphore, 2));
+            assertTrue(timing.acquireSemaphore(semaphore, 2));
         }
         finally
         {
@@ -438,7 +441,7 @@ public class TestLeaderSelector extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testServerDying() throws Exception
     {
         Timing timing = new Timing();
@@ -482,7 +485,7 @@ public class TestLeaderSelector extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testKillSessionThenCloseShouldElectNewLeader() throws Exception
     {
         final Timing timing = new Timing();
@@ -528,20 +531,20 @@ public class TestLeaderSelector extends BaseClassForTests
             leaderSelector1.start();
             leaderSelector2.start();
 
-            Assert.assertTrue(timing.acquireSemaphore(semaphore, 1));
+            assertTrue(timing.acquireSemaphore(semaphore, 1));
 
             client.getZookeeperClient().getZooKeeper().getTestable().injectSessionExpiration();
 
-            Assert.assertTrue(timing.awaitLatch(interruptedLatch));
+            assertTrue(timing.awaitLatch(interruptedLatch));
             timing.sleepABit();
 
             boolean requeued1 = leaderSelector1.requeue();
             boolean requeued2 = leaderSelector2.requeue();
-            Assert.assertTrue(requeued1);
-            Assert.assertTrue(requeued2);
+            assertTrue(requeued1);
+            assertTrue(requeued2);
 
-            Assert.assertTrue(timing.acquireSemaphore(semaphore, 1));
-            Assert.assertEquals(leaderCount.get(), 1);
+            assertTrue(timing.acquireSemaphore(semaphore, 1));
+            assertEquals(leaderCount.get(), 1);
 
             if ( leaderSelector1.hasLeadership() )
             {
@@ -559,8 +562,8 @@ public class TestLeaderSelector extends BaseClassForTests
             }
 
             // Verify that the other leader took over leadership.
-            Assert.assertTrue(timing.acquireSemaphore(semaphore, 1));
-            Assert.assertEquals(leaderCount.get(), 1);
+            assertTrue(timing.acquireSemaphore(semaphore, 1));
+            assertEquals(leaderCount.get(), 1);
 
             if ( !leaderSelector1Closed )
             {
@@ -583,7 +586,7 @@ public class TestLeaderSelector extends BaseClassForTests
      * it restarts the TestingServer instead of killing the session
      * it uses autoRequeue instead of explicitly calling requeue
      */
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testKillServerThenCloseShouldElectNewLeader() throws Exception
     {
         final Timing timing = new Timing();
@@ -632,17 +635,17 @@ public class TestLeaderSelector extends BaseClassForTests
             leaderSelector1.start();
             leaderSelector2.start();
 
-            Assert.assertTrue(timing.acquireSemaphore(semaphore, 1));
+            assertTrue(timing.acquireSemaphore(semaphore, 1));
 
             int port = server.getPort();
             server.stop();
             timing.sleepABit();
             server = new TestingServer(port);
-            Assert.assertTrue(timing.awaitLatch(interruptedLatch));
+            assertTrue(timing.awaitLatch(interruptedLatch));
             timing.sleepABit();
 
-            Assert.assertTrue(timing.acquireSemaphore(semaphore, 1));
-            Assert.assertEquals(leaderCount.get(), 1);
+            assertTrue(timing.acquireSemaphore(semaphore, 1));
+            assertEquals(leaderCount.get(), 1);
 
             if ( leaderSelector1.hasLeadership() )
             {
@@ -660,8 +663,8 @@ public class TestLeaderSelector extends BaseClassForTests
             }
 
             // Verify that the other leader took over leadership.
-            Assert.assertTrue(timing.acquireSemaphore(semaphore, 1));
-            Assert.assertEquals(leaderCount.get(), 1);
+            assertTrue(timing.acquireSemaphore(semaphore, 1));
+            assertEquals(leaderCount.get(), 1);
 
             if ( !leaderSelector1Closed )
             {
@@ -678,7 +681,7 @@ public class TestLeaderSelector extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testClosing() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -722,7 +725,7 @@ public class TestLeaderSelector extends BaseClassForTests
                 Thread.sleep(1000);
             }
 
-            Assert.assertNotSame(leaderSelector1.hasLeadership(), leaderSelector2.hasLeadership());
+            assertNotSame(leaderSelector1.hasLeadership(), leaderSelector2.hasLeadership());
 
             LeaderSelector positiveLeader;
             LeaderSelector negativeLeader;
@@ -739,12 +742,12 @@ public class TestLeaderSelector extends BaseClassForTests
 
             negativeLeader.close();
             Thread.sleep(1000);
-            Assert.assertNotSame(positiveLeader.hasLeadership(), negativeLeader.hasLeadership());
-            Assert.assertTrue(positiveLeader.hasLeadership());
+            assertNotSame(positiveLeader.hasLeadership(), negativeLeader.hasLeadership());
+            assertTrue(positiveLeader.hasLeadership());
 
             positiveLeader.close();
             Thread.sleep(1000);
-            Assert.assertFalse(positiveLeader.hasLeadership());
+            assertFalse(positiveLeader.hasLeadership());
         }
         finally
         {
@@ -753,7 +756,7 @@ public class TestLeaderSelector extends BaseClassForTests
     }
 
     @SuppressWarnings({"ForLoopReplaceableByForEach"})
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testRotatingLeadership() throws Exception
     {
         final int LEADER_QTY = 5;
@@ -804,7 +807,7 @@ public class TestLeaderSelector extends BaseClassForTests
                 while ( localLeaderList.size() != (i * selectors.size()) )
                 {
                     Integer polledIndex = leaderList.poll(10, TimeUnit.SECONDS);
-                    Assert.assertNotNull(polledIndex);
+                    assertNotNull(polledIndex);
                     localLeaderList.add(polledIndex);
                 }
                 timing.sleepABit();
@@ -821,10 +824,10 @@ public class TestLeaderSelector extends BaseClassForTests
                 Set<Integer> uniques = Sets.newHashSet();
                 for ( int j = 0; j < selectors.size(); ++j )
                 {
-                    Assert.assertTrue(localLeaderList.size() > 0);
+                    assertTrue(localLeaderList.size() > 0);
 
                     int thisIndex = localLeaderList.remove(0);
-                    Assert.assertFalse(uniques.contains(thisIndex));
+                    assertFalse(uniques.contains(thisIndex));
                     uniques.add(thisIndex);
                 }
             }

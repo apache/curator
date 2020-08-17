@@ -19,17 +19,18 @@
 
 package org.apache.curator.framework.recipes.nodes;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
-import org.testng.Assert;
-import org.testng.annotations.Test;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -37,7 +38,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @SuppressWarnings("deprecation")
 public class TestPersistentEphemeralNodeListener extends BaseClassForTests
 {
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testListenersReconnectedIsOK() throws Exception
     {
         server.stop();
@@ -72,14 +73,14 @@ public class TestPersistentEphemeralNodeListener extends BaseClassForTests
             client.getConnectionStateListenable().addListener(listener);
             timing.sleepABit();
             server.restart();
-            Assert.assertTrue(timing.awaitLatch(connectedLatch));
+            assertTrue(timing.awaitLatch(connectedLatch));
             timing.sleepABit();
-            Assert.assertTrue(node.waitForInitialCreate(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
+            assertTrue(node.waitForInitialCreate(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
             server.restart();
             timing.sleepABit();
-            Assert.assertTrue(timing.awaitLatch(reconnectedLatch));
+            assertTrue(timing.awaitLatch(reconnectedLatch));
             timing.sleepABit();
-            Assert.assertEquals(lastState.get(), ConnectionState.RECONNECTED);
+            assertEquals(lastState.get(), ConnectionState.RECONNECTED);
         }
         finally
         {

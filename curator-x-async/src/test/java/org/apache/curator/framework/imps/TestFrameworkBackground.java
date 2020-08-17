@@ -18,7 +18,11 @@
  */
 package org.apache.curator.framework.imps;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.ACLProvider;
@@ -35,8 +39,6 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.ACL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.Assert;
-import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -48,7 +50,7 @@ public class TestFrameworkBackground extends BaseClassForTests
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testErrorListener() throws Exception
     {
         //The first call to the ACL provider will return a reasonable
@@ -102,7 +104,7 @@ public class TestFrameworkBackground extends BaseClassForTests
                 }
             };
             async.with(listener).create().forPath("/foo");
-            Assert.assertTrue(new Timing().awaitLatch(errorLatch));
+            assertTrue(new Timing().awaitLatch(errorLatch));
         }
         finally
         {
@@ -110,7 +112,7 @@ public class TestFrameworkBackground extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testListenerConnectedAtStart() throws Exception
     {
         server.stop();
@@ -144,10 +146,10 @@ public class TestFrameworkBackground extends BaseClassForTests
 
             server.restart();
 
-            Assert.assertTrue(timing.awaitLatch(connectedLatch));
-            Assert.assertFalse(firstListenerAction.get());
+            assertTrue(timing.awaitLatch(connectedLatch));
+            assertFalse(firstListenerAction.get());
             ConnectionState firstconnectionState = firstListenerState.get();
-            Assert.assertEquals(firstconnectionState, ConnectionState.CONNECTED, "First listener state MUST BE CONNECTED but is " + firstconnectionState);
+            assertEquals(firstconnectionState, ConnectionState.CONNECTED, "First listener state MUST BE CONNECTED but is " + firstconnectionState);
         }
         finally
         {
@@ -155,7 +157,7 @@ public class TestFrameworkBackground extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testRetries() throws Exception
     {
         final int SLEEP = 1000;
@@ -190,7 +192,7 @@ public class TestFrameworkBackground extends BaseClassForTests
 
             for ( long elapsed : times.subList(1, times.size()) )   // first one isn't a retry
             {
-                Assert.assertTrue(elapsed >= SLEEP, elapsed + ": " + times);
+                assertTrue(elapsed >= SLEEP, elapsed + ": " + times);
             }
         }
         finally
@@ -203,7 +205,7 @@ public class TestFrameworkBackground extends BaseClassForTests
      * Attempt a background operation while Zookeeper server is down.
      * Return code must be {@link org.apache.zookeeper.KeeperException.Code#CONNECTIONLOSS}
      */
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testCuratorCallbackOnError() throws Exception
     {
         Timing timing = new Timing();
@@ -223,7 +225,7 @@ public class TestFrameworkBackground extends BaseClassForTests
                 return null;
             });
             // Check if the callback has been called with a correct return code
-            Assert.assertTrue(timing.awaitLatch(latch), "Callback has not been called by curator !");
+            assertTrue(timing.awaitLatch(latch), "Callback has not been called by curator !");
         }
     }
 
@@ -231,7 +233,7 @@ public class TestFrameworkBackground extends BaseClassForTests
      * CURATOR-126
      * Shutdown the Curator client while there are still background operations running.
      */
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testShutdown() throws Exception
     {
         Timing timing = new Timing();
@@ -280,7 +282,7 @@ public class TestFrameworkBackground extends BaseClassForTests
             timing.sleepABit();
 
             // should not generate an exception
-            Assert.assertFalse(hadIllegalStateException.get());
+            assertFalse(hadIllegalStateException.get());
         }
         finally
         {

@@ -18,6 +18,9 @@
  */
 package org.apache.curator.framework.state;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
@@ -25,15 +28,14 @@ import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Tag;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-@Test(groups = CuratorTestBase.zk35TestCompatibilityGroup)
+@Tag(CuratorTestBase.zk35TestCompatibilityGroup)
 public class TestConnectionStateManager extends BaseClassForTests {
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testSessionConnectionStateErrorPolicyWithExpirationPercent30() throws Exception {
         Timing2 timing = new Timing2();
         CuratorFramework client = CuratorFrameworkFactory.builder()
@@ -71,10 +73,10 @@ public class TestConnectionStateManager extends BaseClassForTests {
 
             client.getConnectionStateListenable().addListener(stateListener);
             client.start();
-            Assert.assertTrue(timing.awaitLatch(connectedLatch));
+            assertTrue(timing.awaitLatch(connectedLatch));
             server.close();
 
-            Assert.assertTrue(lostLatch.await(lostStateExpectedMs, TimeUnit.MILLISECONDS));
+            assertTrue(lostLatch.await(lostStateExpectedMs, TimeUnit.MILLISECONDS));
         }
         finally {
             CloseableUtils.closeQuietly(client);

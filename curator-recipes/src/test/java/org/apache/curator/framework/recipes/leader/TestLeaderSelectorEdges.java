@@ -19,6 +19,11 @@
 
 package org.apache.curator.framework.recipes.leader;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.BackgroundCallback;
@@ -26,16 +31,13 @@ import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.server.ServerCnxnFactory;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.Assert;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -46,13 +48,13 @@ public class TestLeaderSelectorEdges extends BaseClassForTests
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    @BeforeClass
+    @BeforeAll
     public static void setCNXFactory()
     {
         System.setProperty(ServerCnxnFactory.ZOOKEEPER_SERVER_CNXN_FACTORY, ChaosMonkeyCnxnFactory.class.getName());
     }
 
-    @AfterClass
+    @AfterAll
     public static void resetCNXFactory()
     {
         System.clearProperty(ServerCnxnFactory.ZOOKEEPER_SERVER_CNXN_FACTORY);
@@ -64,7 +66,7 @@ public class TestLeaderSelectorEdges extends BaseClassForTests
      *
      * @throws Exception
      */
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void flappingTest() throws Exception
     {
         final CuratorFramework client =
@@ -86,20 +88,20 @@ public class TestLeaderSelectorEdges extends BaseClassForTests
             leaderSelector1.start();
             // At this point the ChaosMonkeyZookeeperServer must close the connection
             // right after the lock znode is created.
-            Assert.assertTrue(listener.reconnected.await(10, TimeUnit.SECONDS), "Connection has not been lost");
+            assertTrue(listener.reconnected.await(10, TimeUnit.SECONDS), "Connection has not been lost");
             // Check that leader ship has failed
-            Assert.assertEquals(listener.takeLeadership.getCount(), 1);
+            assertEquals(listener.takeLeadership.getCount(), 1);
             // Wait FailedDelete
             Thread.sleep(ChaosMonkeyCnxnFactory.LOCKOUT_DURATION_MS * 2);
             // Check that there is no znode
             final int children = client.getChildren().forPath(ChaosMonkeyCnxnFactory.CHAOS_ZNODE).size();
-            Assert.assertEquals(children, 0,
+            assertEquals(children, 0,
                 "Still " + children + " znodes under " + ChaosMonkeyCnxnFactory.CHAOS_ZNODE + " lock");
             // Check that a new LeaderSelector can be started
             leaderSelector2 = new LeaderSelector(client, ChaosMonkeyCnxnFactory.CHAOS_ZNODE,
                 listener);
             leaderSelector2.start();
-            Assert.assertTrue(listener.takeLeadership.await(1, TimeUnit.SECONDS));
+            assertTrue(listener.takeLeadership.await(1, TimeUnit.SECONDS));
         }
         finally
         {
@@ -109,7 +111,7 @@ public class TestLeaderSelectorEdges extends BaseClassForTests
             }
             catch ( IllegalStateException e )
             {
-                Assert.fail(e.getMessage());
+                fail(e.getMessage());
             }
             try
             {
@@ -120,7 +122,7 @@ public class TestLeaderSelectorEdges extends BaseClassForTests
             }
             catch ( IllegalStateException e )
             {
-                Assert.fail(e.getMessage());
+                fail(e.getMessage());
             }
             client.close();
         }
@@ -153,7 +155,7 @@ public class TestLeaderSelectorEdges extends BaseClassForTests
     /**
      * Create a protected node in background with a retry policy
      */
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void createProtectedNodeInBackgroundTest() throws Exception
     {
         final CuratorFramework client =
@@ -187,12 +189,12 @@ public class TestLeaderSelectorEdges extends BaseClassForTests
                              )
                 .forPath(ChaosMonkeyCnxnFactory.CHAOS_ZNODE_PREFIX + "foo-");
 
-            Assert.assertTrue(latch.await(30, TimeUnit.SECONDS), "Callback has not been called");
+            assertTrue(latch.await(30, TimeUnit.SECONDS), "Callback has not been called");
             // Wait for the znode to be deleted
             Thread.sleep(ChaosMonkeyCnxnFactory.LOCKOUT_DURATION_MS * 2);
             // Check that there is no znode
             final int children = client.getChildren().forPath(ChaosMonkeyCnxnFactory.CHAOS_ZNODE).size();
-            Assert.assertEquals(children, 0,
+            assertEquals(children, 0,
                 "Still " + children + " znodes under " + ChaosMonkeyCnxnFactory.CHAOS_ZNODE + " lock");
         }
         finally
@@ -205,7 +207,7 @@ public class TestLeaderSelectorEdges extends BaseClassForTests
     /**
      * Same test as above but without a retry policy
      */
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void createProtectedNodeInBackgroundTestNoRetry() throws Exception
     {
         final CuratorFramework client =
@@ -239,12 +241,12 @@ public class TestLeaderSelectorEdges extends BaseClassForTests
                              )
                 .forPath(ChaosMonkeyCnxnFactory.CHAOS_ZNODE_PREFIX + "foo-");
 
-            Assert.assertTrue(latch.await(30, TimeUnit.SECONDS), "Callback has not been called");
+            assertTrue(latch.await(30, TimeUnit.SECONDS), "Callback has not been called");
             // Wait for the znode to be deleted
             Thread.sleep(ChaosMonkeyCnxnFactory.LOCKOUT_DURATION_MS * 2);
             // Check that there is no znode
             final int children = client.getChildren().forPath(ChaosMonkeyCnxnFactory.CHAOS_ZNODE).size();
-            Assert.assertEquals(children, 0,
+            assertEquals(children, 0,
                 "Still " + children + " znodes under " + ChaosMonkeyCnxnFactory.CHAOS_ZNODE + " lock");
         }
         finally

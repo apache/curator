@@ -18,13 +18,17 @@
  */
 package org.apache.curator.framework.recipes.cache;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Sets;
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
+import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.compatibility.CuratorTestBase;
-import org.testng.Assert;
-import org.testng.annotations.Test;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -34,7 +38,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class TestTreeCacheIteratorAndSize extends CuratorTestBase
 {
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testBasic() throws Exception
     {
         final String[] nodes = {
@@ -79,18 +83,18 @@ public class TestTreeCacheIteratorAndSize extends CuratorTestBase
                     iteratorValues.put(next.getPath(), next.getData());
                 }
 
-                Assert.assertEquals(iteratorValues.size(), nodes.length);
+                assertEquals(iteratorValues.size(), nodes.length);
                 for ( String node : nodes )
                 {
-                    Assert.assertEquals(iteratorValues.get(node), node.getBytes());
+                    assertArrayEquals(iteratorValues.get(node), node.getBytes());
                 }
 
-                Assert.assertEquals(treeCache.size(), nodes.length);
+                assertEquals(treeCache.size(), nodes.length);
             }
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testIteratorWithRandomGraph() throws Exception
     {
         Map<String, String> pathAndData = new HashMap<>();
@@ -125,24 +129,24 @@ public class TestTreeCacheIteratorAndSize extends CuratorTestBase
 
                 timing.sleepABit(); // let the cache settle
 
-                Assert.assertEquals(treeCache.size(), pathAndData.size());
+                assertEquals(treeCache.size(), pathAndData.size());
 
                 // at this point we have a cached graph of random nodes with random values
                 Iterator<ChildData> iterator = treeCache.iterator();
                 while ( iterator.hasNext() )
                 {
                     ChildData next = iterator.next();
-                    Assert.assertTrue(pathAndData.containsKey(next.getPath()));
-                    Assert.assertEquals(pathAndData.get(next.getPath()).getBytes(), next.getData());
+                    assertTrue(pathAndData.containsKey(next.getPath()));
+                    assertArrayEquals(pathAndData.get(next.getPath()).getBytes(), next.getData());
                     pathAndData.remove(next.getPath());
                 }
 
-                Assert.assertEquals(pathAndData.size(), 0); // above loop should have removed all nodes
+                assertEquals(pathAndData.size(), 0); // above loop should have removed all nodes
             }
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testEmptyTree() throws Exception
     {
         try (CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)))
@@ -154,13 +158,13 @@ public class TestTreeCacheIteratorAndSize extends CuratorTestBase
                 treeCache.start();
 
                 Iterator<ChildData> iterator = treeCache.iterator();
-                Assert.assertFalse(iterator.hasNext());
-                Assert.assertEquals(treeCache.size(), 0);
+                assertFalse(iterator.hasNext());
+                assertEquals(treeCache.size(), 0);
             }
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testWithDeletedNodes() throws Exception
     {
         try (CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)))
@@ -193,8 +197,8 @@ public class TestTreeCacheIteratorAndSize extends CuratorTestBase
                     paths.add(next.getPath());
                 }
 
-                Assert.assertEquals(paths, Sets.newHashSet("/foo", "/foo/a1", "/foo/a2", "/foo/a2/a2.1", "/foo/a3", "/foo/a3/a3.2"));
-                Assert.assertEquals(treeCache.size(), 6);
+                assertEquals(paths, Sets.newHashSet("/foo", "/foo/a1", "/foo/a2", "/foo/a2/a2.1", "/foo/a3", "/foo/a3/a3.2"));
+                assertEquals(treeCache.size(), 6);
             }
         }
     }

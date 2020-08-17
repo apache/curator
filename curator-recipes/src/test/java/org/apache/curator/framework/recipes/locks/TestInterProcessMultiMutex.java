@@ -18,12 +18,16 @@
  */
 package org.apache.curator.framework.recipes.locks;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.imps.TestCleanState;
 import org.apache.curator.retry.RetryOneTime;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.apache.curator.test.BaseClassForTests;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -40,7 +44,7 @@ public class TestInterProcessMultiMutex extends TestInterProcessMutexBase
         return new InterProcessMultiLock(client, Arrays.asList(LOCK_PATH_1, LOCK_PATH_2));
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testSomeReleasesFail() throws IOException
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -81,14 +85,14 @@ public class TestInterProcessMultiMutex extends TestInterProcessMutexBase
             {
                 lock.acquire();
                 lock.release();
-                Assert.fail();
+                fail();
             }
             catch ( Exception e )
             {
                 // ignore
             }
-            Assert.assertFalse(goodLock.isAcquiredInThisProcess());
-            Assert.assertTrue(otherGoodLock.isAcquiredInThisProcess());
+            assertFalse(goodLock.isAcquiredInThisProcess());
+            assertTrue(otherGoodLock.isAcquiredInThisProcess());
         }
         finally
         {
@@ -96,7 +100,7 @@ public class TestInterProcessMultiMutex extends TestInterProcessMutexBase
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testSomeLocksFailToLock() throws IOException
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -140,14 +144,14 @@ public class TestInterProcessMultiMutex extends TestInterProcessMutexBase
             try
             {
                 lock.acquire();
-                Assert.fail();
+                fail();
             }
             catch ( Exception e )
             {
                 // ignore
             }
-            Assert.assertFalse(goodLock.isAcquiredInThisProcess());
-            Assert.assertTrue(goodLockWasLocked.get());
+            assertFalse(goodLock.isAcquiredInThisProcess());
+            assertTrue(goodLockWasLocked.get());
         }
         finally
         {

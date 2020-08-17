@@ -18,6 +18,14 @@
  */
 package org.apache.curator.framework.recipes.cache;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.imps.TestCleanState;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.compatibility.CuratorTestBase;
@@ -28,8 +36,7 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.Timing;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Tag;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
@@ -40,10 +47,10 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-@Test(groups = CuratorTestBase.zk35TestCompatibilityGroup)
+@Tag(CuratorTestBase.zk35TestCompatibilityGroup)
 public class TestNodeCache extends BaseClassForTests
 {
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void     testDeleteThenCreate() throws Exception
     {
         NodeCache           cache = null;
@@ -81,20 +88,20 @@ public class TestNodeCache extends BaseClassForTests
             );
             cache.start(true);
 
-            Assert.assertEquals(cache.getCurrentData().getData(), "one".getBytes());
+            assertArrayEquals(cache.getCurrentData().getData(), "one".getBytes());
 
             client.delete().forPath("/test/foo");
-            Assert.assertTrue(semaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
+            assertTrue(semaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
             client.create().forPath("/test/foo", "two".getBytes());
-            Assert.assertTrue(semaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
+            assertTrue(semaphore.tryAcquire(1, 10, TimeUnit.SECONDS));
 
             Throwable t = error.get();
             if ( t != null )
             {
-                Assert.fail("Assert", t);
+                fail("Assert", t);
             }
 
-            Assert.assertEquals(cache.getCurrentData().getData(), "two".getBytes());
+            assertArrayEquals(cache.getCurrentData().getData(), "two".getBytes());
 
             cache.close();
         }
@@ -105,7 +112,7 @@ public class TestNodeCache extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void     testRebuildAgainstOtherProcesses() throws Exception
     {
         Timing2                 timing2 = new Timing2();
@@ -147,7 +154,7 @@ public class TestNodeCache extends BaseClassForTests
                         client.setData().forPath("/test/snafu", "other".getBytes());
 
                         ChildData       currentData = finalCache.getCurrentData();
-                        Assert.assertNotNull(currentData);
+                        assertNotNull(currentData);
 
                         finalCache.rebuildTestExchanger.exchange(new Object(), timing2.forWaiting().seconds(), TimeUnit.SECONDS);
 
@@ -158,9 +165,9 @@ public class TestNodeCache extends BaseClassForTests
             cache.start(false);
             future.get();
 
-            Assert.assertTrue(timing2.awaitLatch(latch));
-            Assert.assertNotNull(cache.getCurrentData());
-            Assert.assertEquals(cache.getCurrentData().getData(), "other".getBytes());
+            assertTrue(timing2.awaitLatch(latch));
+            assertNotNull(cache.getCurrentData());
+            assertArrayEquals(cache.getCurrentData().getData(), "other".getBytes());
         }
         finally
         {
@@ -169,7 +176,7 @@ public class TestNodeCache extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void     testKilledSession() throws Exception
     {
         NodeCache           cache = null;
@@ -200,10 +207,10 @@ public class TestNodeCache extends BaseClassForTests
             client.getZookeeperClient().getZooKeeper().getTestable().injectSessionExpiration();
             Thread.sleep(timing.multiple(1.5).session());
 
-            Assert.assertEquals(cache.getCurrentData().getData(), "start".getBytes());
+            assertArrayEquals(cache.getCurrentData().getData(), "start".getBytes());
 
             client.setData().forPath("/test/node", "new data".getBytes());
-            Assert.assertTrue(timing.awaitLatch(latch));
+            assertTrue(timing.awaitLatch(latch));
         }
         finally
         {
@@ -212,7 +219,7 @@ public class TestNodeCache extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void     testBasics() throws Exception
     {
         NodeCache           cache = null;
@@ -239,19 +246,19 @@ public class TestNodeCache extends BaseClassForTests
                 }
             );
 
-            Assert.assertNull(cache.getCurrentData());
+            assertNull(cache.getCurrentData());
 
             client.create().forPath("/test/node", "a".getBytes());
-            Assert.assertTrue(timing.acquireSemaphore(semaphore));
-            Assert.assertEquals(cache.getCurrentData().getData(), "a".getBytes());
+            assertTrue(timing.acquireSemaphore(semaphore));
+            assertArrayEquals(cache.getCurrentData().getData(), "a".getBytes());
 
             client.setData().forPath("/test/node", "b".getBytes());
-            Assert.assertTrue(timing.acquireSemaphore(semaphore));
-            Assert.assertEquals(cache.getCurrentData().getData(), "b".getBytes());
+            assertTrue(timing.acquireSemaphore(semaphore));
+            assertArrayEquals(cache.getCurrentData().getData(), "b".getBytes());
 
             client.delete().forPath("/test/node");
-            Assert.assertTrue(timing.acquireSemaphore(semaphore));
-            Assert.assertNull(cache.getCurrentData());
+            assertTrue(timing.acquireSemaphore(semaphore));
+            assertNull(cache.getCurrentData());
         }
         finally
         {

@@ -18,6 +18,13 @@
  */
 package org.apache.curator;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.ensemble.fixed.FixedEnsembleProvider;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
@@ -30,15 +37,13 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.mockito.Mockito;
-import org.testng.Assert;
-import org.testng.annotations.Test;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class BasicTests extends BaseClassForTests
 {
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void     testFactory() throws Exception
     {
         final ZooKeeper         mockZookeeper = Mockito.mock(ZooKeeper.class);
@@ -52,10 +57,10 @@ public class BasicTests extends BaseClassForTests
         };
         CuratorZookeeperClient  client = new CuratorZookeeperClient(zookeeperFactory, new FixedEnsembleProvider(server.getConnectString()), 10000, 10000, null, new RetryOneTime(1), false);
         client.start();
-        Assert.assertEquals(client.getZooKeeper(), mockZookeeper);
+        assertEquals(client.getZooKeeper(), mockZookeeper);
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void     testExpiredSession() throws Exception
     {
         // see http://wiki.apache.org/hadoop/ZooKeeper/FAQ#A4
@@ -101,11 +106,11 @@ public class BasicTests extends BaseClassForTests
 
                             client.getZooKeeper().getTestable().injectSessionExpiration();
 
-                            Assert.assertTrue(timing.awaitLatch(latch));
+                            assertTrue(timing.awaitLatch(latch));
                         }
                         ZooKeeper zooKeeper = client.getZooKeeper();
                         client.blockUntilConnectedOrTimedOut();
-                        Assert.assertNotNull(zooKeeper.exists("/foo", false));
+                        assertNotNull(zooKeeper.exists("/foo", false));
                         return null;
                     }
                 }
@@ -117,7 +122,7 @@ public class BasicTests extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void     testReconnect() throws Exception
     {
         CuratorZookeeperClient client = new CuratorZookeeperClient(server.getConnectString(), 10000, 10000, null, new RetryOneTime(1));
@@ -133,9 +138,9 @@ public class BasicTests extends BaseClassForTests
             Thread.sleep(1000);
 
             server.restart();
-            Assert.assertTrue(client.blockUntilConnectedOrTimedOut());
+            assertTrue(client.blockUntilConnectedOrTimedOut());
             byte[]      readData = client.getZooKeeper().getData("/test", false, null);
-            Assert.assertEquals(readData, writtenData);
+            assertArrayEquals(readData, writtenData);
         }
         finally
         {
@@ -143,7 +148,7 @@ public class BasicTests extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void     testSimple() throws Exception
     {
         CuratorZookeeperClient client = new CuratorZookeeperClient(server.getConnectString(), 10000, 10000, null, new RetryOneTime(1));
@@ -152,7 +157,7 @@ public class BasicTests extends BaseClassForTests
         {
             client.blockUntilConnectedOrTimedOut();
             String              path = client.getZooKeeper().create("/test", new byte[]{1,2,3}, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-            Assert.assertEquals(path, "/test");
+            assertEquals(path, "/test");
         }
         finally
         {
@@ -160,7 +165,7 @@ public class BasicTests extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void     testBackgroundConnect() throws Exception
     {
         final int CONNECTION_TIMEOUT_MS = 4000;
@@ -168,7 +173,7 @@ public class BasicTests extends BaseClassForTests
         CuratorZookeeperClient client = new CuratorZookeeperClient(server.getConnectString(), 10000, CONNECTION_TIMEOUT_MS, null, new RetryOneTime(1));
         try
         {
-            Assert.assertFalse(client.isConnected());
+            assertFalse(client.isConnected());
             client.start();
 
             outer: do
@@ -183,7 +188,7 @@ public class BasicTests extends BaseClassForTests
                     Thread.sleep(CONNECTION_TIMEOUT_MS);
                 }
 
-                Assert.fail();
+                fail();
             } while ( false );
         }
         finally

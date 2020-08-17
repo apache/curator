@@ -18,10 +18,13 @@
  */
 package org.apache.curator.x.discovery.details;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.Closeable;
 import java.util.Collections;
 import java.util.List;
 
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
@@ -32,16 +35,14 @@ import org.apache.curator.x.discovery.ServiceDiscovery;
 import org.apache.curator.x.discovery.ServiceDiscoveryBuilder;
 import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.discovery.ServiceProvider;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import com.google.common.collect.Lists;
+import org.junit.jupiter.api.Tag;
 
-@Test(groups = CuratorTestBase.zk35TestCompatibilityGroup)
+@Tag(CuratorTestBase.zk35TestCompatibilityGroup)
 public class TestServiceProvider extends BaseClassForTests
 {
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testBasic() throws Exception
     {
         List<Closeable> closeables = Lists.newArrayList();
@@ -60,11 +61,11 @@ public class TestServiceProvider extends BaseClassForTests
             closeables.add(provider);
             provider.start();
 
-            Assert.assertEquals(provider.getInstance(), instance);
+            assertEquals(provider.getInstance(), instance);
 
             List<ServiceInstance<String>> list = Lists.newArrayList();
             list.add(instance);
-            Assert.assertEquals(provider.getAllInstances(), list);
+            assertEquals(provider.getAllInstances(), list);
         }
         finally
         {
@@ -76,7 +77,7 @@ public class TestServiceProvider extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testDisabledInstance() throws Exception
     {
         List<Closeable> closeables = Lists.newArrayList();
@@ -96,8 +97,8 @@ public class TestServiceProvider extends BaseClassForTests
             closeables.add(provider);
             provider.start();
 
-            Assert.assertEquals(provider.getInstance(), null);
-            Assert.assertTrue(provider.getAllInstances().isEmpty(), "Disabled instance still appears available via service provider");
+            assertEquals(provider.getInstance(), null);
+            assertTrue(provider.getAllInstances().isEmpty(), "Disabled instance still appears available via service provider");
         }
         finally
         {

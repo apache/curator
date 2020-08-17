@@ -18,13 +18,15 @@
  */
 package org.apache.curator.framework.state;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.retry.RetryForever;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.retry.RetryUntilElapsed;
-import org.testng.Assert;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Test;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.ScheduledFuture;
@@ -34,8 +36,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestCircuitBreaker
 {
-    private Duration[] lastDelay = new Duration[]{Duration.ZERO};
-    private ScheduledThreadPoolExecutor service = new ScheduledThreadPoolExecutor(1)
+    private static Duration[] lastDelay = new Duration[]{Duration.ZERO};
+    private static ScheduledThreadPoolExecutor service = new ScheduledThreadPoolExecutor(1)
     {
         @Override
         public ScheduledFuture<?> schedule(Runnable command, long delay, TimeUnit unit)
@@ -46,8 +48,8 @@ public class TestCircuitBreaker
         }
     };
 
-    @AfterClass
-    public void tearDown()
+    @AfterAll
+    public static void tearDown()
     {
         service.shutdownNow();
     }
@@ -61,30 +63,30 @@ public class TestCircuitBreaker
         CircuitBreaker circuitBreaker = CircuitBreaker.build(new RetryNTimes(retryQty, (int)delay.toMillis()), service);
         AtomicInteger counter = new AtomicInteger(0);
 
-        Assert.assertTrue(circuitBreaker.tryToOpen(counter::incrementAndGet));
-        Assert.assertEquals(lastDelay[0], delay);
+        assertTrue(circuitBreaker.tryToOpen(counter::incrementAndGet));
+        assertEquals(lastDelay[0], delay);
 
-        Assert.assertFalse(circuitBreaker.tryToOpen(counter::incrementAndGet));
-        Assert.assertEquals(circuitBreaker.getRetryCount(), 1);
-        Assert.assertEquals(counter.get(), 1);
-        Assert.assertFalse(circuitBreaker.tryToRetry(counter::incrementAndGet));
-        Assert.assertEquals(circuitBreaker.getRetryCount(), 1);
-        Assert.assertEquals(counter.get(), 1);
+        assertFalse(circuitBreaker.tryToOpen(counter::incrementAndGet));
+        assertEquals(circuitBreaker.getRetryCount(), 1);
+        assertEquals(counter.get(), 1);
+        assertFalse(circuitBreaker.tryToRetry(counter::incrementAndGet));
+        assertEquals(circuitBreaker.getRetryCount(), 1);
+        assertEquals(counter.get(), 1);
 
-        Assert.assertTrue(circuitBreaker.close());
-        Assert.assertEquals(circuitBreaker.getRetryCount(), 0);
-        Assert.assertFalse(circuitBreaker.close());
+        assertTrue(circuitBreaker.close());
+        assertEquals(circuitBreaker.getRetryCount(), 0);
+        assertFalse(circuitBreaker.close());
     }
 
     @Test
     public void testVariousOpenRetryFails()
     {
         CircuitBreaker circuitBreaker = CircuitBreaker.build(new RetryForever(1), service);
-        Assert.assertFalse(circuitBreaker.tryToRetry(() -> {}));
-        Assert.assertTrue(circuitBreaker.tryToOpen(() -> {}));
-        Assert.assertFalse(circuitBreaker.tryToOpen(() -> {}));
-        Assert.assertTrue(circuitBreaker.close());
-        Assert.assertFalse(circuitBreaker.close());
+        assertFalse(circuitBreaker.tryToRetry(() -> {}));
+        assertTrue(circuitBreaker.tryToOpen(() -> {}));
+        assertFalse(circuitBreaker.tryToOpen(() -> {}));
+        assertTrue(circuitBreaker.close());
+        assertFalse(circuitBreaker.close());
     }
 
     @Test
@@ -92,7 +94,7 @@ public class TestCircuitBreaker
     {
         RetryPolicy retryPolicy = new RetryUntilElapsed(10000, 10000);
         CircuitBreaker circuitBreaker = CircuitBreaker.build(retryPolicy, service);
-        Assert.assertTrue(circuitBreaker.tryToOpen(() -> {}));
-        Assert.assertEquals(lastDelay[0], Duration.ofMillis(10000));
+        assertTrue(circuitBreaker.tryToOpen(() -> {}));
+        assertEquals(lastDelay[0], Duration.ofMillis(10000));
     }
 }

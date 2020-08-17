@@ -18,20 +18,21 @@
  */
 package org.apache.curator.framework.recipes.locks;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.imps.TestCleanState;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.KeeperException;
-import org.testng.Assert;
-import org.testng.annotations.Test;
 import java.util.List;
 
 public class TestLockCleanlinessWithFaults extends BaseClassForTests
 {
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void     testNodeDeleted() throws Exception
     {
         final String PATH = "/foo/bar";
@@ -43,7 +44,7 @@ public class TestLockCleanlinessWithFaults extends BaseClassForTests
             client.start();
 
             client.create().creatingParentsIfNeeded().forPath(PATH);
-            Assert.assertEquals(client.checkExists().forPath(PATH).getNumChildren(), 0);
+            assertEquals(client.checkExists().forPath(PATH).getNumChildren(), 0);
 
             LockInternals       internals = new LockInternals(client, new StandardLockInternalsDriver(), PATH, "lock-", 1)
             {
@@ -56,7 +57,7 @@ public class TestLockCleanlinessWithFaults extends BaseClassForTests
             try
             {
                 internals.attemptLock(0, null, null);
-                Assert.fail();
+                fail();
             }
             catch ( KeeperException.NoNodeException dummy )
             {
@@ -64,7 +65,7 @@ public class TestLockCleanlinessWithFaults extends BaseClassForTests
             }
 
             // make sure no nodes are left lying around
-            Assert.assertEquals(client.checkExists().forPath(PATH).getNumChildren(), 0);
+            assertEquals(client.checkExists().forPath(PATH).getNumChildren(), 0);
         }
         finally
         {

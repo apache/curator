@@ -18,6 +18,11 @@
  */
 package org.apache.curator.framework.recipes.queue;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
@@ -25,15 +30,10 @@ import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
-import org.testng.Assert;
-import org.testng.annotations.Test;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
 
 public class TestSimpleDistributedQueue extends BaseClassForTests
 {
@@ -71,7 +71,7 @@ public class TestSimpleDistributedQueue extends BaseClassForTests
         protected abstract void processItem(int itemNumber) throws Exception;
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testHangFromContainerLoss() throws Exception
     {
         // for CURATOR-308
@@ -113,7 +113,7 @@ public class TestSimpleDistributedQueue extends BaseClassForTests
             });
 
             executor.shutdown();
-            Assert.assertTrue(executor.awaitTermination((QueueUser.ITEM_COUNT * 2) * timing.milliseconds(), TimeUnit.MILLISECONDS));
+            assertTrue(executor.awaitTermination((QueueUser.ITEM_COUNT * 2) * timing.milliseconds(), TimeUnit.MILLISECONDS));
         }
         finally
         {
@@ -122,7 +122,7 @@ public class TestSimpleDistributedQueue extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testPollWithTimeout() throws Exception
     {
         CuratorFramework clients[] = null;
@@ -139,7 +139,7 @@ public class TestSimpleDistributedQueue extends BaseClassForTests
                 queueHandles[i] = new SimpleDistributedQueue(clients[i], dir);
             }
 
-            Assert.assertNull(queueHandles[0].poll(3, TimeUnit.SECONDS));
+            assertNull(queueHandles[0].poll(3, TimeUnit.SECONDS));
         }
         finally
         {
@@ -147,7 +147,7 @@ public class TestSimpleDistributedQueue extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testOffer1() throws Exception
     {
         CuratorFramework clients[] = null;
@@ -176,7 +176,7 @@ public class TestSimpleDistributedQueue extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testOffer2() throws Exception
     {
         CuratorFramework clients[] = null;
@@ -205,7 +205,7 @@ public class TestSimpleDistributedQueue extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testTake1() throws Exception
     {
         CuratorFramework clients[] = null;
@@ -234,7 +234,7 @@ public class TestSimpleDistributedQueue extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testRemova1() throws Exception
     {
         CuratorFramework clients[] = null;
@@ -302,13 +302,13 @@ public class TestSimpleDistributedQueue extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testRemove2() throws Exception
     {
         createNremoveMtest("/testRemove2", 10, 2);
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testRemove3() throws Exception
     {
         createNremoveMtest("/testRemove3", 1000, 1000);
@@ -348,31 +348,31 @@ public class TestSimpleDistributedQueue extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testElement1() throws Exception
     {
         createNremoveMelementTest("/testElement1", 1, 0);
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testElement2() throws Exception
     {
         createNremoveMelementTest("/testElement2", 10, 2);
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testElement3() throws Exception
     {
         createNremoveMelementTest("/testElement3", 1000, 500);
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testElement4() throws Exception
     {
         createNremoveMelementTest("/testElement4", 1000, 1000 - 1);
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testTakeWait1() throws Exception
     {
         CuratorFramework clients[] = null;
@@ -436,7 +436,7 @@ public class TestSimpleDistributedQueue extends BaseClassForTests
         }
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
     public void testTakeWait2() throws Exception
     {
         String dir = "/testTakeWait2";
