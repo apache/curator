@@ -50,6 +50,7 @@ import java.net.URLConnection;
 @SuppressWarnings("unchecked")
 public class TestStringsWithRestEasy
 {
+    private static final String HOST = "127.0.0.1";
     private Server server;
     private int port;
 
@@ -92,19 +93,19 @@ public class TestStringsWithRestEasy
         ByteArrayOutputStream           out = new ByteArrayOutputStream();
         restEasySingletons.serviceInstanceMarshallerSingleton.writeTo(service, null, null, null, null, null, out);
 
-        getJson("http://localhost:" + port + "/v1/service/test/" + service.getId(), new String(out.toByteArray()));
+        getJson("http://" + HOST + ":" + port + "/v1/service/test/" + service.getId(), new String(out.toByteArray()));
 
-        String json = getJson("http://localhost:" + port + "/v1/service", null);
+        String json = getJson("http://" + HOST + ":" + port + "/v1/service", null);
         ServiceNames names = restEasySingletons.serviceNamesMarshallerSingleton.readFrom(ServiceNames.class, null, null, MediaType.APPLICATION_JSON_TYPE, null, new ByteArrayInputStream(json.getBytes()));
         assertEquals(names.getNames(), Lists.newArrayList("test"));
 
-        json = getJson("http://localhost:" + port + "/v1/service/test", null);
+        json = getJson("http://" + HOST + ":" + port + "/v1/service/test", null);
         ServiceInstances<String> instances = restEasySingletons.serviceInstancesMarshallerSingleton.readFrom(null, null, null, null, null, new ByteArrayInputStream(json.getBytes()));
         assertEquals(instances.getServices().size(), 1);
         assertEquals(instances.getServices().get(0), service);
 
         // Retrieve single instance
-        json = getJson("http://localhost:" + port + "/v1/service/test/" + service.getId(), null);
+        json = getJson("http://" + HOST + ":" + port + "/v1/service/test/" + service.getId(), null);
         ServiceInstance<String> instance = restEasySingletons.serviceInstanceMarshallerSingleton.readFrom(null, null, null, null, null, new ByteArrayInputStream(json.getBytes()));
         assertEquals(instance, service);
 
@@ -113,7 +114,7 @@ public class TestStringsWithRestEasy
     @Test
     public void     testEmptyServiceNames() throws Exception
     {
-        String          json = getJson("http://localhost:" + port + "/v1/service", null);
+        String          json = getJson("http://" + HOST + ":" + port + "/v1/service", null);
         ServiceNames    names = RestEasyApplication.singletonsRef.get().serviceNamesMarshallerSingleton.readFrom(ServiceNames.class, null, null, MediaType.APPLICATION_JSON_TYPE, null, new ByteArrayInputStream(json.getBytes()));
 
         assertEquals(names.getNames(), Lists.<String>newArrayList());

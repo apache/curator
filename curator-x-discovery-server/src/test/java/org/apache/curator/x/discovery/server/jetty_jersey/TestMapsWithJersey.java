@@ -53,6 +53,7 @@ import java.util.Set;
 
 public class TestMapsWithJersey
 {
+    private static final String HOST = "127.0.0.1";
     private Server server;
     private JsonServiceNamesMarshaller serviceNamesMarshaller;
     private JsonServiceInstanceMarshaller<Map<String, String>> serviceInstanceMarshaller;
@@ -132,7 +133,7 @@ public class TestMapsWithJersey
             }
         };
         Client          client = Client.create(config);
-        WebResource     resource = client.resource("http://localhost:" + port);
+        WebResource     resource = client.resource("http://" + HOST + ":" + port);
         resource.path("/v1/service/test/" + service.getId()).type(MediaType.APPLICATION_JSON_TYPE).put(service);
 
         ServiceNames names = resource.path("/v1/service").get(ServiceNames.class);
