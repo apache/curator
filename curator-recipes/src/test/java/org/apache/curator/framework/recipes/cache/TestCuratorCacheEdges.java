@@ -20,6 +20,7 @@
 package org.apache.curator.framework.recipes.cache;
 
 import static org.apache.curator.framework.recipes.cache.CuratorCache.Options.DO_NOT_CLEAR_ON_CLOSE;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -90,17 +91,17 @@ public class TestCuratorCacheEdges extends CuratorTestBase
             }
 
             assertEquals(storage.size(), 11);
-            assertEquals(storage.get("/root").map(ChildData::getData).orElse(null), second);
-            assertEquals(storage.get("/root/1").map(ChildData::getData).orElse(null), first);
-            assertEquals(storage.get("/root/1/11").map(ChildData::getData).orElse(null), first);
-            assertEquals(storage.get("/root/1/11/111").map(ChildData::getData).orElse(null), second);
-            assertEquals(storage.get("/root/1/11/111/1111").map(ChildData::getData).orElse(null), second);
-            assertEquals(storage.get("/root/1/11/111/1112").map(ChildData::getData).orElse(null), second);
-            assertEquals(storage.get("/root/1/12").map(ChildData::getData).orElse(null), first);
-            assertEquals(storage.get("/root/1/13").map(ChildData::getData).orElse(null), first);
-            assertEquals(storage.get("/root/1/13/131").map(ChildData::getData).orElse(null), second);
-            assertEquals(storage.get("/root/1/13/132").map(ChildData::getData).orElse(null), second);
-            assertEquals(storage.get("/root/1/13/132/1321").map(ChildData::getData).orElse(null), second);
+            assertArrayEquals(storage.get("/root").map(ChildData::getData).orElse(null), second);
+            assertArrayEquals(storage.get("/root/1").map(ChildData::getData).orElse(null), first);
+            assertArrayEquals(storage.get("/root/1/11").map(ChildData::getData).orElse(null), first);
+            assertArrayEquals(storage.get("/root/1/11/111").map(ChildData::getData).orElse(null), second);
+            assertArrayEquals(storage.get("/root/1/11/111/1111").map(ChildData::getData).orElse(null), second);
+            assertArrayEquals(storage.get("/root/1/11/111/1112").map(ChildData::getData).orElse(null), second);
+            assertArrayEquals(storage.get("/root/1/12").map(ChildData::getData).orElse(null), first);
+            assertArrayEquals(storage.get("/root/1/13").map(ChildData::getData).orElse(null), first);
+            assertArrayEquals(storage.get("/root/1/13/131").map(ChildData::getData).orElse(null), second);
+            assertArrayEquals(storage.get("/root/1/13/132").map(ChildData::getData).orElse(null), second);
+            assertArrayEquals(storage.get("/root/1/13/132/1321").map(ChildData::getData).orElse(null), second);
         }
     }
 

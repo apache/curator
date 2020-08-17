@@ -18,6 +18,7 @@
  */
 package org.apache.curator.framework.recipes.nodes;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -89,7 +90,7 @@ public class TestPersistentNode extends BaseClassForTests
             client.start();
 
             byte[] bytes = client.getData().forPath("/test");
-            assertEquals(bytes, TEST_DATA);
+            assertArrayEquals(bytes, TEST_DATA);
         }
         finally
         {
