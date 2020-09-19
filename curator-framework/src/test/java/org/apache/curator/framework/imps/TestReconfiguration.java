@@ -51,6 +51,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
@@ -332,6 +333,31 @@ public class TestReconfiguration extends CuratorTestBase
         }
     }
 
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testAddAndRemoveWithEmptyList() throws Exception
+    {
+        try ( CuratorFramework client = newClient())
+        {
+            client.start();
+
+            QuorumVerifier oldConfig = toQuorumVerifier(client.getConfig().forEnsemble());
+            assertConfig(oldConfig, cluster.getInstances());
+
+            CountDownLatch latch = setChangeWaiter(client);
+
+            Collection<InstanceSpec> oldInstances = cluster.getInstances();
+            client.reconfig().leaving(Collections.EMPTY_LIST).joining(Collections.EMPTY_LIST).fromConfig(oldConfig.getVersion()).forEnsemble();
+
+            Assert.assertTrue(timing.awaitLatch(latch));
+
+            byte[] newConfigData = client.getConfig().forEnsemble();
+            QuorumVerifier newConfig = toQuorumVerifier(newConfigData);
+            assertConfig(newConfig, oldInstances);
+            Assert.assertEquals(EnsembleTracker.configToConnectionString(newConfig), ensembleProvider.getConnectionString());
+        }
+    }
+
     @Test(enabled = false)  // it's what this test is inteded to do and it keeps failing - disable for now
     public void testNewMembers() throws Exception
     {
@@ -376,6 +402,31 @@ public class TestReconfiguration extends CuratorTestBase
         {
             CloseableUtils.closeQuietly(smallCluster);
             CloseableUtils.closeQuietly(localCluster);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testNewMembersWithEmptyList() throws Exception
+    {
+        try ( CuratorFramework client = newClient())
+        {
+            client.start();
+
+            QuorumVerifier oldConfig = toQuorumVerifier(client.getConfig().forEnsemble());
+            assertConfig(oldConfig, cluster.getInstances());
+
+            CountDownLatch latch = setChangeWaiter(client);
+
+            Collection<InstanceSpec> oldInstances = cluster.getInstances();
+            client.reconfig().withNewMembers(Collections.EMPTY_LIST).fromConfig(oldConfig.getVersion()).forEnsemble();
+
+            Assert.assertTrue(timing.awaitLatch(latch));
+
+            byte[] newConfigData = client.getConfig().forEnsemble();
+            QuorumVerifier newConfig = toQuorumVerifier(newConfigData);
+            assertConfig(newConfig, oldInstances);
+            Assert.assertEquals(EnsembleTracker.configToConnectionString(newConfig), ensembleProvider.getConnectionString());
         }
     }
 
