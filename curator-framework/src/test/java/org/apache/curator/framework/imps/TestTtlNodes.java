@@ -21,19 +21,19 @@ package org.apache.curator.framework.imps;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.retry.RetryOneTime;
-import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.test.Timing;
 import org.apache.zookeeper.CreateMode;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import java.util.concurrent.CountDownLatch;
 
 public class TestTtlNodes extends CuratorTestBase
@@ -59,7 +59,7 @@ public class TestTtlNodes extends CuratorTestBase
         System.clearProperty("znode.container.checkIntervalMs");
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testBasic() throws Exception
     {
         try ( CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)) )
@@ -72,7 +72,7 @@ public class TestTtlNodes extends CuratorTestBase
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testBasicInBackground() throws Exception
     {
         try ( CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)) )

@@ -23,16 +23,15 @@ import static org.apache.curator.framework.recipes.cache.CuratorCache.Options.DO
 import static org.apache.curator.framework.recipes.cache.CuratorCacheListener.builder;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
-import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.ZKPaths;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.Closeable;
@@ -120,7 +119,7 @@ public class TestCuratorCacheConsistency extends CuratorTestBase
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testConsistencyAfterSimulation() throws Exception
     {
         int clientQty = random.nextInt(10, 20);

@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.ACLProvider;
@@ -36,6 +35,8 @@ import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
+import org.junit.jupiter.api.Test;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -81,7 +82,7 @@ public class TestCreate extends BaseClassForTests
     /**
      * Tests that the ACL list provided to the create builder is used for creating the parents.
      */
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCreateWithParentsWithAcl() throws Exception
     {
         CuratorFramework client = createClient(new DefaultACLProvider());
@@ -103,7 +104,7 @@ public class TestCreate extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCreateWithParentsWithAclApplyToParents() throws Exception
     {
         CuratorFramework client = createClient(new DefaultACLProvider());
@@ -128,7 +129,7 @@ public class TestCreate extends BaseClassForTests
     /**
      * Tests that the ACL list provided to the create builder is used for creating the parents.
      */
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCreateWithParentsWithAclInBackground() throws Exception
     {
         CuratorFramework client = createClient(new DefaultACLProvider());
@@ -159,7 +160,7 @@ public class TestCreate extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCreateWithParentsWithAclApplyToParentsInBackground() throws Exception
     {
         CuratorFramework client = createClient(new DefaultACLProvider());
@@ -193,7 +194,7 @@ public class TestCreate extends BaseClassForTests
     /**
      * Tests that if no ACL list provided to the create builder, then the ACL list is created based on the client's ACLProvider.
      */
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCreateWithParentsWithoutAcl() throws Exception
     {
         CuratorFramework client = createClient(testACLProvider);
@@ -219,7 +220,7 @@ public class TestCreate extends BaseClassForTests
     /**
      * Tests that if no ACL list provided to the create builder, then the ACL list is created based on the client's ACLProvider.
      */
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCreateWithParentsWithoutAclInBackground() throws Exception
     {
         CuratorFramework client = createClient(testACLProvider);
@@ -253,7 +254,7 @@ public class TestCreate extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCreateProtectedUtils() throws Exception
     {
         try (CuratorFramework client = CuratorFrameworkFactory.builder().
@@ -279,7 +280,7 @@ public class TestCreate extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testProtectedUtils() throws Exception
     {
         String name = "_c_53345f98-9423-4e0c-a7b5-9f819e3ec2e1-yo";

@@ -23,16 +23,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.imps.TestCleanState;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.retry.RetryOneTime;
-import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.CloseableUtils;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
@@ -43,7 +43,7 @@ import static org.apache.curator.framework.recipes.cache.CuratorCacheListener.bu
 @Tag(CuratorTestBase.zk36Group)
 public class TestWrappedNodeCache extends CuratorTestBase
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testDeleteThenCreate() throws Exception
     {
         CuratorCache cache = null;
@@ -81,7 +81,7 @@ public class TestWrappedNodeCache extends CuratorTestBase
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testKilledSession() throws Exception
     {
         CuratorCache cache = null;
@@ -130,7 +130,7 @@ public class TestWrappedNodeCache extends CuratorTestBase
     }
 
     @SuppressWarnings("ConstantConditions")
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testBasics() throws Exception
     {
         CuratorCache cache = null;

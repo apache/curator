@@ -25,14 +25,12 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import com.google.common.collect.Sets;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.schema.Schema;
 import org.apache.curator.framework.schema.SchemaSet;
 import org.apache.curator.framework.schema.SchemaViolation;
 import org.apache.curator.retry.RetryOneTime;
-import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.x.async.AsyncCuratorFramework;
 import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.modeled.models.TestModel;
@@ -45,6 +43,8 @@ import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Id;
 import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.server.auth.DigestAuthenticationProvider;
+import org.junit.jupiter.api.Test;
+
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
@@ -54,7 +54,7 @@ import java.util.concurrent.CountDownLatch;
 
 public class TestModeledFramework extends TestModeledFrameworkBase
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCrud()
     {
         TestModel rawModel = new TestModel("John", "Galt", "1 Galt's Gulch", 42, BigInteger.valueOf(1));
@@ -70,7 +70,7 @@ public class TestModeledFramework extends TestModeledFrameworkBase
         complete(client.checkExists(), (stat, e) -> assertNull(stat));
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testBackwardCompatibility()
     {
         TestNewerModel rawNewModel = new TestNewerModel("John", "Galt", "1 Galt's Gulch", 42, BigInteger.valueOf(1), 100);
@@ -81,7 +81,7 @@ public class TestModeledFramework extends TestModeledFrameworkBase
         complete(clientForOld.read(), (model, e) -> assertTrue(rawNewModel.equalsOld(model)));
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testWatched() throws InterruptedException
     {
         CountDownLatch latch = new CountDownLatch(1);
@@ -93,7 +93,7 @@ public class TestModeledFramework extends TestModeledFrameworkBase
         assertTrue(timing.awaitLatch(latch));
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testGetChildren()
     {
         TestModel model = new TestModel("John", "Galt", "1 Galt's Gulch", 42, BigInteger.valueOf(1));
@@ -106,7 +106,7 @@ public class TestModeledFramework extends TestModeledFrameworkBase
         complete(client.children(), (children, e) -> assertEquals(Sets.newHashSet(children), expected));
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testBadNode()
     {
         complete(async.create().forPath(modelSpec.path().fullPath(), "fubar".getBytes()), (v, e) -> {
@@ -116,7 +116,7 @@ public class TestModeledFramework extends TestModeledFrameworkBase
         complete(client.read(), (model, e) -> assertTrue(e instanceof KeeperException.NoNodeException));
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testSchema() throws Exception
     {
         Schema schema = modelSpec.schema();
@@ -139,7 +139,7 @@ public class TestModeledFramework extends TestModeledFrameworkBase
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testVersioned()
     {
         ModeledFramework<TestModel> client = ModeledFramework.wrap(async, modelSpec);
@@ -164,7 +164,7 @@ public class TestModeledFramework extends TestModeledFrameworkBase
         complete(client.delete(stat.getVersion()));
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testAcl() throws NoSuchAlgorithmException
     {
         List<ACL> aclList = Collections.singletonList(new ACL(ZooDefs.Perms.WRITE, new Id("digest", DigestAuthenticationProvider.generateDigest("test:test"))));

@@ -23,13 +23,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.retry.RetryOneTime;
+import org.junit.jupiter.api.Test;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -38,7 +39,7 @@ import java.util.concurrent.TimeUnit;
 
 public class TestLeaderSelectorParticipants extends BaseClassForTests
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testId() throws Exception
     {
         LeaderSelector          selector = null;
@@ -84,7 +85,7 @@ public class TestLeaderSelectorParticipants extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testBasic() throws Exception
     {
         final int           SELECTOR_QTY = 10;

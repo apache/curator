@@ -20,7 +20,6 @@ package org.apache.curator.x.discovery.details;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
@@ -35,6 +34,7 @@ import org.apache.curator.x.discovery.ServiceDiscovery;
 import org.apache.curator.x.discovery.ServiceDiscoveryBuilder;
 import org.apache.curator.x.discovery.ServiceInstance;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.util.Collections;
@@ -48,7 +48,7 @@ public class TestServiceCacheRace extends BaseClassForTests
     private final Timing timing = new Timing();
 
     // validates CURATOR-452 which exposed a race in ServiceCacheImpl's start() method caused by an optimization whereby it clears the dataBytes of its internal PathChildrenCache
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testRaceOnInitialLoad() throws Exception
     {
         List<Closeable> closeables = Lists.newArrayList();

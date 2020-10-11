@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
@@ -33,12 +32,14 @@ import org.apache.curator.test.Timing;
 import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.CreateMode;
+import org.junit.jupiter.api.Test;
+
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class TestPersistentNode extends BaseClassForTests
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testQuickSetData() throws Exception
     {
         final byte[] TEST_DATA = "hey".getBytes();
@@ -69,7 +70,7 @@ public class TestPersistentNode extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testBasic() throws Exception
     {
         final byte[] TEST_DATA = "hey".getBytes();
@@ -99,7 +100,7 @@ public class TestPersistentNode extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testQuickClose() throws Exception
     {
         Timing timing = new Timing();
@@ -121,7 +122,7 @@ public class TestPersistentNode extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testQuickCloseNodeExists() throws Exception
     {
         Timing timing = new Timing();
@@ -145,7 +146,7 @@ public class TestPersistentNode extends BaseClassForTests
         }
     }
     
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testEphemeralSequentialWithProtectionReconnection() throws Exception
     {
         Timing timing = new Timing();

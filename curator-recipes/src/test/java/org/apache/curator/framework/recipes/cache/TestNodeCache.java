@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.imps.TestCleanState;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.compatibility.CuratorTestBase;
@@ -37,6 +36,8 @@ import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.Timing;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
@@ -50,7 +51,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @Tag(CuratorTestBase.zk35TestCompatibilityGroup)
 public class TestNodeCache extends BaseClassForTests
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testDeleteThenCreate() throws Exception
     {
         NodeCache           cache = null;
@@ -112,7 +113,7 @@ public class TestNodeCache extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testRebuildAgainstOtherProcesses() throws Exception
     {
         Timing2                 timing2 = new Timing2();
@@ -176,7 +177,7 @@ public class TestNodeCache extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testKilledSession() throws Exception
     {
         NodeCache           cache = null;
@@ -219,7 +220,7 @@ public class TestNodeCache extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testBasics() throws Exception
     {
         NodeCache           cache = null;

@@ -20,7 +20,6 @@ package org.apache.curator.framework.imps;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -30,12 +29,14 @@ import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.CuratorListener;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.zookeeper.Watcher;
+import org.junit.jupiter.api.Test;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 public class TestMultiClient extends BaseClassForTests
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testNotify() throws Exception
     {
         CuratorFramework client1 = null;

@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.CuratorWatcher;
@@ -41,6 +40,8 @@ import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.junit.jupiter.api.Test;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
@@ -58,7 +59,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
 public class TestInterProcessSemaphore extends BaseClassForTests
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testAcquireAfterLostServer() throws Exception
     {
         // CURATOR-335
@@ -177,7 +178,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testThreadedLeaseIncrease() throws Exception
     {
         final Timing timing = new Timing();
@@ -241,7 +242,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testClientClose() throws Exception
     {
         final Timing timing = new Timing();
@@ -279,7 +280,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testMaxPerSession() throws Exception
     {
         final int CLIENT_QTY = 10;
@@ -383,7 +384,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testRelease1AtATime() throws Exception
     {
         final Timing timing = new Timing();
@@ -451,7 +452,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
         assertEquals(maxLeases.get(), MAX);
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testReleaseInChunks() throws Exception
     {
         final Timing timing = new Timing();
@@ -539,7 +540,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testThreads() throws Exception
     {
         final int THREAD_QTY = 10;
@@ -583,7 +584,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testSimple() throws Exception
     {
         Timing timing = new Timing();
@@ -601,7 +602,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testSimple2() throws Exception
     {
         final int MAX_LEASES = 3;
@@ -637,7 +638,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testGetParticipantNodes() throws Exception
     {
         final int LEASES = 3;
@@ -666,7 +667,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testNoOrphanedNodes() throws Exception
     {
         final Timing timing = new Timing();
@@ -735,7 +736,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
         }
     }
     
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testInterruptAcquire() throws Exception
     {
         // CURATOR-462

@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import com.google.common.collect.Lists;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -56,6 +55,8 @@ import org.apache.zookeeper.data.Stat;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -126,7 +127,7 @@ public class TestFramework extends BaseClassForTests
         assertEquals(10064, polledValue.intValue());
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testSessionLossWithLongTimeout() throws Exception
     {
         final Timing timing = new Timing();
@@ -171,7 +172,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testConnectionState() throws Exception
     {
         Timing timing = new Timing();
@@ -201,7 +202,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCreateOrSetData() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -249,7 +250,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testQuietDelete() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -280,7 +281,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testNamespaceWithWatcher() throws Exception
     {
         CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
@@ -317,7 +318,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testNamespaceInBackground() throws Exception
     {
         CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
@@ -365,7 +366,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCreateACLSingleAuth() throws Exception
     {
         CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
@@ -422,7 +423,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testACLDeprecatedApis() throws Exception
     {
         CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder()
@@ -436,7 +437,7 @@ public class TestFramework extends BaseClassForTests
         assertArrayEquals(builder.getAuthValue(), "me1:pass1".getBytes());
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCreateACLMultipleAuths() throws Exception
     {
         // Add a few authInfos
@@ -515,7 +516,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCreateACLWithReset() throws Exception
     {
         Timing timing = new Timing();
@@ -576,7 +577,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCreateParents() throws Exception
     {
         CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
@@ -598,7 +599,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testOverrideCreateParentContainers() throws Exception
     {
         if ( !checkForContainers() )
@@ -631,7 +632,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCreateParentContainers() throws Exception
     {
         if ( !checkForContainers() )
@@ -671,7 +672,7 @@ public class TestFramework extends BaseClassForTests
         return true;
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCreatingParentsTheSame() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -697,7 +698,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testExistsCreatingParents() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -717,7 +718,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testExistsCreatingParentsInBackground() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -748,7 +749,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testEnsurePathWithNamespace() throws Exception
     {
         final String namespace = "jz";
@@ -772,7 +773,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCreateContainersWithNamespace() throws Exception
     {
         final String namespace = "container1";
@@ -793,7 +794,7 @@ public class TestFramework extends BaseClassForTests
     }
 
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCreateContainersUsingNamespace() throws Exception
     {
         final String namespace = "container2";
@@ -814,7 +815,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testNamespace() throws Exception
     {
         final String namespace = "TestNamespace";
@@ -846,7 +847,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCustomCallback() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -877,7 +878,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testSync() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -913,7 +914,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testSyncNew() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -944,7 +945,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testBackgroundDelete() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -981,7 +982,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testBackgroundDeleteWithChildren() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -1018,7 +1019,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testDelete() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -1036,7 +1037,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testDeleteWithChildren() throws Exception
     {
         CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
@@ -1056,7 +1057,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testDeleteGuaranteedWithChildren() throws Exception
     {
         CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
@@ -1076,7 +1077,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testGetSequentialChildren() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -1099,7 +1100,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testBackgroundGetDataWithWatch() throws Exception
     {
         final byte[] data1 = {1, 2, 3};
@@ -1152,7 +1153,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testBackgroundCreate() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -1185,7 +1186,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCreateModes() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -1239,7 +1240,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testSimple() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -1255,7 +1256,7 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testSequentialWithTrailingSeparator() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));

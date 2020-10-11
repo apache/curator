@@ -21,19 +21,20 @@ package org.apache.curator.framework.imps;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.CuratorTempFramework;
 import org.apache.curator.retry.RetryOneTime;
+import org.junit.jupiter.api.Test;
+
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class TestTempFramework extends BaseClassForTests
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testBasic() throws Exception
     {
         CuratorTempFramework        client = CuratorFrameworkFactory.builder().connectString(server.getConnectString()).retryPolicy(new RetryOneTime(1)).buildTemp();
@@ -50,7 +51,7 @@ public class TestTempFramework extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testInactivity() throws Exception
     {
         final CuratorTempFrameworkImpl        client = (CuratorTempFrameworkImpl)CuratorFrameworkFactory.builder().connectString(server.getConnectString()).retryPolicy(new RetryOneTime(1)).buildTemp(1, TimeUnit.SECONDS);

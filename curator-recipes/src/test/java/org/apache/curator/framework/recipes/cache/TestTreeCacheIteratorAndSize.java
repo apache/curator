@@ -23,12 +23,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Sets;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
-import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.compatibility.CuratorTestBase;
+import org.junit.jupiter.api.Test;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -38,7 +38,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class TestTreeCacheIteratorAndSize extends CuratorTestBase
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testBasic() throws Exception
     {
         final String[] nodes = {
@@ -94,7 +94,7 @@ public class TestTreeCacheIteratorAndSize extends CuratorTestBase
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testIteratorWithRandomGraph() throws Exception
     {
         Map<String, String> pathAndData = new HashMap<>();
@@ -146,7 +146,7 @@ public class TestTreeCacheIteratorAndSize extends CuratorTestBase
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testEmptyTree() throws Exception
     {
         try (CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)))
@@ -164,7 +164,7 @@ public class TestTreeCacheIteratorAndSize extends CuratorTestBase
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testWithDeletedNodes() throws Exception
     {
         try (CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)))

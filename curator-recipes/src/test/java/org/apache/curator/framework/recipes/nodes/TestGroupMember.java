@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.base.Function;
 import com.google.common.collect.Maps;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
@@ -33,6 +32,8 @@ import org.apache.curator.test.Timing;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.CloseableUtils;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
 import java.util.Map;
 
 @Tag(CuratorTestBase.zk35TestCompatibilityGroup)
@@ -40,7 +41,7 @@ public class TestGroupMember extends BaseClassForTests
 {
     // NOTE - don't need many tests as this class is just a wrapper around two existing recipes
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testBasic() throws Exception
     {
         Timing timing = new Timing();

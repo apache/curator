@@ -24,7 +24,6 @@ import java.io.Closeable;
 import java.util.Collections;
 import java.util.List;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
@@ -37,12 +36,13 @@ import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.discovery.ServiceProvider;
 import com.google.common.collect.Lists;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
 @Tag(CuratorTestBase.zk35TestCompatibilityGroup)
 public class TestServiceProvider extends BaseClassForTests
 {
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testBasic() throws Exception
     {
         List<Closeable> closeables = Lists.newArrayList();
@@ -77,7 +77,7 @@ public class TestServiceProvider extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testDisabledInstance() throws Exception
     {
         List<Closeable> closeables = Lists.newArrayList();

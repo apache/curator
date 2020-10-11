@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
@@ -36,6 +35,8 @@ import org.apache.curator.x.discovery.ServiceDiscovery;
 import org.apache.curator.x.discovery.ServiceDiscoveryBuilder;
 import org.apache.curator.x.discovery.ServiceInstance;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -54,7 +55,7 @@ public class TestServiceDiscovery extends BaseClassForTests
         }
     };
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCrashedServerMultiInstances() throws Exception
     {
         CuratorFramework client = null;
@@ -98,7 +99,7 @@ public class TestServiceDiscovery extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCrashedServer() throws Exception
     {
         CuratorFramework client = null;
@@ -140,7 +141,7 @@ public class TestServiceDiscovery extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCrashedInstance() throws Exception
     {
         CuratorFramework client = null;
@@ -170,7 +171,7 @@ public class TestServiceDiscovery extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testMultipleInstances() throws Exception
     {
         final String SERVICE_ONE = "one";
@@ -222,7 +223,7 @@ public class TestServiceDiscovery extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testBasic() throws Exception
     {
         CuratorFramework client = null;
@@ -249,7 +250,7 @@ public class TestServiceDiscovery extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testNoServerOnStart() throws Exception
     {
         Timing timing = new Timing();
@@ -282,7 +283,7 @@ public class TestServiceDiscovery extends BaseClassForTests
     }
 
     // CURATOR-164
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testUnregisterService() throws Exception
     {
         final String name = "name";
@@ -342,7 +343,7 @@ public class TestServiceDiscovery extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCleaning() throws Exception
     {
         CuratorFramework client = null;

@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.BackgroundCallback;
@@ -34,11 +33,12 @@ import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.retry.RetryOneTime;
-import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.WatchedEvent;
+import org.junit.jupiter.api.Test;
+
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
@@ -54,7 +54,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestSharedCount extends CuratorTestBase
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testMultiClients() throws Exception
     {
         final int CLIENT_QTY = 5;
@@ -165,7 +165,7 @@ public class TestSharedCount extends CuratorTestBase
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testSimple() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -209,7 +209,7 @@ public class TestSharedCount extends CuratorTestBase
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testSimpleVersioned() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -254,7 +254,7 @@ public class TestSharedCount extends CuratorTestBase
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testMultiClientVersioned() throws Exception
     {
         Timing timing = new Timing();
@@ -311,7 +311,7 @@ public class TestSharedCount extends CuratorTestBase
     }
 
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testMultiClientDifferentSeed() throws Exception
     {
         CuratorFramework client1 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -338,7 +338,7 @@ public class TestSharedCount extends CuratorTestBase
     }
 
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testDisconnectEventOnWatcherDoesNotRetry() throws Exception
     {
         final CountDownLatch gotSuspendEvent = new CountDownLatch(1);
@@ -372,7 +372,7 @@ public class TestSharedCount extends CuratorTestBase
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testDisconnectReconnectEventDoesNotFireValueWatcher() throws Exception
     {
         final CountDownLatch gotSuspendEvent = new CountDownLatch(1);
@@ -441,7 +441,7 @@ public class TestSharedCount extends CuratorTestBase
     }
 
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testDisconnectReconnectWithMultipleClients() throws Exception
     {
         Timing timing = new Timing();

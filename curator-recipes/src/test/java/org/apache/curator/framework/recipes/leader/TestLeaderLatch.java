@@ -29,7 +29,6 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.imps.TestCleanState;
@@ -48,6 +47,8 @@ import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -80,7 +81,7 @@ public class TestLeaderLatch extends BaseClassForTests
         volatile LeaderLatch latch;
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testWithCircuitBreaker() throws Exception
     {
         final int threadQty = 5;
@@ -170,7 +171,7 @@ public class TestLeaderLatch extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testUncreatedPathGetLeader() throws Exception
     {
         try ( CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)) )
@@ -181,7 +182,7 @@ public class TestLeaderLatch extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testWatchedNodeDeletedOnReconnect() throws Exception
     {
         final String latchPath = "/foo/bar";
@@ -217,7 +218,7 @@ public class TestLeaderLatch extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testSessionErrorPolicy() throws Exception
     {
         Timing timing = new Timing();
@@ -293,7 +294,7 @@ public class TestLeaderLatch extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testErrorPolicies() throws Exception
     {
         Timing2 timing = new Timing2();
@@ -378,7 +379,7 @@ public class TestLeaderLatch extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testProperCloseWithoutConnectionEstablished() throws Exception
     {
         server.stop();
@@ -427,7 +428,7 @@ public class TestLeaderLatch extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testResetRace() throws Exception
     {
         Timing timing = new Timing();
@@ -457,7 +458,7 @@ public class TestLeaderLatch extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCreateDeleteRace() throws Exception
     {
         Timing timing = new Timing();
@@ -489,7 +490,7 @@ public class TestLeaderLatch extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testLostConnection() throws Exception
     {
         final int PARTICIPANT_QTY = 10;
@@ -544,7 +545,7 @@ public class TestLeaderLatch extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCorrectWatching() throws Exception
     {
         final int PARTICIPANT_QTY = 10;
@@ -586,7 +587,7 @@ public class TestLeaderLatch extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testWaiting() throws Exception
     {
         final int LOOPS = 10;
@@ -649,19 +650,19 @@ public class TestLeaderLatch extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testBasic() throws Exception
     {
         basic(Mode.START_IMMEDIATELY);
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testBasicAlt() throws Exception
     {
         basic(Mode.START_IN_THREADS);
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCallbackSanity() throws Exception
     {
         final int PARTICIPANT_QTY = 10;
@@ -745,7 +746,7 @@ public class TestLeaderLatch extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCallbackNotifyLeader() throws Exception
     {
         final int PARTICIPANT_QTY = 10;
@@ -833,7 +834,7 @@ public class TestLeaderLatch extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCallbackDontNotify() throws Exception
     {
         final AtomicLong masterCounter = new AtomicLong(0);
@@ -912,7 +913,7 @@ public class TestLeaderLatch extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testNoServerAtStart()
     {
         CloseableUtils.closeQuietly(server);
@@ -1065,7 +1066,7 @@ public class TestLeaderLatch extends BaseClassForTests
         return leaders;
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testRelativePath()
     {
         assertThrows(IllegalArgumentException.class, ()->{

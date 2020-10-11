@@ -21,17 +21,17 @@ package org.apache.curator.framework.imps;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
+import org.junit.jupiter.api.Test;
 
 public class TestCompressionInTransactionNew extends BaseClassForTests
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testSetData() throws Exception
     {
         final String path = "/a";
@@ -58,7 +58,7 @@ public class TestCompressionInTransactionNew extends BaseClassForTests
         }
     }
     
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testSetCompressedAndUncompressed() throws Exception
     {
         final String path1 = "/a";
@@ -97,7 +97,7 @@ public class TestCompressionInTransactionNew extends BaseClassForTests
         }
     }    
     
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testSimple() throws Exception
     {
         final String path1 = "/a";
@@ -133,7 +133,7 @@ public class TestCompressionInTransactionNew extends BaseClassForTests
      * the same transaction
      * @throws Exception
      */
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCreateCompressedAndUncompressed() throws Exception
     {
         final String path1 = "/a";

@@ -20,7 +20,6 @@ package org.apache.curator.framework.recipes.leader;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -29,6 +28,8 @@ import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.ThreadUtils;
+import org.junit.jupiter.api.Test;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -38,7 +39,7 @@ public class TestLeaderSelectorWithExecutor extends BaseClassForTests
 {
     private static final ThreadFactory threadFactory = ThreadUtils.newThreadFactory("FeedGenerator");
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void test() throws Exception
     {
         Timing timing = new Timing();

@@ -21,7 +21,6 @@ package org.apache.curator.x.discovery.details;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import com.google.common.collect.Lists;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
@@ -31,6 +30,8 @@ import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.x.discovery.ServiceDiscovery;
 import org.apache.curator.x.discovery.ServiceDiscoveryBuilder;
 import org.apache.curator.x.discovery.ServiceInstance;
+import org.junit.jupiter.api.Test;
+
 import java.io.Closeable;
 import java.util.Arrays;
 import java.util.Collections;
@@ -38,7 +39,7 @@ import java.util.List;
 
 public class TestWatchedInstances extends BaseClassForTests
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testWatchedInstances() throws Exception
     {
         Timing timing = new Timing();

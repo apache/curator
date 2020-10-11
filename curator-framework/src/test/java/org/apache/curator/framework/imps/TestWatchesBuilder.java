@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.BackgroundCallback;
@@ -35,7 +34,6 @@ import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.retry.RetryOneTime;
-import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.CloseableUtils;
@@ -48,6 +46,8 @@ import org.apache.zookeeper.Watcher.Event.EventType;
 import org.apache.zookeeper.Watcher.WatcherType;
 import org.apache.zookeeper.ZooKeeper;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -102,7 +102,7 @@ public class TestWatchesBuilder extends CuratorTestBase
         }
     }
     
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testRemoveCuratorDefaultWatcher() throws Exception
     {
         Timing timing = new Timing();
@@ -141,7 +141,7 @@ public class TestWatchesBuilder extends CuratorTestBase
         }
     }
     
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testRemoveCuratorWatch() throws Exception
     {       
         Timing timing = new Timing();
@@ -180,7 +180,7 @@ public class TestWatchesBuilder extends CuratorTestBase
         }
     }    
     
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testRemoveWatch() throws Exception
     {       
         Timing timing = new Timing();
@@ -209,7 +209,7 @@ public class TestWatchesBuilder extends CuratorTestBase
         }
     }
     
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testRemoveWatchInBackgroundWithCallback() throws Exception
     {       
         Timing timing = new Timing();
@@ -252,7 +252,7 @@ public class TestWatchesBuilder extends CuratorTestBase
         }
     }
     
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testRemoveWatchInBackgroundWithNoCallback() throws Exception
     {       
         Timing timing = new Timing();
@@ -281,7 +281,7 @@ public class TestWatchesBuilder extends CuratorTestBase
         }
     }        
     
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testRemoveAllWatches() throws Exception
     {       
         Timing timing = new Timing();
@@ -312,7 +312,7 @@ public class TestWatchesBuilder extends CuratorTestBase
         }
     }  
     
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testRemoveAllDataWatches() throws Exception
     {       
         Timing timing = new Timing();
@@ -345,7 +345,7 @@ public class TestWatchesBuilder extends CuratorTestBase
         }
     }
     
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testRemoveAllChildWatches() throws Exception
     {       
         Timing timing = new Timing();
@@ -378,7 +378,7 @@ public class TestWatchesBuilder extends CuratorTestBase
         }
     }     
     
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testRemoveLocalWatch() throws Exception {
         Timing timing = new Timing();
         CuratorFrameworkImpl client = (CuratorFrameworkImpl)CuratorFrameworkFactory.builder().
@@ -414,7 +414,7 @@ public class TestWatchesBuilder extends CuratorTestBase
         }
     }
     
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testRemoveLocalWatchInBackground() throws Exception {
         Timing timing = new Timing();
         CuratorFrameworkImpl client = (CuratorFrameworkImpl)CuratorFrameworkFactory.builder().
@@ -455,7 +455,7 @@ public class TestWatchesBuilder extends CuratorTestBase
      * be thrown. 
      * @throws Exception
      */
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testRemoveUnregisteredWatcher() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.builder().
@@ -494,7 +494,7 @@ public class TestWatchesBuilder extends CuratorTestBase
      * Test the case where we try and remove an unregistered watcher but have the quietly flag set. In this case we expect success. 
      * @throws Exception
      */
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testRemoveUnregisteredWatcherQuietly() throws Exception
     {
         Timing timing = new Timing();
@@ -524,7 +524,7 @@ public class TestWatchesBuilder extends CuratorTestBase
         }
     }
     
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testGuaranteedRemoveWatch() throws Exception {
         Timing timing = new Timing();
         CuratorFramework client = CuratorFrameworkFactory.builder().
@@ -569,7 +569,7 @@ public class TestWatchesBuilder extends CuratorTestBase
         }
     }
     
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testGuaranteedRemoveWatchInBackground() throws Exception {
         Timing timing = new Timing();
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(),
@@ -618,7 +618,7 @@ public class TestWatchesBuilder extends CuratorTestBase
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     @Tag(CuratorTestBase.zk36Group)
     public void testPersistentWatch() throws Exception
     {
@@ -639,7 +639,7 @@ public class TestWatchesBuilder extends CuratorTestBase
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     @Tag(CuratorTestBase.zk36Group)
     public void testPersistentWatchInBackground() throws Exception
     {
@@ -663,7 +663,7 @@ public class TestWatchesBuilder extends CuratorTestBase
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     @Tag(CuratorTestBase.zk36Group)
     public void testPersistentRecursiveWatch() throws Exception
     {
@@ -686,7 +686,7 @@ public class TestWatchesBuilder extends CuratorTestBase
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     @Tag(CuratorTestBase.zk36Group)
     public void testPersistentRecursiveWatchInBackground() throws Exception
     {
@@ -712,7 +712,7 @@ public class TestWatchesBuilder extends CuratorTestBase
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     @Tag(CuratorTestBase.zk36Group)
     public void testPersistentRecursiveDefaultWatch() throws Exception
     {

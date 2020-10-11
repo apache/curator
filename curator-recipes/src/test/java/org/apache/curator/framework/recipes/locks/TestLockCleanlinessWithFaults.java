@@ -21,18 +21,19 @@ package org.apache.curator.framework.recipes.locks;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.imps.TestCleanState;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.zookeeper.KeeperException;
+import org.junit.jupiter.api.Test;
+
 import java.util.List;
 
 public class TestLockCleanlinessWithFaults extends BaseClassForTests
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testNodeDeleted() throws Exception
     {
         final String PATH = "/foo/bar";

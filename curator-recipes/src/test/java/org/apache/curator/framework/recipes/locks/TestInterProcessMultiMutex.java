@@ -22,12 +22,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.imps.TestCleanState;
 import org.apache.curator.retry.RetryOneTime;
-import org.apache.curator.test.BaseClassForTests;
+import org.junit.jupiter.api.Test;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -44,7 +44,7 @@ public class TestInterProcessMultiMutex extends TestInterProcessMutexBase
         return new InterProcessMultiLock(client, Arrays.asList(LOCK_PATH_1, LOCK_PATH_2));
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testSomeReleasesFail() throws IOException
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -100,7 +100,7 @@ public class TestInterProcessMultiMutex extends TestInterProcessMutexBase
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testSomeLocksFailToLock() throws IOException
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));

@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.ACLProvider;
@@ -37,6 +36,7 @@ import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.x.async.AsyncCuratorFramework;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.ACL;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
@@ -50,7 +50,7 @@ public class TestFrameworkBackground extends BaseClassForTests
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testErrorListener() throws Exception
     {
         //The first call to the ACL provider will return a reasonable
@@ -112,7 +112,7 @@ public class TestFrameworkBackground extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testListenerConnectedAtStart() throws Exception
     {
         server.stop();
@@ -157,7 +157,7 @@ public class TestFrameworkBackground extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testRetries() throws Exception
     {
         final int SLEEP = 1000;
@@ -205,7 +205,7 @@ public class TestFrameworkBackground extends BaseClassForTests
      * Attempt a background operation while Zookeeper server is down.
      * Return code must be {@link org.apache.zookeeper.KeeperException.Code#CONNECTIONLOSS}
      */
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCuratorCallbackOnError() throws Exception
     {
         Timing timing = new Timing();
@@ -233,7 +233,7 @@ public class TestFrameworkBackground extends BaseClassForTests
      * CURATOR-126
      * Shutdown the Curator client while there are still background operations running.
      */
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testShutdown() throws Exception
     {
         Timing timing = new Timing();

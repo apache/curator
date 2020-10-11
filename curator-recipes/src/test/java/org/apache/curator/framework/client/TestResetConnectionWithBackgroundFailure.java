@@ -21,7 +21,6 @@ package org.apache.curator.framework.client;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.google.common.collect.Queues;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.leader.LeaderSelector;
@@ -33,6 +32,7 @@ import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.concurrent.BlockingQueue;
@@ -42,7 +42,7 @@ public class TestResetConnectionWithBackgroundFailure extends BaseClassForTests
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testConnectionStateListener() throws Exception
     {
         server.stop();

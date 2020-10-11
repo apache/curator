@@ -24,10 +24,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import com.google.common.collect.Iterables;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.ZKPaths;
+import org.junit.jupiter.api.Test;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -59,12 +59,12 @@ public class TestTreeCacheRandomTree extends BaseTestTreeCache
     private final Random random = new Random();
     private boolean withDepth = false;
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testGiantRandomDeepTree() throws Exception {
         doTestGiantRandomDeepTree();
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testGiantRandomDeepTreeWithDepth() throws Exception {
         withDepth = true;
         doTestGiantRandomDeepTree();

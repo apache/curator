@@ -21,7 +21,6 @@ package org.apache.curator.framework.recipes.leader;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -37,6 +36,8 @@ import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Id;
 import org.apache.zookeeper.server.auth.DigestAuthenticationProvider;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
 import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
 import java.util.List;
@@ -47,7 +48,7 @@ public class TestLeaderAcls extends BaseClassForTests
 {
     private final Timing timing = new Timing();
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     @DisplayName("Validation test for CURATOR-365")
     public void testAclErrorWithLeader() throws Exception
     {

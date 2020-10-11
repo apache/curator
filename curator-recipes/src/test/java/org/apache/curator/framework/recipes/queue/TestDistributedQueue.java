@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -39,6 +38,7 @@ import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.Timing;
 import org.apache.zookeeper.CreateMode;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import java.util.ArrayList;
 import java.util.List;
@@ -60,7 +60,7 @@ public class TestDistributedQueue extends BaseClassForTests
 
     private static final QueueSerializer<TestQueueItem>  serializer = new QueueItemSerializer();
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testRetryAfterFailure_Curator56() throws Exception
     {
         /*
@@ -121,7 +121,7 @@ public class TestDistributedQueue extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testCustomExecutor() throws Exception
     {
         final int       ITERATIONS = 1000;
@@ -214,7 +214,7 @@ public class TestDistributedQueue extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testPutListener() throws Exception
     {
         final int                   itemQty = 10;
@@ -272,7 +272,7 @@ public class TestDistributedQueue extends BaseClassForTests
         }
     }
     
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testErrorMode() throws Exception
     {
         Timing                    timing = new Timing();
@@ -332,7 +332,7 @@ public class TestDistributedQueue extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testNoDuplicateProcessing() throws Exception
     {
         final int                 itemQty = 1000;
@@ -427,7 +427,7 @@ public class TestDistributedQueue extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testSafetyWithCrash() throws Exception
     {
         final int                   itemQty = 100;
@@ -564,7 +564,7 @@ public class TestDistributedQueue extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testSafetyBasic() throws Exception
     {
         final int                   itemQty = 10;
@@ -612,7 +612,7 @@ public class TestDistributedQueue extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testPutMulti() throws Exception
     {
         final int                   itemQty = 100;
@@ -657,7 +657,7 @@ public class TestDistributedQueue extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testMultiPutterSingleGetter() throws Exception
     {
         final int                   itemQty = 100;
@@ -697,7 +697,7 @@ public class TestDistributedQueue extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testFlush() throws Exception
     {
         final Timing                      timing = new Timing();
@@ -756,7 +756,7 @@ public class TestDistributedQueue extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testSimple() throws Exception
     {
         final int                   itemQty = 10;

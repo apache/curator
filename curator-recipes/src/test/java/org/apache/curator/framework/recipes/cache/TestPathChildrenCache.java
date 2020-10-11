@@ -29,7 +29,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.UnhandledErrorListener;
@@ -46,6 +45,8 @@ import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -54,7 +55,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @Tag(CuratorTestBase.zk35TestCompatibilityGroup)
 public class TestPathChildrenCache extends BaseClassForTests
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testParentContainerMissing() throws Exception
     {
         Timing timing = new Timing();
@@ -108,7 +109,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testInitializedEvenIfChildDeleted() throws Exception
     {
         final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -159,7 +160,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testWithBadConnect() throws Exception
     {
         final int serverPort = server.getPort();
@@ -237,7 +238,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testPostInitializedForEmpty() throws Exception
     {
         Timing timing = new Timing();
@@ -273,7 +274,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testAsyncInitialPopulation() throws Exception
     {
         Timing timing = new Timing();
@@ -315,7 +316,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testChildrenInitialized() throws Exception
     {
         Timing timing = new Timing();
@@ -369,7 +370,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testChildrenInitializedNormal() throws Exception
     {
         Timing timing = new Timing();
@@ -418,7 +419,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testUpdateWhenNotCachingData() throws Exception
     {
         Timing timing = new Timing();
@@ -465,7 +466,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testEnsurePath() throws Exception
     {
         Timing timing = new Timing();
@@ -496,7 +497,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testDeleteThenCreate() throws Exception
     {
         Timing timing = new Timing();
@@ -572,7 +573,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testRebuildAgainstOtherProcesses() throws Exception
     {
         Timing timing = new Timing();
@@ -667,7 +668,7 @@ public class TestPathChildrenCache extends BaseClassForTests
     }
 
     // see https://github.com/Netflix/curator/issues/27 - was caused by not comparing old->new data
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testIssue27() throws Exception
     {
         Timing timing = new Timing();
@@ -726,7 +727,7 @@ public class TestPathChildrenCache extends BaseClassForTests
     }
 
     // test Issue 27 using new rebuild() method
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testIssue27Alt() throws Exception
     {
         Timing timing = new Timing();
@@ -779,7 +780,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testKilledSession() throws Exception
     {
         Timing timing = new Timing();
@@ -840,7 +841,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testModes() throws Exception
     {
         Timing timing = new Timing();
@@ -864,7 +865,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testRebuildNode() throws Exception
     {
         Timing timing = new Timing();
@@ -950,7 +951,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testBasics() throws Exception
     {
         Timing timing = new Timing();
@@ -996,7 +997,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testBasicsOnTwoCachesWithSameExecutor() throws Exception
     {
         Timing timing = new Timing();
@@ -1067,7 +1068,7 @@ public class TestPathChildrenCache extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testDeleteNodeAfterCloseDoesntCallExecutor()
         throws Exception
     {
@@ -1108,7 +1109,7 @@ public class TestPathChildrenCache extends BaseClassForTests
      * shut down. See CURATOR-121, this was causing misleading warning messages to be logged.
      * @throws Exception
      */
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testInterruptedOperationOnShutdown() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), 30000, 30000, new RetryOneTime(1));

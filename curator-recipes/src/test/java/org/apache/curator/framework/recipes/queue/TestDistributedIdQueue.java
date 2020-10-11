@@ -21,7 +21,6 @@ package org.apache.curator.framework.recipes.queue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -29,6 +28,7 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryOneTime;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -41,7 +41,7 @@ public class TestDistributedIdQueue extends BaseClassForTests
 
     private static final QueueSerializer<TestQueueItem>  serializer = new QueueItemSerializer();
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testDeletingWithLock() throws Exception
     {
         DistributedIdQueue<TestQueueItem>  queue = null;
@@ -83,7 +83,7 @@ public class TestDistributedIdQueue extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testOrdering() throws Exception
     {
         final int                   ITEM_QTY = 100;
@@ -126,7 +126,7 @@ public class TestDistributedIdQueue extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testRequeuingWithLock() throws Exception
     {
         DistributedIdQueue<TestQueueItem>  queue = null;

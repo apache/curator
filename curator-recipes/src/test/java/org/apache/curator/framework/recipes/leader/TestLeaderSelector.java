@@ -28,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
@@ -41,6 +40,8 @@ import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
 import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
+import org.junit.jupiter.api.Test;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -56,7 +57,7 @@ public class TestLeaderSelector extends BaseClassForTests
 {
     private static final String PATH_NAME = "/one/two/me";
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testInterruption() throws Exception
     {
         Timing2 timing = new Timing2();
@@ -100,7 +101,7 @@ public class TestLeaderSelector extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testErrorPolicies() throws Exception
     {
         Timing2 timing = new Timing2();
@@ -191,7 +192,7 @@ public class TestLeaderSelector extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testLeaderNodeDeleteOnInterrupt() throws Exception
     {
         Timing2 timing = new Timing2();
@@ -256,7 +257,7 @@ public class TestLeaderSelector extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testInterruptLeadershipWithRequeue() throws Exception
     {
         Timing timing = new Timing();
@@ -293,7 +294,7 @@ public class TestLeaderSelector extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testInterruptLeadership() throws Exception
     {
         LeaderSelector selector = null;
@@ -341,7 +342,7 @@ public class TestLeaderSelector extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testRaceAtStateChanged() throws Exception
     {
         LeaderSelector selector = null;
@@ -403,7 +404,7 @@ public class TestLeaderSelector extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testAutoRequeue() throws Exception
     {
         Timing timing = new Timing();
@@ -441,7 +442,7 @@ public class TestLeaderSelector extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testServerDying() throws Exception
     {
         Timing timing = new Timing();
@@ -485,7 +486,7 @@ public class TestLeaderSelector extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testKillSessionThenCloseShouldElectNewLeader() throws Exception
     {
         final Timing timing = new Timing();
@@ -586,7 +587,7 @@ public class TestLeaderSelector extends BaseClassForTests
      * it restarts the TestingServer instead of killing the session
      * it uses autoRequeue instead of explicitly calling requeue
      */
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testKillServerThenCloseShouldElectNewLeader() throws Exception
     {
         final Timing timing = new Timing();
@@ -681,7 +682,7 @@ public class TestLeaderSelector extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testClosing() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -756,7 +757,7 @@ public class TestLeaderSelector extends BaseClassForTests
     }
 
     @SuppressWarnings({"ForLoopReplaceableByForEach"})
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testRotatingLeadership() throws Exception
     {
         final int LEADER_QTY = 5;

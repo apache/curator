@@ -22,17 +22,16 @@ package org.apache.curator.framework.recipes.cache;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
-import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.Compatibility;
+import org.junit.jupiter.api.Test;
 
 public class TestCuratorCacheBridge extends CuratorTestBase
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testImplementationSelection()
     {
         try (CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)))
@@ -51,7 +50,7 @@ public class TestCuratorCacheBridge extends CuratorTestBase
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testForceTreeCache()
     {
         System.setProperty("curator-cache-bridge-force-tree-cache", "true");

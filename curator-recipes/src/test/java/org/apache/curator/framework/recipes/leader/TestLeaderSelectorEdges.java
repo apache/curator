@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.BackgroundCallback;
@@ -36,6 +35,7 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.concurrent.CountDownLatch;
@@ -66,7 +66,7 @@ public class TestLeaderSelectorEdges extends BaseClassForTests
      *
      * @throws Exception
      */
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void flappingTest() throws Exception
     {
         final CuratorFramework client =
@@ -155,7 +155,7 @@ public class TestLeaderSelectorEdges extends BaseClassForTests
     /**
      * Create a protected node in background with a retry policy
      */
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void createProtectedNodeInBackgroundTest() throws Exception
     {
         final CuratorFramework client =
@@ -207,7 +207,7 @@ public class TestLeaderSelectorEdges extends BaseClassForTests
     /**
      * Same test as above but without a retry policy
      */
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void createProtectedNodeInBackgroundTestNoRetry() throws Exception
     {
         final CuratorFramework client =

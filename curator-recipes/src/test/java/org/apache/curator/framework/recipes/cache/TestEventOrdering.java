@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
@@ -30,6 +29,8 @@ import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.KeeperException;
+import org.junit.jupiter.api.Test;
+
 import java.io.Closeable;
 import java.util.List;
 import java.util.Random;
@@ -67,7 +68,7 @@ public abstract class TestEventOrdering<T extends Closeable> extends BaseClassFo
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testEventOrdering() throws Exception
     {
         ExecutorService executorService = Executors.newFixedThreadPool(THREAD_QTY);

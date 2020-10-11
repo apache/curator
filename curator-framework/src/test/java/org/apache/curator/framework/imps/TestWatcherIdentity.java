@@ -21,7 +21,6 @@ package org.apache.curator.framework.imps;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import com.google.common.collect.Sets;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.CuratorWatcher;
@@ -31,6 +30,8 @@ import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.junit.jupiter.api.Test;
+
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -60,7 +61,7 @@ public class TestWatcherIdentity extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testSameWatcherPerZKDocs() throws Exception
     {
         CountZKWatcher actualWatcher = new CountZKWatcher();
@@ -92,7 +93,7 @@ public class TestWatcherIdentity extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testSameCuratorWatcherPerZKDocs() throws Exception
     {
         CountCuratorWatcher actualWatcher = new CountCuratorWatcher();
@@ -124,7 +125,7 @@ public class TestWatcherIdentity extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testSetAddition()
     {
         Watcher watcher = new Watcher()
@@ -146,7 +147,7 @@ public class TestWatcherIdentity extends BaseClassForTests
         assertEquals(set.size(), 1);
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCuratorWatcher() throws Exception
     {
         Timing timing = new Timing();
@@ -171,7 +172,7 @@ public class TestWatcherIdentity extends BaseClassForTests
     }
 
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testZKWatcher() throws Exception
     {
         Timing timing = new Timing();

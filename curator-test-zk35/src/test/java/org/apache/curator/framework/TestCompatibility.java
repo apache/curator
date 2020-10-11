@@ -19,15 +19,14 @@
 package org.apache.curator.framework;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.retry.RetryOneTime;
-import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.x.async.AsyncCuratorFramework;
+import org.junit.jupiter.api.Test;
 
 public class TestCompatibility extends CuratorTestBase
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testPersistentWatchesNotAvailable()
     {
         assertThrows(IllegalStateException.class, ()-> {
@@ -38,7 +37,7 @@ public class TestCompatibility extends CuratorTestBase
         });
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testPersistentWatchesNotAvailableAsync()
     {
         assertThrows(IllegalStateException.class, ()->{

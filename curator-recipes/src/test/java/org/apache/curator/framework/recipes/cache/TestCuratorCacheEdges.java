@@ -24,22 +24,22 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.retry.RetryOneTime;
-import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
 import java.util.concurrent.CountDownLatch;
 
 @Tag(CuratorTestBase.zk36Group)
 public class TestCuratorCacheEdges extends CuratorTestBase
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testReconnectConsistency() throws Exception
     {
         final byte[] first = "one".getBytes();
@@ -105,7 +105,7 @@ public class TestCuratorCacheEdges extends CuratorTestBase
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testServerLoss() throws Exception   // mostly copied from TestPathChildrenCacheInCluster
     {
         try (TestingCluster cluster = new TestingCluster(3))

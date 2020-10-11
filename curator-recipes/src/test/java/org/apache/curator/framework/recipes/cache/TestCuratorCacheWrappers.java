@@ -28,13 +28,13 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import com.google.common.collect.ImmutableSet;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
-import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
 import java.util.AbstractMap;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -49,7 +49,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @Tag(CuratorTestBase.zk36Group)
 public class TestCuratorCacheWrappers extends CuratorTestBase
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testPathChildrenCache() throws Exception    // copied from TestPathChildrenCache#testBasics()
     {
         try (CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1)))
@@ -102,7 +102,7 @@ public class TestCuratorCacheWrappers extends CuratorTestBase
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testTreeCache() throws Exception    // copied from TestTreeCache#testBasics()
     {
         BaseTestTreeCache treeCacheBase = new BaseTestTreeCache();
@@ -142,7 +142,7 @@ public class TestCuratorCacheWrappers extends CuratorTestBase
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testNodeCache() throws Exception    // copied from TestNodeCache#testBasics()
     {
         try ( CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1)) )

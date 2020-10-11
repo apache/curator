@@ -22,7 +22,6 @@ package org.apache.curator.framework.client;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Queues;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode;
@@ -33,6 +32,8 @@ import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
+import org.junit.jupiter.api.Test;
+
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -42,7 +43,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class TestBackgroundStates extends BaseClassForTests
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testListenersReconnectedIsOK() throws Exception
     {
         server.close();
@@ -94,7 +95,7 @@ public class TestBackgroundStates extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testConnectionStateListener() throws Exception
     {
         server.close();

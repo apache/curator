@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -31,6 +30,7 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.Timing;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -42,7 +42,7 @@ import java.util.concurrent.TimeUnit;
 
 public class TestDistributedDelayQueue extends BaseClassForTests
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testLateAddition() throws Exception
     {
         Timing                          timing = new Timing();
@@ -73,7 +73,7 @@ public class TestDistributedDelayQueue extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testBasic() throws Exception
     {
         Timing                          timing = new Timing();
@@ -100,7 +100,7 @@ public class TestDistributedDelayQueue extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testSimple() throws Exception
     {
         final int QTY = 10;
@@ -138,7 +138,7 @@ public class TestDistributedDelayQueue extends BaseClassForTests
         }
     }
     
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testSorting() throws Exception
     {
         Timing                          timing = new Timing();

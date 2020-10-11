@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
@@ -33,6 +32,8 @@ import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
+import org.junit.jupiter.api.Test;
+
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CountDownLatch;
@@ -43,7 +44,7 @@ public class TestBlockUntilConnected extends BaseClassForTests
     /**
      * Test the case where we're already connected
      */
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testBlockUntilConnectedCurrentlyConnected() throws Exception
     {
         Timing timing = new Timing();
@@ -85,7 +86,7 @@ public class TestBlockUntilConnected extends BaseClassForTests
     /**
      * Test the case where we are not currently connected and never have been
      */
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testBlockUntilConnectedCurrentlyNeverConnected()
     {
         CuratorFramework client = CuratorFrameworkFactory.builder().
@@ -111,7 +112,7 @@ public class TestBlockUntilConnected extends BaseClassForTests
     /**
      * Test the case where we are not currently connected, but have been previously
      */
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testBlockUntilConnectedCurrentlyAwaitingReconnect()
     {
         Timing timing = new Timing();
@@ -166,7 +167,7 @@ public class TestBlockUntilConnected extends BaseClassForTests
      * Test the case where we are not currently connected and time out before a
      * connection becomes available.
      */
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testBlockUntilConnectedConnectTimeout()
     {
         //Kill the server
@@ -196,7 +197,7 @@ public class TestBlockUntilConnected extends BaseClassForTests
      * Test the case where we are not currently connected and the thread gets interrupted
      * prior to a connection becoming available
      */
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testBlockUntilConnectedInterrupt()
     {
         //Kill the server
@@ -240,7 +241,7 @@ public class TestBlockUntilConnected extends BaseClassForTests
     /**
      * Test that we are actually connected every time that we block until connection is established in a tight loop.
      */
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testBlockUntilConnectedTightLoop() throws InterruptedException
     {
         CuratorFramework client;

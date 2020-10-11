@@ -25,22 +25,22 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.ImmutableSet;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.recipes.cache.TreeCacheEvent.Type;
-import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.CreateMode;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Tag(CuratorTestBase.zk35TestCompatibilityGroup)
 public class TestTreeCache extends BaseTestTreeCache
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testSelector() throws Exception
     {
         client.create().forPath("/root");
@@ -79,7 +79,7 @@ public class TestTreeCache extends BaseTestTreeCache
         assertNoMoreEvents();
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testStartup() throws Exception
     {
         client.create().forPath("/test");
@@ -104,7 +104,7 @@ public class TestTreeCache extends BaseTestTreeCache
         assertNull(cache.getCurrentChildren("/test/non_exist"));
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCreateParents() throws Exception
     {
         cache = newTreeCacheWithListeners(client, "/one/two/three");
@@ -122,7 +122,7 @@ public class TestTreeCache extends BaseTestTreeCache
         assertNotNull(client.checkExists().forPath("/one/two/three"));
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testStartEmpty() throws Exception
     {
         cache = newTreeCacheWithListeners(client, "/test");
@@ -134,7 +134,7 @@ public class TestTreeCache extends BaseTestTreeCache
         assertNoMoreEvents();
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testStartEmptyDeeper() throws Exception
     {
         cache = newTreeCacheWithListeners(client, "/test/foo/bar");
@@ -148,7 +148,7 @@ public class TestTreeCache extends BaseTestTreeCache
         assertNoMoreEvents();
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testDepth0() throws Exception
     {
         client.create().forPath("/test");
@@ -169,7 +169,7 @@ public class TestTreeCache extends BaseTestTreeCache
         assertNull(cache.getCurrentData("/test/non_exist"));
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testDepth1() throws Exception
     {
         client.create().forPath("/test");
@@ -195,7 +195,7 @@ public class TestTreeCache extends BaseTestTreeCache
         assertNull(cache.getCurrentChildren("/test/non_exist"));
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testDepth1Deeper() throws Exception
     {
         client.create().forPath("/test");
@@ -216,7 +216,7 @@ public class TestTreeCache extends BaseTestTreeCache
         assertNoMoreEvents();
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testAsyncInitialPopulation() throws Exception
     {
         client.create().forPath("/test");
@@ -230,7 +230,7 @@ public class TestTreeCache extends BaseTestTreeCache
         assertNoMoreEvents();
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testFromRoot() throws Exception
     {
         client.create().forPath("/test");
@@ -250,7 +250,7 @@ public class TestTreeCache extends BaseTestTreeCache
         assertEquals(new String(cache.getCurrentData("/test/one").getData()), "hey there");
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testFromRootWithDepth() throws Exception
     {
         client.create().forPath("/test");
@@ -269,7 +269,7 @@ public class TestTreeCache extends BaseTestTreeCache
         assertNull(cache.getCurrentChildren("/test/one"));
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testWithNamespace() throws Exception
     {
         client.create().forPath("/outer");
@@ -289,7 +289,7 @@ public class TestTreeCache extends BaseTestTreeCache
         assertEquals(new String(cache.getCurrentData("/test/one").getData()), "hey there");
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testWithNamespaceAtRoot() throws Exception
     {
         client.create().forPath("/outer");
@@ -312,7 +312,7 @@ public class TestTreeCache extends BaseTestTreeCache
         assertEquals(new String(cache.getCurrentData("/test/one").getData()), "hey there");
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testSyncInitialPopulation() throws Exception
     {
         cache = newTreeCacheWithListeners(client, "/test");
@@ -326,7 +326,7 @@ public class TestTreeCache extends BaseTestTreeCache
         assertNoMoreEvents();
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testChildrenInitialized() throws Exception
     {
         client.create().forPath("/test", "".getBytes());
@@ -344,7 +344,7 @@ public class TestTreeCache extends BaseTestTreeCache
         assertNoMoreEvents();
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testUpdateWhenNotCachingData() throws Exception
     {
         client.create().forPath("/test");
@@ -366,7 +366,7 @@ public class TestTreeCache extends BaseTestTreeCache
         assertNull(cache.getCurrentData("/test/foo").getData());
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testDeleteThenCreate() throws Exception
     {
         client.create().forPath("/test");
@@ -391,7 +391,7 @@ public class TestTreeCache extends BaseTestTreeCache
         assertNoMoreEvents();
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testDeleteThenCreateRoot() throws Exception
     {
         client.create().forPath("/test");
@@ -415,7 +415,7 @@ public class TestTreeCache extends BaseTestTreeCache
         assertNoMoreEvents();
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testKilledSession() throws Exception
     {
         client.create().forPath("/test");
@@ -437,7 +437,7 @@ public class TestTreeCache extends BaseTestTreeCache
         assertNoMoreEvents();
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testBasics() throws Exception
     {
         client.create().forPath("/test");
@@ -470,7 +470,7 @@ public class TestTreeCache extends BaseTestTreeCache
         assertNoMoreEvents();
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testBasicsWithNoZkWatches() throws Exception
     {
         client.create().forPath("/test");
@@ -494,7 +494,7 @@ public class TestTreeCache extends BaseTestTreeCache
         assertNoMoreEvents();
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testBasicsOnTwoCaches() throws Exception
     {
         TreeCache cache2 = newTreeCacheWithListeners(client, "/test");
@@ -550,7 +550,7 @@ public class TestTreeCache extends BaseTestTreeCache
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testDeleteNodeAfterCloseDoesntCallExecutor() throws Exception
     {
         client.create().forPath("/test");
@@ -574,7 +574,7 @@ public class TestTreeCache extends BaseTestTreeCache
     /**
      * Make sure TreeCache gets to a sane state when we can't initially connect to server.
      */
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testServerNotStartedYet() throws Exception
     {
         // Stop the existing server.
@@ -599,7 +599,7 @@ public class TestTreeCache extends BaseTestTreeCache
         assertNoMoreEvents();
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testErrorListener() throws Exception
     {
         client.create().forPath("/test");

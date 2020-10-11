@@ -21,13 +21,14 @@ package org.apache.curator.framework.recipes.barriers;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.Timing;
+import org.junit.jupiter.api.Test;
+
 import java.io.Closeable;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -44,7 +45,7 @@ public class TestDistributedDoubleBarrier extends BaseClassForTests
 {
     private static final int           QTY = 5;
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testMultiClient() throws Exception
     {
         final Timing            timing = new Timing();
@@ -111,7 +112,7 @@ public class TestDistributedDoubleBarrier extends BaseClassForTests
         assertEquals(max.get(), QTY);
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testOverSubscribed() throws Exception
     {
         final Timing                    timing = new Timing();
@@ -166,7 +167,7 @@ public class TestDistributedDoubleBarrier extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testBasic() throws Exception
     {
         final Timing              timing = new Timing();

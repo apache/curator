@@ -20,7 +20,6 @@ package org.apache.curator.framework.ensemble;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.ensemble.EnsembleProvider;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -31,6 +30,8 @@ import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
+import org.junit.jupiter.api.Test;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 
@@ -38,7 +39,7 @@ public class TestEnsembleProvider extends BaseClassForTests
 {
     private final Timing timing = new Timing();
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testBasic()
     {
         Semaphore counter = new Semaphore(0);
@@ -54,7 +55,7 @@ public class TestEnsembleProvider extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testAfterSessionExpiration() throws Exception
     {
         TestingServer oldServer = server;

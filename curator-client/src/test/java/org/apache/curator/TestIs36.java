@@ -20,15 +20,14 @@ package org.apache.curator;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
-import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.Compatibility;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
 public class TestIs36 extends CuratorTestBase
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     @Tag(zk36Group)
     public void testIsZk36()
     {

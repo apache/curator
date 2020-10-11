@@ -22,17 +22,18 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.test.Timing;
+import org.junit.jupiter.api.Test;
+
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TestSessionFailRetryLoop extends BaseClassForTests
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testRetry() throws Exception
     {
         Timing                          timing = new Timing();
@@ -101,7 +102,7 @@ public class TestSessionFailRetryLoop extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testRetryStatic() throws Exception
     {
         Timing                          timing = new Timing();
@@ -173,7 +174,7 @@ public class TestSessionFailRetryLoop extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testBasic() throws Exception
     {
         final Timing                          timing = new Timing();
@@ -230,7 +231,7 @@ public class TestSessionFailRetryLoop extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testBasicStatic() throws Exception
     {
         Timing                          timing = new Timing();

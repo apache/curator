@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.ensemble.fixed.FixedEnsembleProvider;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
@@ -36,6 +35,7 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class BasicTests extends BaseClassForTests
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testFactory() throws Exception
     {
         final ZooKeeper         mockZookeeper = Mockito.mock(ZooKeeper.class);
@@ -60,7 +60,7 @@ public class BasicTests extends BaseClassForTests
         assertEquals(client.getZooKeeper(), mockZookeeper);
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testExpiredSession() throws Exception
     {
         // see http://wiki.apache.org/hadoop/ZooKeeper/FAQ#A4
@@ -122,7 +122,7 @@ public class BasicTests extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testReconnect() throws Exception
     {
         CuratorZookeeperClient client = new CuratorZookeeperClient(server.getConnectString(), 10000, 10000, null, new RetryOneTime(1));
@@ -148,7 +148,7 @@ public class BasicTests extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testSimple() throws Exception
     {
         CuratorZookeeperClient client = new CuratorZookeeperClient(server.getConnectString(), 10000, 10000, null, new RetryOneTime(1));
@@ -165,7 +165,7 @@ public class BasicTests extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testBackgroundConnect() throws Exception
     {
         final int CONNECTION_TIMEOUT_MS = 4000;

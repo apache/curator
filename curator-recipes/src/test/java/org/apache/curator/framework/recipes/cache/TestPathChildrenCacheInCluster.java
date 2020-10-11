@@ -21,7 +21,6 @@ package org.apache.curator.framework.recipes.cache;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Queues;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.CloseableUtils;
@@ -33,6 +32,8 @@ import org.apache.curator.test.TestingCluster;
 import org.apache.curator.test.Timing;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -41,7 +42,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @Tag(CuratorTestBase.zk35TestCompatibilityGroup)
 public class TestPathChildrenCacheInCluster extends BaseClassForTests
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     @Disabled  // this test is very flakey - it needs to be re-written at some point
     public void testMissedDelete() throws Exception
     {
@@ -98,7 +99,7 @@ public class TestPathChildrenCacheInCluster extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testServerLoss() throws Exception
     {
         Timing                  timing = new Timing();

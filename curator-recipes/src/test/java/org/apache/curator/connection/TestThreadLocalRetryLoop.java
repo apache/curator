@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.RetryLoop;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.RetrySleeper;
@@ -30,11 +29,12 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.retry.RetryNTimes;
-import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.zookeeper.KeeperException;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -46,7 +46,7 @@ public class TestThreadLocalRetryLoop extends CuratorTestBase
     private static final int retryCount = 4;
     private static final String backgroundThreadNameBase = "ignore-curator-background-thread";
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     @DisplayName("Check for fix for CURATOR-559")
     public void testRecursingRetry() throws Exception
     {
@@ -59,7 +59,7 @@ public class TestThreadLocalRetryLoop extends CuratorTestBase
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     @DisplayName("Check for fix for CURATOR-559 with multiple threads")
     public void testThreadedRecursingRetry() throws Exception
     {
@@ -79,7 +79,7 @@ public class TestThreadLocalRetryLoop extends CuratorTestBase
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testBadReleaseWithNoGet()
     {
         assertThrows(NullPointerException.class, ()-> {

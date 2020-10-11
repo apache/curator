@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Collections;
 import java.util.List;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -35,10 +34,11 @@ import org.apache.curator.retry.RetryOneTime;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.KeeperException.NoAuthException;
 import org.apache.zookeeper.data.ACL;
+import org.junit.jupiter.api.Test;
 
 public class TestNamespaceFacade extends BaseClassForTests
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testInvalid() throws Exception
     {
         try
@@ -52,7 +52,7 @@ public class TestNamespaceFacade extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testGetNamespace() throws Exception
     {
         CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -76,7 +76,7 @@ public class TestNamespaceFacade extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testSimultaneous() throws Exception
     {
         CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -99,7 +99,7 @@ public class TestNamespaceFacade extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testCache() throws Exception
     {
         CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -116,7 +116,7 @@ public class TestNamespaceFacade extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testBasic() throws Exception
     {
         CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -143,7 +143,7 @@ public class TestNamespaceFacade extends BaseClassForTests
     /**
      * CURATOR-128: access root node within a namespace.
      */
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testRootAccess() throws Exception
     {
         CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -181,7 +181,7 @@ public class TestNamespaceFacade extends BaseClassForTests
     }
 
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testIsStarted() throws Exception
     {
         CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -198,7 +198,7 @@ public class TestNamespaceFacade extends BaseClassForTests
      * Test that ACLs work on a NamespaceFacade. See CURATOR-132
      * @throws Exception
      */
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testACL() throws Exception
     {
         CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -233,7 +233,7 @@ public class TestNamespaceFacade extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testUnfixForEmptyNamespace() {
         CuratorFramework client = CuratorFrameworkFactory.builder().namespace("").retryPolicy(new RetryOneTime(1)).connectString("foo").build();
         CuratorFrameworkImpl clientImpl = (CuratorFrameworkImpl) client;

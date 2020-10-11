@@ -29,18 +29,18 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.retry.RetryOneTime;
-import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.CompletionStage;
@@ -70,7 +70,7 @@ public class TestBasicOperations extends CompletableBaseClassForTests
         super.teardown();
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCreateTransactionWithMode() throws Exception
     {
         complete(AsyncWrappers.asyncEnsureContainers(client, "/test"));
@@ -82,7 +82,7 @@ public class TestBasicOperations extends CompletableBaseClassForTests
         assertEquals(client.unwrap().getChildren().forPath("/test").size(), 2);
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCrud()
     {
         AsyncStage<String> createStage = client.create().forPath("/test", "one".getBytes());
@@ -104,7 +104,7 @@ public class TestBasicOperations extends CompletableBaseClassForTests
         complete(setDataIfStage, (data, e) -> assertArrayEquals(data, "last".getBytes()));
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testException()
     {
         CountDownLatch latch = new CountDownLatch(1);
@@ -117,7 +117,7 @@ public class TestBasicOperations extends CompletableBaseClassForTests
         assertTrue(timing.awaitLatch(latch));
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testWatching()
     {
         CountDownLatch latch = new CountDownLatch(1);
@@ -130,7 +130,7 @@ public class TestBasicOperations extends CompletableBaseClassForTests
         assertTrue(timing.awaitLatch(latch));
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testWatchingWithServerLoss() throws Exception
     {
         AsyncStage<Stat> stage = client.watched().checkExists().forPath("/test");
@@ -157,7 +157,7 @@ public class TestBasicOperations extends CompletableBaseClassForTests
         assertTrue(timing.awaitLatch(latch));
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testResultWrapper() throws Exception
     {
         CompletionStage<AsyncResult<String>> resultStage = AsyncResult.of(client.create().forPath("/first"));
@@ -195,7 +195,7 @@ public class TestBasicOperations extends CompletableBaseClassForTests
         });
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testGetDataWithStat()
     {
         complete(client.create().forPath("/test", "hey".getBytes()));

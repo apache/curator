@@ -20,22 +20,22 @@ package org.apache.curator.framework.imps;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
-import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.ZookeeperFactory;
 import org.apache.curator.x.async.AsyncCuratorFramework;
 import org.apache.zookeeper.AddWatchMode;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+import org.junit.jupiter.api.Test;
+
 import java.util.concurrent.CountDownLatch;
 
 public class TestAddWatch extends CuratorTestBase
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testPersistentRecursiveWatch() throws Exception
     {
         try ( CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)) )
@@ -58,7 +58,7 @@ public class TestAddWatch extends CuratorTestBase
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testPersistentRecursiveDefaultWatch() throws Exception
     {
         CountDownLatch latch = new CountDownLatch(6);   // 5 creates plus the initial sync

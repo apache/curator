@@ -22,7 +22,6 @@ import static org.apache.zookeeper.ZooDefs.Ids.ANYONE_ID_UNSAFE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.ACLProvider;
@@ -33,6 +32,8 @@ import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
+import org.junit.jupiter.api.Test;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -44,7 +45,7 @@ public class TestExistsBuilder extends BaseClassForTests {
      * Tests that the ACL list provided to the exists builder is used for creating the parents, when it is applied to
      * parents.
      */
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void  testExistsWithParentsWithAclApplyToParents() throws Exception
     {
         CuratorFramework client = createClient(new DefaultACLProvider());
@@ -66,7 +67,7 @@ public class TestExistsBuilder extends BaseClassForTests {
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void  testExistsWithParentsWithAclApplyToParentsInBackground() throws Exception
     {
         CuratorFramework client = createClient(new DefaultACLProvider());

@@ -28,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.ACLProvider;
@@ -50,6 +49,7 @@ import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
@@ -96,7 +96,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testListenersReconnectedIsFast() throws Exception
     {
         server.stop();
@@ -146,7 +146,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testNoServerAtStart() throws Exception
     {
         server.stop();
@@ -191,7 +191,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testNullCurator()
     {
         assertThrows(NullPointerException.class, ()-> {
@@ -199,7 +199,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         });
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testNullPath()
     {
         assertThrows(IllegalArgumentException.class, ()-> {
@@ -208,7 +208,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         });
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testNullData()
     {
         assertThrows(NullPointerException.class, ()-> {
@@ -217,7 +217,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         });
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testNullMode()
     {
         assertThrows(NullPointerException.class, ()->{
@@ -226,13 +226,13 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             });
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testSettingDataSequential() throws Exception
     {
         setDataTest(PersistentEphemeralNode.Mode.EPHEMERAL_SEQUENTIAL);
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testSettingData() throws Exception
     {
         setDataTest(PersistentEphemeralNode.Mode.EPHEMERAL);
@@ -280,7 +280,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testDeletesNodeWhenClosed() throws Exception
     {
         CuratorFramework curator = newCurator();
@@ -303,7 +303,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         assertNodeDoesNotExist(curator, path);
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testClosingMultipleTimes() throws Exception
     {
         CuratorFramework curator = newCurator();
@@ -321,7 +321,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         assertNodeDoesNotExist(curator, path);
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testDeletesNodeWhenSessionDisconnects() throws Exception
     {
         CuratorFramework curator = newCurator();
@@ -352,7 +352,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testRecreatesNodeWhenSessionReconnects() throws Exception
     {
         CuratorFramework curator = newCurator();
@@ -387,7 +387,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testRecreatesNodeWhenSessionReconnectsMultipleTimes() throws Exception
     {
         CuratorFramework curator = newCurator();
@@ -429,7 +429,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testRecreatesNodeWhenEphemeralOwnerSessionExpires() throws Exception
     {
         CuratorFramework curator = newCurator();
@@ -470,7 +470,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testRecreatesNodeWhenItGetsDeleted() throws Exception
     {
         CuratorFramework curator = newCurator();
@@ -499,7 +499,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testNodesCreateUniquePaths() throws Exception
     {
         CuratorFramework curator = newCurator();
@@ -528,7 +528,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testData() throws Exception
     {
         CuratorFramework curator = newCurator();
@@ -553,7 +553,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
      * that if data is present in the PersistentEphermalNode that it is still set.
      * @throws Exception
      */
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testSetDataWhenNodeExists() throws Exception
     {
         CuratorFramework curator = newCurator();
@@ -575,7 +575,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testSetDataWhenDisconnected() throws Exception
     {
         CuratorFramework curator = newCurator();
@@ -622,7 +622,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testSetUpdatedDataWhenReconnected() throws Exception
     {
         CuratorFramework curator = newCurator();
@@ -668,7 +668,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
      * appended to the new protected node name. This meant that a new node got created on each reconnect.
      * @throws Exception
      */
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testProtected() throws Exception
     {
         CuratorFramework curator = newCurator();
@@ -699,7 +699,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testNoCreatePermission() throws Exception
     {
         CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
@@ -735,7 +735,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testNoWritePermission() throws Exception
     {
         final ACLProvider aclProvider = new ACLProvider() {

@@ -22,18 +22,19 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.CompressionProvider;
 import org.apache.curator.retry.RetryOneTime;
+import org.junit.jupiter.api.Test;
+
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestCompression extends BaseClassForTests
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCompressionProvider() throws Exception
     {
         final byte[]            data = "here's a string".getBytes();
@@ -87,7 +88,7 @@ public class TestCompression extends BaseClassForTests
         assertEquals(decompressCounter.get(), 1);
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testSetData() throws Exception
     {
         final byte[]            data = "here's a string".getBytes();
@@ -109,7 +110,7 @@ public class TestCompression extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testSimple() throws Exception
     {
         final byte[]            data = "here's a string".getBytes();

@@ -20,7 +20,6 @@
 package org.apache.curator.framework.imps;
 
 import com.google.common.collect.Lists;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.ensemble.EnsembleProvider;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -29,7 +28,6 @@ import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.retry.ExponentialBackoffRetry;
-import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
 import org.apache.curator.test.TestingZooKeeperServer;
@@ -101,7 +99,7 @@ public class TestReconfiguration extends CuratorTestBase
     }
 
     @SuppressWarnings("ConstantConditions")
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     @Disabled
     public void testApiPermutations() throws Exception
     {
@@ -171,7 +169,7 @@ public class TestReconfiguration extends CuratorTestBase
         client.reconfig().inBackground().withNewMembers().storingStatIn(stat).fromConfig(0).forEnsemble();
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testBasicGetConfig() throws Exception
     {
         try ( CuratorFramework client = newClient())
@@ -185,7 +183,7 @@ public class TestReconfiguration extends CuratorTestBase
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testAddWithoutEnsembleTracker() throws Exception
     {
         final String initialClusterCS = cluster.getConnectString();
@@ -230,7 +228,7 @@ public class TestReconfiguration extends CuratorTestBase
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testAdd() throws Exception
     {
         try ( CuratorFramework client = newClient())
@@ -259,7 +257,7 @@ public class TestReconfiguration extends CuratorTestBase
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testAddAsync() throws Exception
     {
         try ( CuratorFramework client = newClient())
@@ -301,7 +299,7 @@ public class TestReconfiguration extends CuratorTestBase
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testAddAndRemove() throws Exception
     {
         try ( CuratorFramework client = newClient())
@@ -390,7 +388,7 @@ public class TestReconfiguration extends CuratorTestBase
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     @Disabled // it's what this test is inteded to do and it keeps failing - disable for now
     public void testNewMembers() throws Exception
     {
@@ -438,7 +436,7 @@ public class TestReconfiguration extends CuratorTestBase
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testConfigToConnectionStringIPv4Normal() throws Exception
     {
         String config = "server.1=10.1.2.3:2888:3888:participant;10.2.3.4:2181";
@@ -446,7 +444,7 @@ public class TestReconfiguration extends CuratorTestBase
         assertEquals("10.2.3.4:2181", configString);
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testConfigToConnectionStringIPv6Normal() throws Exception
     {
         String config = "server.1=[1010:0001:0002:0003:0004:0005:0006:0007]:2888:3888:participant;[2001:db8:85a3:0:0:8a2e:370:7334]:2181";
@@ -454,7 +452,7 @@ public class TestReconfiguration extends CuratorTestBase
         assertEquals("2001:db8:85a3:0:0:8a2e:370:7334:2181", configString);
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testConfigToConnectionStringIPv4NoClientAddr() throws Exception
     {
         String config = "server.1=10.1.2.3:2888:3888:participant;2181";
@@ -462,7 +460,7 @@ public class TestReconfiguration extends CuratorTestBase
         assertEquals("10.1.2.3:2181", configString);
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testConfigToConnectionStringIPv4WildcardClientAddr() throws Exception
     {
         String config = "server.1=10.1.2.3:2888:3888:participant;0.0.0.0:2181";
@@ -470,7 +468,7 @@ public class TestReconfiguration extends CuratorTestBase
         assertEquals("10.1.2.3:2181", configString);
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testConfigToConnectionStringNoClientAddrOrPort() throws Exception
     {
         String config = "server.1=10.1.2.3:2888:3888:participant";
@@ -478,7 +476,7 @@ public class TestReconfiguration extends CuratorTestBase
         assertEquals("", configString);
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testIPv6Wildcard1() throws Exception
     {
         String config = "server.1=[2001:db8:85a3:0:0:8a2e:370:7334]:2888:3888:participant;[::]:2181";
@@ -486,7 +484,7 @@ public class TestReconfiguration extends CuratorTestBase
         assertEquals("2001:db8:85a3:0:0:8a2e:370:7334:2181", configString);
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testIPv6Wildcard2() throws Exception
     {
         String config = "server.1=[1010:0001:0002:0003:0004:0005:0006:0007]:2888:3888:participant;[::0]:2181";
@@ -494,7 +492,7 @@ public class TestReconfiguration extends CuratorTestBase
         assertEquals("1010:1:2:3:4:5:6:7:2181", configString);
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testMixedIPv1() throws Exception
     {
         String config = "server.1=10.1.2.3:2888:3888:participant;[::]:2181";
@@ -502,7 +500,7 @@ public class TestReconfiguration extends CuratorTestBase
         assertEquals("10.1.2.3:2181", configString);
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testMixedIPv2() throws Exception
     {
         String config = "server.1=[2001:db8:85a3:0:0:8a2e:370:7334]:2888:3888:participant;127.0.0.1:2181";

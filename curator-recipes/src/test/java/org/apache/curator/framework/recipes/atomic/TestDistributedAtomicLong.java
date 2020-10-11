@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.google.common.collect.Lists;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -34,6 +33,8 @@ import org.apache.commons.math.stat.descriptive.SummaryStatistics;
 import org.apache.commons.math.stat.descriptive.SynchronizedSummaryStatistics;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
+import org.junit.jupiter.api.Test;
+
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.util.List;
@@ -47,7 +48,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestDistributedAtomicLong extends BaseClassForTests
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testCorruptedValue() throws Exception
     {
         final CuratorFramework      client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -79,7 +80,7 @@ public class TestDistributedAtomicLong extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCompareAndSetWithFreshInstance() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -102,7 +103,7 @@ public class TestDistributedAtomicLong extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testCompareAndSet() throws Exception
     {
         final CuratorFramework      client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -146,7 +147,7 @@ public class TestDistributedAtomicLong extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testForceSet() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -197,7 +198,7 @@ public class TestDistributedAtomicLong extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testSimulation() throws Exception
     {
         final int           threadQty = 20;
@@ -246,7 +247,7 @@ public class TestDistributedAtomicLong extends BaseClassForTests
         assertTrue(promotedLockTries.get() > 0);
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testBasic() throws Exception
     {
         CuratorFramework        client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));

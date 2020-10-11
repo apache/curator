@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import com.google.common.collect.Lists;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
@@ -38,6 +37,8 @@ import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.KeeperException;
+import org.junit.jupiter.api.Test;
+
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -59,7 +60,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
 
     protected abstract InterProcessLock makeLock(CuratorFramework client);
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testLocker() throws Exception
     {
         final Timing timing = new Timing();
@@ -81,7 +82,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testWaitingProcessKilledServer() throws Exception
     {
         final Timing timing = new Timing();
@@ -157,7 +158,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testKilledSession() throws Exception
     {
         final Timing2 timing = new Timing2();
@@ -211,7 +212,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testContainerCleanup() throws Exception
     {
         if ( !ZKPaths.hasContainerSupport() )
@@ -287,7 +288,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testWithNamespace() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.builder().
@@ -309,7 +310,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testReentrantSingleLock() throws Exception
     {
         final int THREAD_QTY = 10;
@@ -375,7 +376,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testReentrant2Threads() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new ExponentialBackoffRetry(100, 3));
@@ -421,7 +422,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testReentrant() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new ExponentialBackoffRetry(100, 3));
@@ -469,7 +470,7 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
         assertTrue(mutex.isAcquiredInThisProcess());
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void test2Clients() throws Exception
     {
         CuratorFramework client1 = null;

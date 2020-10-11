@@ -21,7 +21,6 @@ package org.apache.curator;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.retry.RetryForever;
 import org.apache.curator.retry.RetryOneTime;
@@ -30,6 +29,7 @@ import org.apache.curator.test.Timing;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.util.concurrent.TimeUnit;
@@ -38,7 +38,7 @@ import static org.mockito.Mockito.times;
 
 public class TestRetryLoop extends BaseClassForTests
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testExponentialBackoffRetryLimit()
     {
         RetrySleeper                    sleeper = new RetrySleeper()
@@ -56,7 +56,7 @@ public class TestRetryLoop extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testRetryLoopWithFailure() throws Exception
     {
         CuratorZookeeperClient client = new CuratorZookeeperClient(server.getConnectString(), 5000, 5000, null, new RetryOneTime(1));
@@ -116,7 +116,7 @@ public class TestRetryLoop extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testRetryLoop() throws Exception
     {
         CuratorZookeeperClient client = new CuratorZookeeperClient(server.getConnectString(), 10000, 10000, null, new RetryOneTime(1));
@@ -152,7 +152,7 @@ public class TestRetryLoop extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testRetryForever() throws Exception
     {
         int retryIntervalMs = 1;
@@ -167,7 +167,7 @@ public class TestRetryLoop extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testRetryForeverWithSessionFailed() throws Exception
     {
         final Timing timing = new Timing();

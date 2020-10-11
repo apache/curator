@@ -25,12 +25,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import com.google.common.base.Throwables;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.retry.RetryOneTime;
-import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.x.async.AsyncCuratorFramework;
 import org.apache.curator.x.async.AsyncWrappers;
@@ -45,6 +43,8 @@ import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.zookeeper.KeeperException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
@@ -134,7 +134,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
         super.teardown();
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testBasic()
     {
         Migration m1 = () -> Arrays.asList(v1opA, v1opB);
@@ -156,7 +156,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
         assertEquals(manager.debugCount.get(), count);   // second call should do nothing
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testStaged()
     {
         Migration m1 = () -> Arrays.asList(v1opA, v1opB);
@@ -188,7 +188,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
         });
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testDocExample() throws Exception
     {
         CuratorOp op1 = client.transactionOp().create().forPath("/parent");
@@ -214,7 +214,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
         assertNull(client.unwrap().checkExists().forPath("/main"));
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testChecksumDataError()
     {
         CuratorOp op1 = client.transactionOp().create().forPath("/test");
@@ -237,7 +237,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testChecksumPathError()
     {
         CuratorOp op1 = client.transactionOp().create().forPath("/test2");
@@ -260,7 +260,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testPartialApplyForBadOps() throws Exception
     {
         CuratorOp op1 = client.transactionOp().create().forPath("/test", "something".getBytes());
@@ -281,7 +281,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
         assertNull(client.unwrap().checkExists().forPath("/test"));  // should be all or nothing
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testTransactionForBadOps() throws Exception
     {
         CuratorOp op1 = client.transactionOp().create().forPath("/test2", "something".getBytes());
@@ -301,7 +301,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
         assertNull(client.unwrap().checkExists().forPath("/test"));
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testConcurrency1() throws Exception
     {
         CuratorOp op1 = client.transactionOp().create().forPath("/test");
@@ -329,7 +329,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
         assertArrayEquals(client.unwrap().getData().forPath("/test/bar"), "first".getBytes());
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testConcurrency2() throws Exception
     {
         CuratorOp op1 = client.transactionOp().create().forPath("/test");

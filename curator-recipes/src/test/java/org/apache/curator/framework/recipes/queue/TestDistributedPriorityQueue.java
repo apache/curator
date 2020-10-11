@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -32,6 +31,7 @@ import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.Timing;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +43,7 @@ import java.util.concurrent.TimeUnit;
 
 public class TestDistributedPriorityQueue extends BaseClassForTests
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testMinItemsBeforeRefresh() throws Exception
     {
         DistributedPriorityQueue<Integer>   queue = null;
@@ -79,7 +79,7 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testSortingWhileTaking() throws Exception
     {
         Timing           timing = new Timing();
@@ -124,7 +124,7 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testAdditions() throws Exception
     {
         DistributedPriorityQueue<Integer>   queue = null;
@@ -173,7 +173,7 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testSimple() throws Exception
     {
         List<Integer>                       nums = new ArrayList<Integer>();

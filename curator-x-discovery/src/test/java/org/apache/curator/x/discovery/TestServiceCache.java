@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
@@ -36,6 +35,8 @@ import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.Compatibility;
 import org.apache.curator.x.discovery.details.ServiceCacheListener;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
 import java.io.Closeable;
 import java.util.Collection;
 import java.util.Collections;
@@ -48,7 +49,7 @@ import java.util.concurrent.TimeUnit;
 @Tag(CuratorTestBase.zk35TestCompatibilityGroup)
 public class TestServiceCache extends BaseClassForTests
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testInitialLoad() throws Exception
     {
         List<Closeable> closeables = Lists.newArrayList();
@@ -107,7 +108,7 @@ public class TestServiceCache extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testViaProvider() throws Exception
     {
         Timing timing = new Timing();
@@ -156,7 +157,7 @@ public class TestServiceCache extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testUpdate() throws Exception
     {
         List<Closeable> closeables = Lists.newArrayList();
@@ -208,7 +209,7 @@ public class TestServiceCache extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCache() throws Exception
     {
         List<Closeable> closeables = Lists.newArrayList();
@@ -264,7 +265,7 @@ public class TestServiceCache extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testExecutorServiceIsInvoked() throws Exception
     {
         if ( Compatibility.hasPersistentWatchers() )

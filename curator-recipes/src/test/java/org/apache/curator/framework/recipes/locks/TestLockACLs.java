@@ -22,7 +22,6 @@ package org.apache.curator.framework.recipes.locks;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.imps.TestCleanState;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
@@ -34,6 +33,7 @@ import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Id;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.List;
@@ -56,7 +56,7 @@ public class TestLockACLs extends BaseClassForTests
         return client;
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testLockACLs() throws Exception
     {
         CuratorFramework client = createClient(new TestLockACLsProvider());
@@ -82,7 +82,7 @@ public class TestLockACLs extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testACLsCreatingParents() throws Exception
     {
         CuratorFramework client = createClient(new TestACLsCreatingParentsProvider());

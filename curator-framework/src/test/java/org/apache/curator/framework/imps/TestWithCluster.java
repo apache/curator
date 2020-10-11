@@ -21,8 +21,6 @@ package org.apache.curator.framework.imps;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
-import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -35,11 +33,13 @@ import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
 import org.apache.curator.test.Timing;
 import org.apache.zookeeper.CreateMode;
+import org.junit.jupiter.api.Test;
+
 import java.util.concurrent.CountDownLatch;
 
 public class TestWithCluster extends CuratorTestBase
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testSessionSurvives() throws Exception
     {
         Timing              timing = new Timing();
@@ -86,7 +86,7 @@ public class TestWithCluster extends CuratorTestBase
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testSplitBrain() throws Exception
     {
         Timing              timing = new Timing();

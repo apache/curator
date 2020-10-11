@@ -23,18 +23,18 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.retry.RetryOneTime;
-import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.data.Stat;
+import org.junit.jupiter.api.Test;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -56,7 +56,7 @@ public class TestCreateReturningStat extends CuratorTestBase
         assertEquals(queriedStat, expected);
     }
     
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testOrSetDataStoringStatIn() throws Exception {
         try (CuratorFramework client = createClient())
         {
@@ -86,7 +86,7 @@ public class TestCreateReturningStat extends CuratorTestBase
         }
     }
     
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCreateReturningStat() throws Exception
     {
         CuratorFramework client = createClient();
@@ -106,7 +106,7 @@ public class TestCreateReturningStat extends CuratorTestBase
         }
     }
     
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCreateReturningStatIncludingParents() throws Exception
     {
         CuratorFramework client = createClient();
@@ -126,7 +126,7 @@ public class TestCreateReturningStat extends CuratorTestBase
         }
     }
     
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCreateReturningStatIncludingParentsReverse() throws Exception
     {
         CuratorFramework client = createClient();
@@ -146,7 +146,7 @@ public class TestCreateReturningStat extends CuratorTestBase
         }
     }
     
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCreateReturningStatCompressed() throws Exception
     {
         CuratorFramework client = createClient();
@@ -166,7 +166,7 @@ public class TestCreateReturningStat extends CuratorTestBase
         }
     }
     
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCreateReturningStatWithProtected() throws Exception
     {
         CuratorFramework client = createClient();
@@ -186,7 +186,7 @@ public class TestCreateReturningStat extends CuratorTestBase
         }
     }
     
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testCreateReturningStatInBackground() throws Exception
     {
         Timing timing = new Timing();

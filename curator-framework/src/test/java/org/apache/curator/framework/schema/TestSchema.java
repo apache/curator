@@ -27,7 +27,6 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Maps;
 import com.google.common.io.Resources;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.transaction.CuratorOp;
@@ -36,13 +35,15 @@ import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.ACL;
+import org.junit.jupiter.api.Test;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
 public class TestSchema extends BaseClassForTests
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testBasics() throws Exception
     {
         SchemaSet schemaSet = loadSchemaSet("schema1.json", null);
@@ -78,7 +79,7 @@ public class TestSchema extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testSchemaValidator() throws Exception
     {
         final SchemaValidator schemaValidator = new SchemaValidator()
@@ -121,7 +122,7 @@ public class TestSchema extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testMulti() throws Exception
     {
         SchemaSet schemaSet = loadSchemaSet("schema2.json", null);
@@ -156,7 +157,7 @@ public class TestSchema extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testTransaction() throws Exception
     {
         final SchemaValidator schemaValidator = new SchemaValidator()
@@ -238,7 +239,7 @@ public class TestSchema extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testYaml() throws Exception
     {
         String yaml = Resources.toString(Resources.getResource("schema.yaml"), Charsets.UTF_8);
@@ -252,7 +253,7 @@ public class TestSchema extends BaseClassForTests
         assertEquals(schemas.get(1).getMetadata().get("two"), "2");
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testOrdering() throws Exception
     {
         SchemaSet schemaSet = loadSchemaSet("schema5.json", null);

@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.ensemble.EnsembleProvider;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -37,6 +36,8 @@ import org.apache.curator.test.Timing;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.CloseableUtils;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
@@ -53,7 +54,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @Tag(CuratorTestBase.zk35TestCompatibilityGroup)
 public class TestInterProcessSemaphoreCluster extends BaseClassForTests
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testKilledServerWithEnsembleProvider() throws Exception
     {
         final int           CLIENT_QTY = 10;
@@ -197,7 +198,7 @@ public class TestInterProcessSemaphoreCluster extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testCluster() throws Exception
     {
         final int           QTY = 20;

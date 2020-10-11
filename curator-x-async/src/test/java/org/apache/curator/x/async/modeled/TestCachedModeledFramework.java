@@ -24,15 +24,15 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Sets;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.framework.state.ConnectionState;
-import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.x.async.modeled.cached.CachedModeledFramework;
 import org.apache.curator.x.async.modeled.cached.ModeledCacheListener;
 import org.apache.curator.x.async.modeled.models.TestModel;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -48,7 +48,7 @@ import java.util.stream.Stream;
 @Tag(CuratorTestBase.zk35TestCompatibilityGroup)
 public class TestCachedModeledFramework extends TestModeledFrameworkBase
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testDownServer() throws IOException
     {
         Timing timing = new Timing();
@@ -85,7 +85,7 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testPostInitializedFilter()
     {
         TestModel model1 = new TestModel("a", "b", "c", 1, BigInteger.ONE);
@@ -110,7 +110,7 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testChildren()
     {
         TestModel parent = new TestModel("a", "b", "c", 20, BigInteger.ONE);
@@ -159,7 +159,7 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase
     }
 
     // note: CURATOR-546
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void testAccessCacheDirectly()
     {
         TestModel model = new TestModel("a", "b", "c", 20, BigInteger.ONE);

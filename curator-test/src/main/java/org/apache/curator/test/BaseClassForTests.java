@@ -38,8 +38,6 @@ public class BaseClassForTests
     private static final String INTERNAL_PROPERTY_REMOVE_WATCHERS_IN_FOREGROUND;
     private static final String INTERNAL_PROPERTY_VALIDATE_NAMESPACE_WATCHER_MAP_EMPTY;
 
-    protected static final int REPEATS = 2;
-
     static
     {
         String logConnectionIssues = null;

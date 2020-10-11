@@ -22,8 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
-import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -34,6 +32,8 @@ import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.ZKPaths;
+import org.junit.jupiter.api.Test;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
 public class TestLeaderSelectorCluster extends CuratorTestBase
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testRestart() throws Exception
     {
         final Timing        timing = new Timing();
@@ -88,7 +88,7 @@ public class TestLeaderSelectorCluster extends CuratorTestBase
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testLostRestart() throws Exception
     {
         final Timing        timing = new Timing();

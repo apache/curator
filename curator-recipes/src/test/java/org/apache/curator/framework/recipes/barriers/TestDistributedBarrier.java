@@ -21,13 +21,14 @@ package org.apache.curator.framework.recipes.barriers;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import com.google.common.collect.Lists;
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.zookeeper.KeeperException;
+import org.junit.jupiter.api.Test;
+
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -37,7 +38,7 @@ import java.util.concurrent.TimeUnit;
 
 public class TestDistributedBarrier extends BaseClassForTests
 {
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testServerCrash() throws Exception
     {
         final int                         TIMEOUT = 1000;
@@ -79,7 +80,7 @@ public class TestDistributedBarrier extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testMultiClient() throws Exception
     {
         CuratorFramework            client1 = null;
@@ -151,7 +152,7 @@ public class TestDistributedBarrier extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testNoBarrier() throws Exception
     {
         CuratorFramework            client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -184,7 +185,7 @@ public class TestDistributedBarrier extends BaseClassForTests
         }
     }
 
-    @RepeatedIfExceptionsTest(repeats = BaseClassForTests.REPEATS)
+    @Test
     public void     testBasic() throws Exception
     {
         CuratorFramework            client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
