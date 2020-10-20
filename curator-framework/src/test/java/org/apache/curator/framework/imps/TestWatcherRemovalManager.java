@@ -18,6 +18,10 @@
  */
 package org.apache.curator.framework.imps;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.WatcherRemoveCuratorFramework;
@@ -30,8 +34,8 @@ import org.apache.curator.test.WatchersDebug;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
+
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -60,7 +64,7 @@ public class TestWatcherRemovalManager extends CuratorTestBase
             removerClient.create().creatingParentsIfNeeded().forPath("/d/e/f");
 
             Timing timing = new Timing();
-            Assert.assertTrue(timing.awaitLatch(latch));
+            assertTrue(timing.awaitLatch(latch));
             timing.sleepABit();
 
             removerClient.removeWatchers();
@@ -89,7 +93,7 @@ public class TestWatcherRemovalManager extends CuratorTestBase
             };
             removerClient.checkExists().usingWatcher(watcher).forPath("/a/b/c");
             removerClient.checkExists().usingWatcher(watcher).forPath("/d/e/f");
-            Assert.assertEquals(removerClient.getWatcherRemovalManager().getEntries().size(), 2);
+            assertEquals(removerClient.getWatcherRemovalManager().getEntries().size(), 2);
             removerClient.removeWatchers();
         }
         finally
@@ -122,7 +126,7 @@ public class TestWatcherRemovalManager extends CuratorTestBase
             removerClient.setData().forPath("/a/b/c", "new".getBytes());
 
             Timing timing = new Timing();
-            Assert.assertTrue(timing.awaitLatch(latch));
+            assertTrue(timing.awaitLatch(latch));
             timing.sleepABit();
 
             removerClient.removeWatchers();
@@ -181,13 +185,13 @@ public class TestWatcherRemovalManager extends CuratorTestBase
             try
             {
                 removerClient.checkExists().usingWatcher(w).forPath("/one/two/three");
-                Assert.fail("Should have thrown ConnectionLossException");
+                fail("Should have thrown ConnectionLossException");
             }
             catch ( KeeperException.ConnectionLossException expected )
             {
                 // expected
             }
-            Assert.assertEquals(removerClient.getWatcherRemovalManager().getEntries().size(), 0);
+            assertEquals(removerClient.getWatcherRemovalManager().getEntries().size(), 0);
         }
         finally
         {
@@ -223,8 +227,8 @@ public class TestWatcherRemovalManager extends CuratorTestBase
                 }
             };
             removerClient.checkExists().usingWatcher(w).inBackground(callback).forPath("/one/two/three");
-            Assert.assertTrue(new Timing().awaitLatch(latch));
-            Assert.assertEquals(removerClient.getWatcherRemovalManager().getEntries().size(), 0);
+            assertTrue(new Timing().awaitLatch(latch));
+            assertEquals(removerClient.getWatcherRemovalManager().getEntries().size(), 0);
         }
         finally
         {
@@ -251,7 +255,7 @@ public class TestWatcherRemovalManager extends CuratorTestBase
             try
             {
                 removerClient.getData().usingWatcher(w).forPath("/one/two/three");
-                Assert.fail("Should have thrown NoNodeException");
+                fail("Should have thrown NoNodeException");
             }
             catch ( KeeperException.NoNodeException expected )
             {
@@ -294,8 +298,8 @@ public class TestWatcherRemovalManager extends CuratorTestBase
                     }
                 };
                 removerClient.getData().usingWatcher(w).inBackground(callback).forPath("/one/two/three");
-                Assert.assertTrue(new Timing().awaitLatch(latch));
-                Assert.assertEquals(removerClient.getWatcherRemovalManager().getEntries().size(), 0);
+                assertTrue(new Timing().awaitLatch(latch));
+                assertEquals(removerClient.getWatcherRemovalManager().getEntries().size(), 0);
                 removerClient.removeWatchers();
                 return null;
             }
@@ -392,9 +396,9 @@ public class TestWatcherRemovalManager extends CuratorTestBase
             };
 
             removerClient.getData().usingWatcher(watcher).forPath("/test");
-            Assert.assertEquals(removerClient.getRemovalManager().getEntries().size(), 1);
+            assertEquals(removerClient.getRemovalManager().getEntries().size(), 1);
             removerClient.getData().usingWatcher(watcher).forPath("/test");
-            Assert.assertEquals(removerClient.getRemovalManager().getEntries().size(), 1);
+            assertEquals(removerClient.getRemovalManager().getEntries().size(), 1);
             removerClient.removeWatchers();
         }
         finally
@@ -427,12 +431,12 @@ public class TestWatcherRemovalManager extends CuratorTestBase
             };
 
             removerClient.checkExists().usingWatcher(watcher).forPath("/yo");
-            Assert.assertEquals(removerClient.getRemovalManager().getEntries().size(), 1);
+            assertEquals(removerClient.getRemovalManager().getEntries().size(), 1);
             removerClient.create().forPath("/yo");
 
-            Assert.assertTrue(new Timing().awaitLatch(latch));
+            assertTrue(new Timing().awaitLatch(latch));
 
-            Assert.assertEquals(removerClient.getRemovalManager().getEntries().size(), 0);
+            assertEquals(removerClient.getRemovalManager().getEntries().size(), 0);
         }
         finally
         {
@@ -478,17 +482,17 @@ public class TestWatcherRemovalManager extends CuratorTestBase
             };
 
             removerClient.checkExists().usingWatcher(watcher).forPath("/yo");
-            Assert.assertEquals(removerClient.getRemovalManager().getEntries().size(), 1);
+            assertEquals(removerClient.getRemovalManager().getEntries().size(), 1);
             removerClient.create().forPath("/yo");
 
-            Assert.assertTrue(timing.awaitLatch(createdLatch));
-            Assert.assertEquals(removerClient.getRemovalManager().getEntries().size(), 1);
+            assertTrue(timing.awaitLatch(createdLatch));
+            assertEquals(removerClient.getRemovalManager().getEntries().size(), 1);
 
             removerClient.delete().forPath("/yo");
 
-            Assert.assertTrue(timing.awaitLatch(deletedLatch));
+            assertTrue(timing.awaitLatch(deletedLatch));
 
-            Assert.assertEquals(removerClient.getRemovalManager().getEntries().size(), 0);
+            assertEquals(removerClient.getRemovalManager().getEntries().size(), 0);
         }
         finally
         {
@@ -515,13 +519,13 @@ public class TestWatcherRemovalManager extends CuratorTestBase
         removerClient.checkExists().usingWatcher(watcher).forPath("/hey");
 
         List<String> existWatches = WatchersDebug.getExistWatches(client.getZookeeperClient().getZooKeeper());
-        Assert.assertEquals(existWatches.size(), 1);
+        assertEquals(existWatches.size(), 1);
 
         removerClient.removeWatchers();
 
-        Assert.assertTrue(new Timing().awaitLatch(latch));
+        assertTrue(new Timing().awaitLatch(latch));
 
         existWatches = WatchersDebug.getExistWatches(client.getZookeeperClient().getZooKeeper());
-        Assert.assertEquals(existWatches.size(), 0);
+        assertEquals(existWatches.size(), 0);
     }
 }

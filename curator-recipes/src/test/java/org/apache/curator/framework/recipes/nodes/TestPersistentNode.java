@@ -18,6 +18,12 @@
  */
 package org.apache.curator.framework.recipes.nodes;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
@@ -26,8 +32,7 @@ import org.apache.curator.test.Timing;
 import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.CreateMode;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -51,7 +56,7 @@ public class TestPersistentNode extends BaseClassForTests
             try
             {
                 pen.setData(ALT_TEST_DATA);
-                Assert.fail("IllegalStateException should have been thrown");
+                fail("IllegalStateException should have been thrown");
             }
             catch ( IllegalStateException dummy )
             {
@@ -79,14 +84,14 @@ public class TestPersistentNode extends BaseClassForTests
             pen = new PersistentNode(client, CreateMode.PERSISTENT, false, "/test", TEST_DATA);
             pen.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
             pen.start();
-            Assert.assertTrue(pen.waitForInitialCreate(timing.milliseconds(), TimeUnit.MILLISECONDS));
+            assertTrue(pen.waitForInitialCreate(timing.milliseconds(), TimeUnit.MILLISECONDS));
             client.close(); // cause session to end - force checks that node is persistent
 
             client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
             client.start();
 
             byte[] bytes = client.getData().forPath("/test");
-            Assert.assertEquals(bytes, TEST_DATA);
+            assertArrayEquals(bytes, TEST_DATA);
         }
         finally
         {
@@ -108,7 +113,7 @@ public class TestPersistentNode extends BaseClassForTests
             pen.start();
             pen.close();
             timing.sleepABit();
-            Assert.assertNull(client.checkExists().forPath("/test/one/two"));
+            assertNull(client.checkExists().forPath("/test/one/two"));
         }
         finally
         {
@@ -132,7 +137,7 @@ public class TestPersistentNode extends BaseClassForTests
             pen.start();
             pen.close();
             timing.sleepABit();
-            Assert.assertNull(client.checkExists().forPath("/test/one/two"));
+            assertNull(client.checkExists().forPath("/test/one/two"));
         }
         finally
         {
@@ -156,14 +161,14 @@ public class TestPersistentNode extends BaseClassForTests
             pen.start();
             List<String> children = client.getChildren().forPath("/test/one");
             System.out.println("children before restart: "+children);
-            Assert.assertEquals(1, children.size());
+            assertEquals(1, children.size());
             server.stop();
             timing.sleepABit();
             server.restart();
             timing.sleepABit();
             List<String> childrenAfter = client.getChildren().forPath("/test/one");
             System.out.println("children after restart: "+childrenAfter);
-            Assert.assertEquals(children, childrenAfter, "unexpected znodes: "+childrenAfter);
+            assertEquals(children, childrenAfter, "unexpected znodes: "+childrenAfter);
         }
         finally
         {

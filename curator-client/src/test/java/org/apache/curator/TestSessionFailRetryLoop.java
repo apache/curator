@@ -18,12 +18,16 @@
  */
 package org.apache.curator;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.test.Timing;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
+
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -55,13 +59,13 @@ public class TestSessionFailRetryLoop extends BaseClassForTests
                             {
                                 if ( firstTime.compareAndSet(true, false) )
                                 {
-                                    Assert.assertNull(client.getZooKeeper().exists("/foo/bar", false));
+                                    assertNull(client.getZooKeeper().exists("/foo/bar", false));
                                     client.getZooKeeper().getTestable().injectSessionExpiration();
                                     client.getZooKeeper();
                                     client.blockUntilConnectedOrTimedOut();
                                 }
 
-                                Assert.assertNull(client.getZooKeeper().exists("/foo/bar", false));
+                                assertNull(client.getZooKeeper().exists("/foo/bar", false));
                                 return null;
                             }
                         }
@@ -75,8 +79,8 @@ public class TestSessionFailRetryLoop extends BaseClassForTests
                             @Override
                             public Void call() throws Exception
                             {
-                                Assert.assertFalse(firstTime.get());
-                                Assert.assertNull(client.getZooKeeper().exists("/foo/bar", false));
+                                assertFalse(firstTime.get());
+                                assertNull(client.getZooKeeper().exists("/foo/bar", false));
                                 secondWasDone.set(true);
                                 return null;
                             }
@@ -89,7 +93,7 @@ public class TestSessionFailRetryLoop extends BaseClassForTests
                 }
             }
 
-            Assert.assertTrue(secondWasDone.get());
+            assertTrue(secondWasDone.get());
         }
         finally
         {
@@ -129,13 +133,13 @@ public class TestSessionFailRetryLoop extends BaseClassForTests
                                 {
                                     if ( firstTime.compareAndSet(true, false) )
                                     {
-                                        Assert.assertNull(client.getZooKeeper().exists("/foo/bar", false));
+                                        assertNull(client.getZooKeeper().exists("/foo/bar", false));
                                         client.getZooKeeper().getTestable().injectSessionExpiration();
                                         client.getZooKeeper();
                                         client.blockUntilConnectedOrTimedOut();
                                     }
 
-                                    Assert.assertNull(client.getZooKeeper().exists("/foo/bar", false));
+                                    assertNull(client.getZooKeeper().exists("/foo/bar", false));
                                     return null;
                                 }
                             }
@@ -149,8 +153,8 @@ public class TestSessionFailRetryLoop extends BaseClassForTests
                                 @Override
                                 public Void call() throws Exception
                                 {
-                                    Assert.assertFalse(firstTime.get());
-                                    Assert.assertNull(client.getZooKeeper().exists("/foo/bar", false));
+                                    assertFalse(firstTime.get());
+                                    assertNull(client.getZooKeeper().exists("/foo/bar", false));
                                     secondWasDone.set(true);
                                     return null;
                                 }
@@ -161,7 +165,7 @@ public class TestSessionFailRetryLoop extends BaseClassForTests
                 }
             );
 
-            Assert.assertTrue(secondWasDone.get());
+            assertTrue(secondWasDone.get());
         }
         finally
         {
@@ -194,14 +198,14 @@ public class TestSessionFailRetryLoop extends BaseClassForTests
                                 @Override
                                 public Void call() throws Exception
                                 {
-                                    Assert.assertNull(client.getZooKeeper().exists("/foo/bar", false));
+                                    assertNull(client.getZooKeeper().exists("/foo/bar", false));
                                     client.getZooKeeper().getTestable().injectSessionExpiration();
 
                                     timing.sleepABit();
 
                                     client.getZooKeeper();
                                     client.blockUntilConnectedOrTimedOut();
-                                    Assert.assertNull(client.getZooKeeper().exists("/foo/bar", false));
+                                    assertNull(client.getZooKeeper().exists("/foo/bar", false));
                                     return null;
                                 }
                             }
@@ -213,7 +217,7 @@ public class TestSessionFailRetryLoop extends BaseClassForTests
                     }
                 }
 
-                Assert.fail();
+                fail();
             }
             catch ( SessionFailRetryLoop.SessionFailedException dummy )
             {
@@ -256,12 +260,12 @@ public class TestSessionFailRetryLoop extends BaseClassForTests
                                     @Override
                                     public Void call() throws Exception
                                     {
-                                        Assert.assertNull(client.getZooKeeper().exists("/foo/bar", false));
+                                        assertNull(client.getZooKeeper().exists("/foo/bar", false));
                                         client.getZooKeeper().getTestable().injectSessionExpiration();
 
                                         client.getZooKeeper();
                                         client.blockUntilConnectedOrTimedOut();
-                                        Assert.assertNull(client.getZooKeeper().exists("/foo/bar", false));
+                                        assertNull(client.getZooKeeper().exists("/foo/bar", false));
                                         return null;
                                     }
                                 }

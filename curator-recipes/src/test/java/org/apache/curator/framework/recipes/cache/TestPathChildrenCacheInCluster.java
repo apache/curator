@@ -18,6 +18,8 @@
  */
 package org.apache.curator.framework.recipes.cache;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Queues;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.compatibility.CuratorTestBase;
@@ -28,17 +30,20 @@ import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
 import org.apache.curator.test.Timing;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-@Test(groups = CuratorTestBase.zk35TestCompatibilityGroup)
+@Tag(CuratorTestBase.zk35TestCompatibilityGroup)
 public class TestPathChildrenCacheInCluster extends BaseClassForTests
 {
-    @Test(enabled = false)  // this test is very flakey - it needs to be re-written at some point
+    @Test
+    @Disabled  // this test is very flakey - it needs to be re-written at some point
     public void testMissedDelete() throws Exception
     {
         Timing timing = new Timing();
@@ -68,22 +73,22 @@ public class TestPathChildrenCacheInCluster extends BaseClassForTests
             client1.start();
             client2.start();
             cache.start(PathChildrenCache.StartMode.POST_INITIALIZED_EVENT);
-            Assert.assertEquals(events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.CONNECTION_RECONNECTED);
-            Assert.assertEquals(events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.INITIALIZED);
+            assertEquals(events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.CONNECTION_RECONNECTED);
+            assertEquals(events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.INITIALIZED);
 
             client2.create().creatingParentsIfNeeded().forPath("/test/node", "first".getBytes());
-            Assert.assertEquals(events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.CHILD_ADDED);
+            assertEquals(events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.CHILD_ADDED);
 
             cluster.killServer(client1Instance);
-            Assert.assertEquals(events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.CONNECTION_SUSPENDED);
-            Assert.assertEquals(events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.CONNECTION_LOST);
+            assertEquals(events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.CONNECTION_SUSPENDED);
+            assertEquals(events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.CONNECTION_LOST);
 
             client2.delete().forPath("/test/node");
             client2.create().forPath("/test/node", "second".getBytes());
             cluster.restartServer(client1Instance);
 
-            Assert.assertEquals(events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.CONNECTION_RECONNECTED);
-            Assert.assertEquals(events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.CHILD_UPDATED);  // "/test/node" is different - should register as updated
+            assertEquals(events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.CONNECTION_RECONNECTED);
+            assertEquals(events.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), PathChildrenCacheEvent.Type.CHILD_UPDATED);  // "/test/node" is different - should register as updated
         }
         finally
         {
@@ -141,14 +146,14 @@ public class TestPathChildrenCacheInCluster extends BaseClassForTests
             client.create().forPath("/test/two");
             client.create().forPath("/test/three");
 
-            Assert.assertTrue(latch.get().await(10, TimeUnit.SECONDS));
+            assertTrue(latch.get().await(10, TimeUnit.SECONDS));
 
             InstanceSpec connectionInstance = cluster.findConnectionInstance(client.getZookeeperClient().getZooKeeper());
             cluster.killServer(connectionInstance);
 
-            Assert.assertTrue(timing.awaitLatch(reconnectLatch));
+            assertTrue(timing.awaitLatch(reconnectLatch));
 
-            Assert.assertEquals(cache.getCurrentData().size(), 3);
+            assertEquals(cache.getCurrentData().size(), 3);
         }
         finally
         {

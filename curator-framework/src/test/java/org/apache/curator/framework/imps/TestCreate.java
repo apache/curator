@@ -18,6 +18,11 @@
  */
 package org.apache.curator.framework.imps;
 
+import static org.apache.zookeeper.ZooDefs.Ids.ANYONE_ID_UNSAFE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.ACLProvider;
@@ -30,15 +35,13 @@ import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
-import static org.apache.zookeeper.ZooDefs.Ids.ANYONE_ID_UNSAFE;
 
 public class TestCreate extends BaseClassForTests
 {
@@ -91,9 +94,9 @@ public class TestCreate extends BaseClassForTests
             List<ACL> acl = Collections.singletonList(new ACL(ZooDefs.Perms.CREATE | ZooDefs.Perms.READ, ANYONE_ID_UNSAFE));
             client.create().creatingParentsIfNeeded().withACL(acl).forPath(path);
             List<ACL> actual_bar_foo = client.getACL().forPath(path);
-            Assert.assertEquals(actual_bar_foo, acl);
+            assertEquals(actual_bar_foo, acl);
             List<ACL> actual_bar = client.getACL().forPath("/bar");
-            Assert.assertEquals(actual_bar, ZooDefs.Ids.OPEN_ACL_UNSAFE);
+            assertEquals(actual_bar, ZooDefs.Ids.OPEN_ACL_UNSAFE);
         }
         finally
         {
@@ -113,9 +116,9 @@ public class TestCreate extends BaseClassForTests
             List<ACL> acl = Collections.singletonList(new ACL(ZooDefs.Perms.CREATE | ZooDefs.Perms.READ, ANYONE_ID_UNSAFE));
             client.create().creatingParentsIfNeeded().withACL(acl, true).forPath(path);
             List<ACL> actual_bar_foo = client.getACL().forPath(path);
-            Assert.assertEquals(actual_bar_foo, acl);
+            assertEquals(actual_bar_foo, acl);
             List<ACL> actual_bar = client.getACL().forPath("/bar");
-            Assert.assertEquals(actual_bar, acl);
+            assertEquals(actual_bar, acl);
         }
         finally
         {
@@ -145,11 +148,11 @@ public class TestCreate extends BaseClassForTests
                 }
             };
             client.create().creatingParentsIfNeeded().withACL(acl).inBackground(callback).forPath(path);
-            Assert.assertTrue(latch.await(2000, TimeUnit.MILLISECONDS), "Callback not invoked");
+            assertTrue(latch.await(2000, TimeUnit.MILLISECONDS), "Callback not invoked");
             List<ACL> actual_bar_foo = client.getACL().forPath(path);
-            Assert.assertEquals(actual_bar_foo, acl);
+            assertEquals(actual_bar_foo, acl);
             List<ACL> actual_bar = client.getACL().forPath("/bar");
-            Assert.assertEquals(actual_bar, ZooDefs.Ids.OPEN_ACL_UNSAFE);
+            assertEquals(actual_bar, ZooDefs.Ids.OPEN_ACL_UNSAFE);
         }
         finally
         {
@@ -176,11 +179,11 @@ public class TestCreate extends BaseClassForTests
                 }
             };
             client.create().creatingParentsIfNeeded().withACL(acl, true).inBackground(callback).forPath(path);
-            Assert.assertTrue(latch.await(2000, TimeUnit.MILLISECONDS), "Callback not invoked");
+            assertTrue(latch.await(2000, TimeUnit.MILLISECONDS), "Callback not invoked");
             List<ACL> actual_bar_foo = client.getACL().forPath(path);
-            Assert.assertEquals(actual_bar_foo, acl);
+            assertEquals(actual_bar_foo, acl);
             List<ACL> actual_bar = client.getACL().forPath("/bar");
-            Assert.assertEquals(actual_bar, acl);
+            assertEquals(actual_bar, acl);
         }
         finally
         {
@@ -202,11 +205,11 @@ public class TestCreate extends BaseClassForTests
             String path = "/bar/foo/boo";
             client.create().creatingParentsIfNeeded().forPath(path);
             List<ACL> actual_bar_foo_boo = client.getACL().forPath("/bar/foo/boo");
-            Assert.assertEquals(actual_bar_foo_boo, ZooDefs.Ids.OPEN_ACL_UNSAFE);
+            assertEquals(actual_bar_foo_boo, ZooDefs.Ids.OPEN_ACL_UNSAFE);
             List<ACL> actual_bar_foo = client.getACL().forPath("/bar/foo");
-            Assert.assertEquals(actual_bar_foo, READ_CREATE_WRITE);
+            assertEquals(actual_bar_foo, READ_CREATE_WRITE);
             List<ACL> actual_bar = client.getACL().forPath("/bar");
-            Assert.assertEquals(actual_bar, READ_CREATE);
+            assertEquals(actual_bar, READ_CREATE);
         }
         finally
         {
@@ -237,13 +240,13 @@ public class TestCreate extends BaseClassForTests
 
             final String path = "/bar/foo/boo";
             client.create().creatingParentsIfNeeded().inBackground(callback).forPath(path);
-            Assert.assertTrue(latch.await(2000, TimeUnit.MILLISECONDS), "Callback not invoked");
+            assertTrue(latch.await(2000, TimeUnit.MILLISECONDS), "Callback not invoked");
             List<ACL> actual_bar_foo_boo = client.getACL().forPath(path);
-            Assert.assertEquals(actual_bar_foo_boo, ZooDefs.Ids.OPEN_ACL_UNSAFE);
+            assertEquals(actual_bar_foo_boo, ZooDefs.Ids.OPEN_ACL_UNSAFE);
             List<ACL> actual_bar_foo = client.getACL().forPath("/bar/foo");
-            Assert.assertEquals(actual_bar_foo, READ_CREATE_WRITE);
+            assertEquals(actual_bar_foo, READ_CREATE_WRITE);
             List<ACL> actual_bar = client.getACL().forPath("/bar");
-            Assert.assertEquals(actual_bar, READ_CREATE);
+            assertEquals(actual_bar, READ_CREATE);
         }
         finally
         {
@@ -262,18 +265,18 @@ public class TestCreate extends BaseClassForTests
             client.start();
             client.blockUntilConnected();
             client.create().forPath("/parent");
-            Assert.assertEquals(client.getChildren().forPath("/parent").size(), 0);
+            assertEquals(client.getChildren().forPath("/parent").size(), 0);
             client.create().withProtection().withMode(CreateMode.EPHEMERAL).forPath("/parent/test");
             final List<String> children = client.getChildren().forPath("/parent");
-            Assert.assertEquals(1, children.size());
+            assertEquals(1, children.size());
             final String testZNodeName = children.get(0);
-            Assert.assertEquals(testZNodeName.length(), ProtectedUtils.PROTECTED_PREFIX_WITH_UUID_LENGTH + "test".length());
-            Assert.assertTrue(testZNodeName.startsWith(ProtectedUtils.PROTECTED_PREFIX));
-            Assert.assertEquals(testZNodeName.charAt(ProtectedUtils.PROTECTED_PREFIX_WITH_UUID_LENGTH - 1), ProtectedUtils.PROTECTED_SEPARATOR);
-            Assert.assertTrue(ProtectedUtils.isProtectedZNode(testZNodeName));
-            Assert.assertEquals(ProtectedUtils.normalize(testZNodeName), "test");
-            Assert.assertFalse(ProtectedUtils.isProtectedZNode("parent"));
-            Assert.assertEquals(ProtectedUtils.normalize("parent"), "parent");
+            assertEquals(testZNodeName.length(), ProtectedUtils.PROTECTED_PREFIX_WITH_UUID_LENGTH + "test".length());
+            assertTrue(testZNodeName.startsWith(ProtectedUtils.PROTECTED_PREFIX));
+            assertEquals(testZNodeName.charAt(ProtectedUtils.PROTECTED_PREFIX_WITH_UUID_LENGTH - 1), ProtectedUtils.PROTECTED_SEPARATOR);
+            assertTrue(ProtectedUtils.isProtectedZNode(testZNodeName));
+            assertEquals(ProtectedUtils.normalize(testZNodeName), "test");
+            assertFalse(ProtectedUtils.isProtectedZNode("parent"));
+            assertEquals(ProtectedUtils.normalize("parent"), "parent");
         }
     }
 
@@ -281,28 +284,28 @@ public class TestCreate extends BaseClassForTests
     public void testProtectedUtils() throws Exception
     {
         String name = "_c_53345f98-9423-4e0c-a7b5-9f819e3ec2e1-yo";
-        Assert.assertTrue(ProtectedUtils.isProtectedZNode(name));
-        Assert.assertEquals(ProtectedUtils.normalize(name), "yo");
-        Assert.assertEquals(ProtectedUtils.extractProtectedId(name).get(), "53345f98-9423-4e0c-a7b5-9f819e3ec2e1");
+        assertTrue(ProtectedUtils.isProtectedZNode(name));
+        assertEquals(ProtectedUtils.normalize(name), "yo");
+        assertEquals(ProtectedUtils.extractProtectedId(name).get(), "53345f98-9423-4e0c-a7b5-9f819e3ec2e1");
         name = "c_53345f98-9423-4e0c-a7b5-9f819e3ec2e1-yo";
-        Assert.assertFalse(ProtectedUtils.isProtectedZNode(name));
-        Assert.assertEquals(ProtectedUtils.normalize(name), name);
-        Assert.assertEquals(ProtectedUtils.extractProtectedId(name), Optional.<String>empty());
+        assertFalse(ProtectedUtils.isProtectedZNode(name));
+        assertEquals(ProtectedUtils.normalize(name), name);
+        assertEquals(ProtectedUtils.extractProtectedId(name), Optional.<String>empty());
         name = "_c_53345f98-hola-4e0c-a7b5-9f819e3ec2e1-yo";
-        Assert.assertFalse(ProtectedUtils.isProtectedZNode(name));
-        Assert.assertEquals(ProtectedUtils.normalize(name), name);
-        Assert.assertEquals(ProtectedUtils.extractProtectedId(name), Optional.<String>empty());
+        assertFalse(ProtectedUtils.isProtectedZNode(name));
+        assertEquals(ProtectedUtils.normalize(name), name);
+        assertEquals(ProtectedUtils.extractProtectedId(name), Optional.<String>empty());
         name = "_c_53345f98-hola-4e0c-a7b5-9f819e3ec2e1+yo";
-        Assert.assertFalse(ProtectedUtils.isProtectedZNode(name));
-        Assert.assertEquals(ProtectedUtils.normalize(name), name);
-        Assert.assertEquals(ProtectedUtils.extractProtectedId(name), Optional.<String>empty());
+        assertFalse(ProtectedUtils.isProtectedZNode(name));
+        assertEquals(ProtectedUtils.normalize(name), name);
+        assertEquals(ProtectedUtils.extractProtectedId(name), Optional.<String>empty());
         name = "_c_53345f98-9423-4e0c-a7b5-9f819e3ec2e1-yo";
-        Assert.assertEquals(name, ProtectedUtils.toProtectedZNode("yo", "53345f98-9423-4e0c-a7b5-9f819e3ec2e1"));
-        Assert.assertEquals("yo", ProtectedUtils.toProtectedZNode("yo", null));
+        assertEquals(name, ProtectedUtils.toProtectedZNode("yo", "53345f98-9423-4e0c-a7b5-9f819e3ec2e1"));
+        assertEquals("yo", ProtectedUtils.toProtectedZNode("yo", null));
         String path = ZKPaths.makePath("hola", "yo");
-        Assert.assertEquals(ProtectedUtils.toProtectedZNodePath(path, "53345f98-9423-4e0c-a7b5-9f819e3ec2e1"), ZKPaths.makePath("hola", name));
-        Assert.assertEquals(ProtectedUtils.toProtectedZNodePath(path, null), path);
+        assertEquals(ProtectedUtils.toProtectedZNodePath(path, "53345f98-9423-4e0c-a7b5-9f819e3ec2e1"), ZKPaths.makePath("hola", name));
+        assertEquals(ProtectedUtils.toProtectedZNodePath(path, null), path);
         path = ZKPaths.makePath("hola", name);
-        Assert.assertEquals(ProtectedUtils.normalizePath(path), "/hola/yo");
+        assertEquals(ProtectedUtils.normalizePath(path), "/hola/yo");
     }
 }

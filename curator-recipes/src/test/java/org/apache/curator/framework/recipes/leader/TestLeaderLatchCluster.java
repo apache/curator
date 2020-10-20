@@ -18,6 +18,8 @@
  */
 package org.apache.curator.framework.recipes.leader;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -27,8 +29,8 @@ import org.apache.curator.test.TestingCluster;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
+
 import java.util.Collection;
 import java.util.List;
 
@@ -72,16 +74,16 @@ public class TestLeaderLatchCluster extends CuratorTestBase
             }
 
             ClientAndLatch leader = waitForALeader(clients, timing);
-            Assert.assertNotNull(leader);
+            assertNotNull(leader);
 
             cluster.killServer(instances.get(leader.index));
 
             Thread.sleep(sessionLength * 2);
 
             leader = waitForALeader(clients, timing);
-            Assert.assertNotNull(leader);
+            assertNotNull(leader);
 
-            Assert.assertEquals(getLeaders(clients).size(), 1);
+            assertEquals(getLeaders(clients).size(), 1);
         }
         finally
         {

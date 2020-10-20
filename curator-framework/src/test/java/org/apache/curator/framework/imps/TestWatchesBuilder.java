@@ -18,6 +18,10 @@
  */
 package org.apache.curator.framework.imps;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.BackgroundCallback;
@@ -41,8 +45,9 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.EventType;
 import org.apache.zookeeper.Watcher.WatcherType;
 import org.apache.zookeeper.ZooKeeper;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -128,7 +133,7 @@ public class TestWatchesBuilder extends CuratorTestBase
             
             client.watches().removeAll().forPath(path);
             
-            Assert.assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
+            assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
         }
         finally
         {
@@ -167,7 +172,7 @@ public class TestWatchesBuilder extends CuratorTestBase
 
             client.watches().remove(watcher).forPath(path);
 
-            Assert.assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
+            assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
         }
         finally
         {
@@ -196,7 +201,7 @@ public class TestWatchesBuilder extends CuratorTestBase
 
             client.watches().remove(watcher).forPath(path);
 
-            Assert.assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
+            assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
         }
         finally
         {
@@ -238,7 +243,7 @@ public class TestWatchesBuilder extends CuratorTestBase
 
             client.watches().remove(watcher).ofType(WatcherType.Any).inBackground(callback).forPath(path);
 
-            Assert.assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
+            assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
             
         }
         finally
@@ -267,7 +272,7 @@ public class TestWatchesBuilder extends CuratorTestBase
 
             client.watches().remove(watcher).inBackground().forPath(path);
 
-            Assert.assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
+            assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
             
         }
         finally
@@ -299,7 +304,7 @@ public class TestWatchesBuilder extends CuratorTestBase
 
             client.watches().removeAll().forPath(path);
 
-            Assert.assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
+            assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
         }
         finally
         {
@@ -331,8 +336,8 @@ public class TestWatchesBuilder extends CuratorTestBase
             
             client.watches().removeAll().ofType(WatcherType.Data).forPath(path);
             
-            Assert.assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
-            Assert.assertEquals(removedFlag.get(), false);
+            assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
+            assertEquals(removedFlag.get(), false);
         }
         finally
         {
@@ -364,8 +369,8 @@ public class TestWatchesBuilder extends CuratorTestBase
             
             client.watches().removeAll().ofType(WatcherType.Children).forPath(path);
             
-            Assert.assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
-            Assert.assertEquals(removedFlag.get(), false);
+            assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
+            assertEquals(removedFlag.get(), false);
         }
         finally
         {
@@ -397,11 +402,11 @@ public class TestWatchesBuilder extends CuratorTestBase
             //Stop the server so we can check if we can remove watches locally when offline
             server.stop();
             
-            Assert.assertTrue(blockUntilDesiredConnectionState(stateRef, timing, ConnectionState.SUSPENDED));
+            assertTrue(blockUntilDesiredConnectionState(stateRef, timing, ConnectionState.SUSPENDED));
                        
             client.watches().removeAll().locally().forPath(path);
 
-            Assert.assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
+            assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
         }
         finally
         {
@@ -433,11 +438,11 @@ public class TestWatchesBuilder extends CuratorTestBase
             //Stop the server so we can check if we can remove watches locally when offline
             server.stop();
             
-            Assert.assertTrue(blockUntilDesiredConnectionState(stateRef, timing, ConnectionState.SUSPENDED));
+            assertTrue(blockUntilDesiredConnectionState(stateRef, timing, ConnectionState.SUSPENDED));
                        
             client.watches().removeAll().locally().inBackground().forPath(path);
 
-            Assert.assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
+            assertTrue(timing.awaitLatch(removedLatch), "Timed out waiting for watch removal");
         }
         finally
         {
@@ -472,7 +477,7 @@ public class TestWatchesBuilder extends CuratorTestBase
             try
             {
                 client.watches().remove(watcher).forPath(path);
-                Assert.fail("Expected KeeperException.NoWatcherException");
+                fail("Expected KeeperException.NoWatcherException");
             }
             catch ( KeeperException.NoWatcherException expected )
             {
@@ -484,7 +489,7 @@ public class TestWatchesBuilder extends CuratorTestBase
             CloseableUtils.closeQuietly(client);
         }
     }
-    
+
     /**
      * Test the case where we try and remove an unregistered watcher but have the quietly flag set. In this case we expect success. 
      * @throws Exception
@@ -511,7 +516,7 @@ public class TestWatchesBuilder extends CuratorTestBase
             timing.sleepABit();
             
             //There should be no watcher removed as none were registered.
-            Assert.assertEquals(watcherRemoved.get(), false);
+            assertEquals(watcherRemoved.get(), false);
         }
         finally
         {
@@ -541,13 +546,13 @@ public class TestWatchesBuilder extends CuratorTestBase
             
             server.stop();           
             
-            Assert.assertTrue(blockUntilDesiredConnectionState(stateRef, timing, ConnectionState.SUSPENDED));
+            assertTrue(blockUntilDesiredConnectionState(stateRef, timing, ConnectionState.SUSPENDED));
             
             //Remove the watch while we're not connected
             try 
             {
                 client.watches().remove(watcher).guaranteed().forPath(path);
-                Assert.fail();
+                fail();
             }
             catch(KeeperException.ConnectionLossException e)
             {
@@ -596,7 +601,7 @@ public class TestWatchesBuilder extends CuratorTestBase
             client.checkExists().usingWatcher(watcher).forPath(path);
             
             server.stop();           
-            Assert.assertTrue(blockUntilDesiredConnectionState(stateRef, timing, ConnectionState.SUSPENDED));
+            assertTrue(blockUntilDesiredConnectionState(stateRef, timing, ConnectionState.SUSPENDED));
             
             //Remove the watch while we're not connected
             client.watches().remove(watcher).guaranteed().inBackground().forPath(path);
@@ -613,7 +618,8 @@ public class TestWatchesBuilder extends CuratorTestBase
         }
     }
 
-    @Test(groups = CuratorTestBase.zk36Group)
+    @Test
+    @Tag(CuratorTestBase.zk36Group)
     public void testPersistentWatch() throws Exception
     {
         try ( CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)) )
@@ -629,11 +635,12 @@ public class TestWatchesBuilder extends CuratorTestBase
             client.setData().forPath("/test/foo", "hey".getBytes());
             client.delete().forPath("/test/foo");
 
-            Assert.assertTrue(timing.awaitLatch(latch));
+            assertTrue(timing.awaitLatch(latch));
         }
     }
 
-    @Test(groups = CuratorTestBase.zk36Group)
+    @Test
+    @Tag(CuratorTestBase.zk36Group)
     public void testPersistentWatchInBackground() throws Exception
     {
         try ( CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)) )
@@ -651,12 +658,13 @@ public class TestWatchesBuilder extends CuratorTestBase
             client.setData().forPath("/test/foo", "hey".getBytes());
             client.delete().forPath("/test/foo");
 
-            Assert.assertTrue(timing.awaitLatch(backgroundLatch));
-            Assert.assertTrue(timing.awaitLatch(latch));
+            assertTrue(timing.awaitLatch(backgroundLatch));
+            assertTrue(timing.awaitLatch(latch));
         }
     }
 
-    @Test(groups = CuratorTestBase.zk36Group)
+    @Test
+    @Tag(CuratorTestBase.zk36Group)
     public void testPersistentRecursiveWatch() throws Exception
     {
         try ( CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)) )
@@ -674,11 +682,12 @@ public class TestWatchesBuilder extends CuratorTestBase
             client.create().forPath("/test/a/b/c");
             client.create().forPath("/test/a/b/c/d");
 
-            Assert.assertTrue(timing.awaitLatch(latch));
+            assertTrue(timing.awaitLatch(latch));
         }
     }
 
-    @Test(groups = CuratorTestBase.zk36Group)
+    @Test
+    @Tag(CuratorTestBase.zk36Group)
     public void testPersistentRecursiveWatchInBackground() throws Exception
     {
         try ( CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)) )
@@ -698,12 +707,13 @@ public class TestWatchesBuilder extends CuratorTestBase
             client.create().forPath("/test/a/b/c");
             client.create().forPath("/test/a/b/c/d");
 
-            Assert.assertTrue(timing.awaitLatch(backgroundLatch));
-            Assert.assertTrue(timing.awaitLatch(latch));
+            assertTrue(timing.awaitLatch(backgroundLatch));
+            assertTrue(timing.awaitLatch(latch));
         }
     }
 
-    @Test(groups = CuratorTestBase.zk36Group)
+    @Test
+    @Tag(CuratorTestBase.zk36Group)
     public void testPersistentRecursiveDefaultWatch() throws Exception
     {
         CountDownLatch latch = new CountDownLatch(6);   // 5 creates plus the initial sync
@@ -727,7 +737,7 @@ public class TestWatchesBuilder extends CuratorTestBase
             client.create().forPath("/test/a/b/c");
             client.create().forPath("/test/a/b/c/d");
 
-            Assert.assertTrue(timing.awaitLatch(latch));
+            assertTrue(timing.awaitLatch(latch));
         }
     }
 

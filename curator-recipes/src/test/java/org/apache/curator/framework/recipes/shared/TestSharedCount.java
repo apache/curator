@@ -19,6 +19,9 @@
 
 package org.apache.curator.framework.recipes.shared;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.curator.framework.CuratorFramework;
@@ -34,8 +37,8 @@ import org.apache.curator.test.Timing;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.WatchedEvent;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
+
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
@@ -123,7 +126,7 @@ public class TestSharedCount extends CuratorTestBase
             client.start();
             client.checkExists().forPath("/");  // clear initial connect event
 
-            Assert.assertTrue(startLatch.await(10, TimeUnit.SECONDS));
+            assertTrue(startLatch.await(10, TimeUnit.SECONDS));
 
             SharedCount count = new SharedCount(client, "/count", 10);
             counts.add(count);
@@ -139,14 +142,14 @@ public class TestSharedCount extends CuratorTestBase
                 countList.add(next);
                 count.setCount(next);
 
-                Assert.assertTrue(semaphore.tryAcquire(CLIENT_QTY, 10, TimeUnit.SECONDS));
+                assertTrue(semaphore.tryAcquire(CLIENT_QTY, 10, TimeUnit.SECONDS));
             }
             count.setCount(-1);
 
             for ( Future<List<Integer>> future : futures )
             {
                 List<Integer> thisCountList = future.get();
-                Assert.assertEquals(thisCountList, countList);
+                assertEquals(thisCountList, countList);
             }
         }
         finally
@@ -189,15 +192,15 @@ public class TestSharedCount extends CuratorTestBase
             };
             count.addListener(listener);
 
-            Assert.assertTrue(count.trySetCount(1));
+            assertTrue(count.trySetCount(1));
             timing.sleepABit();
-            Assert.assertTrue(count.trySetCount(2));
+            assertTrue(count.trySetCount(2));
             timing.sleepABit();
-            Assert.assertTrue(count.trySetCount(10));
+            assertTrue(count.trySetCount(10));
             timing.sleepABit();
-            Assert.assertEquals(count.getCount(), 10);
+            assertEquals(count.getCount(), 10);
 
-            Assert.assertTrue(new Timing().awaitLatch(setLatch));
+            assertTrue(new Timing().awaitLatch(setLatch));
         }
         finally
         {
@@ -217,32 +220,32 @@ public class TestSharedCount extends CuratorTestBase
             count.start();
 
             VersionedValue<Integer> current = count.getVersionedValue();
-            Assert.assertEquals(current.getVersion(), 0);
+            assertEquals(current.getVersion(), 0);
 
-            Assert.assertTrue(count.trySetCount(current, 1));
+            assertTrue(count.trySetCount(current, 1));
             current = count.getVersionedValue();
-            Assert.assertEquals(current.getVersion(), 1);
-            Assert.assertEquals(count.getCount(), 1);
+            assertEquals(current.getVersion(), 1);
+            assertEquals(count.getCount(), 1);
 
-            Assert.assertTrue(count.trySetCount(current, 5));
+            assertTrue(count.trySetCount(current, 5));
             current = count.getVersionedValue();
-            Assert.assertEquals(current.getVersion(), 2);
-            Assert.assertEquals(count.getCount(), 5);
+            assertEquals(current.getVersion(), 2);
+            assertEquals(count.getCount(), 5);
 
-            Assert.assertTrue(count.trySetCount(current, 10));
+            assertTrue(count.trySetCount(current, 10));
 
             current = count.getVersionedValue();
-            Assert.assertEquals(current.getVersion(), 3);
-            Assert.assertEquals(count.getCount(), 10);
+            assertEquals(current.getVersion(), 3);
+            assertEquals(count.getCount(), 10);
 
             // Wrong value
-            Assert.assertFalse(count.trySetCount(new VersionedValue<Integer>(3, 20), 7));
+            assertFalse(count.trySetCount(new VersionedValue<Integer>(3, 20), 7));
             // Wrong version
-            Assert.assertFalse(count.trySetCount(new VersionedValue<Integer>(10, 10), 7));
+            assertFalse(count.trySetCount(new VersionedValue<Integer>(10, 10), 7));
 
             // Server changed
             client.setData().forPath("/count", SharedCount.toBytes(88));
-            Assert.assertFalse(count.trySetCount(current, 234));
+            assertFalse(count.trySetCount(current, 234));
         }
         finally
         {
@@ -267,10 +270,10 @@ public class TestSharedCount extends CuratorTestBase
             count2.start();
 
             VersionedValue<Integer> versionedValue = count1.getVersionedValue();
-            Assert.assertTrue(count1.trySetCount(versionedValue, 10));
+            assertTrue(count1.trySetCount(versionedValue, 10));
             timing.sleepABit();
             versionedValue = count2.getVersionedValue();
-            Assert.assertTrue(count2.trySetCount(versionedValue, 20));
+            assertTrue(count2.trySetCount(versionedValue, 20));
             timing.sleepABit();
 
             final CountDownLatch setLatch = new CountDownLatch(2);
@@ -291,12 +294,12 @@ public class TestSharedCount extends CuratorTestBase
             count1.addListener(listener);
             VersionedValue<Integer> versionedValue1 = count1.getVersionedValue();
             VersionedValue<Integer> versionedValue2 = count2.getVersionedValue();
-            Assert.assertTrue(count2.trySetCount(versionedValue2, 30));
-            Assert.assertFalse(count1.trySetCount(versionedValue1, 40));
+            assertTrue(count2.trySetCount(versionedValue2, 30));
+            assertFalse(count1.trySetCount(versionedValue1, 40));
 
             versionedValue1 = count1.getVersionedValue();
-            Assert.assertTrue(count1.trySetCount(versionedValue1, 40));
-            Assert.assertTrue(timing.awaitLatch(setLatch));
+            assertTrue(count1.trySetCount(versionedValue1, 40));
+            assertTrue(timing.awaitLatch(setLatch));
         }
         finally
         {
@@ -322,8 +325,8 @@ public class TestSharedCount extends CuratorTestBase
             count1.start();
             count2.start();
 
-            Assert.assertEquals(count1.getCount(), 10);
-            Assert.assertEquals(count2.getCount(), 10);
+            assertEquals(count1.getCount(), 10);
+            assertEquals(count2.getCount(), 10);
         }
         finally
         {
@@ -360,7 +363,7 @@ public class TestSharedCount extends CuratorTestBase
         {
             server.stop();
             // if watcher goes into 10second retry loop we won't get timely notification
-            Assert.assertTrue(gotSuspendEvent.await(5, TimeUnit.SECONDS));
+            assertTrue(gotSuspendEvent.await(5, TimeUnit.SECONDS));
         }
         finally
         {
@@ -405,14 +408,14 @@ public class TestSharedCount extends CuratorTestBase
         try
         {
             sharedCount.setCount(11);
-            Assert.assertTrue(gotChangeEvent.await(2, TimeUnit.SECONDS));
+            assertTrue(gotChangeEvent.await(2, TimeUnit.SECONDS));
 
             server.stop();
-            Assert.assertTrue(gotSuspendEvent.await(2, TimeUnit.SECONDS));
+            assertTrue(gotSuspendEvent.await(2, TimeUnit.SECONDS));
 
             server.restart();
-            Assert.assertTrue(getReconnectEvent.await(2, TimeUnit.SECONDS));
-            Assert.assertEquals(numChangeEvents.get(), 1);
+            assertTrue(getReconnectEvent.await(2, TimeUnit.SECONDS));
+            assertEquals(numChangeEvents.get(), 1);
 
             sharedCount.trySetCount(sharedCount.getVersionedValue(), 12);
 
@@ -428,7 +431,7 @@ public class TestSharedCount extends CuratorTestBase
 
             // CURATOR-311: when a Curator client's state became RECONNECTED, countHasChanged method is called back
             // because the Curator client calls readValueAndNotifyListenersInBackground in SharedValue#ConnectionStateListener#stateChanged.
-            Assert.assertTrue(numChangeEvents.get() > 2);
+            assertTrue(numChangeEvents.get() > 2);
         }
         finally
         {
@@ -489,24 +492,24 @@ public class TestSharedCount extends CuratorTestBase
         try
         {
             sharedCount1.setCount(12);
-            Assert.assertEquals(listener1.gotChangeEvent.awaitAdvanceInterruptibly(0, timing.seconds(), TimeUnit.SECONDS), 1);
-            Assert.assertEquals(sharedCount1.getCount(), 12);
+            assertEquals(listener1.gotChangeEvent.awaitAdvanceInterruptibly(0, timing.seconds(), TimeUnit.SECONDS), 1);
+            assertEquals(sharedCount1.getCount(), 12);
 
-            Assert.assertEquals(sharedCountWithFaultyWatcher.getCount(), 10);
+            assertEquals(sharedCountWithFaultyWatcher.getCount(), 10);
             // new counter with faultyWatcher start
             sharedCountWithFaultyWatcher.start();
 
             for (int i = 0; i < 10; i++) {
                 sharedCount1.setCount(13 + i);
-                Assert.assertEquals(sharedCount1.getCount(), 13 + i);
+                assertEquals(sharedCount1.getCount(), 13 + i);
 
                 server.restart();
 
-                Assert.assertEquals(listener2.getReconnectEvent.awaitAdvanceInterruptibly(i, timing.forWaiting().seconds(), TimeUnit.SECONDS), i + 1);
+                assertEquals(listener2.getReconnectEvent.awaitAdvanceInterruptibly(i, timing.forWaiting().seconds(), TimeUnit.SECONDS), i + 1);
                 // CURATOR-311 introduces to Curator's client reading server's shared count value
                 // when client's state gets ConnectionState.RECONNECTED. Following tests ensures that.
-                Assert.assertEquals(listener2.gotChangeEvent.awaitAdvanceInterruptibly(i, timing.forWaiting().seconds(), TimeUnit.SECONDS), i + 1);
-                Assert.assertEquals(sharedCountWithFaultyWatcher.getCount(), 13 + i);
+                assertEquals(listener2.gotChangeEvent.awaitAdvanceInterruptibly(i, timing.forWaiting().seconds(), TimeUnit.SECONDS), i + 1);
+                assertEquals(sharedCountWithFaultyWatcher.getCount(), 13 + i);
             }
         }
         finally

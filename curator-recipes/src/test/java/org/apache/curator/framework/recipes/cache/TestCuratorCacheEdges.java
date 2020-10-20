@@ -19,6 +19,11 @@
 
 package org.apache.curator.framework.recipes.cache;
 
+import static org.apache.curator.framework.recipes.cache.CuratorCache.Options.DO_NOT_CLEAR_ON_CLOSE;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
@@ -26,13 +31,12 @@ import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
 import org.apache.curator.test.compatibility.CuratorTestBase;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
 import java.util.concurrent.CountDownLatch;
 
-import static org.apache.curator.framework.recipes.cache.CuratorCache.Options.DO_NOT_CLEAR_ON_CLOSE;
-
-@Test(groups = CuratorTestBase.zk36Group)
+@Tag(CuratorTestBase.zk36Group)
 public class TestCuratorCacheEdges extends CuratorTestBase
 {
     @Test
@@ -59,7 +63,7 @@ public class TestCuratorCacheEdges extends CuratorTestBase
                 CountDownLatch latch = new CountDownLatch(1);
                 cache.listenable().addListener(CuratorCacheListener.builder().forInitialized(latch::countDown).build());
                 cache.start();
-                Assert.assertTrue(timing.awaitLatch(latch));
+                assertTrue(timing.awaitLatch(latch));
             }
 
             // we now have a storage loaded with the initial nodes created
@@ -83,21 +87,21 @@ public class TestCuratorCacheEdges extends CuratorTestBase
                 CountDownLatch latch = new CountDownLatch(1);
                 cache.listenable().addListener(CuratorCacheListener.builder().forInitialized(latch::countDown).build());
                 cache.start();
-                Assert.assertTrue(timing.awaitLatch(latch));
+                assertTrue(timing.awaitLatch(latch));
             }
 
-            Assert.assertEquals(storage.size(), 11);
-            Assert.assertEquals(storage.get("/root").map(ChildData::getData).orElse(null), second);
-            Assert.assertEquals(storage.get("/root/1").map(ChildData::getData).orElse(null), first);
-            Assert.assertEquals(storage.get("/root/1/11").map(ChildData::getData).orElse(null), first);
-            Assert.assertEquals(storage.get("/root/1/11/111").map(ChildData::getData).orElse(null), second);
-            Assert.assertEquals(storage.get("/root/1/11/111/1111").map(ChildData::getData).orElse(null), second);
-            Assert.assertEquals(storage.get("/root/1/11/111/1112").map(ChildData::getData).orElse(null), second);
-            Assert.assertEquals(storage.get("/root/1/12").map(ChildData::getData).orElse(null), first);
-            Assert.assertEquals(storage.get("/root/1/13").map(ChildData::getData).orElse(null), first);
-            Assert.assertEquals(storage.get("/root/1/13/131").map(ChildData::getData).orElse(null), second);
-            Assert.assertEquals(storage.get("/root/1/13/132").map(ChildData::getData).orElse(null), second);
-            Assert.assertEquals(storage.get("/root/1/13/132/1321").map(ChildData::getData).orElse(null), second);
+            assertEquals(storage.size(), 11);
+            assertArrayEquals(storage.get("/root").map(ChildData::getData).orElse(null), second);
+            assertArrayEquals(storage.get("/root/1").map(ChildData::getData).orElse(null), first);
+            assertArrayEquals(storage.get("/root/1/11").map(ChildData::getData).orElse(null), first);
+            assertArrayEquals(storage.get("/root/1/11/111").map(ChildData::getData).orElse(null), second);
+            assertArrayEquals(storage.get("/root/1/11/111/1111").map(ChildData::getData).orElse(null), second);
+            assertArrayEquals(storage.get("/root/1/11/111/1112").map(ChildData::getData).orElse(null), second);
+            assertArrayEquals(storage.get("/root/1/12").map(ChildData::getData).orElse(null), first);
+            assertArrayEquals(storage.get("/root/1/13").map(ChildData::getData).orElse(null), first);
+            assertArrayEquals(storage.get("/root/1/13/131").map(ChildData::getData).orElse(null), second);
+            assertArrayEquals(storage.get("/root/1/13/132").map(ChildData::getData).orElse(null), second);
+            assertArrayEquals(storage.get("/root/1/13/132/1321").map(ChildData::getData).orElse(null), second);
         }
     }
 
@@ -131,16 +135,16 @@ public class TestCuratorCacheEdges extends CuratorTestBase
                     client.create().forPath("/test/two");
                     client.create().forPath("/test/three");
 
-                    Assert.assertTrue(timing.awaitLatch(latch));
+                    assertTrue(timing.awaitLatch(latch));
 
                     InstanceSpec connectionInstance = cluster.findConnectionInstance(client.getZookeeperClient().getZooKeeper());
                     cluster.killServer(connectionInstance);
 
-                    Assert.assertTrue(timing.awaitLatch(reconnectLatch));
+                    assertTrue(timing.awaitLatch(reconnectLatch));
 
                     timing.sleepABit();
 
-                    Assert.assertEquals(cache.stream().count(), 4);
+                    assertEquals(cache.stream().count(), 4);
                 }
             }
         }

@@ -19,6 +19,10 @@
 
 package org.apache.curator.framework.recipes.locks;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -28,8 +32,8 @@ import org.apache.curator.framework.schema.SchemaSet;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.CreateMode;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
+
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -118,13 +122,13 @@ public class TestInterProcessMutex extends TestInterProcessMutexBase
                         @Override
                         public Void call() throws Exception
                         {
-                            Assert.assertTrue(lockLatch.await(10, TimeUnit.SECONDS));
+                            assertTrue(lockLatch.await(10, TimeUnit.SECONDS));
                             Collection<String> nodes = lock.getParticipantNodes();
-                            Assert.assertEquals(nodes.size(), 1);
+                            assertEquals(nodes.size(), 1);
                             Revoker.attemptRevoke(client, nodes.iterator().next());
 
                             InterProcessMutex l2 = new InterProcessMutex(client, LOCK_PATH);
-                            Assert.assertTrue(l2.acquire(5, TimeUnit.SECONDS));
+                            assertTrue(l2.acquire(5, TimeUnit.SECONDS));
                             l2.release();
                             return null;
                         }
@@ -168,16 +172,16 @@ public class TestInterProcessMutex extends TestInterProcessMutexBase
 
             // Get a persistent lock
             lock.acquire(10, TimeUnit.SECONDS);
-            Assert.assertTrue(lock.isAcquiredInThisProcess());
+            assertTrue(lock.isAcquiredInThisProcess());
 
             // Kill the session, check that lock node still exists
             client.getZookeeperClient().getZooKeeper().getTestable().injectSessionExpiration();
-            Assert.assertNotNull(client.checkExists().forPath(LOCK_PATH));
+            assertNotNull(client.checkExists().forPath(LOCK_PATH));
 
             // Release the lock and verify that the actual lock node created no longer exists
             String actualLockPath = lock.getLockPath();
             lock.release();
-            Assert.assertNull(client.checkExists().forPath(actualLockPath));
+            assertNull(client.checkExists().forPath(actualLockPath));
         }
         finally
         {

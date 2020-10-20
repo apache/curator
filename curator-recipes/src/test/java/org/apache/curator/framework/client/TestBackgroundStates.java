@@ -19,6 +19,8 @@
 
 package org.apache.curator.framework.client;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Queues;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -30,8 +32,8 @@ import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
+
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -77,14 +79,14 @@ public class TestBackgroundStates extends BaseClassForTests
             client.getConnectionStateListenable().addListener(listener);
             timing.sleepABit();
             server = new TestingServer(server.getPort());
-            Assert.assertTrue(timing.awaitLatch(connectedLatch));
+            assertTrue(timing.awaitLatch(connectedLatch));
             timing.sleepABit();
-            Assert.assertTrue(node.waitForInitialCreate(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
+            assertTrue(node.waitForInitialCreate(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
             server.restart();
             timing.sleepABit();
-            Assert.assertTrue(timing.awaitLatch(reconnectedLatch));
+            assertTrue(timing.awaitLatch(reconnectedLatch));
             timing.sleepABit();
-            Assert.assertEquals(lastState.get(), ConnectionState.RECONNECTED);
+            assertEquals(lastState.get(), ConnectionState.RECONNECTED);
         }
         finally
         {
@@ -118,15 +120,15 @@ public class TestBackgroundStates extends BaseClassForTests
 
             client.getConnectionStateListenable().addListener(listener);
             server = new TestingServer(server.getPort());
-            Assert.assertEquals(stateVector.poll(waitingTiming.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.CONNECTED);
+            assertEquals(stateVector.poll(waitingTiming.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.CONNECTED);
             server.stop();
-            Assert.assertEquals(stateVector.poll(waitingTiming.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.SUSPENDED);
-            Assert.assertEquals(stateVector.poll(waitingTiming.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.LOST);
+            assertEquals(stateVector.poll(waitingTiming.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.SUSPENDED);
+            assertEquals(stateVector.poll(waitingTiming.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.LOST);
             server.restart();
-            Assert.assertEquals(stateVector.poll(waitingTiming.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.RECONNECTED);
+            assertEquals(stateVector.poll(waitingTiming.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.RECONNECTED);
             server.close();
-            Assert.assertEquals(stateVector.poll(waitingTiming.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.SUSPENDED);
-            Assert.assertEquals(stateVector.poll(waitingTiming.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.LOST);
+            assertEquals(stateVector.poll(waitingTiming.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.SUSPENDED);
+            assertEquals(stateVector.poll(waitingTiming.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.LOST);
         }
         finally
         {

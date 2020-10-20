@@ -19,6 +19,11 @@
 
 package org.apache.curator.framework.recipes.locks;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import org.apache.curator.framework.CuratorFramework;
@@ -28,7 +33,6 @@ import org.apache.curator.framework.imps.TestCleanState;
 import org.apache.curator.framework.recipes.shared.SharedCount;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
-import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
@@ -36,8 +40,8 @@ import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
@@ -128,7 +132,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
             {
                 executor.execute(runner);
             }
-            Assert.assertTrue(timing.awaitLatch(isReadyLatch));
+            assertTrue(timing.awaitLatch(isReadyLatch));
             timing.sleepABit();
 
             final CountDownLatch lostLatch = new CountDownLatch(1);
@@ -150,20 +154,20 @@ public class TestInterProcessSemaphore extends BaseClassForTests
             });
       
             server.stop();
-            Assert.assertTrue(timing.multiple(1.25).awaitLatch(lostLatch));
+            assertTrue(timing.multiple(1.25).awaitLatch(lostLatch));
             InterProcessSemaphoreV2.debugAcquireLatch.countDown();  // the waiting semaphore proceeds to getChildren - which should fail
-            Assert.assertTrue(timing.awaitLatch(InterProcessSemaphoreV2.debugFailedGetChildrenLatch));  // wait until getChildren fails
+            assertTrue(timing.awaitLatch(InterProcessSemaphoreV2.debugFailedGetChildrenLatch));  // wait until getChildren fails
 
             server.restart();
 
-            Assert.assertTrue(timing.awaitLatch(restartedLatch));
+            assertTrue(timing.awaitLatch(restartedLatch));
             for ( int i = 0; i < NUM_CLIENTS; ++i )
             {
                 // acquires should continue as normal after server restart
                 Boolean polled = acquiredQueue.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS);
                 if ( (polled == null) || !polled )
                 {
-                    Assert.fail("Semaphores not reacquired after restart");
+                    fail("Semaphores not reacquired after restart");
                 }
             }
         }
@@ -200,10 +204,10 @@ public class TestInterProcessSemaphore extends BaseClassForTests
                         public Object call() throws Exception
                         {
                             Lease lease = semaphore.acquire(timing.seconds(), TimeUnit.SECONDS);
-                            Assert.assertNotNull(lease);
+                            assertNotNull(lease);
                             latch1.countDown();
                             lease = semaphore.acquire(timing.forWaiting().seconds(), TimeUnit.SECONDS);
-                            Assert.assertNotNull(lease);
+                            assertNotNull(lease);
                             latch2.countDown();
                             return null;
                         }
@@ -216,12 +220,12 @@ public class TestInterProcessSemaphore extends BaseClassForTests
                         @Override
                         public Object call() throws Exception
                         {
-                            Assert.assertTrue(latch1.await(timing.forWaiting().seconds(), TimeUnit.SECONDS));
+                            assertTrue(latch1.await(timing.forWaiting().seconds(), TimeUnit.SECONDS));
                             timing.sleepABit(); // make sure second acquire is waiting
-                            Assert.assertTrue(count.trySetCount(2));
+                            assertTrue(count.trySetCount(2));
                             //Make sure second acquire takes less than full waiting time:
                             timing.sleepABit();
-                            Assert.assertTrue(latch2.await(0, TimeUnit.SECONDS));
+                            assertTrue(latch2.await(0, TimeUnit.SECONDS));
                             return null;
                         }
                     }
@@ -258,16 +262,16 @@ public class TestInterProcessSemaphore extends BaseClassForTests
             semaphore2 = new InterProcessSemaphoreV2(client2, "/test", 1);
 
             Lease lease = semaphore2.acquire(timing.forWaiting().seconds(), TimeUnit.SECONDS);
-            Assert.assertNotNull(lease);
+            assertNotNull(lease);
             lease.close();
 
             lease = semaphore1.acquire(10, TimeUnit.SECONDS);
-            Assert.assertNotNull(lease);
+            assertNotNull(lease);
 
             client1.close();    // should release any held leases
             client1 = null;
 
-            Assert.assertNotNull(semaphore2.acquire(timing.forWaiting().seconds(), TimeUnit.SECONDS));
+            assertNotNull(semaphore2.acquire(timing.forWaiting().seconds(), TimeUnit.SECONDS));
         }
         finally
         {
@@ -324,10 +328,10 @@ public class TestInterProcessSemaphore extends BaseClassForTests
                                                 thisQty = (available.get() > 1) ? (random.nextInt(available.get()) + 1) : 1;
 
                                                 available.addAndGet(-1 * thisQty);
-                                                Assert.assertTrue(available.get() >= 0);
+                                                assertTrue(available.get() >= 0);
                                             }
                                             Collection<Lease> leases = semaphore.acquire(thisQty, timing.forWaiting().seconds(), TimeUnit.SECONDS);
-                                            Assert.assertNotNull(leases);
+                                            assertNotNull(leases);
                                             try
                                             {
                                                 synchronized(counter)
@@ -373,9 +377,9 @@ public class TestInterProcessSemaphore extends BaseClassForTests
 
         synchronized(counter)
         {
-            Assert.assertTrue(counter.currentCount == 0);
-            Assert.assertTrue(counter.maxCount > 0);
-            Assert.assertTrue(counter.maxCount <= SESSION_MAX);
+            assertTrue(counter.currentCount == 0);
+            assertTrue(counter.maxCount > 0);
+            assertTrue(counter.maxCount <= SESSION_MAX);
             System.out.println(counter.maxCount);
         }
     }
@@ -407,7 +411,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
                             {
                                 InterProcessSemaphoreV2 semaphore = new InterProcessSemaphoreV2(client, "/test", MAX);
                                 Lease lease = semaphore.acquire(timing.forWaiting().seconds(), TimeUnit.SECONDS);
-                                Assert.assertNotNull(lease);
+                                assertNotNull(lease);
                                 uses.incrementAndGet();
                                 try
                                 {
@@ -444,8 +448,8 @@ public class TestInterProcessSemaphore extends BaseClassForTests
             f.get();
         }
 
-        Assert.assertEquals(uses.get(), CLIENT_QTY);
-        Assert.assertEquals(maxLeases.get(), MAX);
+        assertEquals(uses.get(), CLIENT_QTY);
+        assertEquals(maxLeases.get(), MAX);
     }
 
     @Test
@@ -524,9 +528,9 @@ public class TestInterProcessSemaphore extends BaseClassForTests
             timing.sleepABit();
             synchronized(counter)
             {
-                Assert.assertTrue(counter.currentCount == 0);
-                Assert.assertTrue(counter.maxCount > 0);
-                Assert.assertTrue(counter.maxCount <= MAX_LEASES);
+                assertTrue(counter.currentCount == 0);
+                assertTrue(counter.maxCount > 0);
+                assertTrue(counter.maxCount <= MAX_LEASES);
                 System.out.println(counter.maxCount);
             }
         }
@@ -572,7 +576,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
                     );
             }
             service.shutdown();
-            Assert.assertTrue(service.awaitTermination(10, TimeUnit.SECONDS));
+            assertTrue(service.awaitTermination(10, TimeUnit.SECONDS));
         }
         finally
         {
@@ -589,8 +593,8 @@ public class TestInterProcessSemaphore extends BaseClassForTests
         try
         {
             InterProcessSemaphoreV2 semaphore = new InterProcessSemaphoreV2(client, "/test", 1);
-            Assert.assertNotNull(semaphore.acquire(timing.forWaiting().seconds(), TimeUnit.SECONDS));
-            Assert.assertNull(semaphore.acquire(timing.forWaiting().seconds(), TimeUnit.SECONDS));
+            assertNotNull(semaphore.acquire(timing.forWaiting().seconds(), TimeUnit.SECONDS));
+            assertNull(semaphore.acquire(timing.forWaiting().seconds(), TimeUnit.SECONDS));
         }
         finally
         {
@@ -613,16 +617,16 @@ public class TestInterProcessSemaphore extends BaseClassForTests
             {
                 InterProcessSemaphoreV2 semaphore = new InterProcessSemaphoreV2(client, "/test", MAX_LEASES);
                 Lease lease = semaphore.acquire(timing.forWaiting().seconds(), TimeUnit.SECONDS);
-                Assert.assertNotNull(lease);
+                assertNotNull(lease);
                 leases.add(lease);
             }
 
             InterProcessSemaphoreV2 semaphore = new InterProcessSemaphoreV2(client, "/test", MAX_LEASES);
             Lease lease = semaphore.acquire(timing.forWaiting().seconds(), TimeUnit.SECONDS);
-            Assert.assertNull(lease);
+            assertNull(lease);
 
             leases.remove(0).close();
-            Assert.assertNotNull(semaphore.acquire(timing.forWaiting().seconds(), TimeUnit.SECONDS));
+            assertNotNull(semaphore.acquire(timing.forWaiting().seconds(), TimeUnit.SECONDS));
         }
         finally
         {
@@ -651,7 +655,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
                 leases.add(semaphore.acquire());
             }
 
-            Assert.assertEquals(semaphore.getParticipantNodes().size(), LEASES);
+            assertEquals(semaphore.getParticipantNodes().size(), LEASES);
         }
         finally
         {
@@ -674,9 +678,9 @@ public class TestInterProcessSemaphore extends BaseClassForTests
         {
             final InterProcessSemaphoreV2 semaphore = new InterProcessSemaphoreV2(client, "/test", 1);
             Lease lease = semaphore.acquire(timing.forWaiting().seconds(), TimeUnit.SECONDS);
-            Assert.assertNotNull(lease);
+            assertNotNull(lease);
             final List<String> childNodes = client.getChildren().forPath("/test/leases");
-            Assert.assertEquals(childNodes.size(), 1);
+            assertEquals(childNodes.size(), 1);
 
             final CountDownLatch nodeCreatedLatch = new CountDownLatch(1);
             client.getChildren().usingWatcher(new CuratorWatcher()
@@ -710,7 +714,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
                     newNode = c;
                 }
             }
-            Assert.assertNotNull(newNode);
+            assertNotNull(newNode);
 
             // delete the ephemeral node to trigger a retry
             client.delete().forPath("/test/leases/" + newNode);
@@ -718,12 +722,12 @@ public class TestInterProcessSemaphore extends BaseClassForTests
             // release first lease so second one can be acquired
             lease.close();
             lease = leaseFuture.get();
-            Assert.assertNotNull(lease);
+            assertNotNull(lease);
             lease.close();
-            Assert.assertEquals(client.getChildren().forPath("/test/leases").size(), 0);
+            assertEquals(client.getChildren().forPath("/test/leases").size(), 0);
 
             // no more lease exist. must be possible to acquire a new one
-            Assert.assertNotNull(semaphore.acquire(timing.forWaiting().seconds(), TimeUnit.SECONDS));
+            assertNotNull(semaphore.acquire(timing.forWaiting().seconds(), TimeUnit.SECONDS));
         }
         finally
         {
@@ -749,7 +753,7 @@ public class TestInterProcessSemaphore extends BaseClassForTests
             
             // Acquire exclusive semaphore
             Lease lease = s1.acquire(timing.forWaiting().seconds(), TimeUnit.SECONDS);
-            Assert.assertNotNull(lease);
+            assertNotNull(lease);
             
             // Queue up another semaphore on the same path
             Future<Object> handle = Executors.newSingleThreadExecutor().submit(new Callable<Object>() {
@@ -762,18 +766,18 @@ public class TestInterProcessSemaphore extends BaseClassForTests
             });
 
             // Wait until second lease is created and the wait is started for it to become active
-            Assert.assertTrue(timing.awaitLatch(debugWaitLatch));
+            assertTrue(timing.awaitLatch(debugWaitLatch));
             
             // Interrupt the wait
             handle.cancel(true);
             
             // Assert that the second lease is gone
             timing.sleepABit();
-            Assert.assertEquals(client.getChildren().forPath("/test/leases").size(), 1);
+            assertEquals(client.getChildren().forPath("/test/leases").size(), 1);
             
             // Assert that after closing the first (current) semaphore, we can acquire a new one
             s1.returnLease(lease);
-            Assert.assertNotNull(s3.acquire(timing.forWaiting().seconds(), TimeUnit.SECONDS));
+            assertNotNull(s3.acquire(timing.forWaiting().seconds(), TimeUnit.SECONDS));
         }
         finally
         {

@@ -18,6 +18,10 @@
  */
 package org.apache.curator.framework.recipes.queue;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
@@ -25,15 +29,12 @@ import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
+
 import java.util.NoSuchElementException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
 
 public class TestSimpleDistributedQueue extends BaseClassForTests
 {
@@ -113,7 +114,7 @@ public class TestSimpleDistributedQueue extends BaseClassForTests
             });
 
             executor.shutdown();
-            Assert.assertTrue(executor.awaitTermination((QueueUser.ITEM_COUNT * 2) * timing.milliseconds(), TimeUnit.MILLISECONDS));
+            assertTrue(executor.awaitTermination((QueueUser.ITEM_COUNT * 2) * timing.milliseconds(), TimeUnit.MILLISECONDS));
         }
         finally
         {
@@ -139,7 +140,7 @@ public class TestSimpleDistributedQueue extends BaseClassForTests
                 queueHandles[i] = new SimpleDistributedQueue(clients[i], dir);
             }
 
-            Assert.assertNull(queueHandles[0].poll(3, TimeUnit.SECONDS));
+            assertNull(queueHandles[0].poll(3, TimeUnit.SECONDS));
         }
         finally
         {

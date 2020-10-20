@@ -18,6 +18,10 @@
  */
 package org.apache.curator.framework.imps;
 
+import static org.apache.zookeeper.ZooDefs.Ids.ANYONE_ID_UNSAFE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.ACLProvider;
@@ -28,16 +32,12 @@ import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
-import static org.apache.zookeeper.ZooDefs.Ids.ANYONE_ID_UNSAFE;
-import static org.testng.Assert.assertNull;
 
 public class TestExistsBuilder extends BaseClassForTests {
 
@@ -57,9 +57,9 @@ public class TestExistsBuilder extends BaseClassForTests {
             List<ACL> acl = Collections.singletonList(new ACL(ZooDefs.Perms.CREATE | ZooDefs.Perms.READ, ANYONE_ID_UNSAFE));
             assertNull(client.checkExists().creatingParentsIfNeeded().withACL(acl).forPath(path));
             List<ACL> actual_bar = client.getACL().forPath("/bar");
-            Assert.assertEquals(actual_bar, acl);
+            assertEquals(actual_bar, acl);
             List<ACL> actual_bar_foo = client.getACL().forPath("/bar/foo");
-            Assert.assertEquals(actual_bar_foo, acl);
+            assertEquals(actual_bar_foo, acl);
         }
         finally
         {
@@ -86,11 +86,11 @@ public class TestExistsBuilder extends BaseClassForTests {
                 }
             };
             client.checkExists().creatingParentsIfNeeded().withACL(acl).inBackground(callback).forPath(path);
-            Assert.assertTrue(latch.await(2000, TimeUnit.MILLISECONDS), "Callback not invoked");
+            assertTrue(latch.await(2000, TimeUnit.MILLISECONDS), "Callback not invoked");
             List<ACL> actual_bar = client.getACL().forPath("/bar");
-            Assert.assertEquals(actual_bar, acl);
+            assertEquals(actual_bar, acl);
             List<ACL> actual_bar_foo = client.getACL().forPath("/bar/foo");
-            Assert.assertEquals(actual_bar_foo, acl);
+            assertEquals(actual_bar_foo, acl);
         }
         finally
         {

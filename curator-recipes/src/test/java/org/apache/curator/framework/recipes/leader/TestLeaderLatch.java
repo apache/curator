@@ -19,6 +19,12 @@
 
 package org.apache.curator.framework.recipes.leader;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
@@ -40,8 +46,9 @@ import org.apache.curator.test.Timing;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -61,7 +68,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-@Test(groups = CuratorTestBase.zk35TestCompatibilityGroup)
+@Tag(CuratorTestBase.zk35TestCompatibilityGroup)
 public class TestLeaderLatch extends BaseClassForTests
 {
     private static final String PATH_NAME = "/one/two/me";
@@ -133,7 +140,7 @@ public class TestLeaderLatch extends BaseClassForTests
             holders.forEach(holder -> {
                 executorService.submit(() -> {
                     holder.latch.start();
-                    Assert.assertTrue(holder.latch.await(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
+                    assertTrue(holder.latch.await(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
                     holder.isLockedLatch.countDown();
                     return null;
                 });
@@ -143,17 +150,17 @@ public class TestLeaderLatch extends BaseClassForTests
             for ( int i = 0; i < 4; ++i )   // note: 4 is just a random number of loops to simulate disconnections
             {
                 server.stop();
-                Assert.assertTrue(timing.acquireSemaphore(lostSemaphore));
+                assertTrue(timing.acquireSemaphore(lostSemaphore));
                 server.restart();
                 timing.sleepABit();
             }
 
             for ( Holder holder : holders )
             {
-                Assert.assertTrue(holder.latch.await(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
-                Assert.assertEquals(timing.takeFromQueue(holder.stateChanges), ConnectionState.SUSPENDED);
-                Assert.assertEquals(timing.takeFromQueue(holder.stateChanges), ConnectionState.LOST);
-                Assert.assertEquals(timing.takeFromQueue(holder.stateChanges), ConnectionState.RECONNECTED);
+                assertTrue(holder.latch.await(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
+                assertEquals(timing.takeFromQueue(holder.stateChanges), ConnectionState.SUSPENDED);
+                assertEquals(timing.takeFromQueue(holder.stateChanges), ConnectionState.LOST);
+                assertEquals(timing.takeFromQueue(holder.stateChanges), ConnectionState.RECONNECTED);
             }
         }
         finally
@@ -187,7 +194,7 @@ public class TestLeaderLatch extends BaseClassForTests
             try ( LeaderLatch latch2 = new LeaderLatch(client, latchPath, "2") )
             {
                 latch1.start();
-                Assert.assertTrue(latch1.await(timing.milliseconds(), TimeUnit.MILLISECONDS));
+                assertTrue(latch1.await(timing.milliseconds(), TimeUnit.MILLISECONDS));
 
                 latch2.start(); // will get a watcher on latch1's node
                 timing.sleepABit();
@@ -200,9 +207,9 @@ public class TestLeaderLatch extends BaseClassForTests
                 latch2.reset(); // force the internal "ourPath" to get reset
                 latch2.debugCheckLeaderShipLatch.countDown();   // allow checkLeadership() to continue
 
-                Assert.assertTrue(latch2.await(timing.forSessionSleep().forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
+                assertTrue(latch2.await(timing.forSessionSleep().forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
                 timing.sleepABit();
-                Assert.assertEquals(client.getChildren().forPath(latchPath).size(), 1);
+                assertEquals(client.getChildren().forPath(latchPath).size(), 1);
             }
             finally
             {
@@ -258,25 +265,25 @@ public class TestLeaderLatch extends BaseClassForTests
                 };
                 latch.addListener(listener);
                 latch.start();
-                Assert.assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.CONNECTED.name());
-                Assert.assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), "true");
+                assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.CONNECTED.name());
+                assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), "true");
                 server.stop();
                 if ( isSessionIteration )
                 {
-                    Assert.assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.SUSPENDED.name());
+                    assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.SUSPENDED.name());
                     server.restart();
-                    Assert.assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.RECONNECTED.name());
-                    Assert.assertNull(states.poll(timing.milliseconds(), TimeUnit.MILLISECONDS));
+                    assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.RECONNECTED.name());
+                    assertNull(states.poll(timing.milliseconds(), TimeUnit.MILLISECONDS));
                 }
                 else
                 {
                     String s = states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS);
-                    Assert.assertTrue("false".equals(s) || ConnectionState.SUSPENDED.name().equals(s));
+                    assertTrue("false".equals(s) || ConnectionState.SUSPENDED.name().equals(s));
                     s = states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS);
-                    Assert.assertTrue("false".equals(s) || ConnectionState.SUSPENDED.name().equals(s));
+                    assertTrue("false".equals(s) || ConnectionState.SUSPENDED.name().equals(s));
                     server.restart();
-                    Assert.assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.RECONNECTED.name());
-                    Assert.assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), "true");
+                    assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.RECONNECTED.name());
+                    assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), "true");
                 }
             }
             finally
@@ -329,14 +336,14 @@ public class TestLeaderLatch extends BaseClassForTests
             };
             latch.addListener(listener);
             latch.start();
-            Assert.assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.CONNECTED.name());
-            Assert.assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), "true");
+            assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.CONNECTED.name());
+            assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), "true");
             server.close();
             List<String> next = Lists.newArrayList();
             next.add(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
             next.add(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
-            Assert.assertTrue(next.equals(Arrays.asList(ConnectionState.SUSPENDED.name(), "false")) || next.equals(Arrays.asList("false", ConnectionState.SUSPENDED.name())), next.toString());
-            Assert.assertEquals(states.poll(timing.forSessionSleep().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.LOST.name());
+            assertTrue(next.equals(Arrays.asList(ConnectionState.SUSPENDED.name(), "false")) || next.equals(Arrays.asList("false", ConnectionState.SUSPENDED.name())), next.toString());
+            assertEquals(states.poll(timing.forSessionSleep().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.LOST.name());
             latch.close();
             client.close();
 
@@ -356,14 +363,14 @@ public class TestLeaderLatch extends BaseClassForTests
             latch = new LeaderLatch(client, "/test");
             latch.addListener(listener);
             latch.start();
-            Assert.assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.CONNECTED.name());
-            Assert.assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), "true");
+            assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.CONNECTED.name());
+            assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), "true");
             server.close();
-            Assert.assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.SUSPENDED.name());
+            assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.SUSPENDED.name());
             next = Lists.newArrayList();
             next.add(states.poll(timing.forSessionSleep().milliseconds(), TimeUnit.MILLISECONDS));
             next.add(states.poll(timing.forSessionSleep().milliseconds(), TimeUnit.MILLISECONDS));
-            Assert.assertTrue(next.equals(Arrays.asList(ConnectionState.LOST.name(), "false")) || next.equals(Arrays.asList("false", ConnectionState.LOST.name())), next.toString());
+            assertTrue(next.equals(Arrays.asList(ConnectionState.LOST.name(), "false")) || next.equals(Arrays.asList("false", ConnectionState.LOST.name())), next.toString());
         }
         finally
         {
@@ -411,8 +418,8 @@ public class TestLeaderLatch extends BaseClassForTests
             latch.close();
             latch = null;
 
-            Assert.assertTrue(timing.awaitLatch(cancelStartTaskLatch));
-            Assert.assertFalse(resetCalled.get());
+            assertTrue(timing.awaitLatch(cancelStartTaskLatch));
+            assertFalse(resetCalled.get());
         }
         finally
         {
@@ -442,7 +449,7 @@ public class TestLeaderLatch extends BaseClassForTests
 
             timing.sleepABit();
 
-            Assert.assertEquals(client.getChildren().forPath(PATH_NAME).size(), 1);
+            assertEquals(client.getChildren().forPath(PATH_NAME).size(), 1);
         }
         finally
         {
@@ -474,7 +481,7 @@ public class TestLeaderLatch extends BaseClassForTests
 
             timing.sleepABit();
 
-            Assert.assertEquals(client.getChildren().forPath(PATH_NAME).size(), 0);
+            assertEquals(client.getChildren().forPath(PATH_NAME).size(), 0);
 
         }
         finally
@@ -519,14 +526,14 @@ public class TestLeaderLatch extends BaseClassForTests
             waitForALeader(latches, timing);
 
             server.stop();
-            Assert.assertTrue(timing.awaitLatch(countDownLatch));
+            assertTrue(timing.awaitLatch(countDownLatch));
 
             timing.forWaiting().sleepABit();
 
-            Assert.assertEquals(getLeaders(latches).size(), 0);
+            assertEquals(getLeaders(latches).size(), 0);
 
             server.restart();
-            Assert.assertEquals(waitForALeader(latches, timing).size(), 1); // should reconnect
+            assertEquals(waitForALeader(latches, timing).size(), 1); // should reconnect
         }
         finally
         {
@@ -565,7 +572,7 @@ public class TestLeaderLatch extends BaseClassForTests
 
             //As the previous algorithm assumed that if the watched node is deleted gets the leadership
             //we need to ensure that the PARTICIPANT_ID-1 is not getting (wrongly) elected as leader.
-            Assert.assertTrue(!latches.get(PARTICIPANT_ID - 1).hasLeadership());
+            assertTrue(!latches.get(PARTICIPANT_ID - 1).hasLeadership());
         }
         finally
         {
@@ -617,8 +624,8 @@ public class TestLeaderLatch extends BaseClassForTests
                         try
                         {
                             latch.start();
-                            Assert.assertTrue(latch.await(timing.forWaiting().seconds(), TimeUnit.SECONDS));
-                            Assert.assertTrue(thereIsALeader.compareAndSet(false, true));
+                            assertTrue(latch.await(timing.forWaiting().seconds(), TimeUnit.SECONDS));
+                            assertTrue(thereIsALeader.compareAndSet(false, true));
                             Thread.sleep((int)(10 * Math.random()));
                             thereIsALeader.set(false);
                         }
@@ -719,11 +726,11 @@ public class TestLeaderLatch extends BaseClassForTests
 
             timesSquare.await();
 
-            Assert.assertEquals(masterCounter.get(), PARTICIPANT_QTY * 2);
-            Assert.assertEquals(notLeaderCounter.get(), PARTICIPANT_QTY);
+            assertEquals(masterCounter.get(), PARTICIPANT_QTY * 2);
+            assertEquals(notLeaderCounter.get(), PARTICIPANT_QTY);
             for ( LeaderLatch latch : latches )
             {
-                Assert.assertEquals(latch.getState(), LeaderLatch.State.CLOSED);
+                assertEquals(latch.getState(), LeaderLatch.State.CLOSED);
             }
         }
         finally
@@ -807,11 +814,11 @@ public class TestLeaderLatch extends BaseClassForTests
 
             timesSquare.await();
 
-            Assert.assertEquals(masterCounter.get(), PARTICIPANT_QTY * 2);
-            Assert.assertEquals(notLeaderCounter.get(), PARTICIPANT_QTY * 2 - SILENT_QTY);
+            assertEquals(masterCounter.get(), PARTICIPANT_QTY * 2);
+            assertEquals(notLeaderCounter.get(), PARTICIPANT_QTY * 2 - SILENT_QTY);
             for ( LeaderLatch latch : latches )
             {
-                Assert.assertEquals(latch.getState(), LeaderLatch.State.CLOSED);
+                assertEquals(latch.getState(), LeaderLatch.State.CLOSED);
             }
         }
         finally
@@ -886,11 +893,11 @@ public class TestLeaderLatch extends BaseClassForTests
             // Test the close override
             leader.close(LeaderLatch.CloseMode.NOTIFY_LEADER);
 
-            Assert.assertEquals(leader.getState(), LeaderLatch.State.CLOSED);
-            Assert.assertEquals(notifiedLeader.getState(), LeaderLatch.State.CLOSED);
+            assertEquals(leader.getState(), LeaderLatch.State.CLOSED);
+            assertEquals(notifiedLeader.getState(), LeaderLatch.State.CLOSED);
 
-            Assert.assertEquals(masterCounter.get(), 1);
-            Assert.assertEquals(notLeaderCounter.get(), 0);
+            assertEquals(masterCounter.get(), 1);
+            assertEquals(notLeaderCounter.get(), 0);
         }
         finally
         {
@@ -946,14 +953,14 @@ public class TestLeaderLatch extends BaseClassForTests
             // Start the new server
             server = new TestingServer(server.getPort(), server.getTempDirectory());
 
-            Assert.assertTrue(timing.awaitLatch(leaderCounter), "Not elected leader");
+            assertTrue(timing.awaitLatch(leaderCounter), "Not elected leader");
 
-            Assert.assertEquals(leaderCount.get(), 1, "Elected too many times");
-            Assert.assertEquals(notLeaderCount.get(), 0, "Unelected too many times");
+            assertEquals(leaderCount.get(), 1, "Elected too many times");
+            assertEquals(notLeaderCount.get(), 0, "Unelected too many times");
         }
         catch ( Exception e )
         {
-            Assert.fail("Unexpected exception", e);
+            fail("Unexpected exception", e);
         }
         finally
         {
@@ -1012,11 +1019,11 @@ public class TestLeaderLatch extends BaseClassForTests
             while ( latches.size() > 0 )
             {
                 List<LeaderLatch> leaders = waitForALeader(latches, timing);
-                Assert.assertEquals(leaders.size(), 1); // there can only be one leader
+                assertEquals(leaders.size(), 1); // there can only be one leader
                 LeaderLatch theLeader = leaders.get(0);
                 if ( mode == Mode.START_IMMEDIATELY )
                 {
-                    Assert.assertEquals(latches.indexOf(theLeader), 0); // assert ordering - leadership should advance in start order
+                    assertEquals(latches.indexOf(theLeader), 0); // assert ordering - leadership should advance in start order
                 }
                 theLeader.close();
                 latches.remove(theLeader);
@@ -1059,11 +1066,13 @@ public class TestLeaderLatch extends BaseClassForTests
         return leaders;
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void testRelativePath() throws Exception
+    @Test
+    public void testRelativePath()
     {
-        Timing timing = new Timing();
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
-        new LeaderLatch(client, "parent");
+        assertThrows(IllegalArgumentException.class, ()->{
+            Timing timing = new Timing();
+            CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+            new LeaderLatch(client, "parent");
+        });
     }
 }

@@ -18,6 +18,9 @@
  */
 package org.apache.curator.framework.imps;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -33,10 +36,9 @@ import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.x.async.AsyncCuratorFramework;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.ACL;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.Assert;
-import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -102,7 +104,7 @@ public class TestFrameworkBackground extends BaseClassForTests
                 }
             };
             async.with(listener).create().forPath("/foo");
-            Assert.assertTrue(new Timing().awaitLatch(errorLatch));
+            assertTrue(new Timing().awaitLatch(errorLatch));
         }
         finally
         {
@@ -144,10 +146,10 @@ public class TestFrameworkBackground extends BaseClassForTests
 
             server.restart();
 
-            Assert.assertTrue(timing.awaitLatch(connectedLatch));
-            Assert.assertFalse(firstListenerAction.get());
+            assertTrue(timing.awaitLatch(connectedLatch));
+            assertFalse(firstListenerAction.get());
             ConnectionState firstconnectionState = firstListenerState.get();
-            Assert.assertEquals(firstconnectionState, ConnectionState.CONNECTED, "First listener state MUST BE CONNECTED but is " + firstconnectionState);
+            assertEquals(firstconnectionState, ConnectionState.CONNECTED, "First listener state MUST BE CONNECTED but is " + firstconnectionState);
         }
         finally
         {
@@ -190,7 +192,7 @@ public class TestFrameworkBackground extends BaseClassForTests
 
             for ( long elapsed : times.subList(1, times.size()) )   // first one isn't a retry
             {
-                Assert.assertTrue(elapsed >= SLEEP, elapsed + ": " + times);
+                assertTrue(elapsed >= SLEEP, elapsed + ": " + times);
             }
         }
         finally
@@ -223,7 +225,7 @@ public class TestFrameworkBackground extends BaseClassForTests
                 return null;
             });
             // Check if the callback has been called with a correct return code
-            Assert.assertTrue(timing.awaitLatch(latch), "Callback has not been called by curator !");
+            assertTrue(timing.awaitLatch(latch), "Callback has not been called by curator !");
         }
     }
 
@@ -280,7 +282,7 @@ public class TestFrameworkBackground extends BaseClassForTests
             timing.sleepABit();
 
             // should not generate an exception
-            Assert.assertFalse(hadIllegalStateException.get());
+            assertFalse(hadIllegalStateException.get());
         }
         finally
         {

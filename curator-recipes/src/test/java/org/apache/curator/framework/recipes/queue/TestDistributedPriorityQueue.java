@@ -18,6 +18,11 @@
  */
 package org.apache.curator.framework.recipes.queue;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -26,9 +31,8 @@ import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.Timing;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.testng.Assert;
-import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -58,7 +62,7 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
                 queue.put(i, 10 + i);
             }
 
-            Assert.assertEquals(consumer.take(1, TimeUnit.SECONDS), new Integer(0));
+            assertEquals(consumer.take(1, TimeUnit.SECONDS), new Integer(0));
             queue.put(1000, 1); // lower priority
 
             int         count = 0;
@@ -66,7 +70,7 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
             {
                 ++count;
             }
-            Assert.assertTrue(Math.abs(minItemsBeforeRefresh - count) < minItemsBeforeRefresh, String.format("Diff: %d - min: %d", Math.abs(minItemsBeforeRefresh - count), minItemsBeforeRefresh));     // allows for some slack - testing that within a slop value the newly inserted item with lower priority comes out
+            assertTrue(Math.abs(minItemsBeforeRefresh - count) < minItemsBeforeRefresh, String.format("Diff: %d - min: %d", Math.abs(minItemsBeforeRefresh - count), minItemsBeforeRefresh));     // allows for some slack - testing that within a slop value the newly inserted item with lower priority comes out
         }
         finally
         {
@@ -106,12 +110,12 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
                 queue.put(i, 10);
             }
 
-            Assert.assertEquals(blockingQueue.poll(timing.seconds(), TimeUnit.SECONDS), new Integer(0));
+            assertEquals(blockingQueue.poll(timing.seconds(), TimeUnit.SECONDS), new Integer(0));
             timing.sleepABit();
             queue.put(1000, 1); // lower priority
             timing.sleepABit();
-            Assert.assertEquals(blockingQueue.poll(timing.seconds(), TimeUnit.SECONDS), new Integer(1)); // is in consumer already
-            Assert.assertEquals(blockingQueue.poll(timing.seconds(), TimeUnit.SECONDS), new Integer(1000));
+            assertEquals(blockingQueue.poll(timing.seconds(), TimeUnit.SECONDS), new Integer(1)); // is in consumer already
+            assertEquals(blockingQueue.poll(timing.seconds(), TimeUnit.SECONDS), new Integer(1000));
         }
         finally
         {
@@ -197,7 +201,7 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
 
             nums.add(Integer.MIN_VALUE);
             queue.put(Integer.MIN_VALUE, Integer.MIN_VALUE);  // the queue background thread will be blocking with the first item - make sure it's the lowest value
-            Assert.assertTrue(timing.awaitLatch(hasConsumedLatch));
+            assertTrue(timing.awaitLatch(hasConsumedLatch));
 
             Random          random = new Random();
             for ( int i = 0; i < 100; ++i )
@@ -222,7 +226,7 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
             {
                 message.append(i).append("\t").append(DistributedPriorityQueue.priorityToString(i)).append("\n");
             }
-            Assert.fail(message.toString());
+            fail(message.toString());
         }
         finally
         {
@@ -237,10 +241,10 @@ public class TestDistributedPriorityQueue extends BaseClassForTests
         for ( int i = 0; i < qty; ++i )
         {
             Integer     value = consumer.take(10, TimeUnit.SECONDS);
-            Assert.assertNotNull(value);
+            assertNotNull(value);
             if ( i > 0 )
             {
-                Assert.assertTrue(value >= previous, String.format("Value: (%d:%s) Previous: (%d:%s)", value, DistributedPriorityQueue.priorityToString(value), previous, DistributedPriorityQueue.priorityToString(previous)));
+                assertTrue(value >= previous, String.format("Value: (%d:%s) Previous: (%d:%s)", value, DistributedPriorityQueue.priorityToString(value), previous, DistributedPriorityQueue.priorityToString(previous)));
             }
             previous = value;
         }
