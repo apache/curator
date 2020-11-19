@@ -178,7 +178,7 @@
             <timezone>-5</timezone>
             <roles>
                 <role>Committer</role>
-                <role>PMC Chair</role>
+                <role>PMC Member</role>
             </roles>
             <url>https://people.apache.org/~randgalt</url>
         </developer>
@@ -324,7 +324,7 @@
             <timezone>+1</timezone>
             <roles>
                 <role>Committer</role>
-                <role>PMC Member</role>
+                <role>PMC Chair</role>
             </roles>
             <url>https://people.apache.org/~eolivelli</url>
         </developer>
