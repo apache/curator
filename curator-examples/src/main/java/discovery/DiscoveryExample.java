@@ -33,6 +33,8 @@ import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.discovery.ServiceProvider;
 import org.apache.curator.x.discovery.details.JsonInstanceSerializer;
 import org.apache.curator.x.discovery.strategies.RandomStrategy;
+import org.apache.zookeeper.KeeperException;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.Arrays;
@@ -191,9 +193,12 @@ public class DiscoveryExample
                     outputInstance(instance);
                 }
             }
-        }
-        finally
-        {
+        }catch (Exception e){
+            if (e instanceof KeeperException.NoNodeException)
+            {
+                System.err.println("There are no registered instances.");
+                return;
+            }
             CloseableUtils.closeQuietly(serviceDiscovery);
         }
     }
