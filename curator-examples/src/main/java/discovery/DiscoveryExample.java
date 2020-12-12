@@ -201,6 +201,9 @@ public class DiscoveryExample
                 System.err.println("There are no registered instances.");
                 return;
             }
+        }
+        finally
+        {
             CloseableUtils.closeQuietly(serviceDiscovery);
         }
     }
