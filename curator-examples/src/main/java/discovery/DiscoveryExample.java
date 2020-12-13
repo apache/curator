@@ -201,6 +201,7 @@ public class DiscoveryExample
                 System.err.println("There are no registered instances.");
                 return;
             }
+            throw e;
         }
         finally
         {
