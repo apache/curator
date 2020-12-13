@@ -193,15 +193,11 @@ public class DiscoveryExample
                     outputInstance(instance);
                 }
             }
+
         }
-        catch ( Exception e )
+        catch ( KeeperException.NoNodeException e )
         {
-            if ( e instanceof KeeperException.NoNodeException )
-            {
-                System.err.println("There are no registered instances.");
-                return;
-            }
-            throw e;
+            System.err.println("There are no registered instances.");
         }
         finally
         {
