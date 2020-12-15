@@ -22,19 +22,23 @@ import static org.apache.zookeeper.ZooDefs.Ids.ANYONE_ID_UNSAFE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.framework.api.BackgroundCallback;
+import org.apache.curator.framework.api.CreateBuilderMain;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
+import org.apache.zookeeper.data.Stat;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
@@ -42,6 +46,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestCreate extends BaseClassForTests
 {
@@ -247,6 +252,198 @@ public class TestCreate extends BaseClassForTests
             assertEquals(actual_bar_foo, READ_CREATE_WRITE);
             List<ACL> actual_bar = client.getACL().forPath("/bar");
             assertEquals(actual_bar, READ_CREATE);
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    private void check(CuratorFramework client, CreateBuilderMain builder, String path, byte[] data, boolean expectedSuccess) throws Exception
+    {
+        int expectedCode = (expectedSuccess) ? KeeperException.Code.OK.intValue() : KeeperException.Code.NODEEXISTS.intValue();
+        try
+        {
+            builder.forPath(path, data);
+            assertEquals(expectedCode, KeeperException.Code.OK.intValue());
+            Stat stat = new Stat();
+            byte[] actualData = client.getData().storingStatIn(stat).forPath(path);
+            assertTrue(IdempotentUtils.matches(0, data, stat.getVersion(), actualData));
+        }
+        catch (KeeperException e)
+        {
+            assertEquals(expectedCode, e.getCode());
+        }
+    }
+
+    private void checkBackground(CuratorFramework client, CreateBuilderMain builder, String path, byte[] data, boolean expectedSuccess) throws Exception
+    {
+        int expectedCode = (expectedSuccess) ? KeeperException.Code.OK.intValue() : KeeperException.Code.NODEEXISTS.intValue();
+        AtomicInteger actualCode = new AtomicInteger(-1);
+        CountDownLatch latch = new CountDownLatch(1);
+
+        BackgroundCallback callback = new BackgroundCallback()
+        {
+            @Override
+            public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
+            {
+                actualCode.set(event.getResultCode());
+                latch.countDown();
+            }
+        };
+
+        builder.inBackground(callback).forPath(path, data);
+
+        assertTrue(latch.await(5000, TimeUnit.MILLISECONDS), "Callback not invoked");
+        assertEquals(expectedCode, actualCode.get());
+
+        if (expectedCode == KeeperException.Code.OK.intValue())
+        {
+            Stat stat = new Stat();
+            byte[] actualData = client.getData().storingStatIn(stat).forPath(path);
+            assertTrue(IdempotentUtils.matches(0, data, stat.getVersion(), actualData));
+        }
+    }
+
+    private CreateBuilderMain clBefore(CreateBuilderMain builder)
+    {
+        ((CreateBuilderImpl)builder).failBeforeNextCreateForTesting = true;
+        return builder;
+    }
+
+    private CreateBuilderMain clAfter(CreateBuilderMain builder)
+    {
+        ((CreateBuilderImpl)builder).failNextCreateForTesting = true;
+        return builder;
+    }
+
+    private CreateBuilderMain clCheck(CreateBuilderMain builder)
+    {
+        ((CreateBuilderImpl)builder).failNextIdempotentCheckForTesting = true;
+        return builder;
+    }
+
+    /**
+     * Tests that NodeExists on failNextCreate doesn't hang in background
+     */
+    @Test
+    public void testBackgroundFaultInjectionHang() throws Exception
+    {
+        CuratorFramework client = createClient(new DefaultACLProvider());
+        try
+        {
+            client.start();
+
+            Stat stat = new Stat();
+
+            String path = "/create";
+            byte[] data = new byte[] {1, 2};
+
+            CreateBuilderMain create = client.create();
+            check(client, create, path, data, true);
+
+            checkBackground(client, clAfter(client.create()), path, data, false);
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    /**
+     * Tests all cases of idempotent create
+     */
+    @Test
+    public void testIdempotentCreate() throws Exception
+    {
+        CuratorFramework client = createClient(new DefaultACLProvider());
+        try
+        {
+            client.start();
+
+            Stat stat = new Stat();
+
+            String path = "/idpcreate";
+            String pathBack = "/idpcreateback";
+            byte[] data1 = new byte[] {1, 2, 3};
+            byte[] data2 = new byte[] {4, 5, 6};
+
+            // check foreground and backgroud
+
+            // first create should succeed
+            check(client, client.create().idempotent(), path, data1, true);
+            checkBackground(client, client.create().idempotent(), pathBack, data1, true);
+
+            // repeating the same op should succeed
+            check(client, client.create().idempotent(), path, data1, true);
+            checkBackground(client, client.create().idempotent(), pathBack, data1, true);
+
+            // same op with different data should fail even though version matches
+            check(client, client.create().idempotent(), path, data2, false);
+            checkBackground(client, client.create().idempotent(), pathBack, data2, false);
+
+            // now set data to new version
+            client.setData().forPath(path, data2);
+            client.setData().forPath(pathBack, data2);
+
+            // version should now be 1 so both versions should fail
+            check(client, client.create().idempotent(), path, data1, false);
+            checkBackground(client, client.create().idempotent(), pathBack, data1, false);
+
+            check(client, client.create().idempotent(), path, data2, false);
+            checkBackground(client, client.create().idempotent(), pathBack, data2, false);
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    // Test that idempotent create automatically retries successfully upon connectionLoss
+    @Test
+    public void testIdempotentCreateConnectionLoss() throws Exception {
+        CuratorFramework client = createClient(new DefaultACLProvider());
+        try
+        {
+            client.start();
+            String path1 = "/idpcreate1";
+            String path2 = "/idpcreate2";
+            String path3 = "/create3";
+            String path4 = "/create4";
+            byte[] data = new byte[] {1, 2, 3};
+            byte[] data2 = new byte[] {1, 2, 3, 4};
+
+            // check foreground and background
+
+            // Test that idempotent create succeeds with connection loss before or after first create
+            check(client, clBefore(client.create().idempotent()), path1, data, true);
+            checkBackground(client, clBefore(client.create().idempotent()), path1+"back", data, true);
+            check(client, clAfter(client.create().idempotent()), path2, data, true);
+            checkBackground(client, clAfter(client.create().idempotent()), path2+"back", data, true);
+
+            // Test that repeating same operation succeeds, even with connection loss before/after/check
+            check(client, clBefore(client.create().idempotent()), path1, data, true);
+            checkBackground(client, clBefore(client.create().idempotent()), path1+"back", data, true);
+            check(client, clAfter(client.create().idempotent()), path2, data, true);
+            checkBackground(client, clAfter(client.create().idempotent()), path2+"back", data, true);
+            check(client, clCheck(client.create().idempotent()), path2, data, true);
+            checkBackground(client, clCheck(client.create().idempotent()), path2+"back", data, true);
+
+            // test that idempotent correctly fails, even after connection loss,
+            // by repeating earlier operations with different data
+            check(client, clBefore(client.create().idempotent()), path1, data2, false);
+            checkBackground(client, clBefore(client.create().idempotent()), path1+"back", data2, false);
+            check(client, clAfter(client.create().idempotent()), path2, data2, false);
+            checkBackground(client, clAfter(client.create().idempotent()), path2+"back", data2, false);
+            check(client, clCheck(client.create().idempotent()), path2, data2, false);
+            checkBackground(client, clCheck(client.create().idempotent()), path2+"back", data2, false);
+
+            // Test that non-idempotent succeeds with CL before create, but fails with connection loss after
+            check(client, clBefore(client.create()), path3, data, true);
+            checkBackground(client, clBefore(client.create()), path3+"back", data, true);
+            check(client, clAfter(client.create()), path4, data, false);
+            checkBackground(client, clAfter(client.create()), path4+"back", data, false);
+
         }
         finally
         {

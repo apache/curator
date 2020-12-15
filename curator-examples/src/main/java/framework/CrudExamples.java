@@ -62,6 +62,16 @@ public class CrudExamples
         return client.create().withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(path, payload);
     }
 
+    public static void      createIdempotent(CuratorFramework client, String path, byte[] payload) throws Exception
+    {
+        /*
+         * This will create the given ZNode with the given data idempotently, meaning that if the initial create
+         * failed transiently, it will be retried and behave as if the first create never happened, even if the
+         * first create actually succeeded on the server but the client didn't know it.
+         */
+        client.create().idempotent().forPath(path, payload);
+    }
+
     public static void      setData(CuratorFramework client, String path, byte[] payload) throws Exception
     {
         // set data for the given node
@@ -92,6 +102,22 @@ public class CrudExamples
         client.setData().inBackground(callback).forPath(path, payload);
     }
 
+    public static void      setDataIdempotent(CuratorFramework client, String path, byte[] payload, int currentVersion) throws Exception
+    {
+        /*
+         * This will set the given ZNode with the given data idempotently, meaning that if the initial setData
+         * failed transiently, it will be retried and behave as if the first setData never happened, even if the
+         * first setData actually succeeded on the server but the client didn't know it.
+         * In other words, if currentVersion == X and payload = P, this will return success if the znode ends
+         * up in the state (version == X+1 && data == P).
+         * If withVersion is not specified, it will end up with success so long as the data == P, no matter the znode version.
+         */
+        client.setData().idempotent().withVersion(currentVersion).forPath(path, payload);
+        client.setData().idempotent().forPath(path, payload);
+    }
+
+
+
     public static void      delete(CuratorFramework client, String path) throws Exception
     {
         // delete the given node
@@ -117,6 +143,24 @@ public class CrudExamples
          */
 
         client.delete().guaranteed().forPath(path);
+    }
+
+    public static void      deleteIdempotent(CuratorFramework client, String path, int currentVersion) throws Exception
+    {
+        /* 
+         * This will delete the given ZNode with the given data idempotently, meaning that if the initial delete
+         * failed transiently, it will be retried and behave as if the first delete never happened, even if the
+         * first delete actually succeeded on the server but the client didn't know it.
+         * In other words, if currentVersion == X, this will return success if the znode ends up deleted, and will retry after
+         * connection loss if the version the znode's version is still X.
+         * If withVersion is not specified, it will end up successful so long as the node is deleted eventually.
+         * Kind of like guaranteed but not in the background.
+         * For deletes this is equivalent to the older quietly() behavior, but it is also provided under idempotent() for compatibility with Create/SetData.
+         */
+        client.delete().idempotent().withVersion(currentVersion).forPath(path);
+        client.delete().idempotent().forPath(path);
+        client.delete().quietly().withVersion(currentVersion).forPath(path);
+        client.delete().quietly().forPath(path);
     }
 
     public static List<String> watchedGetChildren(CuratorFramework client, String path) throws Exception

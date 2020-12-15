@@ -57,12 +57,17 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
     private boolean compress;
     private boolean setDataIfExists;
     private int setDataIfExistsVersion = -1;
+    private boolean idempotent = false;
     private ACLing acling;
     private Stat storingStat;
     private long ttl;
 
     @VisibleForTesting
     boolean failNextCreateForTesting = false;
+    @VisibleForTesting
+    boolean failBeforeNextCreateForTesting = false;
+    @VisibleForTesting
+    boolean failNextIdempotentCheckForTesting = false;
 
     CreateBuilderImpl(CuratorFrameworkImpl client)
     {
@@ -112,6 +117,13 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
     {
         setDataIfExists = true;
         setDataIfExistsVersion = version;
+        return this;
+    }
+
+    @Override
+    public CreateBuilder2 idempotent()
+    {
+        this.idempotent = true;
         return this;
     }
 
@@ -642,6 +654,10 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                     {
                         backgroundSetData(client, operationAndData, operationAndData.getData().getPath(), backgrounding);
                     }
+                    else if ( (rc == KeeperException.Code.NODEEXISTS.intValue()) && idempotent )
+                    {
+                        backgroundCheckIdempotent(client, operationAndData, operationAndData.getData().getPath(), backgrounding);
+                    }
                     else
                     {
                         sendBackgroundResponse(rc, path, ctx, name, stat, operationAndData);
@@ -658,6 +674,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                     backgrounding.getContext(),
                     ttl
                 );
+
         }
         catch ( Throwable e )
         {
@@ -801,6 +818,54 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                 catch ( KeeperException e )
                 {
                     // ignore
+                }
+            }
+        };
+        client.queueOperation(new OperationAndData<>(operation, null, null, null, null, null));
+    }
+
+    private void backgroundCheckIdempotent(final CuratorFrameworkImpl client, final OperationAndData<PathAndBytes> mainOperationAndData, final String path, final Backgrounding backgrounding)
+    {
+        final AsyncCallback.DataCallback dataCallback = new AsyncCallback.DataCallback()
+        {
+            @Override
+            public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat)
+            {
+                if ( rc == KeeperException.Code.NONODE.intValue() )
+                {
+                    client.queueOperation(mainOperationAndData);    // try to create it again
+                }
+                else
+                {
+                    if ( rc == KeeperException.Code.OK.intValue() )
+                    {
+                        if ( failNextIdempotentCheckForTesting )
+                        {
+                            failNextIdempotentCheckForTesting = false;
+                            rc = KeeperException.Code.CONNECTIONLOSS.intValue();
+                        }
+                        else if ( !IdempotentUtils.matches(0, mainOperationAndData.getData().getData(), stat.getVersion(), data) )
+                        {
+                            rc = KeeperException.Code.NODEEXISTS.intValue();
+                        }
+                    }
+                    sendBackgroundResponse(rc, path, ctx, path, stat, mainOperationAndData);
+                }
+            }
+        };
+        BackgroundOperation<PathAndBytes> operation = new BackgroundOperation<PathAndBytes>()
+        {
+            @Override
+            public void performBackgroundOperation(OperationAndData<PathAndBytes> op) throws Exception
+            {
+                try
+                {
+                    client.getZooKeeper().getData(path, false, dataCallback, backgrounding.getContext());
+                }
+                catch ( KeeperException e )
+                {
+                    // ignore
+                    client.logError("Unexpected exception in async idempotent check for, ignoring: " + path, e);
                 }
             }
         };
@@ -1085,10 +1150,25 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                     }
                 }
 
+                if ( failBeforeNextCreateForTesting )
+                {
+                    failBeforeNextCreateForTesting = false;
+                    throw new KeeperException.ConnectionLossException();
+                }
+
                 if ( failNextCreateForTesting )
                 {
                     failNextCreateForTesting = false;
-                    pathInForeground(path, data, acling.getAclList(path));   // simulate success on server without notification to client
+                    try
+                    {
+                        // simulate success on server without notification to client
+                        // if another error occurs in pathInForeground that isn't NodeExists, this hangs instead of fully propagating the error. Likely not worth fixing though.
+                        pathInForeground(path, data, acling.getAclList(path));
+                    }
+                    catch ( KeeperException.NodeExistsException e )
+                    {
+                         client.logError("NodeExists while injecting failure after create, ignoring: " + givenPath, e);
+                    }
                     throw new KeeperException.ConnectionLossException();
                 }
 
@@ -1128,6 +1208,11 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                         {
                             try
                             {
+                                if ( failBeforeNextCreateForTesting )
+                                {
+                                    failBeforeNextCreateForTesting = false;
+                                    throw new KeeperException.ConnectionLossException();
+                                }
                                 createdPath = client.getZooKeeper().create(path, data, aclList, createMode, storingStat, ttl);
                             }
                             catch ( KeeperException.NoNodeException e )
@@ -1147,11 +1232,34 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                                 if ( setDataIfExists )
                                 {
                                     Stat setStat = client.getZooKeeper().setData(path, data, setDataIfExistsVersion);
-                                    if(storingStat != null)
+                                    if ( storingStat != null )
                                     {
                                         DataTree.copyStat(setStat, storingStat);
                                     }
                                     createdPath = path;
+                                }
+                                else if ( idempotent )
+                                {
+                                    if ( failNextIdempotentCheckForTesting )
+                                    {
+                                        failNextIdempotentCheckForTesting = false;
+                                        throw new KeeperException.ConnectionLossException();
+                                    }
+                                    Stat getStat = new Stat();
+                                    byte[] existingData = client.getZooKeeper().getData(path, false, getStat);
+                                    // check to see if data version == 0 and data matches the idempotent case
+                                    if ( IdempotentUtils.matches(0, data, getStat.getVersion(), existingData) )
+                                    {
+                                        if ( storingStat != null )
+                                        {
+                                            DataTree.copyStat(getStat, storingStat);
+                                        }
+                                        createdPath = path;
+                                    }
+                                    else
+                                    {
+                                        throw e;
+                                    }
                                 }
                                 else
                                 {

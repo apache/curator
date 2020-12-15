@@ -18,12 +18,13 @@
  */
 package org.apache.curator.framework.api;
 
-import org.apache.zookeeper.data.Stat;
-
-public interface SetDataBuilder extends
-    BackgroundPathAndBytesable<Stat>,
-    Versionable<BackgroundPathAndBytesable<Stat>>,
-    Compressible<SetDataBackgroundVersionable>,
-    Idempotentable<SetDataBuilder>
+public interface Idempotentable<T>
 {
+    /**
+     * If the first try of this operation gets a transient error, curator will retry
+     * the operation, and treat it as successful so long as the end state of the znode
+     * is the same as if the operation had completed without error on the first try.
+     * @return this:
+     */
+    public T idempotent();
 }
