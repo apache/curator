@@ -68,7 +68,7 @@
 
         <!-- versions -->
         <zookeeper-version>3.6.0</zookeeper-version>
-        <maven-bundle-plugin-version>4.1.0</maven-bundle-plugin-version>
+        <maven-bundle-plugin-version>5.1.1</maven-bundle-plugin-version>
         <maven-javadoc-plugin-version>3.0.1</maven-javadoc-plugin-version>
         <doxia-module-confluence-version>1.8</doxia-module-confluence-version>
         <maven-license-plugin-version>1.9.0</maven-license-plugin-version>
