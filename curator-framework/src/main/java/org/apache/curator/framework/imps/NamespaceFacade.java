@@ -57,7 +57,8 @@ class NamespaceFacade extends CuratorFrameworkImpl
     @Override
     public String getNamespace()
     {
-        return namespace.getNamespace();
+        String str = namespace.getNamespace();
+        return (str != null) ? str : "";
     }
 
     @Override
