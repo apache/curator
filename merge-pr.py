@@ -67,11 +67,11 @@ JIRA_API_BASE = "https://issues.apache.org/jira"
 # Prefix added to temporary branches
 TEMP_BRANCH_PREFIX = "PR_TOOL"
 # TODO Introduce a convention as this is too brittle
-RELEASE_BRANCH_PREFIX = "curator"
+RELEASE_BRANCH_PREFIX = "branch-"
 
 DEV_BRANCH_NAME = "master"
 
-DEFAULT_FIX_VERSION = os.environ.get("DEFAULT_FIX_VERSION", "master")
+DEFAULT_FIX_VERSION = os.environ.get("DEFAULT_FIX_VERSION", "branch-3.5")
 
 def get_json(url):
     try:
@@ -332,27 +332,6 @@ def resolve_jira_issues(title, merge_branches, comment):
 def standardize_jira_ref(text):
     """
     Standardize the jira reference commit message prefix to "PROJECT_NAME-XXX: Issue"
-
-    >>> standardize_jira_ref("%s-5954: Top by key" % CAPITALIZED_PROJECT_NAME)
-    'CURATOR-5954: Top by key'
-    >>> standardize_jira_ref("%s-5821: ParquetRelation2 CTAS should check if delete is successful" % PROJECT_NAME)
-    'CURATOR-5821: ParquetRelation2 CTAS should check if delete is successful'
-    >>> standardize_jira_ref("%s-4123: [WIP] Show new dependencies added in pull requests" % PROJECT_NAME)
-    'CURATOR-4123: [WIP] Show new dependencies added in pull requests'
-    >>> standardize_jira_ref("%s  5954: Top by key" % PROJECT_NAME)
-    'CURATOR-5954: Top by key'
-    >>> standardize_jira_ref("%s-979: a LRU scheduler for load balancing in TaskSchedulerImpl" % PROJECT_NAME)
-    'CURATOR-979: a LRU scheduler for load balancing in TaskSchedulerImpl'
-    >>> standardize_jira_ref("%s-1094: Support MiMa for reporting binary compatibility across versions." % CAPITALIZED_PROJECT_NAME)
-    'CURATOR-1094: Support MiMa for reporting binary compatibility across versions.'
-    >>> standardize_jira_ref("%s-1146: [WIP] Vagrant support" % CAPITALIZED_PROJECT_NAME)
-    'CURATOR-1146: [WIP] Vagrant support'
-    >>> standardize_jira_ref("%s-1032: If Yarn app fails before registering, app master stays aroun..." % PROJECT_NAME)
-    'CURATOR-1032: If Yarn app fails before registering, app master stays aroun...'
-    >>> standardize_jira_ref("%s-6250 %s-6146 %s-5911: Types are now reserved words in DDL parser." % (PROJECT_NAME, PROJECT_NAME, CAPITALIZED_PROJECT_NAME))
-    'CURATOR-6250 CURATOR-6146 CURATOR-5911: Types are now reserved words in DDL parser.'
-    >>> standardize_jira_ref("Additional information for users building from source code")
-    'Additional information for users building from source code'
     """
     jira_refs = []
     components = []
@@ -440,9 +419,8 @@ def main():
     check_git_remote()
 
     branches = get_json("%s/branches" % GITHUB_API_BASE)
-    
-    branch_names = [x for x in [x['name'] for x in branches]]
-    
+    branch_names = [x for x in [x['name'] for x in branches] if x.startswith(RELEASE_BRANCH_PREFIX)]
+    # Assumes branch names can be sorted lexicographically
     latest_branch = sorted(branch_names, reverse=True)[0]
 
     pr_num = input("Which pull request would you like to merge? (e.g. 34): ")
