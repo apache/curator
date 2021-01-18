@@ -857,6 +857,7 @@
                 <configuration>
                     <header>${main.basedir}/src/etc/header.txt</header>
                     <excludes>
+                        <exclude>**/merge-pr.py</exclude>
                         <exclude>**/*.confluence</exclude>
                         <exclude>**/*.confluence.vm</exclude>
                         <exclude>**/help.txt</exclude>
