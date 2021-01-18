@@ -67,7 +67,7 @@ JIRA_API_BASE = "https://issues.apache.org/jira"
 # Prefix added to temporary branches
 TEMP_BRANCH_PREFIX = "PR_TOOL"
 # TODO Introduce a convention as this is too brittle
-RELEASE_BRANCH_PREFIX = "branch-"
+RELEASE_BRANCH_PREFIX = "CURATOR"
 
 DEV_BRANCH_NAME = "master"
 
