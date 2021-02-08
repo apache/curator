@@ -18,6 +18,9 @@
  */
 package org.apache.curator.framework.recipes.locks;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
 import org.apache.curator.ensemble.EnsembleProvider;
 import org.apache.curator.framework.CuratorFramework;
@@ -30,9 +33,11 @@ import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
 import org.apache.curator.test.Timing;
+import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.CloseableUtils;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
@@ -46,6 +51,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+@Tag(CuratorTestBase.zk35TestCompatibilityGroup)
 public class TestInterProcessSemaphoreCluster extends BaseClassForTests
 {
     @Test
@@ -57,11 +63,9 @@ public class TestInterProcessSemaphoreCluster extends BaseClassForTests
 
         ExecutorService                 executorService = Executors.newFixedThreadPool(CLIENT_QTY);
         ExecutorCompletionService<Void> completionService = new ExecutorCompletionService<Void>(executorService);
-        TestingCluster                  cluster = new TestingCluster(3);
+        TestingCluster                  cluster = createAndStartCluster(3);
         try
         {
-            cluster.start();
-
             final AtomicReference<String>   connectionString = new AtomicReference<String>(cluster.getConnectString());
             final EnsembleProvider          provider = new EnsembleProvider()
             {
@@ -168,23 +172,22 @@ public class TestInterProcessSemaphoreCluster extends BaseClassForTests
                 );
             }
 
-            Assert.assertTrue(timing.acquireSemaphore(acquiredSemaphore));
-            Assert.assertEquals(1, acquireCount.get());
+            assertTrue(timing.acquireSemaphore(acquiredSemaphore));
+            assertEquals(1, acquireCount.get());
 
             cluster.close();
             timing.awaitLatch(suspendedLatch);
             timing.forWaiting().sleepABit();
-            Assert.assertEquals(0, acquireCount.get());
+            assertEquals(0, acquireCount.get());
 
-            cluster = new TestingCluster(3);
-            cluster.start();
+            cluster = createAndStartCluster(3);
 
             connectionString.set(cluster.getConnectString());
             timing.forWaiting().sleepABit();
 
-            Assert.assertTrue(timing.acquireSemaphore(acquiredSemaphore));
+            assertTrue(timing.acquireSemaphore(acquiredSemaphore));
             timing.forWaiting().sleepABit();
-            Assert.assertEquals(1, acquireCount.get());
+            assertEquals(1, acquireCount.get());
         }
         finally
         {
@@ -205,12 +208,10 @@ public class TestInterProcessSemaphoreCluster extends BaseClassForTests
         ExecutorService                 executorService = Executors.newFixedThreadPool(QTY);
         ExecutorCompletionService<Void> completionService = new ExecutorCompletionService<Void>(executorService);
         final Timing                    timing = new Timing();
-        TestingCluster                  cluster = new TestingCluster(3);
         List<SemaphoreClient>           semaphoreClients = Lists.newArrayList();
+        TestingCluster                  cluster = createAndStartCluster(3);
         try
         {
-            cluster.start();
-
             final AtomicInteger         opCount = new AtomicInteger(0);
             for ( int i = 0; i < QTY; ++i )
             {
@@ -235,7 +236,7 @@ public class TestInterProcessSemaphoreCluster extends BaseClassForTests
 
             timing.forWaiting().sleepABit();
 
-            Assert.assertNotNull(SemaphoreClient.getActiveClient());
+            assertNotNull(SemaphoreClient.getActiveClient());
 
             final CountDownLatch    latch = new CountDownLatch(1);
             CuratorFramework        client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), timing.session(), timing.connection(), new ExponentialBackoffRetry(100, 3));
@@ -274,7 +275,7 @@ public class TestInterProcessSemaphoreCluster extends BaseClassForTests
                 {
                     break;  // checking that the op count isn't increasing
                 }
-                Assert.assertTrue((System.currentTimeMillis() - startTicks) < timing.forWaiting().milliseconds());
+                assertTrue((System.currentTimeMillis() - startTicks) < timing.forWaiting().milliseconds());
             }
 
             int     thisOpCount = opCount.get();
@@ -292,7 +293,7 @@ public class TestInterProcessSemaphoreCluster extends BaseClassForTests
                 {
                     break;  // checking that semaphore has started working again
                 }
-                Assert.assertTrue((System.currentTimeMillis() - startTicks) < timing.forWaiting().milliseconds());
+                assertTrue((System.currentTimeMillis() - startTicks) < timing.forWaiting().milliseconds());
             }
         }
         finally

@@ -112,4 +112,13 @@ public interface AsyncCuratorFrameworkDsl extends WatchableAsyncCuratorFramework
      * @return builder object
      */
     AsyncRemoveWatchesBuilder removeWatches();
+
+    /**
+     * Start an add watch builder. Supported only when ZooKeeper JAR of version 3.6 or
+     * above is used, throws {@code IllegalStateException} for ZooKeeper JAR 3.5 or below
+     *
+     * @return builder object
+     * @throws IllegalStateException ZooKeeper JAR is 3.5 or below
+     */
+    AsyncWatchBuilder addWatch();
 }

@@ -18,6 +18,7 @@
  */
 package org.apache.curator.x.async.details;
 
+import com.google.common.base.Preconditions;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.UnhandledErrorListener;
@@ -26,7 +27,10 @@ import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.framework.imps.CuratorMultiTransactionImpl;
 import org.apache.curator.framework.imps.GetACLBuilderImpl;
 import org.apache.curator.framework.imps.SyncBuilderImpl;
-import org.apache.curator.x.async.*;
+import org.apache.curator.utils.Compatibility;
+import org.apache.curator.x.async.AsyncCuratorFramework;
+import org.apache.curator.x.async.AsyncStage;
+import org.apache.curator.x.async.WatchMode;
 import org.apache.curator.x.async.api.*;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.data.ACL;
@@ -150,6 +154,13 @@ public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework
     }
 
     @Override
+    public AsyncWatchBuilder addWatch()
+    {
+        Preconditions.checkState(Compatibility.hasPersistentWatchers(), "addWatch() is not supported in the ZooKeeper library being used.");
+        return new AsyncWatchBuilderImpl(client, filters);
+    }
+
+    @Override
     public CuratorFramework unwrap()
     {
         return client;
@@ -219,6 +230,16 @@ public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework
     public AsyncGetConfigBuilder getConfig()
     {
         return new AsyncGetConfigBuilderImpl(client, filters, getBuilderWatchMode());
+    }
+
+    Filters getFilters()
+    {
+        return filters;
+    }
+
+    CuratorFrameworkImpl getClient()
+    {
+        return client;
     }
 
     private WatchMode getBuilderWatchMode()

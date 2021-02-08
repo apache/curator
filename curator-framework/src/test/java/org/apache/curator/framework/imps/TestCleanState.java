@@ -22,22 +22,17 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.test.WatchersDebug;
 import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
-import org.apache.curator.utils.Compatibility;
 import org.apache.zookeeper.ZooKeeper;
 import java.util.concurrent.Callable;
 
 public class TestCleanState
 {
+    private static final boolean IS_ENABLED = Boolean.getBoolean("PROPERTY_VALIDATE_NO_REMAINING_WATCHERS");
+
     public static void closeAndTestClean(CuratorFramework client)
     {
-        if ( client == null )
+        if ( (client == null) || !IS_ENABLED )
         {
-            return;
-        }
-
-        if ( Compatibility.isZK34() )
-        {
-            CloseableUtils.closeQuietly(client);
             return;
         }
 

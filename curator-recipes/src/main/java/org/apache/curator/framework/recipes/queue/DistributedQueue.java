@@ -19,18 +19,18 @@
 package org.apache.curator.framework.recipes.queue;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-
-import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
-import org.apache.curator.framework.listen.ListenerContainer;
+import org.apache.curator.framework.listen.Listenable;
+import org.apache.curator.framework.listen.StandardListenerManager;
 import org.apache.curator.framework.recipes.leader.LeaderSelector;
+import org.apache.curator.utils.CloseableUtils;
+import org.apache.curator.utils.PathUtils;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
@@ -50,7 +50,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.curator.utils.PathUtils;
 
 /**
  * <p>An implementation of the Distributed Queue ZK recipe. Items put into the queue
@@ -81,7 +80,7 @@ public class DistributedQueue<T> implements QueueBase<T>
     private final boolean isProducerOnly;
     private final String lockPath;
     private final AtomicReference<ErrorMode> errorMode = new AtomicReference<ErrorMode>(ErrorMode.REQUEUE);
-    private final ListenerContainer<QueuePutListener<T>> putListenerContainer = new ListenerContainer<QueuePutListener<T>>();
+    private final StandardListenerManager<QueuePutListener<T>> putListenerContainer = StandardListenerManager.standard();
     private final AtomicInteger lastChildCount = new AtomicInteger(0);
     private final int maxItems;
     private final int finalFlushMs;
@@ -233,7 +232,7 @@ public class DistributedQueue<T> implements QueueBase<T>
      * @return put listener container
      */
     @Override
-    public ListenerContainer<QueuePutListener<T>> getPutListenerContainer()
+    public Listenable<QueuePutListener<T>> getPutListenerContainer()
     {
         return putListenerContainer;
     }
@@ -407,25 +406,16 @@ public class DistributedQueue<T> implements QueueBase<T>
             putCount.decrementAndGet();
             putCount.notifyAll();
         }
-        putListenerContainer.forEach
-        (
-            new Function<QueuePutListener<T>, Void>()
+        putListenerContainer.forEach(listener -> {
+            if ( item != null )
             {
-                @Override
-                public Void apply(QueuePutListener<T> listener)
-                {
-                    if ( item != null )
-                    {
-                        listener.putCompleted(item);
-                    }
-                    else
-                    {
-                        listener.putMultiCompleted(givenMultiItem);
-                    }
-                    return null;
-                }
+                listener.putCompleted(item);
             }
-        );
+            else
+            {
+                listener.putMultiCompleted(givenMultiItem);
+            }
+        });
     }
 
     private void doPutInBackground(final T item, String path, final MultiItem<T> givenMultiItem, byte[] bytes) throws Exception
@@ -449,25 +439,16 @@ public class DistributedQueue<T> implements QueueBase<T>
                     }
                 }
 
-                putListenerContainer.forEach
-                (
-                    new Function<QueuePutListener<T>, Void>()
+                putListenerContainer.forEach(listener -> {
+                    if ( item != null )
                     {
-                        @Override
-                        public Void apply(QueuePutListener<T> listener)
-                        {
-                            if ( item != null )
-                            {
-                                listener.putCompleted(item);
-                            }
-                            else
-                            {
-                                listener.putMultiCompleted(givenMultiItem);
-                            }
-                            return null;
-                        }
+                        listener.putCompleted(item);
                     }
-                );
+                    else
+                    {
+                        listener.putMultiCompleted(givenMultiItem);
+                    }
+                });
             }
         };
         internalCreateNode(path, bytes, callback);

@@ -28,8 +28,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- * Upgraded version of {@link org.apache.curator.framework.listen.ListenerContainer} that
- * doesn't leak Guava's internals and also supports mapping/wrapping of listeners
+ * Version of ListenerManager that supports mapping/wrapping of listeners
  */
 public class MappingListenerManager<K, V> implements ListenerManager<K, V>
 {

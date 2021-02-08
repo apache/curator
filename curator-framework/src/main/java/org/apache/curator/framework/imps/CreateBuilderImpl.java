@@ -20,7 +20,6 @@
 package org.apache.curator.framework.imps;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import org.apache.curator.RetryLoop;
@@ -36,14 +35,12 @@ import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
-import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.server.DataTree;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -66,9 +63,6 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
 
     @VisibleForTesting
     boolean failNextCreateForTesting = false;
-
-    @VisibleForTesting
-    static final String PROTECTED_PREFIX = "_c_";
 
     CreateBuilderImpl(CuratorFrameworkImpl client)
     {
@@ -124,7 +118,6 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
     @Override
     public CreateBuilderMain withTtl(long ttl)
     {
-        Preconditions.checkState(!client.isZk34CompatibilityMode(), "TTLs are not support when running in ZooKeeper 3.4 compatibility mode");
         this.ttl = ttl;
         return this;
     }
@@ -182,14 +175,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                 }
 
                 String fixedPath = client.fixForNamespace(path);
-                if ( client.isZk34CompatibilityMode() )
-                {
-                    transaction.add(Op.create(fixedPath, data, acling.getAclList(path), createMode), OperationType.CREATE, path);
-                }
-                else
-                {
-                    transaction.add(Op.create(fixedPath, data, acling.getAclList(path), createMode, ttl), OperationType.CREATE, path);
-                }
+                transaction.add(Op.create(fixedPath, data, acling.getAclList(path), createMode, ttl), OperationType.CREATE, path);
                 return context;
             }
         };
@@ -636,10 +622,11 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             final OperationTrace trace = client.getZookeeperClient().startAdvancedTracer("CreateBuilderImpl-Background");
             final byte[] data = operationAndData.getData().getData();
 
-            final CompatibleCreateCallback mainCallback = new CompatibleCreateCallback()
+            AsyncCallback.Create2Callback callback = new AsyncCallback.Create2Callback()
             {
                 @Override
-                public void processResult(int rc, String path, Object ctx, String name, Stat stat) {
+                public void processResult(int rc, String path, Object ctx, String name, Stat stat)
+                {
                     trace.setReturnCode(rc).setRequestBytesLength(data).setPath(path).commit();
 
                     if ( (stat != null) && (storingStat != null) )
@@ -661,41 +648,16 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                     }
                 }
             };
-
-            if ( client.isZk34CompatibilityMode() )
-            {
-                AsyncCallback.StringCallback stringCallback = new AsyncCallback.StringCallback()
-                {
-                    @Override
-                    public void processResult(int rc, String path, Object ctx, String name)
-                    {
-                        mainCallback.processResult(rc, path, ctx, name, null);
-                    }
-                };
-                client.getZooKeeper().create
-                    (
-                        operationAndData.getData().getPath(),
-                        data,
-                        acling.getAclList(operationAndData.getData().getPath()),
-                        createMode,
-                        stringCallback,
-                        backgrounding.getContext()
-                    );
-            }
-            else
-            {
-                CreateZK35.create
-                    (
-                        client.getZooKeeper(),
-                        operationAndData.getData().getPath(),
-                        data,
-                        acling.getAclList(operationAndData.getData().getPath()),
-                        createMode,
-                        mainCallback,
-                        backgrounding.getContext(),
-                        ttl
-                    );
-            }
+            client.getZooKeeper().create
+                (
+                    operationAndData.getData().getPath(),
+                    data,
+                    acling.getAclList(operationAndData.getData().getPath()),
+                    createMode,
+                    callback,
+                    backgrounding.getContext(),
+                    ttl
+                );
         }
         catch ( Throwable e )
         {
@@ -784,11 +746,6 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
         };
     }
 
-    private static String getProtectedPrefix(String protectedId)
-    {
-        return PROTECTED_PREFIX + protectedId + "-";
-    }
-
     static <T> void backgroundCreateParentsThenNode(final CuratorFrameworkImpl client, final OperationAndData<T> mainOperationAndData, final String path, Backgrounding backgrounding, final InternalACLProvider aclProvider, final boolean createParentsAsContainers)
     {
         BackgroundOperation<T> operation = new BackgroundOperation<T>()
@@ -802,7 +759,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                 }
                 catch ( KeeperException e )
                 {
-                    if ( !RetryLoop.isRetryException(e) )
+                    if ( !client.getZookeeperClient().getRetryPolicy().allowRetry(e) )
                     {
                         throw e;
                     }
@@ -1171,28 +1128,14 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                         {
                             try
                             {
-                                if ( client.isZk34CompatibilityMode() )
-                                {
-                                    createdPath = client.getZooKeeper().create(path, data, aclList, createMode);
-                                }
-                                else
-                                {
-                                    createdPath = client.getZooKeeper().create(path, data, aclList, createMode, storingStat, ttl);
-                                }
+                                createdPath = client.getZooKeeper().create(path, data, aclList, createMode, storingStat, ttl);
                             }
                             catch ( KeeperException.NoNodeException e )
                             {
                                 if ( createParentsIfNeeded )
                                 {
                                     ZKPaths.mkdirs(client.getZooKeeper(), path, false, acling.getACLProviderForParents(), createParentsAsContainers);
-                                    if ( client.isZk34CompatibilityMode() )
-                                    {
-                                        createdPath = client.getZooKeeper().create(path, data, acling.getAclList(path), createMode);
-                                    }
-                                    else
-                                    {
-                                        createdPath = client.getZooKeeper().create(path, data, acling.getAclList(path), createMode, storingStat, ttl);
-                                    }
+                                    createdPath = client.getZooKeeper().create(path, data, acling.getAclList(path), createMode, storingStat, ttl);
                                 }
                                 else
                                 {
@@ -1270,13 +1213,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
     @VisibleForTesting
     String adjustPath(String path) throws Exception
     {
-        if ( protectedMode.doProtected() )
-        {
-            ZKPaths.PathAndNode pathAndNode = ZKPaths.getPathAndNode(path);
-            String name = getProtectedPrefix(protectedMode.protectedId()) + pathAndNode.getNode();
-            path = ZKPaths.makePath(pathAndNode.getPath(), name);
-        }
-        return path;
+        return ProtectedUtils.toProtectedZNodePath(path, protectedMode.protectedId());
     }
 
     /**
@@ -1289,7 +1226,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
      */
     static String findNode(final List<String> children, final String path, final String protectedId)
     {
-        final String protectedPrefix = getProtectedPrefix(protectedId);
+        final String protectedPrefix = ProtectedUtils.getProtectedPrefix(protectedId);
         String foundNode = Iterables.find
             (
                 children,

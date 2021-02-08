@@ -24,12 +24,17 @@ import com.google.common.collect.ImmutableMap;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.cache.ChildData;
-import org.apache.curator.framework.recipes.cache.PathChildrenCache;
+import org.apache.curator.framework.recipes.cache.CuratorCache;
+import org.apache.curator.framework.recipes.cache.CuratorCacheBridge;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
+import org.apache.zookeeper.CreateMode;
 import java.io.Closeable;
+import java.util.Iterator;
 import java.util.Map;
+
+import static org.apache.curator.framework.recipes.cache.CuratorCacheAccessor.parentPathFilter;
 
 /**
  * Group membership management. Adds this instance into a group and
@@ -37,8 +42,9 @@ import java.util.Map;
  */
 public class GroupMember implements Closeable
 {
-    private final PersistentEphemeralNode pen;
-    private final PathChildrenCache cache;
+    private final PersistentNode pen;
+    private final CuratorCacheBridge cache;
+    private final String membershipPath;
     private final String thisId;
 
     /**
@@ -59,10 +65,11 @@ public class GroupMember implements Closeable
      */
     public GroupMember(CuratorFramework client, String membershipPath, String thisId, byte[] payload)
     {
+        this.membershipPath = membershipPath;
         this.thisId = Preconditions.checkNotNull(thisId, "thisId cannot be null");
 
-        cache = newPathChildrenCache(client, membershipPath);
-        pen = newPersistentEphemeralNode(client, membershipPath, thisId, payload);
+        cache = CuratorCache.bridgeBuilder(client, membershipPath).build();
+        pen = new PersistentNode(client, CreateMode.EPHEMERAL, false, ZKPaths.makePath(membershipPath, thisId), payload);
     }
 
     /**
@@ -121,8 +128,11 @@ public class GroupMember implements Closeable
     {
         ImmutableMap.Builder<String, byte[]> builder = ImmutableMap.builder();
         boolean thisIdAdded = false;
-        for ( ChildData data : cache.getCurrentData() )
+
+        Iterator<ChildData> iterator = cache.stream().filter(parentPathFilter(membershipPath)).iterator();
+        while ( iterator.hasNext() )
         {
+            ChildData data = iterator.next();
             String id = idFromPath(data.getPath());
             thisIdAdded = thisIdAdded || id.equals(thisId);
             builder.put(id, data.getData());
@@ -143,15 +153,5 @@ public class GroupMember implements Closeable
     public String idFromPath(String path)
     {
         return ZKPaths.getNodeFromPath(path);
-    }
-
-    protected PersistentEphemeralNode newPersistentEphemeralNode(CuratorFramework client, String membershipPath, String thisId, byte[] payload)
-    {
-        return new PersistentEphemeralNode(client, PersistentEphemeralNode.Mode.EPHEMERAL, ZKPaths.makePath(membershipPath, thisId), payload);
-    }
-
-    protected PathChildrenCache newPathChildrenCache(CuratorFramework client, String membershipPath)
-    {
-        return new PathChildrenCache(client, membershipPath, true);
     }
 }

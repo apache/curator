@@ -19,15 +19,10 @@
 
 package org.apache.curator.test;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.IInvokedMethod;
-import org.testng.IInvokedMethodListener2;
-import org.testng.ITestContext;
-import org.testng.ITestResult;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.BeforeSuite;
 import java.io.IOException;
 import java.net.BindException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -81,39 +76,7 @@ public class BaseClassForTests
         INTERNAL_PROPERTY_VALIDATE_NAMESPACE_WATCHER_MAP_EMPTY = s;
     }
 
-    @BeforeSuite(alwaysRun = true)
-    public void beforeSuite(ITestContext context)
-    {
-        IInvokedMethodListener2 methodListener2 = new IInvokedMethodListener2()
-        {
-            @Override
-            public void beforeInvocation(IInvokedMethod method, ITestResult testResult)
-            {
-                method.getTestMethod().setRetryAnalyzer(BaseClassForTests.this::retry);
-            }
-
-            @Override
-            public void beforeInvocation(IInvokedMethod method, ITestResult testResult, ITestContext context)
-            {
-                beforeInvocation(method, testResult);
-            }
-
-            @Override
-            public void afterInvocation(IInvokedMethod method, ITestResult testResult, ITestContext context)
-            {
-                // NOP
-            }
-
-            @Override
-            public void afterInvocation(IInvokedMethod method, ITestResult testResult)
-            {
-                // NOP
-            }
-        };
-        context.getSuite().addListener(methodListener2);
-    }
-
-    @BeforeMethod
+    @BeforeEach
     public void setup() throws Exception
     {
         if ( INTERNAL_PROPERTY_DONT_LOG_CONNECTION_ISSUES != null )
@@ -123,7 +86,42 @@ public class BaseClassForTests
         System.setProperty(INTERNAL_PROPERTY_REMOVE_WATCHERS_IN_FOREGROUND, "true");
         System.setProperty(INTERNAL_PROPERTY_VALIDATE_NAMESPACE_WATCHER_MAP_EMPTY, "true");
 
-        createServer();
+        try
+        {
+            createServer();
+        }
+        catch ( FailedServerStartException ignore )
+        {
+            log.warn("Failed to start server - retrying 1 more time");
+            // server creation failed - we've sometime seen this with re-used addresses, etc. - retry one more time
+            closeServer();
+            createServer();
+        }
+    }
+
+    public TestingCluster createAndStartCluster(int qty) throws Exception
+    {
+        TestingCluster cluster = new TestingCluster(qty);
+        try
+        {
+            cluster.start();
+        }
+        catch ( FailedServerStartException e )
+        {
+            log.warn("Failed to start cluster - retrying 1 more time");
+            // cluster creation failed - we've sometime seen this with re-used addresses, etc. - retry one more time
+            try
+            {
+                cluster.close();
+            }
+            catch ( Exception ex )
+            {
+                // ignore
+            }
+            cluster = new TestingCluster(qty);
+            cluster.start();
+        }
+        return cluster;
     }
 
     protected void createServer() throws Exception
@@ -136,17 +134,22 @@ public class BaseClassForTests
             }
             catch ( BindException e )
             {
-                System.err.println("Getting bind exception - retrying to allocate server");
                 server = null;
+                throw new FailedServerStartException("Getting bind exception - retrying to allocate server");
             }
         }
     }
 
-    @AfterMethod
+    @AfterEach
     public void teardown() throws Exception
     {
         System.clearProperty(INTERNAL_PROPERTY_VALIDATE_NAMESPACE_WATCHER_MAP_EMPTY);
         System.clearProperty(INTERNAL_PROPERTY_REMOVE_WATCHERS_IN_FOREGROUND);
+        closeServer();
+    }
+
+    private void closeServer()
+    {
         if ( server != null )
         {
             try
@@ -162,26 +165,5 @@ public class BaseClassForTests
                 server = null;
             }
         }
-    }
-
-    private boolean retry(ITestResult result)
-    {
-        if ( result.isSuccess() || isRetrying.get() )
-        {
-            isRetrying.set(false);
-            return false;
-        }
-
-        result.setStatus(ITestResult.SKIP);
-        if ( result.getThrowable() != null )
-        {
-            log.error("Retrying 1 time", result.getThrowable());
-        }
-        else
-        {
-            log.error("Retrying 1 time");
-        }
-        isRetrying.set(true);
-        return true;
     }
 }

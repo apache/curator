@@ -18,16 +18,16 @@
  */
 package org.apache.curator.framework.imps;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.framework.api.CompressionProvider;
 import org.apache.curator.retry.RetryOneTime;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
-import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("deprecation")
 public class TestCompressionInTransactionOld extends BaseClassForTests
@@ -45,11 +45,11 @@ public class TestCompressionInTransactionOld extends BaseClassForTests
 
             //Create uncompressed data in a transaction
             client.inTransaction().create().forPath(path, data).and().commit();
-            Assert.assertEquals(data, client.getData().forPath(path));
+            assertArrayEquals(data, client.getData().forPath(path));
 
             //Create compressed data in transaction
             client.inTransaction().setData().compressed().forPath(path, data).and().commit();
-            Assert.assertEquals(data, client.getData().decompressed().forPath(path));
+            assertArrayEquals(data, client.getData().decompressed().forPath(path));
         }
         finally
         {
@@ -76,17 +76,17 @@ public class TestCompressionInTransactionOld extends BaseClassForTests
             create().forPath(path2).and().commit();
 
             //Check they exist
-            Assert.assertNotNull(client.checkExists().forPath(path1));
-            Assert.assertNotNull(client.checkExists().forPath(path2));
+            assertNotNull(client.checkExists().forPath(path1));
+            assertNotNull(client.checkExists().forPath(path2));
             
             //Set the nodes, path1 compressed, path2 uncompressed.
             client.inTransaction().setData().compressed().forPath(path1, data1).and().
             setData().forPath(path2, data2).and().commit();
             
-            Assert.assertNotEquals(data1, client.getData().forPath(path1));
-            Assert.assertEquals(data1, client.getData().decompressed().forPath(path1));
+            assertNotEquals(data1, client.getData().forPath(path1));
+            assertArrayEquals(data1, client.getData().decompressed().forPath(path1));
       
-            Assert.assertEquals(data2, client.getData().forPath(path2));            
+            assertArrayEquals(data2, client.getData().forPath(path2));
         }
         finally
         {
@@ -111,11 +111,11 @@ public class TestCompressionInTransactionOld extends BaseClassForTests
             client.inTransaction().create().compressed().forPath(path1, data1).and().
             create().compressed().forPath(path2, data2).and().commit();
 
-            Assert.assertNotEquals(data1, client.getData().forPath(path1));
-            Assert.assertEquals(data1, client.getData().decompressed().forPath(path1));
+            assertNotEquals(data1, client.getData().forPath(path1));
+            assertArrayEquals(data1, client.getData().decompressed().forPath(path1));
             
-            Assert.assertNotEquals(data2, client.getData().forPath(path2));
-            Assert.assertEquals(data2, client.getData().decompressed().forPath(path2));            
+            assertNotEquals(data2, client.getData().forPath(path2));
+            assertArrayEquals(data2, client.getData().decompressed().forPath(path2));
         }
         finally
         {
@@ -145,10 +145,10 @@ public class TestCompressionInTransactionOld extends BaseClassForTests
             client.inTransaction().create().compressed().forPath(path1, data1).and().
             create().forPath(path2, data2).and().commit();
 
-            Assert.assertNotEquals(data1, client.getData().forPath(path1));
-            Assert.assertEquals(data1, client.getData().decompressed().forPath(path1));
+            assertNotEquals(data1, client.getData().forPath(path1));
+            assertArrayEquals(data1, client.getData().decompressed().forPath(path1));
       
-            Assert.assertEquals(data2, client.getData().forPath(path2));            
+            assertArrayEquals(data2, client.getData().forPath(path2));
         }
         finally
         {

@@ -19,10 +19,9 @@
 
 package org.apache.curator.framework;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import org.apache.curator.RetryPolicy;
-import org.apache.curator.connection.ConnectionHandlingPolicy;
-import org.apache.curator.connection.StandardConnectionHandlingPolicy;
 import org.apache.curator.ensemble.EnsembleProvider;
 import org.apache.curator.ensemble.fixed.FixedEnsembleProvider;
 import org.apache.curator.framework.api.ACLProvider;
@@ -34,14 +33,12 @@ import org.apache.curator.framework.imps.CuratorTempFrameworkImpl;
 import org.apache.curator.framework.imps.DefaultACLProvider;
 import org.apache.curator.framework.imps.GzipCompressionProvider;
 import org.apache.curator.framework.schema.SchemaSet;
-import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateErrorPolicy;
 import org.apache.curator.framework.state.ConnectionStateListenerManagerFactory;
 import org.apache.curator.framework.state.StandardConnectionStateErrorPolicy;
 import org.apache.curator.utils.DefaultZookeeperFactory;
 import org.apache.curator.utils.ZookeeperFactory;
 import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import java.net.InetAddress;
@@ -53,8 +50,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import org.apache.curator.CuratorZookeeperClient;
-
-import static org.apache.curator.utils.Compatibility.isZK34;
 
 /**
  * Factory methods for creating framework-style clients
@@ -71,6 +66,7 @@ public class CuratorFrameworkFactory
     private static final DefaultACLProvider DEFAULT_ACL_PROVIDER = new DefaultACLProvider();
     private static final long DEFAULT_INACTIVE_THRESHOLD_MS = (int)TimeUnit.MINUTES.toMillis(3);
     private static final int DEFAULT_CLOSE_WAIT_MS = (int)TimeUnit.SECONDS.toMillis(1);
+    private static final boolean DEFAULT_WITH_ENSEMBLE_TRACKER = true;
 
     /**
      * Return a new builder that builds a CuratorFramework
@@ -134,6 +130,7 @@ public class CuratorFrameworkFactory
     public static class Builder
     {
         private EnsembleProvider ensembleProvider;
+        private boolean withEnsembleTracker = DEFAULT_WITH_ENSEMBLE_TRACKER;
         private int sessionTimeoutMs = DEFAULT_SESSION_TIMEOUT_MS;
         private int connectionTimeoutMs = DEFAULT_CONNECTION_TIMEOUT_MS;
         private int maxCloseWaitMs = DEFAULT_CLOSE_WAIT_MS;
@@ -148,12 +145,11 @@ public class CuratorFrameworkFactory
         private boolean canBeReadOnly = false;
         private boolean useContainerParentsIfAvailable = true;
         private ConnectionStateErrorPolicy connectionStateErrorPolicy = new StandardConnectionStateErrorPolicy();
-        private ConnectionHandlingPolicy connectionHandlingPolicy = new StandardConnectionHandlingPolicy();
         private SchemaSet schemaSet = SchemaSet.getDefaultSchemaSet();
-        private boolean zk34CompatibilityMode = isZK34();
         private int waitForShutdownTimeoutMs = 0;
         private Executor runSafeService = null;
         private ConnectionStateListenerManagerFactory connectionStateListenerManagerFactory = ConnectionStateListenerManagerFactory.standard;
+        private int simulatedSessionExpirationPercent = 100;
 
         /**
          * Apply the current values and build a new CuratorFramework
@@ -246,6 +242,29 @@ public class CuratorFrameworkFactory
         {
             this.ensembleProvider = ensembleProvider;
             return this;
+        }
+
+        /**
+         * Allows to configure if the ensemble configuration changes will be watched.
+         * The default value is {@code true}.<br>
+         * 
+         * IMPORTANT: Use this method in combination with {@link #ensembleProvider(EnsembleProvider)} to provide
+         * an instance that returns {@code false} on {@link EnsembleProvider#updateServerListEnabled()} in order
+         * to fully achieve that ensemble server list changes are ignored<br>
+         * 
+         * @param withEnsembleTracker use {@code false} if you want to avoid following ensemble configuration changes
+         * @return this
+         */
+        public Builder ensembleTracker(boolean withEnsembleTracker) {
+            this.withEnsembleTracker = withEnsembleTracker;
+            return this;
+        }
+
+        /**
+         * @return {@code true} if ensemble configuration changes MUST be watched
+         */
+        public boolean withEnsembleTracker() {
+            return withEnsembleTracker;
         }
 
         /**
@@ -395,20 +414,6 @@ public class CuratorFrameworkFactory
         }
 
         /**
-         * If mode is true, create a ZooKeeper 3.4.x compatible client. IMPORTANT: If the client
-         * library used is ZooKeeper 3.4.x <code>zk34CompatibilityMode</code> is enabled by default.
-         *
-         * @since 3.5.0
-         * @param mode true/false
-         * @return this
-         */
-        public Builder zk34CompatibilityMode(boolean mode)
-        {
-            this.zk34CompatibilityMode = mode;
-            return this;
-        }
-
-        /**
          * Set a timeout for {@link CuratorZookeeperClient#close(int)}  }.
          * The default is 0, which means that this feature is disabled.
          *
@@ -424,46 +429,41 @@ public class CuratorFrameworkFactory
 
         /**
          * <p>
-         *     Change the connection handling policy. The default policy is {@link StandardConnectionHandlingPolicy}.
+         *     Prior to 3.0.0, Curator did not try to manage session expiration
+         *     other than the functionality provided by ZooKeeper itself. Starting with
+         *     3.0.0, Curator has the option of attempting to monitor session expiration
+         *     above what is provided by ZooKeeper. The percentage set by this method
+         *     determines how and if Curator will check for session expiration.
          * </p>
-         * <p>
-         *     <strong>IMPORTANT: </strong> StandardConnectionHandlingPolicy has different behavior than the connection
-         *     policy handling prior to version 3.0.0.
-         * </p>
-         * <p>
-         *     Major differences from the older behavior are:
-         * </p>
-         * <ul>
-         *     <li>
-         *         Session/connection timeouts are no longer managed by the low-level client. They are managed
-         *         by the CuratorFramework instance. There should be no noticeable differences.
-         *     </li>
-         *     <li>
-         *         Prior to 3.0.0, each iteration of the retry policy would allow the connection timeout to elapse
-         *         if the connection hadn't yet succeeded. This meant that the true connection timeout was the configured
-         *         value times the maximum retries in the retry policy. This longstanding issue has been address.
-         *         Now, the connection timeout can elapse only once for a single API call.
-         *     </li>
-         *     <li>
-         *         <strong>MOST IMPORTANTLY!</strong> Prior to 3.0.0, {@link ConnectionState#LOST} did not imply
-         *         a lost session (much to the confusion of users). Now,
-         *         Curator will set the LOST state only when it believes that the ZooKeeper session
-         *         has expired. ZooKeeper connections have a session. When the session expires, clients must take appropriate
-         *         action. In Curator, this is complicated by the fact that Curator internally manages the ZooKeeper
-         *         connection. Now, Curator will set the LOST state when any of the following occurs:
-         *         a) ZooKeeper returns a {@link Watcher.Event.KeeperState#Expired} or {@link KeeperException.Code#SESSIONEXPIRED};
-         *         b) Curator closes the internally managed ZooKeeper instance; c) The session timeout
-         *         elapses during a network partition.
-         *     </li>
-         * </ul>
          *
-         * @param connectionHandlingPolicy the policy
+         * <p>
+         *     The default percentage is 100.
+         * </p>
+         *
+         * <p>
+         *     If it is set to <tt>0</tt>, Curator does not do any additional checking
+         *     for session expiration.
+         * </p>
+         *
+         * <p>
+         *     If a positive number is set, Curator will check for session expiration
+         *     as follows: when ZooKeeper sends a Disconnect event, Curator will start a timer.
+         *     If re-connection is not achieved before the elapsed time exceeds the negotiated
+         *     session time multiplied by the session expiration percent, Curator will simulate
+         *     a session expiration. Due to timing/network issues, it is <b>not possible</b> for
+         *     a client to match the server's session timeout with complete accuracy. Thus, the need
+         *     for a session expiration percentage.
+         * </p>
+         *
+         * @param simulatedSessionExpirationPercent new simulated session expiration percentage
          * @return this
-         * @since 3.0.0
+         * @since 5.0
          */
-        public Builder connectionHandlingPolicy(ConnectionHandlingPolicy connectionHandlingPolicy)
-        {
-            this.connectionHandlingPolicy = connectionHandlingPolicy;
+        public Builder simulatedSessionExpirationPercent(int simulatedSessionExpirationPercent) {
+            Preconditions.checkArgument(
+                    (simulatedSessionExpirationPercent > 0) && (simulatedSessionExpirationPercent <= 100),
+                    "simulatedSessionExpirationPercent must be > 0 and <= 100");
+            this.simulatedSessionExpirationPercent = simulatedSessionExpirationPercent;
             return this;
         }
 
@@ -581,19 +581,13 @@ public class CuratorFrameworkFactory
             return connectionStateErrorPolicy;
         }
 
-        public ConnectionHandlingPolicy getConnectionHandlingPolicy()
-        {
-            return connectionHandlingPolicy;
+        public int getSimulatedSessionExpirationPercent() {
+            return simulatedSessionExpirationPercent;
         }
 
         public SchemaSet getSchemaSet()
         {
             return schemaSet;
-        }
-
-        public boolean isZk34CompatibilityMode()
-        {
-            return zk34CompatibilityMode;
         }
 
         @Deprecated

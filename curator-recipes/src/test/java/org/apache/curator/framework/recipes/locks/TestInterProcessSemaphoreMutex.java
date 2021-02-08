@@ -19,26 +19,30 @@
 package org.apache.curator.framework.recipes.locks;
 
 import org.apache.curator.framework.CuratorFramework;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 public class TestInterProcessSemaphoreMutex extends TestInterProcessMutexBase
 {
     private static final String LOCK_PATH = LOCK_BASE_PATH + "/our-lock";
 
     @Override
-    @Test(enabled = false)
+    @Test
+    @Disabled
     public void testReentrant()
     {
     }
 
     @Override
-    @Test(enabled = false)
+    @Test
+    @Disabled
     public void testReentrant2Threads()
     {
     }
 
     @Override
-    @Test(enabled = false)
+    @Test
+    @Disabled
     public void testReentrantSingleLock()
     {
     }

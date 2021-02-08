@@ -23,6 +23,7 @@ import org.apache.curator.x.discovery.details.InstanceProvider;
 import org.apache.curator.x.discovery.details.ServiceCacheListener;
 import java.io.Closeable;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 public interface ServiceCache<T> extends Closeable, Listenable<ServiceCacheListener>, InstanceProvider<T>
 {
@@ -41,4 +42,6 @@ public interface ServiceCache<T> extends Closeable, Listenable<ServiceCacheListe
      * @throws Exception errors
      */
     public void start() throws Exception;
+
+    CountDownLatch startImmediate() throws Exception;
 }

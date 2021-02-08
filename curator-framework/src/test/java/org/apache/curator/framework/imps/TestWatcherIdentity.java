@@ -18,6 +18,8 @@
  */
 package org.apache.curator.framework.imps;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import com.google.common.collect.Sets;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -28,8 +30,8 @@ import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
+
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -77,13 +79,13 @@ public class TestWatcherIdentity extends BaseClassForTests
             client.setData().forPath("/test", "foo".getBytes());
             client.delete().forPath("/test");
             timing.sleepABit();
-            Assert.assertEquals(actualWatcher.count.getAndSet(0), 1);
+            assertEquals(actualWatcher.count.getAndSet(0), 1);
 
             client.create().forPath("/test");
             client.checkExists().usingWatcher(actualWatcher).forPath("/test");
             client.delete().forPath("/test");
             timing.sleepABit();
-            Assert.assertEquals(actualWatcher.count.get(), 1);
+            assertEquals(actualWatcher.count.get(), 1);
         }
         finally
         {
@@ -109,13 +111,13 @@ public class TestWatcherIdentity extends BaseClassForTests
             client.setData().forPath("/test", "foo".getBytes());
             client.delete().forPath("/test");
             timing.sleepABit();
-            Assert.assertEquals(actualWatcher.count.getAndSet(0), 1);
+            assertEquals(actualWatcher.count.getAndSet(0), 1);
 
             client.create().forPath("/test");
             client.checkExists().usingWatcher(actualWatcher).forPath("/test");
             client.delete().forPath("/test");
             timing.sleepABit();
-            Assert.assertEquals(actualWatcher.count.get(), 1);
+            assertEquals(actualWatcher.count.get(), 1);
         }
         finally
         {
@@ -136,13 +138,13 @@ public class TestWatcherIdentity extends BaseClassForTests
         };
         NamespaceWatcher namespaceWatcher1 = new NamespaceWatcher(null, watcher, "/foo");
         NamespaceWatcher namespaceWatcher2 = new NamespaceWatcher(null, watcher, "/foo");
-        Assert.assertEquals(namespaceWatcher1, namespaceWatcher2);
-        Assert.assertFalse(namespaceWatcher1.equals(watcher));
-        Assert.assertFalse(watcher.equals(namespaceWatcher1));
+        assertEquals(namespaceWatcher1, namespaceWatcher2);
+        assertFalse(namespaceWatcher1.equals(watcher));
+        assertFalse(watcher.equals(namespaceWatcher1));
         Set<Watcher> set = Sets.newHashSet();
         set.add(namespaceWatcher1);
         set.add(namespaceWatcher2);
-        Assert.assertEquals(set.size(), 1);
+        assertEquals(set.size(), 1);
     }
 
     @Test
@@ -161,7 +163,7 @@ public class TestWatcherIdentity extends BaseClassForTests
             // Ok, let's test it
             client.setData().forPath(PATH, new byte[]{});
             timing.sleepABit();
-            Assert.assertEquals(1, watcher.count.get());
+            assertEquals(1, watcher.count.get());
         }
         finally
         {
@@ -186,7 +188,7 @@ public class TestWatcherIdentity extends BaseClassForTests
             // Ok, let's test it
             client.setData().forPath(PATH, new byte[]{});
             timing.sleepABit();
-            Assert.assertEquals(1, watcher.count.get());
+            assertEquals(1, watcher.count.get());
         }
         finally
         {

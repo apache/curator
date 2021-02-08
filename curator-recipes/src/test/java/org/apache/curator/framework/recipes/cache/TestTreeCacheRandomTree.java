@@ -19,11 +19,15 @@
 
 package org.apache.curator.framework.recipes.cache;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import com.google.common.collect.Iterables;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.ZKPaths;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -117,7 +121,7 @@ public class TestTreeCacheRandomTree extends BaseTestTreeCache
                 {
                     // Delete myself from parent.
                     TestNode removed = last.children.remove(ZKPaths.getNodeFromPath(node.fullPath));
-                    Assert.assertSame(node, removed);
+                    assertSame(node, removed);
 
                     // Delete from ZK
                     cl.delete().forPath(node.fullPath);
@@ -209,13 +213,13 @@ public class TestTreeCacheRandomTree extends BaseTestTreeCache
     {
         String path = expectedNode.fullPath;
         Map<String, ChildData> cacheChildren = cache.getCurrentChildren(path);
-        Assert.assertNotNull(cacheChildren, path);
+        assertNotNull(cacheChildren, path);
 
         if (withDepth && depth == TEST_DEPTH) {
             return;
         }
 
-        Assert.assertEquals(cacheChildren.keySet(), expectedNode.children.keySet(), path);
+        assertEquals(cacheChildren.keySet(), expectedNode.children.keySet(), path);
 
         for ( Map.Entry<String, TestNode> entry : expectedNode.children.entrySet() )
         {
@@ -233,7 +237,7 @@ public class TestTreeCacheRandomTree extends BaseTestTreeCache
     private static void assertNodeEquals(ChildData actualChild, TestNode expectedNode)
     {
         String path = expectedNode.fullPath;
-        Assert.assertNotNull(actualChild, path);
-        Assert.assertEquals(actualChild.getData(), expectedNode.data, path);
+        assertNotNull(actualChild, path);
+        assertArrayEquals(actualChild.getData(), expectedNode.data, path);
     }
 }

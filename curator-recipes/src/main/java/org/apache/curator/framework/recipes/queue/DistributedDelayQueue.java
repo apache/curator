@@ -21,7 +21,7 @@ package org.apache.curator.framework.recipes.queue;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.listen.ListenerContainer;
+import org.apache.curator.framework.listen.Listenable;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collections;
@@ -215,7 +215,7 @@ public class DistributedDelayQueue<T> implements Closeable, QueueBase<T>
      * @return put listener container
      */
     @Override
-    public ListenerContainer<QueuePutListener<T>> getPutListenerContainer()
+    public Listenable<QueuePutListener<T>> getPutListenerContainer()
     {
         return queue.getPutListenerContainer();
     }

@@ -18,7 +18,7 @@
  */
 package org.apache.curator.framework.recipes.shared;
 
-import org.apache.curator.framework.listen.ListenerContainer;
+import org.apache.curator.framework.listen.Listenable;
 
 /**
  * Abstracts a shared value and allows listening for changes to the value
@@ -44,5 +44,5 @@ public interface SharedValueReader
      *
      * @return listenable
      */
-    public ListenerContainer<SharedValueListener> getListenable();
+    public Listenable<SharedValueListener> getListenable();
 }

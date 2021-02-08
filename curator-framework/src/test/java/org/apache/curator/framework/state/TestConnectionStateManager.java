@@ -18,18 +18,22 @@
  */
 package org.apache.curator.framework.state;
 
-import org.apache.curator.connection.StandardConnectionHandlingPolicy;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
+import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+@Tag(CuratorTestBase.zk35TestCompatibilityGroup)
 public class TestConnectionStateManager extends BaseClassForTests {
 
     @Test
@@ -41,7 +45,7 @@ public class TestConnectionStateManager extends BaseClassForTests {
             .sessionTimeoutMs(timing.session())
             .retryPolicy(new RetryOneTime(1))
             .connectionStateErrorPolicy(new SessionConnectionStateErrorPolicy())
-            .connectionHandlingPolicy(new StandardConnectionHandlingPolicy(30))
+            .simulatedSessionExpirationPercent(30)
             .build();
 
         // we should get LOST around 30% of a session plus a little "slop" for processing, etc.
@@ -70,10 +74,10 @@ public class TestConnectionStateManager extends BaseClassForTests {
 
             client.getConnectionStateListenable().addListener(stateListener);
             client.start();
-            Assert.assertTrue(timing.awaitLatch(connectedLatch));
+            assertTrue(timing.awaitLatch(connectedLatch));
             server.close();
 
-            Assert.assertTrue(lostLatch.await(lostStateExpectedMs, TimeUnit.MILLISECONDS));
+            assertTrue(lostLatch.await(lostStateExpectedMs, TimeUnit.MILLISECONDS));
         }
         finally {
             CloseableUtils.closeQuietly(client);

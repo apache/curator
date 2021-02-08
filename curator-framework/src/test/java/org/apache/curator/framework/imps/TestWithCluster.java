@@ -18,6 +18,10 @@
  */
 package org.apache.curator.framework.imps;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -29,11 +33,11 @@ import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
 import org.apache.curator.test.Timing;
 import org.apache.zookeeper.CreateMode;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
+
 import java.util.concurrent.CountDownLatch;
 
-public class TestWithCluster
+public class TestWithCluster extends CuratorTestBase
 {
     @Test
     public void     testSessionSurvives() throws Exception
@@ -41,8 +45,7 @@ public class TestWithCluster
         Timing              timing = new Timing();
 
         CuratorFramework    client = null;
-        TestingCluster      cluster = new TestingCluster(3);
-        cluster.start();
+        TestingCluster      cluster = createAndStartCluster(3);
         try
         {
             client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), timing.session(), timing.connection(), new ExponentialBackoffRetry(100, 3));
@@ -63,7 +66,7 @@ public class TestWithCluster
             client.getConnectionStateListenable().addListener(listener);
 
             client.create().withMode(CreateMode.EPHEMERAL).forPath("/temp", "value".getBytes());
-            Assert.assertNotNull(client.checkExists().forPath("/temp"));
+            assertNotNull(client.checkExists().forPath("/temp"));
 
             for ( InstanceSpec spec : cluster.getInstances() )
             {
@@ -73,8 +76,8 @@ public class TestWithCluster
                 timing.sleepABit();
             }
 
-            Assert.assertTrue(timing.awaitLatch(reconnectedLatch));
-            Assert.assertNotNull(client.checkExists().forPath("/temp"));
+            assertTrue(timing.awaitLatch(reconnectedLatch));
+            assertNotNull(client.checkExists().forPath("/temp"));
         }
         finally
         {
@@ -89,8 +92,7 @@ public class TestWithCluster
         Timing              timing = new Timing();
 
         CuratorFramework    client = null;
-        TestingCluster cluster = new TestingCluster(3);
-        cluster.start();
+        TestingCluster cluster = createAndStartCluster(3);
         try
         {
             // make sure all instances are up
@@ -128,16 +130,22 @@ public class TestWithCluster
             {
                 if ( !instanceSpec.equals(cluster.findConnectionInstance(client.getZookeeperClient().getZooKeeper())) )
                 {
-                    Assert.assertTrue(cluster.killServer(instanceSpec));
+                    assertTrue(cluster.killServer(instanceSpec));
                 }
             }
 
-            Assert.assertTrue(timing.awaitLatch(latch));
+            assertTrue(timing.awaitLatch(latch));
         }
         finally
         {
             CloseableUtils.closeQuietly(client);
             CloseableUtils.closeQuietly(cluster);
         }
+    }
+
+    @Override
+    protected void createServer() throws Exception
+    {
+        // NOP
     }
 }

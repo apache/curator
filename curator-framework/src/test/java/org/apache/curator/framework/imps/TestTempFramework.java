@@ -18,13 +18,16 @@
  */
 package org.apache.curator.framework.imps;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.CuratorTempFramework;
 import org.apache.curator.retry.RetryOneTime;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
+
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -40,7 +43,7 @@ public class TestTempFramework extends BaseClassForTests
             client.inTransaction().create().forPath("/foo", "data".getBytes()).and().commit();
 
             byte[] bytes = client.getData().forPath("/foo");
-            Assert.assertEquals(bytes, "data".getBytes());
+            assertArrayEquals(bytes, "data".getBytes());
         }
         finally
         {
@@ -68,8 +71,8 @@ public class TestTempFramework extends BaseClassForTests
             service.shutdownNow();
             Thread.sleep(2000);
 
-            Assert.assertNull(client.getCleanup());
-            Assert.assertNull(client.getClient());
+            assertNull(client.getCleanup());
+            assertNull(client.getClient());
         }
         finally
         {

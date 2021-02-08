@@ -23,7 +23,6 @@ import com.google.common.base.Preconditions;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.listen.UnaryListenerManager;
-import org.apache.curator.utils.Compatibility;
 import org.apache.curator.utils.ThreadUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -286,6 +285,17 @@ public class ConnectionStateManager implements Closeable
                         checkSessionExpiration();
                     }
                 }
+
+                synchronized(this)
+                {
+                    if ( (currentConnectionState == ConnectionState.LOST) && client.getZookeeperClient().isConnected() )
+                    {
+                        // CURATOR-525 - there is a race whereby LOST is sometimes set after the connection has been repaired
+                        // this "hack" fixes it by forcing the state to RECONNECTED
+                        log.warn("ConnectionState is LOST but isConnected() is true. Forcing RECONNECTED.");
+                        addStateChange(ConnectionState.RECONNECTED);
+                    }
+                }
             }
             catch ( InterruptedException e )
             {
@@ -308,7 +318,7 @@ public class ConnectionStateManager implements Closeable
                 log.warn(String.format("Session timeout has elapsed while SUSPENDED. Injecting a session expiration. Elapsed ms: %d. Adjusted session timeout ms: %d", elapsedMs, useSessionTimeoutMs));
                 try
                 {
-                    Compatibility.injectSessionExpiration(client.getZookeeperClient().getZooKeeper());
+                    client.getZookeeperClient().getZooKeeper().getTestable().injectSessionExpiration();
                 }
                 catch ( Exception e )
                 {

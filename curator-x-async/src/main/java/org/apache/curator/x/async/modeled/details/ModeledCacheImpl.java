@@ -19,19 +19,23 @@
 package org.apache.curator.x.async.modeled.details;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.EnsureContainers;
 import org.apache.curator.framework.listen.Listenable;
-import org.apache.curator.framework.listen.ListenerContainer;
-import org.apache.curator.framework.recipes.cache.TreeCache;
+import org.apache.curator.framework.listen.StandardListenerManager;
+import org.apache.curator.framework.recipes.cache.CuratorCache;
+import org.apache.curator.framework.recipes.cache.CuratorCacheBridge;
+import org.apache.curator.framework.recipes.cache.CuratorCacheBridgeBuilder;
+import org.apache.curator.framework.recipes.cache.CuratorCacheListener;
 import org.apache.curator.framework.recipes.cache.TreeCacheEvent;
 import org.apache.curator.framework.recipes.cache.TreeCacheListener;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.x.async.api.CreateOption;
 import org.apache.curator.x.async.modeled.ModelSerializer;
 import org.apache.curator.x.async.modeled.ModelSpec;
+import org.apache.curator.x.async.modeled.ZNode;
 import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.curator.x.async.modeled.cached.ModeledCache;
 import org.apache.curator.x.async.modeled.cached.ModeledCacheListener;
-import org.apache.curator.x.async.modeled.ZNode;
 import org.apache.zookeeper.data.Stat;
 import java.util.AbstractMap;
 import java.util.Map;
@@ -42,11 +46,12 @@ import java.util.stream.Collectors;
 
 class ModeledCacheImpl<T> implements TreeCacheListener, ModeledCache<T>
 {
-    private final TreeCache cache;
+    private final CuratorCacheBridge cache;
     private final Map<ZPath, Entry<T>> entries = new ConcurrentHashMap<>();
     private final ModelSerializer<T> serializer;
-    private final ListenerContainer<ModeledCacheListener<T>> listenerContainer = new ListenerContainer<>();
+    private final StandardListenerManager<ModeledCacheListener<T>> listenerContainer = StandardListenerManager.standard();
     private final ZPath basePath;
+    private final EnsureContainers ensureContainers;
 
     private static final class Entry<T>
     {
@@ -69,19 +74,32 @@ class ModeledCacheImpl<T> implements TreeCacheListener, ModeledCache<T>
 
         basePath = modelSpec.path();
         this.serializer = modelSpec.serializer();
-        cache = TreeCache.newBuilder(client, basePath.fullPath())
-            .setCacheData(false)
-            .setDataIsCompressed(modelSpec.createOptions().contains(CreateOption.compress))
-            .setExecutor(executor)
-            .setCreateParentNodes(modelSpec.createOptions().contains(CreateOption.createParentsIfNeeded) || modelSpec.createOptions().contains(CreateOption.createParentsAsContainers))
-            .build();
+        CuratorCacheBridgeBuilder bridgeBuilder = CuratorCache.bridgeBuilder(client, basePath.fullPath()).withDataNotCached().withExecutorService(executor);
+        if ( modelSpec.createOptions().contains(CreateOption.compress) )
+        {
+            bridgeBuilder = bridgeBuilder.withOptions(CuratorCache.Options.COMPRESSED_DATA);
+        }
+        cache = bridgeBuilder.build();
+        cache.listenable().addListener(CuratorCacheListener.builder().forTreeCache(client, this).build());
+
+        if ( modelSpec.createOptions().contains(CreateOption.createParentsIfNeeded) || modelSpec.createOptions().contains(CreateOption.createParentsAsContainers) )
+        {
+            ensureContainers = new EnsureContainers(client, basePath.fullPath());
+        }
+        else
+        {
+            ensureContainers = null;
+        }
     }
 
     public void start()
     {
         try
         {
-            cache.getListenable().addListener(this);
+            if ( ensureContainers != null )
+            {
+                ensureContainers.ensure();
+            }
             cache.start();
         }
         catch ( Exception e )
@@ -92,7 +110,6 @@ class ModeledCacheImpl<T> implements TreeCacheListener, ModeledCache<T>
 
     public void close()
     {
-        cache.getListenable().removeListener(this);
         cache.close();
         entries.clear();
     }
@@ -144,14 +161,11 @@ class ModeledCacheImpl<T> implements TreeCacheListener, ModeledCache<T>
         {
             ThreadUtils.checkInterrupted(e);
 
-            listenerContainer.forEach(l -> {
-                l.handleException(e);
-                return null;
-            });
+            listenerContainer.forEach(l -> l.handleException(e));
         }
     }
 
-    private void internalChildEvent(TreeCacheEvent event) throws Exception
+    private void internalChildEvent(TreeCacheEvent event)
     {
         switch ( event.getType() )
         {
@@ -159,16 +173,13 @@ class ModeledCacheImpl<T> implements TreeCacheListener, ModeledCache<T>
         case NODE_UPDATED:
         {
             ZPath path = ZPath.parse(event.getData().getPath());
-            if ( !path.equals(basePath) )
+            byte[] bytes = event.getData().getData();
+            if ( (bytes != null) && (bytes.length > 0) )    // otherwise it's probably just a parent node being created
             {
-                byte[] bytes = event.getData().getData();
-                if ( (bytes != null) && (bytes.length > 0) )    // otherwise it's probably just a parent node being created
-                {
-                    T model = serializer.deserialize(bytes);
-                    entries.put(path, new Entry<>(event.getData().getStat(), model));
-                    ModeledCacheListener.Type type = (event.getType() == TreeCacheEvent.Type.NODE_ADDED) ? ModeledCacheListener.Type.NODE_ADDED : ModeledCacheListener.Type.NODE_UPDATED;
-                    accept(type, path, event.getData().getStat(), model);
-                }
+                T model = serializer.deserialize(bytes);
+                entries.put(path, new Entry<>(event.getData().getStat(), model));
+                ModeledCacheListener.Type type = (event.getType() == TreeCacheEvent.Type.NODE_ADDED) ? ModeledCacheListener.Type.NODE_ADDED : ModeledCacheListener.Type.NODE_UPDATED;
+                accept(type, path, event.getData().getStat(), model);
             }
             break;
         }
@@ -176,22 +187,16 @@ class ModeledCacheImpl<T> implements TreeCacheListener, ModeledCache<T>
         case NODE_REMOVED:
         {
             ZPath path = ZPath.parse(event.getData().getPath());
-            if ( !path.equals(basePath) )
-            {
-                Entry<T> entry = entries.remove(path);
-                T model = (entry != null) ? entry.model : serializer.deserialize(event.getData().getData());
-                Stat stat = (entry != null) ? entry.stat : event.getData().getStat();
-                accept(ModeledCacheListener.Type.NODE_REMOVED, path, stat, model);
-            }
+            Entry<T> entry = entries.remove(path);
+            T model = (entry != null) ? entry.model : serializer.deserialize(event.getData().getData());
+            Stat stat = (entry != null) ? entry.stat : event.getData().getStat();
+            accept(ModeledCacheListener.Type.NODE_REMOVED, path, stat, model);
             break;
         }
 
         case INITIALIZED:
         {
-            listenerContainer.forEach(l -> {
-                l.initialized();
-                return null;
-            });
+            listenerContainer.forEach(ModeledCacheListener::initialized);
             break;
         }
 
@@ -203,9 +208,6 @@ class ModeledCacheImpl<T> implements TreeCacheListener, ModeledCache<T>
 
     private void accept(ModeledCacheListener.Type type, ZPath path, Stat stat, T model)
     {
-        listenerContainer.forEach(l -> {
-            l.accept(type, path, stat, model);
-            return null;
-        });
+        listenerContainer.forEach(l -> l.accept(type, path, stat, model));
     }
 }

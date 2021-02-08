@@ -201,8 +201,13 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
         }        
         
         return null;
-    }    
-    
+    }
+
+    protected CuratorFrameworkImpl getClient()
+    {
+        return client;
+    }
+
     private void pathInBackground(final String path)
     {
         OperationAndData.ErrorCallback<String>  errorCallback = null;
@@ -265,13 +270,13 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
                             }
                             catch(Exception e)
                             {
-                                if( RetryLoop.isRetryException(e) && guaranteed )
+                                if ( client.getZookeeperClient().getRetryPolicy().allowRetry(e) && guaranteed )
                                 {
                                     //Setup the guaranteed handler
                                     client.getFailedRemoveWatcherManager().addFailedOperation(new FailedRemoveWatchManager.FailedRemoveWatchDetails(path, finalNamespaceWatcher));
                                     throw e;
                                 }
-                                else if(e instanceof KeeperException.NoWatcherException && quietly)
+                                else if (e instanceof KeeperException.NoWatcherException && quietly)
                                 {
                                     // ignore
                                 }

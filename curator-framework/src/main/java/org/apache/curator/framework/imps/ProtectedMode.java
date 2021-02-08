@@ -30,7 +30,6 @@ import java.util.UUID;
 class ProtectedMode
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
-    private volatile boolean doProtected = false;
     private volatile String protectedId = null;
     private volatile long sessionId = 0;
 
@@ -39,7 +38,6 @@ class ProtectedMode
      */
     void setProtectedMode()
     {
-        doProtected = true;
         resetProtectedId();
     }
 
@@ -56,7 +54,7 @@ class ProtectedMode
      */
     boolean doProtected()
     {
-        return doProtected;
+        return (protectedId != null);
     }
 
     /**
@@ -76,7 +74,7 @@ class ProtectedMode
      */
     void checkSetSessionId(CuratorFrameworkImpl client, CreateMode createMode) throws Exception
     {
-        if ( doProtected && (sessionId == 0) && createMode.isEphemeral() )
+        if ( doProtected() && (sessionId == 0) && createMode.isEphemeral() )
         {
             sessionId = client.getZooKeeper().getSessionId();
         }
@@ -93,7 +91,7 @@ class ProtectedMode
      */
     String validateFoundNode(CuratorFrameworkImpl client, CreateMode createMode, String foundNode) throws Exception
     {
-        if ( doProtected && createMode.isEphemeral() )
+        if ( doProtected() && createMode.isEphemeral() )
         {
             long clientSessionId = client.getZooKeeper().getSessionId();
             if ( this.sessionId != clientSessionId )

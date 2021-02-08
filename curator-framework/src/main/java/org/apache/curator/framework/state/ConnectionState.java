@@ -18,7 +18,6 @@
  */
 package org.apache.curator.framework.state;
 
-import org.apache.curator.connection.ConnectionHandlingPolicy;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
@@ -50,7 +49,7 @@ public enum ConnectionState
         {
             return false;
         }
-    },    
+    },
 
     /**
      * A suspended, lost, or read-only connection has been re-established
@@ -72,11 +71,6 @@ public enum ConnectionState
      *     a) ZooKeeper returns a {@link Watcher.Event.KeeperState#Expired} or {@link KeeperException.Code#SESSIONEXPIRED};
      *     b) Curator closes the internally managed ZooKeeper instance; c) The session timeout
      *     elapses during a network partition.
-     * </p>
-     *
-     * <p>
-     *     NOTE: see {@link CuratorFrameworkFactory.Builder#connectionHandlingPolicy(ConnectionHandlingPolicy)} for an important note about a
-     *     change in meaning to LOST since 3.0.0
      * </p>
      */
     LOST
@@ -103,10 +97,10 @@ public enum ConnectionState
     }
 
     ;
-    
+
     /**
      * Check if this state indicates that Curator has a connection to ZooKeeper
-     * 
+     *
      * @return True if connected, false otherwise
      */
     public abstract boolean isConnected();
