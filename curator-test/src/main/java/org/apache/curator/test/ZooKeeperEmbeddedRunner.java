@@ -19,25 +19,10 @@
 
 package org.apache.curator.test;
 
-import org.apache.zookeeper.jmx.MBeanRegistry;
-import org.apache.zookeeper.jmx.ZKMBeanInfo;
-import org.apache.zookeeper.server.*;
 import org.apache.zookeeper.server.embedded.ZooKeeperServerEmbedded;
-import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
-import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.management.JMException;
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.nio.channels.ServerSocketChannel;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class ZooKeeperEmbeddedRunner implements ZooKeeperMainFace
 {
@@ -47,27 +32,39 @@ public class ZooKeeperEmbeddedRunner implements ZooKeeperMainFace
     @Override
     public void kill()
     {
+        if (zooKeeperEmbedded == null) {
+            return;
+        }
         zooKeeperEmbedded.close();
     }
 
     @Override
-    public void runFromConfig(QuorumPeerConfig config) throws Exception
-    {
-        zooKeeperEmbedded = ZooKeeperServerEmbedded
-                .builder()
-                .build()
-        zooKeeperEmbedded.start();
+    public void configure(QuorumConfigBuilder config, int instance) {
+        try {
+            zooKeeperEmbedded = ZooKeeperServerEmbedded
+                    .builder()
+                    .configuration(config.buildRawConfig(instance))
+                    .build();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     @Override
-    public void blockUntilStarted()
-    {
+    public void start() {
+        if (zooKeeperEmbedded == null) {
+            throw new IllegalStateException();
+        }
+        try {
+            zooKeeperEmbedded.start();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     public void close() throws IOException
     {
-        zooKeeperEmbedded.close();
+        kill();
     }
 }
