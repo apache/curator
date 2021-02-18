@@ -23,6 +23,9 @@ import org.apache.zookeeper.server.embedded.ZooKeeperServerEmbedded;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Properties;
 
 public class ZooKeeperEmbeddedRunner implements ZooKeeperMainFace
 {
@@ -41,9 +44,12 @@ public class ZooKeeperEmbeddedRunner implements ZooKeeperMainFace
     @Override
     public void configure(QuorumConfigBuilder config, int instance) {
         try {
+            Properties properties = config.buildRawConfig(instance);
+            Path dataDir = Paths.get(properties.getProperty("dataDir"));
             zooKeeperEmbedded = ZooKeeperServerEmbedded
                     .builder()
-                    .configuration(config.buildRawConfig(instance))
+                    .configuration(properties)
+                    .baseDir(dataDir.getParent())
                     .build();
         } catch (Exception e) {
             throw new RuntimeException(e);
