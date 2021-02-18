@@ -19,8 +19,6 @@
 
 package org.apache.curator.test;
 
-import org.apache.zookeeper.server.quorum.QuorumPeer;
-import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.Closeable;
@@ -40,8 +38,18 @@ public class TestingZooKeeperServer implements Closeable
     private volatile ZooKeeperMainFace main;
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
 
-    ZooKeeperMainFace getMain() {
-        return main;
+    private static final boolean isZookKeeperEmbeddedSupported;
+    static {
+        boolean detected = false;
+        try {
+            Class.forName("org.apache.zookeeper.server.embedded.ZooKeeperServerEmbedded", false, Thread.currentThread().getContextClassLoader());
+            detected = true;
+            logger.info("Detected support for ZooKeeperServerEmbedded");
+        } catch (Throwable t) {
+            detected = false;
+            logger.info("Cannot detected support for ZooKeeperServerEmbedded:" + t); // no stacktrace
+        }
+        isZookKeeperEmbeddedSupported = detected;
     }
 
     private enum State
@@ -60,19 +68,15 @@ public class TestingZooKeeperServer implements Closeable
 
         this.configBuilder = configBuilder;
         this.thisInstanceIndex = thisInstanceIndex;
-        main = isCluster() ? new TestingQuorumPeerMain() : new TestingZooKeeperMain();
+        if (isZookKeeperEmbeddedSupported) {
+            main = new ZooKeeperEmbeddedRunner();
+        } else {
+            main = isCluster() ? new TestingQuorumPeerMain() : new TestingZooKeeperMain();
+        }
     }
 
     private boolean isCluster() {
         return configBuilder.size() > 1;
-    }
-    
-    public QuorumPeer getQuorumPeer()
-    {
-        if (isCluster()) {
-            return ((TestingQuorumPeerMain) main).getTestingQuorumPeer();
-        }
-        throw new UnsupportedOperationException();
     }
 
     public Collection<InstanceSpec> getInstanceSpecs()
