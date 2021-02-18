@@ -51,6 +51,8 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace {
     private volatile ServerCnxnFactory cnxnFactory;
     private volatile TestZooKeeperServer zkServer;
     private volatile ContainerManager containerManager;
+    private int instanceIndex;
+    private QuorumConfigBuilder configBuilder;
 
     private static final Timing timing = new Timing();
 
@@ -88,8 +90,7 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace {
         }
     }
 
-    @Override
-    public void runFromConfig(QuorumPeerConfig config) throws Exception {
+    private void runFromConfig(QuorumPeerConfig config) throws Exception {
         try {
             Field instance = MBeanRegistry.class.getDeclaredField("instance");
             instance.setAccessible(true);
@@ -120,8 +121,7 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace {
     }
 
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    @Override
-    public void blockUntilStarted() {
+    private void blockUntilStarted() {
         if (!timing.awaitLatch(latch)) {
             throw new FailedServerStartException("Timed out waiting for server startup");
         }
@@ -269,8 +269,6 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace {
             }
         }
     }
-    private int instanceIndex;
-    private QuorumConfigBuilder configBuilder;
 
     public void configure(QuorumConfigBuilder configBuilder, int instanceIndex) {
         this.instanceIndex = instanceIndex;
@@ -291,7 +289,7 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace {
                 }
                 catch ( Exception e )
                 {
-                    log.error(String.format("From testing server (random state: %s) for instance: %s", String.valueOf(configBuilder.isFromRandom()), getInstanceSpec()), e);
+                    log.error(String.format("From testing server (random state: %s) for instance: %s", String.valueOf(configBuilder.isFromRandom()), configBuilder.getInstanceSpec(instanceIndex)), e);
                 }
             }
         }).start();
