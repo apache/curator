@@ -35,6 +35,9 @@ class TestingQuorumPeerMain extends QuorumPeerMain implements ZooKeeperMainFace
 
     private volatile boolean isClosed = false;
 
+    private int instanceIndex;
+    private QuorumConfigBuilder configBuilder;
+
     @Override
     public void kill()
     {
@@ -96,9 +99,6 @@ class TestingQuorumPeerMain extends QuorumPeerMain implements ZooKeeperMainFace
         }
     }
 
-    private int instanceIndex;
-    private QuorumConfigBuilder configBuilder;
-
     public void configure(QuorumConfigBuilder configBuilder, int instanceIndex) {
         this.instanceIndex = instanceIndex;
         this.configBuilder = configBuilder;
@@ -118,7 +118,7 @@ class TestingQuorumPeerMain extends QuorumPeerMain implements ZooKeeperMainFace
                 }
                 catch ( Exception e )
                 {
-                    logger.error(String.format("From testing server (random state: %s) for instance: %s", String.valueOf(configBuilder.isFromRandom()), getInstanceSpec()), e);
+                    logger.error(String.format("From testing server (random state: %s) for instance: %s", String.valueOf(configBuilder.isFromRandom()), configBuilder.getInstanceSpec(instanceIndex)), e);
                 }
             }
         }).start();
