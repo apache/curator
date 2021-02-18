@@ -20,13 +20,19 @@ package org.apache.curator.test;
 
 import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.apache.zookeeper.server.quorum.QuorumPeer;
+import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 import org.apache.zookeeper.server.quorum.QuorumPeerMain;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.channels.ServerSocketChannel;
 
 class TestingQuorumPeerMain extends QuorumPeerMain implements ZooKeeperMainFace
 {
+    private static final Logger logger = LoggerFactory.getLogger(TestingQuorumPeerMain.class);
+
     private volatile boolean isClosed = false;
 
     @Override
@@ -69,7 +75,6 @@ class TestingQuorumPeerMain extends QuorumPeerMain implements ZooKeeperMainFace
         }
     }
 
-    @Override
     public void blockUntilStarted()
     {
         long startTime = System.currentTimeMillis();
@@ -89,5 +94,35 @@ class TestingQuorumPeerMain extends QuorumPeerMain implements ZooKeeperMainFace
         {
             throw new FailedServerStartException("quorumPeer never got set");
         }
+    }
+
+    private int instanceIndex;
+    private QuorumConfigBuilder configBuilder;
+
+    public void configure(QuorumConfigBuilder configBuilder, int instanceIndex) {
+        this.instanceIndex = instanceIndex;
+        this.configBuilder = configBuilder;
+    }
+
+
+    public void start() {
+
+        new Thread(new Runnable()
+        {
+            public void run()
+            {
+                try
+                {
+                    QuorumPeerConfig config = configBuilder.buildConfig(instanceIndex);
+                    runFromConfig(config);
+                }
+                catch ( Exception e )
+                {
+                    logger.error(String.format("From testing server (random state: %s) for instance: %s", String.valueOf(configBuilder.isFromRandom()), getInstanceSpec()), e);
+                }
+            }
+        }).start();
+
+        blockUntilStarted();
     }
 }

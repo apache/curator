@@ -33,69 +33,71 @@ import java.util.Map;
 import java.util.Properties;
 
 @SuppressWarnings("UnusedDeclaration")
-public class QuorumConfigBuilder implements Closeable
-{
+public class QuorumConfigBuilder implements Closeable {
     private final ImmutableList<InstanceSpec> instanceSpecs;
     private final boolean fromRandom;
     private final File fakeConfigFile;
 
-    public QuorumConfigBuilder(Collection<InstanceSpec> specs)
-    {
+    public QuorumConfigBuilder(Collection<InstanceSpec> specs) {
         this(specs.toArray(new InstanceSpec[0]));
     }
 
-    public QuorumConfigBuilder(InstanceSpec... specs)
-    {
+    public QuorumConfigBuilder(InstanceSpec... specs) {
         fromRandom = (specs == null) || (specs.length == 0);
         instanceSpecs = fromRandom ? ImmutableList.of(InstanceSpec.newInstanceSpec()) : ImmutableList.copyOf(specs);
         File fakeConfigFile = null;
-        try
-        {
+        try {
             fakeConfigFile = File.createTempFile("temp", "temp");
-        }
-        catch ( IOException e )
-        {
+        } catch (IOException e) {
             Throwables.propagate(e);
         }
         this.fakeConfigFile = fakeConfigFile;
     }
 
-    public boolean isFromRandom()
-    {
+    public boolean isFromRandom() {
         return fromRandom;
     }
 
-    public QuorumPeerConfig buildConfig() throws Exception
-    {
+    public QuorumPeerConfig buildConfig() throws Exception {
         return buildConfig(0);
     }
 
-    public InstanceSpec getInstanceSpec(int index)
-    {
+    public InstanceSpec getInstanceSpec(int index) {
         return instanceSpecs.get(index);
     }
 
-    public List<InstanceSpec> getInstanceSpecs()
-    {
+    public List<InstanceSpec> getInstanceSpecs() {
         return instanceSpecs;
     }
 
-    public int size()
-    {
+    public int size() {
         return instanceSpecs.size();
     }
 
     @Override
-    public void close()
-    {
-        if ( fakeConfigFile != null )
-        {
+    public void close() {
+        if (fakeConfigFile != null) {
             //noinspection ResultOfMethodCallIgnored
             fakeConfigFile.delete();
         }
     }
 
-    public QuorumPeerConfig buildConfig(int instanceIndex) throws Exception
+    public QuorumPeerConfig buildConfig(int instanceIndex) throws Exception {
+        Properties properties = buildRawConfig(instanceIndex);
+        QuorumPeerConfig config = new QuorumPeerConfig()
+        {
+            {
+                if ( fakeConfigFile != null )
+                {
+                    configFileStr = fakeConfigFile.getPath();
+                }
+            }
+        };
+        config.parseProperties(properties);
+        return config;
+    }
+
+    public Properties buildRawConfig(int instanceIndex) throws Exception
     {
         boolean isCluster = (instanceSpecs.size() > 1);
         InstanceSpec spec = instanceSpecs.get(instanceIndex);
@@ -135,17 +137,6 @@ public class QuorumConfigBuilder implements Closeable
                 properties.put(property.getKey(), property.getValue());
             }
         }
-
-        QuorumPeerConfig config = new QuorumPeerConfig()
-        {
-            {
-                if ( fakeConfigFile != null )
-                {
-                    configFileStr = fakeConfigFile.getPath();
-                }
-            }
-        };
-        config.parseProperties(properties);
-        return config;
+        return properties;
     }
 }

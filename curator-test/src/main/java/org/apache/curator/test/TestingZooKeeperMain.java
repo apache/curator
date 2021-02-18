@@ -42,8 +42,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class TestingZooKeeperMain implements ZooKeeperMainFace
-{
+public class TestingZooKeeperMain implements ZooKeeperMainFace {
     private static final Logger log = LoggerFactory.getLogger(TestingZooKeeperMain.class);
 
     private final CountDownLatch latch = new CountDownLatch(1);
@@ -56,43 +55,35 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
     private static final Timing timing = new Timing();
 
     static final int MAX_WAIT_MS;
-    static
-    {
+
+    static {
         long startMs = System.currentTimeMillis();
-        try
-        {
+        try {
             // this can take forever and fails tests - ZK calls it internally so there's nothing we can do
             // pre flight it and use it to calculate max wait
             //noinspection ResultOfMethodCallIgnored
             InetAddress.getLocalHost().getCanonicalHostName();
-        }
-        catch ( UnknownHostException e )
-        {
+        } catch (UnknownHostException e) {
             // ignore
         }
         long elapsed = System.currentTimeMillis() - startMs;
-        MAX_WAIT_MS = Math.max((int)elapsed * 2, 1000);
+        MAX_WAIT_MS = Math.max((int) elapsed * 2, 1000);
     }
 
     @Override
-    public void kill()
-    {
-        try
-        {
-            if ( cnxnFactory != null )
-            {
+    public void kill() {
+        try {
+            if (cnxnFactory != null) {
                 Compatibility.serverCnxnFactoryCloseAll(cnxnFactory);
 
                 Field ssField = cnxnFactory.getClass().getDeclaredField("ss");
                 ssField.setAccessible(true);
-                ServerSocketChannel ss = (ServerSocketChannel)ssField.get(cnxnFactory);
+                ServerSocketChannel ss = (ServerSocketChannel) ssField.get(cnxnFactory);
                 ss.close();
             }
 
             close();
-        }
-        catch ( Exception e )
-        {
+        } catch (Exception e) {
             e.printStackTrace();    // just ignore - this class is only for testing
         }
     }
@@ -102,41 +93,31 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
     }
 
     @Override
-    public void runFromConfig(QuorumPeerConfig config) throws Exception
-    {
-        try
-        {
+    public void runFromConfig(QuorumPeerConfig config) throws Exception {
+        try {
             Field instance = MBeanRegistry.class.getDeclaredField("instance");
             instance.setAccessible(true);
-            MBeanRegistry nopMBeanRegistry = new MBeanRegistry()
-            {
+            MBeanRegistry nopMBeanRegistry = new MBeanRegistry() {
                 @Override
-                public void register(ZKMBeanInfo bean, ZKMBeanInfo parent) throws JMException
-                {
+                public void register(ZKMBeanInfo bean, ZKMBeanInfo parent) throws JMException {
                     // NOP
                 }
 
                 @Override
-                public void unregister(ZKMBeanInfo bean)
-                {
+                public void unregister(ZKMBeanInfo bean) {
                     // NOP
                 }
             };
             instance.set(null, nopMBeanRegistry);
-        }
-        catch ( Exception e )
-        {
+        } catch (Exception e) {
             log.error("Could not fix MBeanRegistry");
         }
 
         ServerConfig serverConfig = new ServerConfig();
         serverConfig.readFrom(config);
-        try
-        {
+        try {
             internalRunFromConfig(serverConfig);
-        }
-        catch ( IOException e )
-        {
+        } catch (IOException e) {
             startingException.set(e);
             throw e;
         }
@@ -144,91 +125,66 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
 
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     @Override
-    public void blockUntilStarted()
-    {
-        if (!timing.awaitLatch(latch))
-        {
+    public void blockUntilStarted() {
+        if (!timing.awaitLatch(latch)) {
             throw new FailedServerStartException("Timed out waiting for server startup");
         }
 
-        if ( zkServer != null )
-        {
+        if (zkServer != null) {
             //noinspection SynchronizeOnNonFinalField
-            synchronized(zkServer)
-            {
-                while ( !zkServer.isRunning() )
-                {
-                    try
-                    {
+            synchronized (zkServer) {
+                while (!zkServer.isRunning()) {
+                    try {
                         zkServer.wait();
-                    }
-                    catch ( InterruptedException e )
-                    {
+                    } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                         throw new FailedServerStartException("Server start interrupted");
                     }
                 }
             }
-        }
-        else
-        {
+        } else {
             throw new FailedServerStartException("No zkServer.");
         }
 
         Exception exception = startingException.get();
-        if ( exception != null )
-        {
+        if (exception != null) {
             throw new FailedServerStartException(exception);
         }
     }
 
     @Override
-    public void close() throws IOException
-    {
-        try
-        {
+    public void close() throws IOException {
+        try {
             cnxnFactory.shutdown();
-        }
-        catch ( Throwable e )
-        {
+        } catch (Throwable e) {
             e.printStackTrace();    // just ignore - this class is only for testing
-        }
-        finally
-        {
+        } finally {
             cnxnFactory = null;
         }
 
-        if ( containerManager != null ) {
+        if (containerManager != null) {
             containerManager.stop();
             containerManager = null;
         }
 
-        try
-        {
-            if ( zkServer != null )
-            {
+        try {
+            if (zkServer != null) {
                 zkServer.shutdown();
                 ZKDatabase zkDb = zkServer.getZKDatabase();
-                if ( zkDb != null )
-                {
+                if (zkDb != null) {
                     // make ZK server close its log files
                     zkDb.close();
                 }
             }
-        }
-        catch ( Throwable e )
-        {
+        } catch (Throwable e) {
             e.printStackTrace();    // just ignore - this class is only for testing
-        }
-        finally
-        {
+        } finally {
             zkServer = null;
         }
     }
 
     // copied from ZooKeeperServerMain.java
-    private void internalRunFromConfig(ServerConfig config) throws IOException
-    {
+    private void internalRunFromConfig(ServerConfig config) throws IOException {
         log.info("Starting server");
         try {
             // Note that this thread isn't going to be doing anything else,
@@ -238,26 +194,23 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
             FileTxnSnapLog txnLog = new FileTxnSnapLog(config.getDataLogDir(), config.getDataDir());
             zkServer = new TestZooKeeperServer(txnLog, config);
 
-            try
-            {
+            try {
                 cnxnFactory = ServerCnxnFactory.createFactory();
                 cnxnFactory.configure(config.getClientPortAddress(),
-                    config.getMaxClientCnxns());
-            }
-            catch ( IOException e )
-            {
+                        config.getMaxClientCnxns());
+            } catch (IOException e) {
                 log.info("Could not start server. Waiting and trying one more time.", e);
                 timing.sleepABit();
                 cnxnFactory = ServerCnxnFactory.createFactory();
                 cnxnFactory.configure(config.getClientPortAddress(),
-                    config.getMaxClientCnxns());
+                        config.getMaxClientCnxns());
             }
             cnxnFactory.startup(zkServer);
-            containerManager = new ContainerManager(zkServer.getZKDatabase(), zkServer.getFirstProcessor(), Integer.getInteger("znode.container.checkIntervalMs", (int)TimeUnit.MINUTES.toMillis(1L)), Integer.getInteger("znode.container.maxPerMinute", 10000));
+            containerManager = new ContainerManager(zkServer.getZKDatabase(), zkServer.getFirstProcessor(), Integer.getInteger("znode.container.checkIntervalMs", (int) TimeUnit.MINUTES.toMillis(1L)), Integer.getInteger("znode.container.maxPerMinute", 10000));
             containerManager.start();
             latch.countDown();
             cnxnFactory.join();
-            if ( (zkServer != null) && zkServer.isRunning()) {
+            if ((zkServer != null) && zkServer.isRunning()) {
                 zkServer.shutdown();
             }
         } catch (InterruptedException e) {
@@ -267,12 +220,10 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
         }
     }
 
-    public static class TestZooKeeperServer extends ZooKeeperServer
-    {
+    public static class TestZooKeeperServer extends ZooKeeperServer {
         private final FileTxnSnapLog txnLog;
 
-        public TestZooKeeperServer(FileTxnSnapLog txnLog, ServerConfig config)
-        {
+        public TestZooKeeperServer(FileTxnSnapLog txnLog, ServerConfig config) {
             this.txnLog = txnLog;
             this.setTxnLogFactory(txnLog);
             // tickTime would affect min and max session timeout: should be set first
@@ -282,56 +233,75 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
         }
 
         @Override
-        public synchronized void shutdown(boolean fullyShutDown)
-        {
+        public synchronized void shutdown(boolean fullyShutDown) {
             super.shutdown(fullyShutDown);
-            try
-            {
+            try {
                 txnLog.close();
-            }
-            catch ( IOException e )
-            {
+            } catch (IOException e) {
                 // ignore
             }
         }
 
         private final AtomicBoolean isRunning = new AtomicBoolean(false);
 
-        public RequestProcessor getFirstProcessor()
-        {
+        public RequestProcessor getFirstProcessor() {
             return firstProcessor;
         }
 
         @Override
-        protected void setState(State state)
-        {
+        protected void setState(State state) {
             this.state = state;
             // avoid ZKShutdownHandler is not registered message
         }
 
-        protected void registerJMX()
-        {
+        protected void registerJMX() {
             // NOP
         }
 
         @Override
-        protected void unregisterJMX()
-        {
+        protected void unregisterJMX() {
             // NOP
         }
 
         @Override
-        public boolean isRunning()
-        {
+        public boolean isRunning() {
             return isRunning.get() || super.isRunning();
         }
 
-        public void noteStartup()
-        {
+        public void noteStartup() {
             synchronized (this) {
                 isRunning.set(true);
                 this.notifyAll();
             }
         }
+    }
+    private int instanceIndex;
+    private QuorumConfigBuilder configBuilder;
+
+    public void configure(QuorumConfigBuilder configBuilder, int instanceIndex) {
+        this.instanceIndex = instanceIndex;
+        this.configBuilder = configBuilder;
+    }
+
+
+    public void start() {
+
+        new Thread(new Runnable()
+        {
+            public void run()
+            {
+                try
+                {
+                    QuorumPeerConfig config = configBuilder.buildConfig(instanceIndex);
+                    runFromConfig(config);
+                }
+                catch ( Exception e )
+                {
+                    log.error(String.format("From testing server (random state: %s) for instance: %s", String.valueOf(configBuilder.isFromRandom()), getInstanceSpec()), e);
+                }
+            }
+        }).start();
+
+        blockUntilStarted();
     }
 }
