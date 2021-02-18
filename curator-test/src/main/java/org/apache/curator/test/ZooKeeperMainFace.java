@@ -23,9 +23,9 @@ import java.io.Closeable;
 
 public interface ZooKeeperMainFace extends Closeable
 {
-    void runFromConfig(QuorumPeerConfig config) throws Exception;
+    void configure(QuorumConfigBuilder config, int instance);
 
-    void blockUntilStarted();
+    void start();
 
     void kill();
 }
