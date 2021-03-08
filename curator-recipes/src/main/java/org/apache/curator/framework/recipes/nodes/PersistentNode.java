@@ -410,7 +410,7 @@ public class PersistentNode implements Closeable
     {
         data = Preconditions.checkNotNull(data, "data cannot be null");
         Preconditions.checkState(nodePath.get() != null, "initial create has not been processed. Call waitForInitialCreate() to ensure.");
-        Preconditions.checkState(!parentCreationFailure, "Parent recreation can't be achieved.");
+        Preconditions.checkState(!parentCreationFailure, "Failed to create parent nodes.");
         this.data.set(Arrays.copyOf(data, data.length));
         if ( isActive() )
         {
