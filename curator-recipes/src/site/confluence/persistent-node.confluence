@@ -13,13 +13,15 @@ public PersistentNode(CuratorFramework client,
                                CreateMode mode,
                                boolean useProtection,
                                String basePath,
-                               byte[] data)
+                               byte[] data,
+                               boolean useParentCreation)
 Parameters:
 client - client instance
 mode - creation mode
 useProtection - if true, call CreateBuilder.withProtection()
 basePath - the base path for the node
 data - data for the node
+useParentCreation - if true, call CreateBuilder.creatingParentContainersIfNeeded()
 {code}
 
 h3. General Usage
