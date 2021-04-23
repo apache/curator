@@ -66,6 +66,16 @@ public class TestInterProcessMultiMutex extends TestInterProcessMutexBase
                 {
                     return otherGoodLock.acquire(time, unit);
                 }
+                
+                @Override
+                public void acquire(Runnable lockRequestConfirmation) throws Exception {
+                    otherGoodLock.acquire(lockRequestConfirmation);
+                }
+                
+                @Override
+                public boolean acquire(long time, TimeUnit unit, Runnable lockRequestConfirmation) throws Exception {
+                    return otherGoodLock.acquire(time, unit, lockRequestConfirmation);
+                }
 
                 @Override
                 public void release() throws Exception
@@ -124,6 +134,20 @@ public class TestInterProcessMultiMutex extends TestInterProcessMutexBase
                 @Override
                 public boolean acquire(long time, TimeUnit unit) throws Exception
                 {
+                    throw new Exception("foo");
+                }
+
+                @Override
+                public void acquire(Runnable lockRequestConfirmation) throws Exception {
+                    if ( goodLock.isAcquiredInThisProcess() )
+                    {
+                        goodLockWasLocked.set(true);
+                    }
+                    throw new Exception("foo");
+                }
+
+                @Override
+                public boolean acquire(long time, TimeUnit unit, Runnable lockRequestConfirmation) throws Exception {
                     throw new Exception("foo");
                 }
 

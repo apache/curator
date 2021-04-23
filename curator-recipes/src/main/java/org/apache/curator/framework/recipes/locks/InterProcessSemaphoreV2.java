@@ -209,7 +209,19 @@ public class InterProcessSemaphoreV2
      */
     public Lease acquire() throws Exception
     {
-        Collection<Lease> leases = acquire(1, 0, null);
+        return acquire(() -> {});
+    }
+    
+    /**
+     * Same as {@link #acquire()}, but also invokes the input runnable to confirm the creation of the lock's
+     * ephemeral node.
+     *
+     * @return the new lease
+     * @throws Exception ZK errors, interruptions, etc.
+     */
+    public Lease acquire(Runnable lockRequestConfirmation) throws Exception
+    {
+        Collection<Lease> leases = acquire(1, 0, null, () -> {});
         return leases.iterator().next();
     }
 
@@ -226,9 +238,22 @@ public class InterProcessSemaphoreV2
      */
     public Collection<Lease> acquire(int qty) throws Exception
     {
-        return acquire(qty, 0, null);
+        return acquire(qty, () -> {});
     }
-
+    
+    /**
+     * Same as {@link #acquire(int qty)} but also invokes the input runnable to confirm the creation of the lock's
+     * ephemeral node. 
+     *
+     * @param qty number of leases to acquire
+     * @return the new leases
+     * @throws Exception ZK errors, interruptions, etc.
+     */
+    public Collection<Lease> acquire(int qty, Runnable lockRequestConfirmation) throws Exception
+    {
+        return acquire(qty, 0, null, lockRequestConfirmation);
+    }
+    
     /**
      * <p>Acquire a lease. If no leases are available, this method blocks until either the maximum
      * number of leases is increased or another client/process closes a lease. However, this method
@@ -243,10 +268,24 @@ public class InterProcessSemaphoreV2
      */
     public Lease acquire(long time, TimeUnit unit) throws Exception
     {
-        Collection<Lease> leases = acquire(1, time, unit);
-        return (leases != null) ? leases.iterator().next() : null;
+        return acquire(time, unit, () -> {});
     }
 
+    /**
+     * Same as {@link #acquire(long time, TimeUnit unit)}, but also invokes the input runnable to confirm the creation of the lock's
+     * ephemeral node. 
+     *
+     * @param time time to wait
+     * @param unit time unit
+     * @return the new lease or null if time ran out
+     * @throws Exception ZK errors, interruptions, etc.
+     */
+    public Lease acquire(long time, TimeUnit unit, Runnable lockRequestConfirmation) throws Exception
+    {
+        Collection<Lease> leases = acquire(1, time, unit, lockRequestConfirmation);
+        return (leases != null) ? leases.iterator().next() : null;
+    }
+    
     /**
      * <p>Acquire <code>qty</code> leases. If there are not enough leases available, this method
      * blocks until either the maximum number of leases is increased enough or other clients/processes
@@ -263,6 +302,21 @@ public class InterProcessSemaphoreV2
      * @throws Exception ZK errors, interruptions, etc.
      */
     public Collection<Lease> acquire(int qty, long time, TimeUnit unit) throws Exception
+    {
+        return acquire(qty, time, unit, () -> {});
+    }
+
+    /**
+     * Same as {@link #acquire(int qty, long time, TimeUnit unit)}, but also invokes the input runnable to confirm the creation of the lock's
+     * ephemeral node. 
+     *
+     * @param qty  number of leases to acquire
+     * @param time time to wait
+     * @param unit time unit
+     * @return the new leases or null if time ran out
+     * @throws Exception ZK errors, interruptions, etc.
+     */
+    public Collection<Lease> acquire(int qty, long time, TimeUnit unit,  Runnable lockRequestConfirmation) throws Exception
     {
         long startMs = System.currentTimeMillis();
         boolean hasWait = (unit != null);
@@ -281,7 +335,7 @@ public class InterProcessSemaphoreV2
                 boolean isDone = false;
                 while ( !isDone )
                 {
-                    switch ( internalAcquire1Lease(builder, startMs, hasWait, waitMs) )
+                    switch ( internalAcquire1Lease(builder, startMs, hasWait, waitMs, lockRequestConfirmation) )
                     {
                         case CONTINUE:
                         {
@@ -332,7 +386,7 @@ public class InterProcessSemaphoreV2
     static volatile CountDownLatch debugFailedGetChildrenLatch = null;
     volatile CountDownLatch debugWaitLatch = null;
 
-    private InternalAcquireResult internalAcquire1Lease(ImmutableList.Builder<Lease> builder, long startMs, boolean hasWait, long waitMs) throws Exception
+    private InternalAcquireResult internalAcquire1Lease(ImmutableList.Builder<Lease> builder, long startMs, boolean hasWait, long waitMs, Runnable lockRequestConfirmation) throws Exception
     {
         if ( client.getState() != CuratorFrameworkState.STARTED )
         {
@@ -359,6 +413,7 @@ public class InterProcessSemaphoreV2
         {
             PathAndBytesable<String> createBuilder = client.create().creatingParentContainersIfNeeded().withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL);
             String path = (nodeData != null) ? createBuilder.forPath(ZKPaths.makePath(leasesPath, LEASE_BASE_NAME), nodeData) : createBuilder.forPath(ZKPaths.makePath(leasesPath, LEASE_BASE_NAME));
+            lockRequestConfirmation.run();
             String nodeName = ZKPaths.getNodeFromPath(path);
             lease = makeLease(path);
 

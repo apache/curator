@@ -50,9 +50,21 @@ public class InterProcessSemaphoreMutex implements InterProcessLock
     }
 
     @Override
+    public void acquire(Runnable lockRequestConfirmation) throws Exception
+    {
+        lease = semaphore.acquire(lockRequestConfirmation);
+    }
+    
+    @Override
     public boolean acquire(long time, TimeUnit unit) throws Exception
     {
-        Lease acquiredLease = semaphore.acquire(time, unit);
+        return acquire(time, unit, () -> {});
+    }
+
+    @Override
+    public boolean acquire(long time, TimeUnit unit, Runnable lockRequestConfirmation) throws Exception
+    {
+        Lease acquiredLease = semaphore.acquire(time, unit, lockRequestConfirmation);
         if ( acquiredLease == null )
         {
             return false;   // important - don't overwrite lease field if couldn't be acquired

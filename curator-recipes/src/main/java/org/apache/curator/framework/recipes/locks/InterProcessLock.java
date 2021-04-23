@@ -34,6 +34,14 @@ public interface InterProcessLock
     public void acquire() throws Exception;
 
     /**
+     * Same as {@link #acquire()}, but also invokes the input runnable to confirm the creation of the lock's
+     * ephemeral node.
+     *
+     * @throws Exception ZK errors, connection interruptions
+     */
+    public void acquire(Runnable lockRequestConfirmation) throws Exception;
+
+    /**
      * Acquire the mutex - blocks until it's available or the given time expires. Each call to acquire that returns true must be balanced by a call
      * to {@link #release()}
      *
@@ -43,6 +51,17 @@ public interface InterProcessLock
      * @throws Exception ZK errors, connection interruptions
      */
     public boolean acquire(long time, TimeUnit unit) throws Exception;
+
+    /**
+     * Same as {@link #acquire(long, TimeUnit, Runnable)}, but also invokes the input runnable to confirm the creation of the lock's
+     * ephemeral node.
+     *
+     * @param time time to wait
+     * @param unit time unit
+     * @return true if the mutex was acquired, false if not
+     * @throws Exception ZK errors, connection interruptions
+     */
+    public boolean acquire(long time, TimeUnit unit, Runnable lockRequestConfirmation) throws Exception;
 
     /**
      * Perform one release of the mutex.

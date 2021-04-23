@@ -86,7 +86,19 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
     @Override
     public void acquire() throws Exception
     {
-        if ( !internalLock(-1, null) )
+        acquire(() -> {});
+    }
+
+    /**
+     * Same as {@link #acquire()}, but also invokes the input runnable to confirm the creation of the lock's
+     * ephemeral node.
+     *
+     * @throws Exception ZK errors, connection interruptions
+     */
+    @Override
+    public void acquire(Runnable lockRequestConfirmation) throws Exception
+    {
+        if ( !internalLock(-1, null, lockRequestConfirmation) )
         {
             throw new IOException("Lost connection while trying to acquire lock: " + basePath);
         }
@@ -105,7 +117,22 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
     @Override
     public boolean acquire(long time, TimeUnit unit) throws Exception
     {
-        return internalLock(time, unit);
+        return internalLock(time, unit, () -> {});
+    }
+
+    /**
+     * Same as {@link #acquire(long, TimeUnit)}, but also invokes the input runnable to confirm the creation of the lock's
+     * ephemeral node.
+     *
+     * @param time time to wait
+     * @param unit time unit
+     * @return true if the mutex was acquired, false if not
+     * @throws Exception ZK errors, connection interruptions
+     */
+    @Override
+    public boolean acquire(long time, TimeUnit unit, Runnable lockRequestConfirmation) throws Exception
+    {
+        return internalLock(time, unit, lockRequestConfirmation);
     }
 
     /**
@@ -217,7 +244,7 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
         return lockData != null ? lockData.lockPath : null;
     }
 
-    private boolean internalLock(long time, TimeUnit unit) throws Exception
+    private boolean internalLock(long time, TimeUnit unit, Runnable lockRequestConfirmation) throws Exception
     {
         /*
            Note on concurrency: a given lockData instance
@@ -234,7 +261,7 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
             return true;
         }
 
-        String lockPath = internals.attemptLock(time, unit, getLockNodeBytes());
+        String lockPath = internals.attemptLock(time, unit, getLockNodeBytes(), lockRequestConfirmation);
         if ( lockPath != null )
         {
             LockData newLockData = new LockData(currentThread, lockPath);

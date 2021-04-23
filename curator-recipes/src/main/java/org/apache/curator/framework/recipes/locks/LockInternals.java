@@ -206,7 +206,7 @@ public class LockInternals
         return driver;
     }
 
-    String attemptLock(long time, TimeUnit unit, byte[] lockNodeBytes) throws Exception
+    String attemptLock(long time, TimeUnit unit, byte[] lockNodeBytes, Runnable lockRequestConfirmation) throws Exception
     {
         final long      startMillis = System.currentTimeMillis();
         final Long      millisToWait = (unit != null) ? unit.toMillis(time) : null;
@@ -223,6 +223,7 @@ public class LockInternals
             try
             {
                 ourPath = driver.createsTheLock(client, path, localLockNodeBytes);
+                lockRequestConfirmation.run();
                 hasTheLock = internalLockLoop(startMillis, millisToWait, ourPath);
             }
             catch ( KeeperException.NoNodeException e )

@@ -57,7 +57,7 @@ public class TestLockCleanlinessWithFaults extends BaseClassForTests
             };
             try
             {
-                internals.attemptLock(0, null, null);
+                internals.attemptLock(0, null, null, () -> {});
                 fail();
             }
             catch ( KeeperException.NoNodeException dummy )

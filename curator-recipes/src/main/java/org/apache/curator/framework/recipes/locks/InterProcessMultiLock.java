@@ -23,7 +23,11 @@ import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.ThreadUtils;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.collect.Lists.reverse;
 
@@ -75,37 +79,54 @@ public class InterProcessMultiLock implements InterProcessLock
     @Override
     public void acquire() throws Exception
     {
-        acquire(-1, null);
+        acquire(-1, null, () -> {});
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
+    public void acquire(Runnable lockRequestConfirmation) throws Exception
+    {
+        acquire(-1, null, lockRequestConfirmation);
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public boolean acquire(long time, TimeUnit unit) throws Exception
     {
-        Exception                   exception = null;
-        List<InterProcessLock>      acquired = Lists.newArrayList();
-        boolean                     success = true;
+        return acquire(time, unit, () -> {});
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean acquire(long time, TimeUnit unit, Runnable lockRequestConfirmation) throws Exception
+    {
+        Exception               exception = null;
+        List<InterProcessLock>  acquired = Lists.newArrayList();
+        boolean                 success = true;
         for ( InterProcessLock lock : locks )
         {
             try
             {
                 if ( unit == null )
                 {
-                    lock.acquire();
+                    lock.acquire(lockRequestConfirmation);
                     acquired.add(lock);
                 }
                 else
                 {
-                    if ( lock.acquire(time, unit) )
+                    if ( lock.acquire(time, unit, lockRequestConfirmation) )
                     {
                         acquired.add(lock);
                     }
                     else
                     {
                         success = false;
-                        break;
                     }
                 }
             }
