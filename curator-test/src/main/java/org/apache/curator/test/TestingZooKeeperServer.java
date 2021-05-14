@@ -44,10 +44,10 @@ public class TestingZooKeeperServer implements Closeable
         try {
             Class.forName("org.apache.zookeeper.server.embedded.ZooKeeperServerEmbedded", false, Thread.currentThread().getContextClassLoader());
             detected = true;
-            logger.info("Detected support for ZooKeeperServerEmbedded");
+            logger.info("Detected support for ZooKeeperServerEmbedded (ZK 3.7+)");
         } catch (Throwable t) {
             detected = false;
-            logger.info("Cannot detected support for ZooKeeperServerEmbedded:" + t); // no stacktrace
+            logger.info("Cannot detect support for ZooKeeperServerEmbedded:" + t); // no stacktrace
         }
         isZookKeeperEmbeddedSupported = detected;
     }
@@ -68,6 +68,10 @@ public class TestingZooKeeperServer implements Closeable
 
         this.configBuilder = configBuilder;
         this.thisInstanceIndex = thisInstanceIndex;
+        createServer();
+    }
+
+    private void createServer() {
         if (isZookKeeperEmbeddedSupported) {
             main = new ZooKeeperEmbeddedRunner();
         } else {
@@ -115,7 +119,7 @@ public class TestingZooKeeperServer implements Closeable
         // Set to a LATENT state so we can restart
         state.set(State.LATENT);
 
-        main = isCluster() ? new TestingQuorumPeerMain() : new TestingZooKeeperMain();
+        createServer();
         start();
     }
 

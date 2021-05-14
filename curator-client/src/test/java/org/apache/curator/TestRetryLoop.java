@@ -108,7 +108,7 @@ public class TestRetryLoop extends BaseClassForTests
                 }
             }
 
-            assertTrue(loopCount >= 2);
+            assertTrue(loopCount >= 2, "Unexpected loop count " + loopCount);
         }
         finally
         {
