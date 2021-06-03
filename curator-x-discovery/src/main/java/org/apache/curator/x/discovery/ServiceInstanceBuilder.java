@@ -32,18 +32,18 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class ServiceInstanceBuilder<T>
 {
-    private T payload;
-    private String name;
-    private String address;
-    private Integer port;
-    private Integer sslPort;
-    private String id;
-    private long registrationTimeUTC;
-    private ServiceType serviceType = ServiceType.DYNAMIC;
-    private UriSpec uriSpec;
-    private boolean enabled = true;
+    protected T payload;
+    protected String name;
+    protected String address;
+    protected Integer port;
+    protected Integer sslPort;
+    protected String id;
+    protected long registrationTimeUTC;
+    protected ServiceType serviceType = ServiceType.DYNAMIC;
+    protected UriSpec uriSpec;
+    protected boolean enabled = true;
 
-    private static final AtomicReference<LocalIpFilter> localIpFilter = new AtomicReference<LocalIpFilter>
+    protected static final AtomicReference<LocalIpFilter> localIpFilter = new AtomicReference<LocalIpFilter>
     (
         new LocalIpFilter()
         {
@@ -75,7 +75,7 @@ public class ServiceInstanceBuilder<T>
         return localIpFilter.get();
     }
 
-    ServiceInstanceBuilder()
+    protected ServiceInstanceBuilder()
     {
     }
 
