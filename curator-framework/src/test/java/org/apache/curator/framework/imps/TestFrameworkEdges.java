@@ -658,7 +658,7 @@ public class TestFrameworkEdges extends BaseClassForTests
     @Test
     public void testFailure() throws Exception
     {
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), 100, 100, new RetryOneTime(1));
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), 20000, 100, new RetryOneTime(1));
         client.start();
         try
         {
