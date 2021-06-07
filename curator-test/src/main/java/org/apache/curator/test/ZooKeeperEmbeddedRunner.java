@@ -59,7 +59,7 @@ public class ZooKeeperEmbeddedRunner implements ZooKeeperMainFace
                     .configuration(properties)
                     .baseDir(dataDir.getParent())
                     .build();
-            address = properties.getProperty("clientPortAddress", "0.0.0.0") + ":" + properties.getProperty("clientPort", "2181");
+            address = zooKeeperEmbedded.getConnectionString();
             log.info("ZK configuration is {}", properties);
             log.info("ZK address is {}", address);
         } catch (Exception e) {
@@ -73,35 +73,9 @@ public class ZooKeeperEmbeddedRunner implements ZooKeeperMainFace
             throw new IllegalStateException();
         }
         try {
-            zooKeeperEmbedded.start();
-            waitForServer();
+            zooKeeperEmbedded.start(120_000);
         } catch (Exception e) {
             throw new RuntimeException(e);
-        }
-    }
-
-    private void waitForServer() throws Exception {
-        Thread.sleep(1000);
-        CompletableFuture<Object> waitForConnection = new CompletableFuture<>();
-        try (ZooKeeper zk = new ZooKeeper(address, 60000, new Watcher() {
-            @Override
-            public void process(WatchedEvent event) {
-                log.info("event {}", event);
-                if (event.getState() == Event.KeeperState.SyncConnected) {
-                    waitForConnection.complete(event);
-                }
-            }
-        });) {
-            try {
-                waitForConnection.get(120, TimeUnit.SECONDS);
-            } catch (TimeoutException err) {
-                throw new RuntimeException("Server at " + address + " did not start", err);
-            } catch (InterruptedException err) {
-                Thread.currentThread().interrupt();
-                throw err;
-            }
-            // wait for resources to be disposed
-            zk.close(1000);
         }
     }
 
