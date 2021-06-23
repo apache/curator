@@ -72,7 +72,7 @@ class NamespaceImpl
         return path;
     }
 
-    String    fixForNamespace(String path, boolean isSequential)
+    String    fixForNamespace(String path, boolean isSequential, boolean allowEmptyNodeName)
     {
         if ( ensurePathNeeded.get() )
         {
@@ -101,11 +101,11 @@ class NamespaceImpl
             }
         }
 
-        return ZKPaths.fixForNamespace(namespace, path, isSequential);
+        return ZKPaths.fixForNamespace(namespace, path, isSequential, allowEmptyNodeName);
     }
 
     EnsurePath newNamespaceAwareEnsurePath(String path)
     {
-        return new EnsurePath(fixForNamespace(path, false), client.getAclProvider());
+        return new EnsurePath(fixForNamespace(path, false, false), client.getAclProvider());
     }
 }

@@ -28,5 +28,18 @@ public interface CreateModable<T>
      * @param mode new create mode
      * @return this
      */
-    public T withMode(CreateMode mode);
+    public default T withMode(CreateMode mode)
+    {
+        return withMode(mode, PathEncodingType.DEFAULT);
+    }
+
+    /**
+     * Set a create mode with a path encoding option - the default is {@link CreateMode#PERSISTENT} and
+     * {@link PathEncodingType#DEFAULT}.
+     *
+     * @param mode new create mode
+     * @param pathEncodingType path encoding type
+     * @return this
+     */
+    public T withMode(CreateMode mode, PathEncodingType pathEncodingType);
 }
