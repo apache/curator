@@ -670,7 +670,7 @@ public class TestFrameworkEdges extends BaseClassForTests
             client.checkExists().forPath("/hey");
             fail();
         }
-        catch ( KeeperException.ConnectionLossException e )
+        catch ( KeeperException.SessionExpiredException e )
         {
             // correct
         }

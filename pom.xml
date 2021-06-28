@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!--
+e?xml version="1.0" encoding="UTF-8"?><!--
     Licensed to the Apache Software Foundation (ASF) under one
     or more contributor license agreements.  See the NOTICE file
     distributed with this work for additional information
@@ -66,8 +66,10 @@
         <short-jdk-version>8</short-jdk-version>
         <jdk-version>1.${short-jdk-version}</jdk-version>
 
+        <redirectTestOutputToFile>true</redirectTestOutputToFile>
+
         <!-- versions -->
-        <zookeeper-version>3.6.0</zookeeper-version>
+        <zookeeper-version>3.6.3</zookeeper-version>
         <maven-bundle-plugin-version>5.1.1</maven-bundle-plugin-version>
         <maven-javadoc-plugin-version>3.0.1</maven-javadoc-plugin-version>
         <doxia-module-confluence-version>1.8</doxia-module-confluence-version>
@@ -772,7 +774,7 @@
                 <configuration>
                     <threadCount>1</threadCount>
                     <reuseForks>false</reuseForks>
-                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                    <redirectTestOutputToFile>${redirectTestOutputToFile}</redirectTestOutputToFile>
                     <rerunFailingTestsCount>2</rerunFailingTestsCount>
                 </configuration>
             </plugin>
