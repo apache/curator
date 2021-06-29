@@ -26,17 +26,16 @@ import java.util.concurrent.TimeUnit;
 public abstract class AdvancedTracerDriver implements TracerDriver
 {
     /**
-     * Record the given trace event
+     * Record the given operation trace
      *
      * @param trace the metrics of the operation
      */
     public abstract void     addTrace(OperationTrace trace);
 
-    /**
-     * Add to a named counter
+     /**
+     * Record the given event trace
      *
-     * @param name name of the counter
-     * @param increment amount to increment
+     * @param trace the name and sessionId of the event 
      */
     public abstract void     addEvent(EventTrace trace);
 
