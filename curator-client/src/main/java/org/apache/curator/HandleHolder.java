@@ -115,12 +115,7 @@ class HandleHolder
             ZooKeeper zooKeeper = (helper != null) ? helper.getZooKeeper() : null;
             if ( zooKeeper != null )
             {
-                Watcher dummyWatcher = new Watcher()
-                {
-                    @Override
-                    public void process(WatchedEvent event)
-                    {
-                    }
+                Watcher dummyWatcher = event -> {
                 };
                 zooKeeper.register(dummyWatcher);   // clear the default watcher so that no new events get processed by mistake
                 if ( waitForShutdownTimeoutMs == 0 )

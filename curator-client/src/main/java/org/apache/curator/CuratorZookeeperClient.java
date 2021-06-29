@@ -384,14 +384,7 @@ public class CuratorZookeeperClient implements Closeable
         while ( !state.isConnected() && (waitTimeMs > 0) )
         {
             final CountDownLatch latch = new CountDownLatch(1);
-            Watcher tempWatcher = new Watcher()
-            {
-                @Override
-                public void process(WatchedEvent event)
-                {
-                    latch.countDown();
-                }
-            };
+            Watcher tempWatcher = event -> latch.countDown();
 
             state.addParentWatcher(tempWatcher);
             long startTimeMs = System.currentTimeMillis();

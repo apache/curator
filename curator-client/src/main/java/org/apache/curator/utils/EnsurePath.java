@@ -58,13 +58,8 @@ public class EnsurePath
     private final InternalACLProvider aclProvider;
     private final AtomicReference<Helper> helper;
 
-    private static final Helper doNothingHelper = new Helper()
-    {
-        @Override
-        public void ensure(CuratorZookeeperClient client, String path, final boolean makeLastNode) throws Exception
-        {
-            // NOP
-        }
+    private static final Helper doNothingHelper = (client, path, makeLastNode) -> {
+        // NOP
     };
 
     interface Helper
@@ -148,17 +143,12 @@ public class EnsurePath
                 RetryLoop.callWithRetry
                     (
                         client,
-                        new Callable<Object>()
-                        {
-                            @Override
-                            public Object call() throws Exception
-                            {
+                            () -> {
                                 ZKPaths.mkdirs(client.getZooKeeper(), path, makeLastNode, aclProvider, asContainers());
                                 helper.set(doNothingHelper);
                                 isSet = true;
                                 return null;
                             }
-                        }
                     );
             }
         }

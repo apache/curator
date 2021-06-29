@@ -68,14 +68,9 @@ public class ThreadUtils
 
     public static ThreadFactory newGenericThreadFactory(String processName)
     {
-        Thread.UncaughtExceptionHandler uncaughtExceptionHandler = new Thread.UncaughtExceptionHandler()
-        {
-            @Override
-            public void uncaughtException(Thread t, Throwable e)
-            {
-                log.error("Unexpected exception in thread: " + t, e);
-                Throwables.propagate(e);
-            }
+        Thread.UncaughtExceptionHandler uncaughtExceptionHandler = (t, e) -> {
+            log.error("Unexpected exception in thread: " + t, e);
+            Throwables.propagate(e);
         };
         return new ThreadFactoryBuilder()
             .setNameFormat(processName + "-%d")

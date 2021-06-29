@@ -100,16 +100,11 @@ public class SessionFailRetryLoop implements Closeable
     private final AtomicBoolean             isDone = new AtomicBoolean(false);
     private final RetryLoop                 retryLoop;
 
-    private final Watcher         watcher = new Watcher()
-    {
-        @Override
-        public void process(WatchedEvent event)
+    private final Watcher         watcher = event -> {
+        if ( event.getState() == Watcher.Event.KeeperState.Expired )
         {
-            if ( event.getState() == Event.KeeperState.Expired )
-            {
-                sessionHasFailed.set(true);
-                failedSessionThreads.add(ourThread);
-            }
+            sessionHasFailed.set(true);
+            failedSessionThreads.add(ourThread);
         }
     };
 
