@@ -211,7 +211,7 @@ public class EnsembleTracker implements Closeable, CuratorWatcher
             }
             else
             {
-                log.error("Invalid config event received: {}", properties);
+                log.debug("Invalid config event received: {}", properties);
             }
         }
         else

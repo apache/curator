@@ -40,6 +40,10 @@ public class TestingZooKeeperServer implements Closeable
     private volatile ZooKeeperMainFace main;
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
 
+    ZooKeeperMainFace getMain() {
+        return main;
+    }
+
     private enum State
     {
         LATENT, STARTED, STOPPED, CLOSED

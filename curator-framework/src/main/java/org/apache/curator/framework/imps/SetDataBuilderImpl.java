@@ -18,15 +18,18 @@
  */
 package org.apache.curator.framework.imps;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.curator.RetryLoop;
 import org.apache.curator.drivers.OperationTrace;
 import org.apache.curator.framework.api.*;
 import org.apache.curator.framework.api.transaction.OperationType;
 import org.apache.curator.framework.api.transaction.TransactionSetDataBuilder;
 import org.apache.zookeeper.AsyncCallback;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.Stat;
+import java.util.Arrays;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
@@ -36,6 +39,14 @@ public class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<P
     private Backgrounding                   backgrounding;
     private int                             version;
     private boolean                         compress;
+    private boolean                         idempotent = false;
+
+    @VisibleForTesting
+    boolean failNextSetForTesting = false;
+    @VisibleForTesting
+    boolean failBeforeNextSetForTesting = false;
+    @VisibleForTesting
+    boolean failNextIdempotentCheckForTesting = false;
 
     SetDataBuilderImpl(CuratorFrameworkImpl client)
     {
@@ -162,6 +173,13 @@ public class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<P
     }
 
     @Override
+    public SetDataBuilder idempotent()
+    {
+        this.idempotent = true;
+        return this;
+    }
+
+    @Override
     public ErrorListenerPathAndBytesable<Stat> inBackground(BackgroundCallback callback, Object context)
     {
         backgrounding = new Backgrounding(callback, context);
@@ -210,6 +228,48 @@ public class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<P
         return this;
     }
 
+    private void backgroundCheckIdempotent(final CuratorFrameworkImpl client, final OperationAndData<PathAndBytes> mainOperationAndData, final String path, final Backgrounding backgrounding)
+    {
+        final AsyncCallback.DataCallback dataCallback = new AsyncCallback.DataCallback()
+        {
+            @Override
+            public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat)
+            {
+                    if ( rc == KeeperException.Code.OK.intValue() )
+                    {
+                        if ( failNextIdempotentCheckForTesting )
+                        {
+                            failNextIdempotentCheckForTesting = false;
+                            rc = KeeperException.Code.CONNECTIONLOSS.intValue();
+                        }
+                        else if ( !idempotentSetMatches(stat.getVersion(), mainOperationAndData.getData().getData(), data) )
+                        {
+                            rc = KeeperException.Code.BADVERSION.intValue();
+                        }
+                    }
+                    final CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.SET_DATA, rc, path, null, ctx, stat, null, null, null, null, null);
+                    client.processBackgroundOperation(mainOperationAndData, event);
+            }
+        };
+        BackgroundOperation<PathAndBytes> operation = new BackgroundOperation<PathAndBytes>()
+        {
+            @Override
+            public void performBackgroundOperation(OperationAndData<PathAndBytes> op) throws Exception
+            {
+                try
+                {
+                    client.getZooKeeper().getData(path, false, dataCallback, backgrounding.getContext());
+                }
+                catch ( KeeperException e )
+                {
+                    // ignore
+                    client.logError("Unexpected exception in async idempotent check for, ignoring: " + path, e);
+                }
+            }
+        };
+        client.queueOperation(new OperationAndData<>(operation, null, null, null, null, null));
+    }
+
     @Override
     public void performBackgroundOperation(final OperationAndData<PathAndBytes> operationAndData) throws Exception
     {
@@ -229,9 +289,23 @@ public class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<P
                     public void processResult(int rc, String path, Object ctx, Stat stat)
                     {
                         trace.setReturnCode(rc).setRequestBytesLength(data).setPath(path).setStat(stat).commit();
-                        CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.SET_DATA, rc, path, null, ctx, stat, null, null, null, null, null);
-                        client.processBackgroundOperation(operationAndData, event);
+                        if ( (rc == KeeperException.Code.OK.intValue()) && failNextSetForTesting )
+                        {
+                            failNextSetForTesting = false;
+                            rc = KeeperException.Code.CONNECTIONLOSS.intValue();
+                        }
+
+                        if ( rc == KeeperException.Code.BADVERSION.intValue() && idempotent )
+                        {
+                            backgroundCheckIdempotent(client, operationAndData, operationAndData.getData().getPath(), backgrounding);
+                        }
+                        else
+                        {
+                            CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.SET_DATA, rc, path, null, ctx, stat, null, null, null, null, null);
+                            client.processBackgroundOperation(operationAndData, event);
+                        }
                     }
+
                 },
                 backgrounding.getContext()
             );
@@ -263,7 +337,21 @@ public class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<P
         Stat        resultStat = null;
         if ( backgrounding.inBackground()  )
         {
-            client.processBackgroundOperation(new OperationAndData<>(this, new PathAndBytes(path, data), backgrounding.getCallback(), null, backgrounding.getContext(), null), null);
+            OperationAndData<PathAndBytes> operationAndData = new OperationAndData<PathAndBytes>(this, new PathAndBytes(path, data), backgrounding.getCallback(), null, backgrounding.getContext(), null)
+            {
+                @Override
+                void callPerformBackgroundOperation() throws Exception
+                {
+                    // inject fault before performing operation
+                    if ( failBeforeNextSetForTesting )
+                    {
+                        failBeforeNextSetForTesting = false;
+                        throw new KeeperException.ConnectionLossException();
+                    }
+                    super.callPerformBackgroundOperation();
+                }
+            };
+            client.processBackgroundOperation(operationAndData, null);
         }
         else
         {
@@ -277,6 +365,16 @@ public class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<P
         return version;
     }
 
+    /**
+     * If the client did not specify a version (version == -1), idempotency just means that the node now has the specified data.
+     * If the client did specify a version, idempotentcy has the additional constraint that the current version must be
+     * one larger than the specified version, which is the behavior that would be observed in the normal (non-idempotent, non-failure) case for setData.
+     */
+    private boolean idempotentSetMatches(int getVersion, byte[] data, byte[] getData)
+    {
+        return  ( version == -1 || (version + 1 == getVersion) ) && Arrays.equals(data, getData);
+    }
+
     private Stat pathInForeground(final String path, final byte[] data) throws Exception
     {
         OperationTrace   trace = client.getZookeeperClient().startAdvancedTracer("SetDataBuilderImpl-Foreground");
@@ -288,7 +386,50 @@ public class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<P
                 @Override
                 public Stat call() throws Exception
                 {
-                    return client.getZooKeeper().setData(path, data, version);
+                    if ( failBeforeNextSetForTesting )
+                    {
+                        failBeforeNextSetForTesting = false;
+                        throw new KeeperException.ConnectionLossException();
+                    }
+
+                    Stat localResultStat = null;
+                    try
+                    {
+                        localResultStat = client.getZooKeeper().setData(path, data, version);
+                    }
+                    catch ( KeeperException.BadVersionException e )
+                    {
+                        if ( !idempotent )
+                        {
+                            throw e;
+                        }
+
+                        Stat getStat = new Stat();
+
+                        // inject fault before performing operation
+                        if ( failNextIdempotentCheckForTesting )
+                        {
+                            failNextIdempotentCheckForTesting = false;
+                            throw new KeeperException.ConnectionLossException();
+                        }
+
+                        byte[] existingData = client.getZooKeeper().getData(path, false, getStat);
+                        if ( idempotentSetMatches(getStat.getVersion(), data, existingData) )
+                        {
+                            localResultStat = getStat;
+                        }
+                        else
+                        {
+                            throw e;
+                        }
+                    }
+
+                    if ( failNextSetForTesting )
+                    {
+                        failNextSetForTesting = false;
+                        throw new KeeperException.ConnectionLossException();
+                    }
+                    return localResultStat;
                 }
             }
         );

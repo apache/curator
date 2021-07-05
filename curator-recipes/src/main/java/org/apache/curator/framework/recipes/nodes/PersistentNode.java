@@ -72,9 +72,11 @@ public class PersistentNode implements Closeable
     private final long ttl;
     private final AtomicReference<byte[]> data = new AtomicReference<byte[]>();
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
-    private final AtomicBoolean authFailure = new AtomicBoolean(false);
+    private volatile boolean authFailure;
+    private volatile boolean parentCreationFailure;
     private final BackgroundCallback backgroundCallback;
     private final boolean useProtection;
+    private final boolean useParentCreation;
     private final AtomicReference<CreateModable<ACLBackgroundPathAndBytesable<String>>> createMethod = new AtomicReference<CreateModable<ACLBackgroundPathAndBytesable<String>>>(null);
     private final StandardListenerManager<PersistentNodeListener> listeners = StandardListenerManager.standard();
     private final CuratorWatcher watcher = new CuratorWatcher()
@@ -140,7 +142,7 @@ public class PersistentNode implements Closeable
             else if ( event.getResultCode() == KeeperException.Code.NOAUTH.intValue() )
             {
                 log.warn("Client does not have authorisation to write node at path {}", event.getPath());
-                authFailure.set(true);
+                authFailure = true;
             }
         }
     };
@@ -175,7 +177,19 @@ public class PersistentNode implements Closeable
      */
     public PersistentNode(CuratorFramework givenClient, final CreateMode mode, boolean useProtection, final String basePath, byte[] initData)
     {
-        this(givenClient, mode, useProtection, basePath, initData, -1);
+        this(givenClient, mode, useProtection, basePath, initData, -1, true);
+    }
+
+    /**
+     * @param givenClient        client instance
+     * @param mode          creation mode
+     * @param useProtection if true, call {@link CreateBuilder#withProtection()}
+     * @param basePath the base path for the node
+     * @param initData data for the node
+     * @param useParentCreation if true, call {@link CreateBuilder#creatingParentContainersIfNeeded()}
+     */
+    public PersistentNode(CuratorFramework givenClient, final CreateMode mode, boolean useProtection, final String basePath, byte[] initData, boolean useParentCreation) {
+        this(givenClient, mode, useProtection, basePath, initData, -1, useParentCreation);
     }
 
     /**
@@ -185,10 +199,12 @@ public class PersistentNode implements Closeable
      * @param basePath the base path for the node
      * @param initData data for the node
      * @param ttl for ttl modes, the ttl to use
+     * @param useParentCreation if true, call {@link CreateBuilder#creatingParentContainersIfNeeded()}
      */
-    public PersistentNode(CuratorFramework givenClient, final CreateMode mode, boolean useProtection, final String basePath, byte[] initData, long ttl)
+    public PersistentNode(CuratorFramework givenClient, final CreateMode mode, boolean useProtection, final String basePath, byte[] initData, long ttl, boolean useParentCreation)
     {
         this.useProtection = useProtection;
+        this.useParentCreation = useParentCreation;
         this.client = Preconditions.checkNotNull(givenClient, "client cannot be null").newWatcherRemoveCuratorFramework();
         this.basePath = PathUtils.validatePath(basePath);
         this.mode = Preconditions.checkNotNull(mode, "mode cannot be null");
@@ -255,12 +271,17 @@ public class PersistentNode implements Closeable
         else if ( event.getResultCode() == KeeperException.Code.NOAUTH.intValue() )
         {
             log.warn("Client does not have authorisation to create node at path {}", event.getPath());
-            authFailure.set(true);
+            authFailure = true;
+            return;
+        } else if ( event.getResultCode() == KeeperException.Code.NONODE.intValue() )
+        {
+            log.warn("Client cannot create parent hierarchy for path {} with useParentCreation set to {}", event.getPath(), useParentCreation);
+            parentCreationFailure = true;
             return;
         }
         if ( path != null )
         {
-            authFailure.set(false);
+            authFailure = false;
             nodePath.set(path);
             watchNode();
 
@@ -389,6 +410,7 @@ public class PersistentNode implements Closeable
     {
         data = Preconditions.checkNotNull(data, "data cannot be null");
         Preconditions.checkState(nodePath.get() != null, "initial create has not been processed. Call waitForInitialCreate() to ensure.");
+        Preconditions.checkState(!parentCreationFailure, "Failed to create parent nodes.");
         this.data.set(Arrays.copyOf(data, data.length));
         if ( isActive() )
         {
@@ -462,7 +484,12 @@ public class PersistentNode implements Closeable
             if ( localCreateMethod == null )
             {
                 CreateBuilderMain createBuilder = mode.isTTL() ? client.create().withTtl(ttl) : client.create();
-                CreateModable<ACLBackgroundPathAndBytesable<String>> tempCreateMethod = useProtection ? createBuilder.creatingParentContainersIfNeeded().withProtection() : createBuilder.creatingParentContainersIfNeeded();
+                CreateModable<ACLBackgroundPathAndBytesable<String>> tempCreateMethod;
+                if (useParentCreation) {
+                    tempCreateMethod = useProtection ? createBuilder.creatingParentContainersIfNeeded().withProtection() : createBuilder.creatingParentContainersIfNeeded();
+                } else {
+                    tempCreateMethod = useProtection ? createBuilder.withProtection() : createBuilder;
+                }
                 createMethod.compareAndSet(null, tempCreateMethod);
                 localCreateMethod = createMethod.get();
             }
@@ -543,6 +570,12 @@ public class PersistentNode implements Closeable
     @VisibleForTesting
     boolean isAuthFailure()
     {
-        return authFailure.get();
+        return authFailure;
     }
+
+    @VisibleForTesting
+    boolean isParentCreationFailure() {
+        return parentCreationFailure;
+    }
+
 }

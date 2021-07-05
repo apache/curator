@@ -228,4 +228,26 @@ public class TestCreateReturningStat extends CuratorTestBase
             CloseableUtils.closeQuietly(client);
         }
     }
+
+    @Test
+    public void testIdempotentCreateReturningStat() throws Exception
+    {
+        CuratorFramework client = createClient();
+        try
+        {
+            client.start();
+
+            String path = "/testidp";
+            client.create().forPath(path);
+
+            Stat stat = new Stat();
+            client.create().idempotent().storingStatIn(stat).forPath(path);
+
+            compare(client, path, stat);
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
 }

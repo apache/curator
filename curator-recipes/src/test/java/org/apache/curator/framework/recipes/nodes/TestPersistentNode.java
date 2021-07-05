@@ -20,7 +20,9 @@ package org.apache.curator.framework.recipes.nodes;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -101,6 +103,61 @@ public class TestPersistentNode extends BaseClassForTests
     }
 
     @Test
+    public void testCreationWithParentCreationOff() throws Exception {
+        Timing2 timing = new Timing2();
+        PersistentNode pen = null;
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+
+        try {
+            client.start();
+            pen = new PersistentNode(client, CreateMode.PERSISTENT, false, "/test/one/two", new byte[0], false);
+            pen.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
+            pen.start();
+            assertFalse(pen.waitForInitialCreate(timing.milliseconds(), TimeUnit.MILLISECONDS));
+            assertTrue(pen.isParentCreationFailure());
+        } finally {
+            CloseableUtils.closeQuietly(pen);
+            CloseableUtils.closeQuietly(client);
+        }
+
+    }
+
+    @Test
+    public void testRecreationWithParentCreationOff() throws Exception {
+        final byte[] TEST_DATA = "hey".getBytes();
+        Timing2 timing = new Timing2();
+        PersistentNode pen = null;
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+
+        try {
+            client.start();
+            client.create().creatingParentsIfNeeded().forPath("/test/one");
+            pen = new PersistentNode(client, CreateMode.EPHEMERAL, false, "/test/one/two", TEST_DATA, false);
+            pen.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
+            pen.start();
+            assertTrue(pen.waitForInitialCreate(timing.milliseconds(), TimeUnit.MILLISECONDS));
+            assertFalse(pen.isParentCreationFailure());
+            client.delete().deletingChildrenIfNeeded().forPath("/test/one");
+            timing.sleepABit();
+
+            // persistent node should not be able to recreate itself as the lazy parent creation is disabled
+            assertNull(client.checkExists().forPath("/test/one/two"));
+            assertTrue(pen.isParentCreationFailure());
+            PersistentNode finalPen = pen;
+            assertThrows(IllegalStateException.class, () -> finalPen.setData(new byte[0]));
+
+            // The persistent node data should still be the initial one
+            assertArrayEquals(TEST_DATA, pen.getData());
+
+        } finally {
+            CloseableUtils.closeQuietly(pen);
+            CloseableUtils.closeQuietly(client);
+        }
+
+
+    }
+
+    @Test
     public void testQuickClose() throws Exception
     {
         Timing timing = new Timing();
@@ -145,7 +202,7 @@ public class TestPersistentNode extends BaseClassForTests
             CloseableUtils.closeQuietly(client);
         }
     }
-    
+
     @Test
     public void testEphemeralSequentialWithProtectionReconnection() throws Exception
     {

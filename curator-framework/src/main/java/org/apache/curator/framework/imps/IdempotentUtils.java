@@ -16,14 +16,21 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.framework.api;
+package org.apache.curator.framework.imps;
 
-import org.apache.zookeeper.data.Stat;
+import java.util.Arrays;
 
-public interface SetDataBuilder extends
-    BackgroundPathAndBytesable<Stat>,
-    Versionable<BackgroundPathAndBytesable<Stat>>,
-    Compressible<SetDataBackgroundVersionable>,
-    Idempotentable<SetDataBuilder>
+/*
+ * Utilties Class for idempotent operations. 
+ */
+class IdempotentUtils
 {
+
+    /**
+     * Returns whether the version and data currently in the node match what would be expected in the idempotent retry case. 
+     */
+    static boolean matches(int expectedVersion, byte[] expectedData, int actualVersion, byte[] actualData)
+    {
+        return expectedVersion == actualVersion && Arrays.equals(expectedData, actualData);
+    }
 }
