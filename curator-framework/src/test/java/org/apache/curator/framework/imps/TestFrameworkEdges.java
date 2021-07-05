@@ -672,7 +672,11 @@ public class TestFrameworkEdges extends BaseClassForTests
         }
         catch ( KeeperException.SessionExpiredException e )
         {
-            // correct
+            // correct, this happens on ZK 3.6.3+
+        }
+        catch ( KeeperException.ConnectionLossException e )
+        {
+            // correct, this happens on ZK 3.5.x, 3.6.0 -> 3.6.2
         }
         finally
         {
