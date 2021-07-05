@@ -50,7 +50,7 @@ public interface ServiceCacheBuilder<T>
     public ServiceCacheBuilder<T> threadFactory(ThreadFactory threadFactory);
 
     /**
-     * Optional ExecutorService to use for the cache's background thread. The specified ExecutorService
+     * Optional ExecutorService to use for the cache's internal thread. The specified ExecutorService
      * will be wrapped in a CloseableExecutorService and overrides any prior ThreadFactory or ExecutorService
      * set on the ServiceCacheBuilder.
      *
