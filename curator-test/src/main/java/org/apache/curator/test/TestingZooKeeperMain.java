@@ -90,8 +90,15 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace {
         }
     }
 
-    private void runFromConfig(QuorumPeerConfig config) throws Exception {
-        try {
+    TestZooKeeperServer getZkServer() {
+        return zkServer;
+    }
+
+    @Override
+    public void runFromConfig(QuorumPeerConfig config) throws Exception
+    {
+        try
+        {
             Field instance = MBeanRegistry.class.getDeclaredField("instance");
             instance.setAccessible(true);
             MBeanRegistry nopMBeanRegistry = new MBeanRegistry() {
@@ -222,6 +229,8 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace {
         public TestZooKeeperServer(FileTxnSnapLog txnLog, ServerConfig config) {
             this.txnLog = txnLog;
             this.setTxnLogFactory(txnLog);
+            // tickTime would affect min and max session timeout: should be set first
+            this.setTickTime(config.getTickTime());
             this.setMinSessionTimeout(config.getMinSessionTimeout());
             this.setMaxSessionTimeout(config.getMaxSessionTimeout());
         }

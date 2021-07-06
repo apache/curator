@@ -52,6 +52,10 @@ public class TestingZooKeeperServer implements Closeable
         isZookKeeperEmbeddedSupported = detected;
     }
 
+    ZooKeeperMainFace getMain() {
+        return main;
+    }
+
     private enum State
     {
         LATENT, STARTED, STOPPED, CLOSED

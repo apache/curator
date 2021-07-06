@@ -31,6 +31,10 @@ public class TestingServer implements Closeable
     private final TestingZooKeeperServer testingZooKeeperServer;
     private final InstanceSpec spec;
 
+    TestingZooKeeperServer getTestingZooKeeperServer() {
+        return testingZooKeeperServer;
+    }
+
     /**
      * Create the server using a random port
      *

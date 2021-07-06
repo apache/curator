@@ -71,7 +71,7 @@ public class TestGroupMember extends BaseClassForTests
                     return new String(input);
                 }
             });
-            Map<String, String> convertMembers2 = Maps.transformValues(currentMembers1, new Function<byte[], String>()
+            Map<String, String> convertMembers2 = Maps.transformValues(currentMembers2, new Function<byte[], String>()
             {
                 @Override
                 public String apply(byte[] input)
