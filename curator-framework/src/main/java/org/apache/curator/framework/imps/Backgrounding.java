@@ -128,13 +128,10 @@ public class Backgrounding
             {
                 errorListener.unhandledError("n/a", e);
             }
-            else if ( e instanceof Exception )
-            {
-                throw (Exception)e;
-            }
             else
             {
-                Throwables.propagate(e);
+                Throwables.throwIfUnchecked(e);
+                throw (Exception)e;
             }
         }
     }
