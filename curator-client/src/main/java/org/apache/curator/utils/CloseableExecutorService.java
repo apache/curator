@@ -22,10 +22,10 @@ package org.apache.curator.utils;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.Closeable;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.*;
@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class CloseableExecutorService implements Closeable
 {
     private final Logger log = LoggerFactory.getLogger(CloseableExecutorService.class);
-    private final Set<Future<?>> futures = Sets.newSetFromMap(Maps.<Future<?>, Boolean>newConcurrentMap());
+    private final Set<Future<?>> futures = Collections.newSetFromMap(Maps.<Future<?>, Boolean>newConcurrentMap());
     private final ExecutorService executorService;
     private final boolean shutdownOnClose;
     protected final AtomicBoolean isOpen = new AtomicBoolean(true);
