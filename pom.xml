@@ -69,7 +69,7 @@
         <redirectTestOutputToFile>true</redirectTestOutputToFile>
 
         <!-- versions -->
-        <zookeeper-version>3.6.3</zookeeper-version>
+        <zookeeper-version>3.8.0-SNAPSHOT</zookeeper-version>
         <maven-bundle-plugin-version>5.1.1</maven-bundle-plugin-version>
         <maven-javadoc-plugin-version>3.0.1</maven-javadoc-plugin-version>
         <doxia-module-confluence-version>1.8</doxia-module-confluence-version>

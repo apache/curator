@@ -19,8 +19,6 @@
 
 package org.apache.curator.test;
 
-import org.apache.zookeeper.server.quorum.QuorumPeer;
-import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.Closeable;
@@ -39,6 +37,20 @@ public class TestingZooKeeperServer implements Closeable
     private final int thisInstanceIndex;
     private volatile ZooKeeperMainFace main;
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
+
+    private static final boolean isZookKeeperEmbeddedSupported;
+    static {
+        boolean detected = false;
+        try {
+            Class.forName("org.apache.zookeeper.server.embedded.ZooKeeperServerEmbedded", false, Thread.currentThread().getContextClassLoader());
+            detected = true;
+            logger.info("Detected support for ZooKeeperServerEmbedded (ZK 3.7+)");
+        } catch (Throwable t) {
+            detected = false;
+            logger.info("Cannot detect support for ZooKeeperServerEmbedded:" + t); // no stacktrace
+        }
+        isZookKeeperEmbeddedSupported = detected;
+    }
 
     ZooKeeperMainFace getMain() {
         return main;
@@ -60,19 +72,19 @@ public class TestingZooKeeperServer implements Closeable
 
         this.configBuilder = configBuilder;
         this.thisInstanceIndex = thisInstanceIndex;
-        main = isCluster() ? new TestingQuorumPeerMain() : new TestingZooKeeperMain();
+        createServer();
+    }
+
+    private void createServer() {
+        if (isZookKeeperEmbeddedSupported) {
+            main = new ZooKeeperEmbeddedRunner();
+        } else {
+            main = isCluster() ? new TestingQuorumPeerMain() : new TestingZooKeeperMain();
+        }
     }
 
     private boolean isCluster() {
         return configBuilder.size() > 1;
-    }
-    
-    public QuorumPeer getQuorumPeer()
-    {
-        if (isCluster()) {
-            return ((TestingQuorumPeerMain) main).getTestingQuorumPeer();
-        }
-        throw new UnsupportedOperationException();
     }
 
     public Collection<InstanceSpec> getInstanceSpecs()
@@ -111,7 +123,7 @@ public class TestingZooKeeperServer implements Closeable
         // Set to a LATENT state so we can restart
         state.set(State.LATENT);
 
-        main = isCluster() ? new TestingQuorumPeerMain() : new TestingZooKeeperMain();
+        createServer();
         start();
     }
 
@@ -152,22 +164,9 @@ public class TestingZooKeeperServer implements Closeable
             return;
         }
 
-        new Thread(new Runnable()
-        {
-            public void run()
-            {
-                try
-                {
-                    QuorumPeerConfig config = configBuilder.buildConfig(thisInstanceIndex);
-                    main.runFromConfig(config);
-                }
-                catch ( Exception e )
-                {
-                    logger.error(String.format("From testing server (random state: %s) for instance: %s", String.valueOf(configBuilder.isFromRandom()), getInstanceSpec()), e);
-                }
-            }
-        }).start();
+        main.configure(configBuilder, thisInstanceIndex);
 
-        main.blockUntilStarted();
+        main.start();
+
     }
 }
