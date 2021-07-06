@@ -35,13 +35,13 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -74,7 +74,6 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable
     private final Set<String>               preferredQueues = Sets.newSetFromMap(Maps.<String, Boolean>newConcurrentMap());
     private final AtomicReference<State>    state = new AtomicReference<State>(State.LATENT);
     private final LeaderLatch               leaderLatch;
-    private final Random                    random = new Random();
     private final ExecutorService           service;
 
     private static final String         QUEUE_PREFIX = "queue-";
@@ -179,12 +178,13 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable
         List<String>    localPreferredQueues = Lists.newArrayList(preferredQueues);
         if ( localPreferredQueues.size() > 0 )
         {
-            String      key = localPreferredQueues.get(random.nextInt(localPreferredQueues.size()));
+            String key = localPreferredQueues.get(
+                ThreadLocalRandom.current().nextInt(localPreferredQueues.size()));
             return queues.get(key);
         }
 
-        List<String>    keys = Lists.newArrayList(queues.keySet());
-        String          key = keys.get(random.nextInt(keys.size()));
+        List<String> keys = Lists.newArrayList(queues.keySet());
+        String key = keys.get(ThreadLocalRandom.current().nextInt(keys.size()));
         return queues.get(key);
     }
 
