@@ -63,11 +63,13 @@ public class TestNamespaceFacade extends BaseClassForTests
 
             CuratorFramework fooClient = client.usingNamespace("foo");
             CuratorFramework barClient = client.usingNamespace("bar");
+            CuratorFramework bazClient = client.usingNamespace(null);
 
             assertEquals(client.getNamespace(), "");
             assertEquals(client2.getNamespace(), "snafu");
             assertEquals(fooClient.getNamespace(), "foo");
             assertEquals(barClient.getNamespace(), "bar");
+            assertEquals(bazClient.getNamespace(), "");
         }
         finally
         {
