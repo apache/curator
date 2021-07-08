@@ -122,6 +122,8 @@ public class CuratorFrameworkFactory
      * @param retryPolicy         retry policy to use
      * @param zkClientConfig      ZKClientConfig
      * @return client
+     * 
+     * @since 5.1.1, supported from ZooKeeper 3.6.1 and above.
      */
     public static CuratorFramework newClient(String connectString, int sessionTimeoutMs, int connectionTimeoutMs, RetryPolicy retryPolicy, ZKClientConfig zkClientConfig)
     {

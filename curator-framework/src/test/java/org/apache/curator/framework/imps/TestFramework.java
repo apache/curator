@@ -66,6 +66,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
 
@@ -73,6 +75,8 @@ import com.google.common.collect.Lists;
 @Tag(CuratorTestBase.zk35TestCompatibilityGroup)
 public class TestFramework extends BaseClassForTests
 {
+	private final Logger log = LoggerFactory.getLogger(getClass());
+	
     @BeforeEach
     @Override
     public void setup() throws Exception
@@ -1075,15 +1079,21 @@ public class TestFramework extends BaseClassForTests
             assertNull(stat);
             
             client.close();
-            ZKClientConfig zkClientConfig = new ZKClientConfig();
-            String zookeeperRequestTimeout = "30000";
-			zkClientConfig.setProperty(ZKClientConfig.ZOOKEEPER_REQUEST_TIMEOUT, zookeeperRequestTimeout);
-			client = CuratorFrameworkFactory.newClient(server.getConnectString(), 30000, 30000, new RetryOneTime(1), zkClientConfig);
-            client.start();
+            
+            try {
+				ZKClientConfig zkClientConfig = new ZKClientConfig();
+				String zookeeperRequestTimeout = "30000";
+				zkClientConfig.setProperty(ZKClientConfig.ZOOKEEPER_REQUEST_TIMEOUT, zookeeperRequestTimeout);
+				client = CuratorFrameworkFactory.newClient(server.getConnectString(), 30000, 30000, new RetryOneTime(1), zkClientConfig);
+				client.start();
 
-            readBytes = client.getData().forPath("/test");
-            assertArrayEquals(writtenBytes, readBytes);
-            assertEquals(zookeeperRequestTimeout, client.getZookeeperClient().getZooKeeper().getClientConfig().getProperty(ZKClientConfig.ZOOKEEPER_REQUEST_TIMEOUT));
+				readBytes = client.getData().forPath("/test");
+				assertArrayEquals(writtenBytes, readBytes);
+				assertEquals(zookeeperRequestTimeout, client.getZookeeperClient().getZooKeeper().getClientConfig().getProperty(ZKClientConfig.ZOOKEEPER_REQUEST_TIMEOUT));
+			} catch (NoSuchMethodError e) {
+				log.debug("NoSuchMethodError: ", e);
+				log.info("Got NoSuchMethodError, meaning probably this cannot be used in ZooKeeper version < 3.6.1");
+			}
         }
         finally
         {
