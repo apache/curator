@@ -1093,11 +1093,12 @@ public class TestFramework extends BaseClassForTests
 			} catch (NoSuchMethodError e) {
 				log.debug("NoSuchMethodError: ", e);
 				log.info("Got NoSuchMethodError, meaning probably this cannot be used in ZooKeeper version < 3.6.1");
+				client = null;
 			}
         }
         finally
         {
-            CloseableUtils.closeQuietly(client);
+        	CloseableUtils.closeQuietly(client);
         }
     }
 
