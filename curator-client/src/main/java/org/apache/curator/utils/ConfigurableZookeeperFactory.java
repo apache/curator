@@ -26,8 +26,6 @@ import org.apache.zookeeper.client.ZKClientConfig;
 
 /**
  * Configurable ZookeeperFactory, by using org.apache.zookeeper.client.ZKClientConfig.
- * 
- * @author Liran Mendelovich
  *
  */
 public class ConfigurableZookeeperFactory extends DefaultZookeeperFactory

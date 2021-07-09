@@ -1077,28 +1077,43 @@ public class TestFramework extends BaseClassForTests
 
             stat = client.checkExists().forPath(realPath);
             assertNull(stat);
-            
-            client.close();
-            
-            try {
-				ZKClientConfig zkClientConfig = new ZKClientConfig();
-				String zookeeperRequestTimeout = "30000";
-				zkClientConfig.setProperty(ZKClientConfig.ZOOKEEPER_REQUEST_TIMEOUT, zookeeperRequestTimeout);
-				client = CuratorFrameworkFactory.newClient(server.getConnectString(), 30000, 30000, new RetryOneTime(1), zkClientConfig);
-				client.start();
-
-				readBytes = client.getData().forPath("/test");
-				assertArrayEquals(writtenBytes, readBytes);
-				assertEquals(zookeeperRequestTimeout, client.getZookeeperClient().getZooKeeper().getClientConfig().getProperty(ZKClientConfig.ZOOKEEPER_REQUEST_TIMEOUT));
-			} catch (NoSuchMethodError e) {
-				log.debug("NoSuchMethodError: ", e);
-				log.info("Got NoSuchMethodError, meaning probably this cannot be used in ZooKeeper version < 3.6.1");
-				client = null;
-			}
         }
         finally
         {
         	CloseableUtils.closeQuietly(client);
+        }
+    }
+    
+    @Test
+    public void testConfigurableZookeeper() throws Exception
+    {
+    	CuratorFramework client = null;
+        try
+        {
+        	ZKClientConfig zkClientConfig = new ZKClientConfig();
+    		String zookeeperRequestTimeout = "30000";
+    		zkClientConfig.setProperty(ZKClientConfig.ZOOKEEPER_REQUEST_TIMEOUT, zookeeperRequestTimeout);
+    		client = CuratorFrameworkFactory.newClient(server.getConnectString(), 30000, 30000, new RetryOneTime(1), zkClientConfig);
+            client.start();
+        	
+            byte[] writtenBytes = {1, 2, 3};
+            client.create().forPath("/test", writtenBytes);
+
+            byte[] readBytes = client.getData().forPath("/test");
+            assertArrayEquals(writtenBytes, readBytes);
+            
+        } catch (NoSuchMethodError e) {
+			log.debug("NoSuchMethodError: ", e);
+			log.info("Got NoSuchMethodError, meaning probably this cannot be used with ZooKeeper version < 3.6.1");
+		}
+        finally
+        {
+        	try {
+				CloseableUtils.closeQuietly(client);
+			} catch (NoSuchMethodError e) {
+				log.debug("close: NoSuchMethodError: ", e);
+				log.info("close: Got NoSuchMethodError, meaning probably this cannot be used with ZooKeeper version < 3.6.1");
+			}
         }
     }
 
