@@ -44,7 +44,6 @@ import org.apache.curator.framework.schema.SchemaSet;
 import org.apache.curator.framework.state.ConnectionStateErrorPolicy;
 import org.apache.curator.framework.state.ConnectionStateListenerManagerFactory;
 import org.apache.curator.framework.state.StandardConnectionStateErrorPolicy;
-import org.apache.curator.utils.ConfigurableZookeeperFactory;
 import org.apache.curator.utils.DefaultZookeeperFactory;
 import org.apache.curator.utils.ZookeeperFactory;
 import org.apache.zookeeper.CreateMode;
@@ -133,7 +132,6 @@ public class CuratorFrameworkFactory
             connectionTimeoutMs(connectionTimeoutMs).
             retryPolicy(retryPolicy).
             zkClientConfig(zkClientConfig).
-            zookeeperFactory(new ConfigurableZookeeperFactory()).
             build();
     }
 

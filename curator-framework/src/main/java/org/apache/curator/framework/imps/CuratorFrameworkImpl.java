@@ -76,7 +76,6 @@ import org.apache.curator.framework.state.ConnectionStateErrorPolicy;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.framework.state.ConnectionStateManager;
 import org.apache.curator.utils.Compatibility;
-import org.apache.curator.utils.ConfigurableZookeeperFactory;
 import org.apache.curator.utils.DebugUtils;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.curator.utils.ThreadUtils;
@@ -234,25 +233,12 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
     private ZookeeperFactory makeZookeeperFactory(final ZookeeperFactory actualZookeeperFactory, ZKClientConfig zkClientConfig)
     {
-    	if (actualZookeeperFactory instanceof ConfigurableZookeeperFactory) {
-    		return new ZookeeperFactory()
-            {
-                @Override
-                public ZooKeeper newZooKeeper(String connectString, int sessionTimeout, Watcher watcher, boolean canBeReadOnly) throws Exception
-                {
-                    ZooKeeper zooKeeper = ((ConfigurableZookeeperFactory) actualZookeeperFactory).newZooKeeper(connectString, sessionTimeout, watcher, canBeReadOnly, zkClientConfig);
-                    addAuthInfos(zooKeeper);
-                    return zooKeeper;
-                }
-            };
-    	}
-    	
-        return new ZookeeperFactory()
+    	return new ZookeeperFactory()
         {
             @Override
             public ZooKeeper newZooKeeper(String connectString, int sessionTimeout, Watcher watcher, boolean canBeReadOnly) throws Exception
             {
-                ZooKeeper zooKeeper = actualZookeeperFactory.newZooKeeper(connectString, sessionTimeout, watcher, canBeReadOnly);
+                ZooKeeper zooKeeper = actualZookeeperFactory.newZooKeeper(connectString, sessionTimeout, watcher, canBeReadOnly, zkClientConfig);
                 addAuthInfos(zooKeeper);
                 return zooKeeper;
             }
