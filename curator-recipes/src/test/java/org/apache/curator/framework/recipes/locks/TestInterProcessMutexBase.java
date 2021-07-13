@@ -37,6 +37,7 @@ import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.KeeperException;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -343,10 +344,8 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
                                     if ( isFirst.compareAndSet(true, false) )
                                     {
                                         semaphore.release(THREAD_QTY - 1);
-                                        while ( semaphore.availablePermits() > 0 )
-                                        {
-                                            Thread.sleep(100);
-                                        }
+                                        Awaitility.await()
+                                                .until(()-> semaphore.availablePermits() <= 0);
                                     }
                                     else
                                     {
@@ -538,11 +537,8 @@ public abstract class TestInterProcessMutexBase extends BaseClassForTests
                     }
                 );
 
-            while ( !mutexForClient1.isAcquiredInThisProcess() && !mutexForClient2.isAcquiredInThisProcess() )
-            {
-                Thread.sleep(1000);
-                assertFalse(future1.isDone() && future2.isDone());
-            }
+            Awaitility.await()
+                    .until(()-> mutexForClient1.isAcquiredInThisProcess() || mutexForClient2.isAcquiredInThisProcess());
 
             assertTrue(mutexForClient1.isAcquiredInThisProcess() != mutexForClient2.isAcquiredInThisProcess());
             Thread.sleep(1000);

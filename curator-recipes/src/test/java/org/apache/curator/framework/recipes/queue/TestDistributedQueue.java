@@ -38,6 +38,7 @@ import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.Timing;
 import org.apache.zookeeper.CreateMode;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import java.util.ArrayList;
@@ -250,19 +251,15 @@ public class TestDistributedQueue extends BaseClassForTests
             ExecutorService     service = Executors.newCachedThreadPool();
             service.submit(producer);
 
-            int                 iteration = 0;
-            while ( consumer.size() < itemQty )
-            {
-                assertTrue(++iteration < 10);
-                Thread.sleep(1000);
-            }
+            Awaitility.await()
+                    .until(()->consumer.size() >= itemQty);
 
             int                 i = 0;
             for ( TestQueueItem item : consumer.getItems() )
             {
                 assertEquals(item.str, Integer.toString(i++));
             }
-            
+
             assertEquals(listenerCalls.get(), itemQty);
         }
         finally
@@ -271,7 +268,7 @@ public class TestDistributedQueue extends BaseClassForTests
             CloseableUtils.closeQuietly(client);
         }
     }
-    
+
     @Test
     public void     testErrorMode() throws Exception
     {
@@ -475,7 +472,7 @@ public class TestDistributedQueue extends BaseClassForTests
                                 throw new Exception("dummy");   // simulate a crash
                             }
                         }
-                        
+
                         addToTakenItems(message, takenItems, itemQty);
                         synchronized(takenItemsForConsumer1)
                         {
@@ -679,12 +676,8 @@ public class TestDistributedQueue extends BaseClassForTests
             service.submit(producer1);
             service.submit(producer2);
 
-            int                 iteration = 0;
-            while ( consumer.size() < itemQty )
-            {
-                assertTrue(++iteration < 10);
-                Thread.sleep(1000);
-            }
+            Awaitility.await()
+                    .until(()-> consumer.size() >= itemQty);
 
             List<TestQueueItem> items = consumer.getItems();
 
@@ -776,13 +769,8 @@ public class TestDistributedQueue extends BaseClassForTests
             ExecutorService     service = Executors.newCachedThreadPool();
             service.submit(producer);
 
-            int                 iteration = 0;
-            while ( consumer.size() < itemQty )
-            {
-                assertTrue(++iteration < 10);
-                Thread.sleep(1000);
-            }
-
+            Awaitility.await()
+                    .until(()->consumer.size() >= itemQty);
             int                 i = 0;
             for ( TestQueueItem item : consumer.getItems() )
             {

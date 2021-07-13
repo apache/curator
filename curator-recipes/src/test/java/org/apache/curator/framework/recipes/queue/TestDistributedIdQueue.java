@@ -28,6 +28,7 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryOneTime;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import java.util.List;
@@ -106,13 +107,8 @@ public class TestDistributedIdQueue extends BaseClassForTests
                 queue.put(new TestQueueItem(id), id);
             }
 
-            int                 iteration = 0;
-            while ( consumer.size() < ITEM_QTY )
-            {
-                assertTrue(++iteration < ITEM_QTY);
-                Thread.sleep(1000);
-            }
-
+            Awaitility.await()
+                    .until(()-> consumer.size() >= ITEM_QTY);
             int                 i = 0;
             for ( TestQueueItem item : consumer.getItems() )
             {
