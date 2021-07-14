@@ -1102,10 +1102,10 @@ public class TestFramework extends BaseClassForTests
             byte[] readBytes = client.getData().forPath("/test");
             assertArrayEquals(writtenBytes, readBytes);
             assertEquals(zookeeperRequestTimeout, client.getZookeeperClient().getZooKeeper().getClientConfig().getProperty(ZKClientConfig.ZOOKEEPER_REQUEST_TIMEOUT));
-            
+
         } catch (NoSuchMethodError e) {
-			log.debug("NoSuchMethodError: ", e);
-			log.info("Got NoSuchMethodError, meaning probably this cannot be used with ZooKeeper version < 3.6.1");
+            log.debug("NoSuchMethodError: ", e);
+            log.info("Got NoSuchMethodError, meaning probably this cannot be used with ZooKeeper version < 3.6.1");
 		}
         finally
         {
