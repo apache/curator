@@ -40,6 +40,7 @@ import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
 import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -721,10 +722,8 @@ public class TestLeaderSelector extends BaseClassForTests
             leaderSelector1.start();
             leaderSelector2.start();
 
-            while ( !leaderSelector1.hasLeadership() && !leaderSelector2.hasLeadership() )
-            {
-                Thread.sleep(1000);
-            }
+            Awaitility.await()
+                    .until(()-> leaderSelector1.hasLeadership() || leaderSelector2.hasLeadership());
 
             assertNotSame(leaderSelector1.hasLeadership(), leaderSelector2.hasLeadership());
 
