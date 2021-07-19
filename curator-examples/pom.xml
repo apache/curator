@@ -24,7 +24,7 @@
     <parent>
         <groupId>org.apache.curator</groupId>
         <artifactId>apache-curator</artifactId>
-        <version>5.2.0</version>
+        <version>5.2.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>curator-examples</artifactId>
