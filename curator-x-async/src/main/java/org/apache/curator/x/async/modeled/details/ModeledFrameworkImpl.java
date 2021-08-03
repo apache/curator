@@ -33,6 +33,7 @@ import org.apache.curator.x.async.WatchMode;
 import org.apache.curator.x.async.api.AsyncCuratorFrameworkDsl;
 import org.apache.curator.x.async.api.AsyncPathAndBytesable;
 import org.apache.curator.x.async.api.AsyncPathable;
+import org.apache.curator.x.async.api.AsyncSetDataBuilder;
 import org.apache.curator.x.async.api.AsyncTransactionSetDataBuilder;
 import org.apache.curator.x.async.api.CreateOption;
 import org.apache.curator.x.async.api.WatchableAsyncCuratorFramework;
@@ -205,7 +206,8 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
         try
         {
             byte[] bytes = modelSpec.serializer().serialize(item);
-            AsyncPathAndBytesable<AsyncStage<Stat>> next = isCompressed() ? dslClient.setData().compressedWithVersion(version) : dslClient.setData();
+            AsyncSetDataBuilder dataBuilder = dslClient.setData();
+            AsyncPathAndBytesable<AsyncStage<Stat>> next = isCompressed() ? dataBuilder.compressedWithVersion(version) : dataBuilder.withVersion(version);
             return next.forPath(resolveForSet(item), bytes);
         }
         catch ( Exception e )
@@ -462,7 +464,7 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
         return modelSpec.path().resolved(model).fullPath();
     }
 
-    private List<ACL> fixAclList(List<ACL> aclList)
+    private static List<ACL> fixAclList(List<ACL> aclList)
     {
         return (aclList.size() > 0) ? aclList : null;   // workaround for old, bad design. empty list not accepted
     }
