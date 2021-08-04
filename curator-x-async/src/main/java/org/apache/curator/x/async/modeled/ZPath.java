@@ -31,6 +31,9 @@ import static org.apache.curator.utils.ZKPaths.PATH_SEPARATOR;
  */
 public interface ZPath extends Resolvable
 {
+    String PARAMETER_OPENING_DELIMITER = "{";
+    String PARAMETER_CLOSING_DELIMITER = "}";
+
     /**
      * The root path: "/"
      */
@@ -52,7 +55,7 @@ public interface ZPath extends Resolvable
      */
     static String parameter(String name)
     {
-        return PATH_SEPARATOR + "{" + name + "}";
+        return PATH_SEPARATOR + PARAMETER_OPENING_DELIMITER + name + PARAMETER_CLOSING_DELIMITER;
     }
 
     /**
@@ -241,7 +244,7 @@ public interface ZPath extends Resolvable
     boolean isRoot();
 
     /**
-     * Return true if this path is fully resolved (i.e. has no unresoled parameters)
+     * Return true if this path is fully resolved (i.e. has no unresolved parameters)
      *
      * @return true/false
      */

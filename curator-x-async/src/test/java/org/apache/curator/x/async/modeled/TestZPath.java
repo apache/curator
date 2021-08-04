@@ -57,11 +57,11 @@ public class TestZPath
         assertFalse(path.startsWith(ZPath.root.child("two")));
 
         ZPath checkIdLike = ZPath.parse("/one/{two}/three");
-        assertTrue(checkIdLike.isResolved());
+        assertFalse(checkIdLike.isResolved());
         checkIdLike = ZPath.parse("/one/" + ZPath.parameter() + "/three");
-        assertTrue(checkIdLike.isResolved());
+        assertFalse(checkIdLike.isResolved());
         checkIdLike = ZPath.parse("/one/" + ZPath.parameter("others") + "/three");
-        assertTrue(checkIdLike.isResolved());
+        assertFalse(checkIdLike.isResolved());
     }
 
     @Test
@@ -71,6 +71,13 @@ public class TestZPath
         assertEquals(ZPath.parse("/one/two/three"), ZPath.root.child("one").child("two").child("three"));
         assertEquals(ZPath.parse("/one/two/three"), ZPath.from("one", "two", "three"));
         assertEquals(ZPath.parseWithIds("/one/{id}/two/{id}"), ZPath.from("one", parameter(), "two", parameter()));
+
+        final ZPath rootPath = ZPath.parse("/root");
+        ZPath path = ZPath.parseWithIds("{root}/one/{id}/two/{id}");
+        assertFalse(path.isResolved());
+        path = path.resolved(rootPath.toString(), "foo", "bar");
+        assertEquals(ZPath.from("root", "one", "foo", "two", "bar").toString(), path.toString());
+        assertTrue(path.isResolved());
     }
 
     @Test

@@ -210,7 +210,9 @@ public class ZPathImpl implements ZPath
             .map(name -> {
                 if ( isParameter(name) && iterator.hasNext() )
                 {
-                    return NodeName.nameFrom(iterator.next());
+                    // Eliminate any leading path separator from substituted parameters, as ZPathImpl() will
+                    // add in all required path separators as part of it's build operation.
+                    return NodeName.nameFrom(iterator.next()).replaceAll(String.format("^%s+", PATH_SEPARATOR), "");
                 }
                 return name;
             })
@@ -226,7 +228,8 @@ public class ZPathImpl implements ZPath
 
     private static boolean isParameter(String name)
     {
-        return (name.length() > 1) && name.startsWith(PATH_SEPARATOR);
+        return name.matches(String.format(".*\\%s.*\\%s", PARAMETER_OPENING_DELIMITER,
+            PARAMETER_CLOSING_DELIMITER));
     }
 
     private ZPathImpl(List<String> nodes, String child)
