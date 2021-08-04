@@ -464,7 +464,7 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
         return modelSpec.path().resolved(model).fullPath();
     }
 
-    private static List<ACL> fixAclList(List<ACL> aclList)
+    private List<ACL> fixAclList(List<ACL> aclList)
     {
         return (aclList.size() > 0) ? aclList : null;   // workaround for old, bad design. empty list not accepted
     }
