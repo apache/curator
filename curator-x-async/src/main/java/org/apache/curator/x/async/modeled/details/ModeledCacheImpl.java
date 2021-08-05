@@ -188,9 +188,18 @@ class ModeledCacheImpl<T> implements TreeCacheListener, ModeledCache<T>
         {
             ZPath path = ZPath.parse(event.getData().getPath());
             Entry<T> entry = entries.remove(path);
-            T model = (entry != null) ? entry.model : serializer.deserialize(event.getData().getData());
-            Stat stat = (entry != null) ? entry.stat : event.getData().getStat();
-            accept(ModeledCacheListener.Type.NODE_REMOVED, path, stat, model);
+            T model = null;
+            if (entry != null) {
+                model = entry.model;
+            }
+            else if (event.getData().getData() != null) {
+                model = serializer.deserialize(event.getData().getData());
+            }
+            if (model != null) {
+                Stat stat = (entry != null) ? entry.stat : event.getData().getStat();
+                accept(ModeledCacheListener.Type.NODE_REMOVED, path, stat, model);
+            }
+
             break;
         }
 
