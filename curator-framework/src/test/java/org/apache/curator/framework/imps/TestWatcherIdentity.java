@@ -20,7 +20,13 @@ package org.apache.curator.framework.imps;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import com.google.common.collect.Sets;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.CuratorWatcher;
@@ -32,167 +38,152 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.junit.jupiter.api.Test;
 
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
+import com.google.common.collect.Sets;
 
-public class TestWatcherIdentity extends BaseClassForTests
-{
-    private static final String PATH = "/foo";
+public class TestWatcherIdentity extends BaseClassForTests {
+	private static final String PATH = "/foo";
 
-    private static class CountCuratorWatcher implements CuratorWatcher
-    {
-        private final AtomicInteger count = new AtomicInteger(0);
+	private static class CountZKWatcher implements Watcher {
+		private final AtomicInteger count = new AtomicInteger(0);
 
-        @Override
-        public void process(WatchedEvent event) throws Exception
-        {
-            count.incrementAndGet();
-        }
-    }
+		@Override
+		public void process(WatchedEvent event) {
+			count.incrementAndGet();
+		}
+	}
 
-    private static class CountZKWatcher implements Watcher
-    {
-        private final AtomicInteger count = new AtomicInteger(0);
+	@Test
+	public void testSameWatcherPerZKDocs() throws Exception {
+		CountZKWatcher actualWatcher = new CountZKWatcher();
+		Timing timing = new Timing();
+		CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(),
+				timing.connection(), new RetryOneTime(1));
+		try {
+			client.start();
+			client.create().forPath("/test");
 
-        @Override
-        public void process(WatchedEvent event)
-        {
-            count.incrementAndGet();
-        }
-    }
+			// per ZK docs, this watcher should only trigger once
+			client.checkExists().usingWatcher(actualWatcher).forPath("/test");
+			client.getData().usingWatcher(actualWatcher).forPath("/test");
 
-    @Test
-    public void testSameWatcherPerZKDocs() throws Exception
-    {
-        CountZKWatcher actualWatcher = new CountZKWatcher();
-        Timing timing = new Timing();
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
-        try
-        {
-            client.start();
-            client.create().forPath("/test");
+			client.setData().forPath("/test", "foo".getBytes());
+			client.delete().forPath("/test");
+			timing.sleepABit();
+			assertEquals(actualWatcher.count.getAndSet(0), 1);
 
-            // per ZK docs, this watcher should only trigger once
-            client.checkExists().usingWatcher(actualWatcher).forPath("/test");
-            client.getData().usingWatcher(actualWatcher).forPath("/test");
+			client.create().forPath("/test");
+			client.checkExists().usingWatcher(actualWatcher).forPath("/test");
+			client.delete().forPath("/test");
+			timing.sleepABit();
+			assertEquals(actualWatcher.count.get(), 1);
+		} finally {
+			CloseableUtils.closeQuietly(client);
+		}
+	}
 
-            client.setData().forPath("/test", "foo".getBytes());
-            client.delete().forPath("/test");
-            timing.sleepABit();
-            assertEquals(actualWatcher.count.getAndSet(0), 1);
+	@Test
+	public void testSameCuratorWatcherPerZKDocs() throws Exception {
+		// Create variables for tracking behaviors of mock object
+		AtomicInteger actualWatcherCount = new AtomicInteger(0);
+		// Construct mock object
+		CuratorWatcher actualWatcher = mock(CuratorWatcher.class);
+		// Method Stubs
+		doAnswer((stubInvo) -> {
+			actualWatcherCount.incrementAndGet();
+			return null;
+		}).when(actualWatcher).process(any(WatchedEvent.class));
+		Timing timing = new Timing();
+		CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(),
+				timing.connection(), new RetryOneTime(1));
+		try {
+			client.start();
+			client.create().forPath("/test");
 
-            client.create().forPath("/test");
-            client.checkExists().usingWatcher(actualWatcher).forPath("/test");
-            client.delete().forPath("/test");
-            timing.sleepABit();
-            assertEquals(actualWatcher.count.get(), 1);
-        }
-        finally
-        {
-            CloseableUtils.closeQuietly(client);
-        }
-    }
+			// per ZK docs, this watcher should only trigger once
+			client.checkExists().usingWatcher(actualWatcher).forPath("/test");
+			client.getData().usingWatcher(actualWatcher).forPath("/test");
 
-    @Test
-    public void testSameCuratorWatcherPerZKDocs() throws Exception
-    {
-        CountCuratorWatcher actualWatcher = new CountCuratorWatcher();
-        Timing timing = new Timing();
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
-        try
-        {
-            client.start();
-            client.create().forPath("/test");
+			client.setData().forPath("/test", "foo".getBytes());
+			client.delete().forPath("/test");
+			timing.sleepABit();
+			assertEquals(actualWatcherCount.getAndSet(0), 1);
 
-            // per ZK docs, this watcher should only trigger once
-            client.checkExists().usingWatcher(actualWatcher).forPath("/test");
-            client.getData().usingWatcher(actualWatcher).forPath("/test");
+			client.create().forPath("/test");
+			client.checkExists().usingWatcher(actualWatcher).forPath("/test");
+			client.delete().forPath("/test");
+			timing.sleepABit();
+			assertEquals(actualWatcherCount.get(), 1);
+		} finally {
+			CloseableUtils.closeQuietly(client);
+		}
+	}
 
-            client.setData().forPath("/test", "foo".getBytes());
-            client.delete().forPath("/test");
-            timing.sleepABit();
-            assertEquals(actualWatcher.count.getAndSet(0), 1);
+	@Test
+	public void testSetAddition() {
+		Watcher watcher = new Watcher() {
+			@Override
+			public void process(WatchedEvent event) {
 
-            client.create().forPath("/test");
-            client.checkExists().usingWatcher(actualWatcher).forPath("/test");
-            client.delete().forPath("/test");
-            timing.sleepABit();
-            assertEquals(actualWatcher.count.get(), 1);
-        }
-        finally
-        {
-            CloseableUtils.closeQuietly(client);
-        }
-    }
+			}
+		};
+		NamespaceWatcher namespaceWatcher1 = new NamespaceWatcher(null, watcher, "/foo");
+		NamespaceWatcher namespaceWatcher2 = new NamespaceWatcher(null, watcher, "/foo");
+		assertEquals(namespaceWatcher1, namespaceWatcher2);
+		assertFalse(namespaceWatcher1.equals(watcher));
+		assertFalse(watcher.equals(namespaceWatcher1));
+		Set<Watcher> set = Sets.newHashSet();
+		set.add(namespaceWatcher1);
+		set.add(namespaceWatcher2);
+		assertEquals(set.size(), 1);
+	}
 
-    @Test
-    public void testSetAddition()
-    {
-        Watcher watcher = new Watcher()
-        {
-            @Override
-            public void process(WatchedEvent event)
-            {
+	@Test
+	public void testCuratorWatcher() throws Exception {
+		Timing timing = new Timing();
+		// Create variables for tracking behaviors of mock object
+		AtomicInteger watcherCount = new AtomicInteger(0);
+		// Construct mock object
+		CuratorWatcher watcher = mock(CuratorWatcher.class);
+		// Method Stubs
+		doAnswer((stubInvo) -> {
+			watcherCount.incrementAndGet();
+			return null;
+		}).when(watcher).process(any(WatchedEvent.class));
+		CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(),
+				timing.connection(), new RetryOneTime(1));
+		try {
+			client.start();
+			client.create().forPath(PATH);
+			// Add twice the same watcher on the same path
+			client.getData().usingWatcher(watcher).forPath(PATH);
+			client.getData().usingWatcher(watcher).forPath(PATH);
+			// Ok, let's test it
+			client.setData().forPath(PATH, new byte[] {});
+			timing.sleepABit();
+			assertEquals(1, watcherCount.get());
+		} finally {
+			CloseableUtils.closeQuietly(client);
+		}
+	}
 
-            }
-        };
-        NamespaceWatcher namespaceWatcher1 = new NamespaceWatcher(null, watcher, "/foo");
-        NamespaceWatcher namespaceWatcher2 = new NamespaceWatcher(null, watcher, "/foo");
-        assertEquals(namespaceWatcher1, namespaceWatcher2);
-        assertFalse(namespaceWatcher1.equals(watcher));
-        assertFalse(watcher.equals(namespaceWatcher1));
-        Set<Watcher> set = Sets.newHashSet();
-        set.add(namespaceWatcher1);
-        set.add(namespaceWatcher2);
-        assertEquals(set.size(), 1);
-    }
-
-    @Test
-    public void testCuratorWatcher() throws Exception
-    {
-        Timing timing = new Timing();
-        CountCuratorWatcher watcher = new CountCuratorWatcher();
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
-        try
-        {
-            client.start();
-            client.create().forPath(PATH);
-            // Add twice the same watcher on the same path
-            client.getData().usingWatcher(watcher).forPath(PATH);
-            client.getData().usingWatcher(watcher).forPath(PATH);
-            // Ok, let's test it
-            client.setData().forPath(PATH, new byte[]{});
-            timing.sleepABit();
-            assertEquals(1, watcher.count.get());
-        }
-        finally
-        {
-            CloseableUtils.closeQuietly(client);
-        }
-    }
-
-
-    @Test
-    public void testZKWatcher() throws Exception
-    {
-        Timing timing = new Timing();
-        CountZKWatcher watcher = new CountZKWatcher();
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
-        try
-        {
-            client.start();
-            client.create().forPath(PATH);
-            // Add twice the same watcher on the same path
-            client.getData().usingWatcher(watcher).forPath(PATH);
-            client.getData().usingWatcher(watcher).forPath(PATH);
-            // Ok, let's test it
-            client.setData().forPath(PATH, new byte[]{});
-            timing.sleepABit();
-            assertEquals(1, watcher.count.get());
-        }
-        finally
-        {
-            CloseableUtils.closeQuietly(client);
-        }
-    }
+	@Test
+	public void testZKWatcher() throws Exception {
+		Timing timing = new Timing();
+		CountZKWatcher watcher = new CountZKWatcher();
+		CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(),
+				timing.connection(), new RetryOneTime(1));
+		try {
+			client.start();
+			client.create().forPath(PATH);
+			// Add twice the same watcher on the same path
+			client.getData().usingWatcher(watcher).forPath(PATH);
+			client.getData().usingWatcher(watcher).forPath(PATH);
+			// Ok, let's test it
+			client.setData().forPath(PATH, new byte[] {});
+			timing.sleepABit();
+			assertEquals(1, watcher.count.get());
+		} finally {
+			CloseableUtils.closeQuietly(client);
+		}
+	}
 }
