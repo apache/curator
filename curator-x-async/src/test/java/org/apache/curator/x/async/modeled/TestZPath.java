@@ -56,12 +56,15 @@ public class TestZPath
         assertTrue(path.startsWith(ZPath.root.child("one")));
         assertFalse(path.startsWith(ZPath.root.child("two")));
 
+        // Despite these paths containing elements which appear to be parameters, ZPath.parse() always returns
+        // a ZPath which is considered fully resolved.  This allows users to include parameter-like elements in their
+        // ZPath's that aren't treated as parameters.
         ZPath checkIdLike = ZPath.parse("/one/{two}/three");
-        assertFalse(checkIdLike.isResolved());
+        assertTrue(checkIdLike.isResolved(), "parse method always returns a fully resolved ZPath");
         checkIdLike = ZPath.parse("/one/" + ZPath.parameter() + "/three");
-        assertFalse(checkIdLike.isResolved());
+        assertTrue(checkIdLike.isResolved(), "parse method always returns a fully resolved ZPath");
         checkIdLike = ZPath.parse("/one/" + ZPath.parameter("others") + "/three");
-        assertFalse(checkIdLike.isResolved());
+        assertTrue(checkIdLike.isResolved(), "parse method always returns a fully resolved ZPath");
     }
 
     @Test
@@ -71,13 +74,6 @@ public class TestZPath
         assertEquals(ZPath.parse("/one/two/three"), ZPath.root.child("one").child("two").child("three"));
         assertEquals(ZPath.parse("/one/two/three"), ZPath.from("one", "two", "three"));
         assertEquals(ZPath.parseWithIds("/one/{id}/two/{id}"), ZPath.from("one", parameter(), "two", parameter()));
-
-        final ZPath rootPath = ZPath.parse("/root");
-        ZPath path = ZPath.parseWithIds("{root}/one/{id}/two/{id}");
-        assertFalse(path.isResolved());
-        path = path.resolved(rootPath.toString(), "foo", "bar");
-        assertEquals(ZPath.from("root", "one", "foo", "two", "bar").toString(), path.toString());
-        assertTrue(path.isResolved());
     }
 
     @Test
