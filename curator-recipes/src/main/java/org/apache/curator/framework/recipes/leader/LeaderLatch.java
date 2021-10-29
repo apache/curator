@@ -497,9 +497,16 @@ public class LeaderLatch implements Closeable
     volatile CountDownLatch debugResetWaitLatch = null;
 
     @VisibleForTesting
+    volatile CountDownLatch debugRestWaitBeforeNodeDelete = null;
+
+    @VisibleForTesting
     void reset() throws Exception
     {
         setLeadership(false);
+        if ( debugRestWaitBeforeNodeDelete != null )
+        {
+            debugRestWaitBeforeNodeDelete.await();
+        }
         setNode(null);
 
         BackgroundCallback callback = new BackgroundCallback()
@@ -575,6 +582,7 @@ public class LeaderLatch implements Closeable
         }
         else
         {
+            setLeadership(false);
             String watchPath = sortedChildren.get(ourIndex - 1);
             Watcher watcher = new Watcher()
             {
@@ -678,7 +686,6 @@ public class LeaderLatch implements Closeable
     private synchronized void setLeadership(boolean newValue)
     {
         boolean oldValue = hasLeadership.getAndSet(newValue);
-
         if ( oldValue && !newValue )
         { // Lost leadership, was true, now false
             listeners.forEach(LeaderLatchListener::notLeader);

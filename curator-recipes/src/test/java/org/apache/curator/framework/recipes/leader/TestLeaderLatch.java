@@ -219,6 +219,105 @@ public class TestLeaderLatch extends BaseClassForTests
     }
 
     @Test
+    public void testCheckLeaderShipTiming() throws Exception
+    {
+        final String latchPath = "/test";
+        Timing timing = new Timing();
+        List<LeaderLatch> latches = Lists.newArrayList();
+        List<CuratorFramework> clients = Lists.newArrayList();
+        final BlockingQueue<String> states = Queues.newLinkedBlockingQueue();
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
+        for ( int i = 0; i < 2; ++i ) {
+            try {
+                CuratorFramework client = CuratorFrameworkFactory.builder()
+                        .connectString(server.getConnectString())
+                        .connectionTimeoutMs(10000)
+                        .sessionTimeoutMs(60000)
+                        .retryPolicy(new RetryOneTime(1))
+                        .connectionStateErrorPolicy(new StandardConnectionStateErrorPolicy())
+                        .build();
+                ConnectionStateListener stateListener = new ConnectionStateListener()
+                {
+                    @Override
+                    public void stateChanged(CuratorFramework client, ConnectionState newState)
+                    {
+                        if (newState == ConnectionState.CONNECTED) {
+                            states.add(newState.name());
+                        }
+                    }
+                };
+                client.getConnectionStateListenable().addListener(stateListener);
+                client.start();
+                clients.add(client);
+                LeaderLatch latch = new LeaderLatch(client, latchPath, String.valueOf(i));
+                LeaderLatchListener listener = new LeaderLatchListener() {
+                    @Override
+                    public void isLeader() {
+                        states.add("true");
+                    }
+
+                    @Override
+                    public void notLeader() {
+                        states.add("false");
+                    }
+                };
+                latch.addListener(listener);
+                latch.start();
+                latches.add(latch);
+                assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.CONNECTED.name());
+                if (i == 0) {
+                    assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), "true");
+                }
+            }
+            catch (Exception e){
+                return;
+            }
+        }
+        timing.forWaiting().sleepABit();
+        // now latch1 is leader, latch2 is not leader. latch2 listens to the ephemeral node created by latch1
+        LeaderLatch latch1 = latches.get(0);
+        LeaderLatch latch2 = latches.get(1);
+        assertTrue(latch1.hasLeadership());
+        assertTrue(!latch2.hasLeadership());
+        try {
+            latch2.debugRestWaitBeforeNodeDelete = new CountDownLatch(1);
+            latch2.debugResetWaitLatch = new CountDownLatch(1);
+            latch1.debugResetWaitLatch = new CountDownLatch(1);
+            server.restart();
+            // latch1 and latch2 connection stat from suspend to reconnected
+            // latch1 set itself is not the leader state and will delete old path and create new path then wait before getChildren
+            // latch2 wait before delete its old path and receive nodeDeleteEvent and then getChildren find itself is leader
+            assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS),
+                    "false"); //latch1 is not leader
+            assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS),
+                    "true");  //latch2 is leader
+            assertTrue(latch2.hasLeadership());
+            assertTrue(!latch1.hasLeadership());
+            // latch1 continue and getChildren and find itself is not the leader and listen to the node created by latch2
+            latch1.debugResetWaitLatch.countDown();
+            timing.sleepABit();
+            // latch2 continue and delete old path and create new path then wait before getChildren
+            latch2.debugRestWaitBeforeNodeDelete.countDown();
+            // latch1 receive nodeDeleteEvent and then getChildren find itself is leader
+            assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS),
+                    "true");
+            assertTrue(latch1.hasLeadership());
+            latch2.debugResetWaitLatch.countDown(); // latch2 continue and getChildren find itself is not leader
+            timing.forWaiting().sleepABit();
+
+            assertTrue(latch1.hasLeadership());
+            assertTrue(!latch2.hasLeadership());
+        }
+        finally {
+            for(int i = 0; i < clients.size(); ++i) {
+                CloseableUtils.closeQuietly(latches.get(i));
+                CloseableUtils.closeQuietly(clients.get(i));
+            }
+            executorService.shutdown();
+        }
+    }
+
+    @Test
     public void testSessionErrorPolicy() throws Exception
     {
         Timing timing = new Timing();
