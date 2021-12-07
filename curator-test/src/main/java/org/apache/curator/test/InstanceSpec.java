@@ -64,9 +64,9 @@ public class InstanceSpec
     }
 
     private final File dataDirectory;
-    private final int port;
-    private final int electionPort;
-    private final int quorumPort;
+    private int port;
+    private int electionPort;
+    private int quorumPort;
     private final boolean deleteDataDirectoryOnClose;
     private final int serverId;
     private final int tickTime;
@@ -170,9 +170,9 @@ public class InstanceSpec
     public InstanceSpec(File dataDirectory, int port, int electionPort, int quorumPort, boolean deleteDataDirectoryOnClose, int serverId, int tickTime, int maxClientCnxns, Map<String,Object> customProperties,String hostname)
     {
         this.dataDirectory = (dataDirectory != null) ? dataDirectory : Files.createTempDir();
-        this.port = (port >= 0) ? port : getRandomPort();
-        this.electionPort = (electionPort >= 0) ? electionPort : getRandomPort();
-        this.quorumPort = (quorumPort >= 0) ? quorumPort : getRandomPort();
+        this.port = port;
+        this.electionPort = port;
+        this.quorumPort = port;
         this.deleteDataDirectoryOnClose = deleteDataDirectoryOnClose;
         this.serverId = (serverId >= 0) ? serverId : nextServerId.getAndIncrement();
         this.tickTime = (tickTime > 0 ? tickTime : -1); // -1 to set default value
@@ -193,16 +193,25 @@ public class InstanceSpec
 
     public int getPort()
     {
+        if (port < 0) {
+            port = getRandomPort();
+        }
         return port;
     }
 
     public int getElectionPort()
     {
+        if (electionPort < 0) {
+            electionPort = getRandomPort();
+        }
         return electionPort;
     }
 
     public int getQuorumPort()
     {
+        if (quorumPort < 0) {
+            quorumPort = getRandomPort();
+        }
         return quorumPort;
     }
 
@@ -265,7 +274,7 @@ public class InstanceSpec
 
         InstanceSpec that = (InstanceSpec)o;
 
-        return hostname.equals(that.getHostname()) && port == that.port;
+        return hostname.equals(that.getHostname()) && port >= 0 && port == that.port;
 
     }
 
