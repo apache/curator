@@ -24,6 +24,7 @@ import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.ZooKeeper;
 import java.util.concurrent.Callable;
+import org.awaitility.Awaitility;
 
 public class TestCleanState
 {
@@ -43,10 +44,8 @@ public class TestCleanState
             EnsembleTracker ensembleTracker = internalClient.getEnsembleTracker();
             if ( ensembleTracker != null )
             {
-                while ( ensembleTracker.hasOutstanding() )
-                {
-                    Thread.sleep(100);
-                }
+                Awaitility.await()
+                        .until(() -> !ensembleTracker.hasOutstanding());
                 ensembleTracker.close();
             }
             ZooKeeper zooKeeper = internalClient.getZooKeeper();

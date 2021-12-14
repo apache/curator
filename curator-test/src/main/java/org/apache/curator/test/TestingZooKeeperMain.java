@@ -97,6 +97,10 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
         }
     }
 
+    TestZooKeeperServer getZkServer() {
+        return zkServer;
+    }
+
     @Override
     public void runFromConfig(QuorumPeerConfig config) throws Exception
     {
@@ -271,6 +275,8 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
         {
             this.txnLog = txnLog;
             this.setTxnLogFactory(txnLog);
+            // tickTime would affect min and max session timeout: should be set first
+            this.setTickTime(config.getTickTime());
             this.setMinSessionTimeout(config.getMinSessionTimeout());
             this.setMaxSessionTimeout(config.getMaxSessionTimeout());
         }

@@ -28,7 +28,7 @@
 
     <groupId>org.apache.curator</groupId>
     <artifactId>apache-curator</artifactId>
-    <version>5.1.1-SNAPSHOT</version>
+    <version>5.2.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Apache Curator</name>
@@ -57,7 +57,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <dependency.locations.enabled>false</dependency.locations.enabled>
 
-        <currentStableVersion>5.1.0</currentStableVersion>
+        <currentStableVersion>5.2.0</currentStableVersion>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.build.resourceEncoding>UTF-8</project.build.resourceEncoding>
@@ -65,6 +65,8 @@
 
         <short-jdk-version>8</short-jdk-version>
         <jdk-version>1.${short-jdk-version}</jdk-version>
+
+        <redirectTestOutputToFile>true</redirectTestOutputToFile>
 
         <!-- versions -->
         <zookeeper-version>3.7.0</zookeeper-version>
@@ -98,6 +100,7 @@
         <dropwizard-version>3.2.5</dropwizard-version>
         <snappy-version>1.1.7</snappy-version>
         <build-helper-maven-plugin-version>3.1.0</build-helper-maven-plugin-version>
+        <awaitility-version>4.1.0</awaitility-version>
 
         <!-- OSGi Properties -->
         <osgi.export.package />
@@ -625,6 +628,14 @@
                 <artifactId>snappy-java</artifactId>
                 <version>${snappy-version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>org.awaitility</groupId>
+                <artifactId>awaitility</artifactId>
+                <version>${awaitility-version}</version>
+                <scope>test</scope>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
@@ -772,7 +783,7 @@
                 <configuration>
                     <threadCount>1</threadCount>
                     <reuseForks>false</reuseForks>
-                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                    <redirectTestOutputToFile>${redirectTestOutputToFile}</redirectTestOutputToFile>
                     <rerunFailingTestsCount>2</rerunFailingTestsCount>
                 </configuration>
             </plugin>
