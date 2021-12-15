@@ -46,4 +46,4 @@ jobs:
         run: mvn -B clean install -DskipTests
 
       - name: Test
-        run: mvn -B test
+        run: mvn -B verify
