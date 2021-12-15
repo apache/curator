@@ -19,6 +19,7 @@
 
 name: CI - Tests JDK 8
 on:
+  push:
   pull_request:
     branches:
       - master
