@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
 /**
@@ -113,7 +114,19 @@ public class Compatibility
                 log.error("Could not call addrField.get({})", server, e);
             }
         }
-        return (address != null) ? address.getAddress().getHostAddress() : "unknown";
+        if ( address == null )
+        {
+            return "unknown";
+        }
+        InetAddress inetAddress = address.getAddress();
+        if ( inetAddress != null )
+        {
+            return inetAddress.getHostAddress();
+        }
+        else
+        {
+            return address.getHostName();
+        }
     }
 
     public static boolean hasPersistentWatchers()
