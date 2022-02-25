@@ -94,7 +94,7 @@ public class TestConnectionStateManager extends BaseClassForTests {
 
     @Test
     public void testConnectionStateRecoversFromUnexpectedExpiredConnection() throws Exception {
-        assumeTrue((Info.MAJOR == 3 && Info.MINOR >= 6) || (Info.MAJOR > 4), "Zookeeper version must be 3.6 or higher");
+        assumeTrue(() -> (getMajor() == 3 && getMinor() >= 6) || (getMajor() > 4), "Zookeeper version must be 3.6 or higher");
         Timing2 timing = new Timing2();
         CuratorFramework client = CuratorFrameworkFactory.builder()
                 .connectString(server.getConnectString())
@@ -130,5 +130,15 @@ public class TestConnectionStateManager extends BaseClassForTests {
         } finally {
             CloseableUtils.closeQuietly(client);
         }
+    }
+
+    public int getMajor() {
+        System.err.println("------- MAJOR: " + Info.MAJOR);
+        return Info.MAJOR;
+    }
+
+    public int getMinor() {
+        System.err.println("------- MINOR: " + Info.MINOR);
+        return Info.MINOR;
     }
 }
