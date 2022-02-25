@@ -37,6 +37,7 @@ jobs:
         java:
         - '8'
         - '11'
+        - '17'
 
     steps:
       - name: Checkout
@@ -56,8 +57,8 @@ jobs:
           java-version: ${{ matrix.java }}
           distribution: 'temurin'
 
-      - name: Build with ${{ matrix.java }}
+      - name: Build with JDK ${{ matrix.java }}
         run: mvn -B clean install -DskipTests
 
-      - name: Test with ${{ matrix.java }}
+      - name: Test with JDK ${{ matrix.java }}
         run: mvn -B verify

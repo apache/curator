@@ -19,7 +19,7 @@
 package org.apache.curator;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
