@@ -33,7 +33,6 @@ import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.version.Info;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -93,8 +92,10 @@ public class TestConnectionStateManager extends BaseClassForTests {
     }
 
     @Test
-    public void testConnectionStateRecoversFromUnexpectedExpiredConnection() throws Exception {
-        assumeTrue(() -> (getMajor() == 3 && getMinor() >= 6) || (getMajor() > 4), "Zookeeper version must be 3.6 or higher");
+    void testConnectionStateRecoversFromUnexpectedExpiredConnection() throws Exception {
+        final int major = getVersionPart("MAJOR");
+        final int minor = getVersionPart("MINOR");
+        assumeTrue(major == 3 && minor >= 6 || major > 4, "Zookeeper version must be 3.6 or higher");
         Timing2 timing = new Timing2();
         CuratorFramework client = CuratorFrameworkFactory.builder()
                 .connectString(server.getConnectString())
@@ -132,13 +133,12 @@ public class TestConnectionStateManager extends BaseClassForTests {
         }
     }
 
-    public int getMajor() {
-        System.err.println("------- MAJOR: " + Info.MAJOR);
-        return Info.MAJOR;
-    }
-
-    public int getMinor() {
-        System.err.println("------- MINOR: " + Info.MINOR);
-        return Info.MINOR;
+    private int getVersionPart(String part) {
+        try {
+            return Class.forName("org.apache.zookeeper.version.Info").getDeclaredField(part).getInt(null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
     }
 }
