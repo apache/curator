@@ -21,6 +21,7 @@ package org.apache.curator.framework.state;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import com.google.common.collect.Queues;
 import org.apache.curator.framework.CuratorFramework;
@@ -32,6 +33,7 @@ import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.version.Info;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -92,6 +94,7 @@ public class TestConnectionStateManager extends BaseClassForTests {
 
     @Test
     public void testConnectionStateRecoversFromUnexpectedExpiredConnection() throws Exception {
+        assumeTrue((Info.MAJOR == 3 && Info.MINOR >= 6) || (Info.MAJOR > 4), "Zookeeper version must be 3.6 or higher");
         Timing2 timing = new Timing2();
         CuratorFramework client = CuratorFrameworkFactory.builder()
                 .connectString(server.getConnectString())
