@@ -45,6 +45,23 @@ public class GzipCompressionProvider implements CompressionProvider
     /** GZIP header magic number. */
     private static final int GZIP_MAGIC = 0x8b1f;
 
+    private static final String JAVA_VERSION_STR = System.getProperty("java.version", "-1");
+    private static final int JAVA_VERSION;
+    static {
+        if ("1.8".equals(JAVA_VERSION_STR)) {
+            JAVA_VERSION = 8;
+        } else if (JAVA_VERSION_STR.contains("-")) {
+            // e.g. 18-ea, take 18
+            JAVA_VERSION = Integer.parseInt(JAVA_VERSION_STR.split("-", 2)[0]);
+        } else if (JAVA_VERSION_STR.contains(".")) {
+            // e.g. 17.0.1, take 17
+            JAVA_VERSION = Integer.parseInt(JAVA_VERSION_STR.split("\\.", 2)[0]);
+        } else {
+            JAVA_VERSION = Integer.parseInt(JAVA_VERSION_STR, 10);
+        }
+    }
+    private static final byte OS_BIT = JAVA_VERSION >= 16 ? (byte) -1 : 0;
+
     /** See {@code java.util.zip.GZIPOutputStream.writeHeader()} */
     private static final byte[] GZIP_HEADER = new byte[] {
             (byte) GZIP_MAGIC,        // Magic number (byte 0)
@@ -56,7 +73,7 @@ public class GzipCompressionProvider implements CompressionProvider
             0,                        // Modification time MTIME (byte 2)
             0,                        // Modification time MTIME (byte 3)
             0,                        // Extra flags (XFLG)
-            0                         // Operating system (OS)
+            OS_BIT                    // Operating system (OS)
     };
 
     /** GZip flags, {@link #GZIP_HEADER}'s 4th byte */
@@ -84,7 +101,7 @@ public class GzipCompressionProvider implements CompressionProvider
 
     /** The value verified in GzipCompressionProviderTest.testEmpty() */
     private static final byte[] COMPRESSED_EMPTY_BYTES = new byte[] {
-            31, -117, 8, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            31, -117, 8, 0, 0, 0, 0, 0, 0, OS_BIT, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0
     };
 
     private static Deflater acquireDeflater()
