@@ -18,7 +18,6 @@
  */
 package org.apache.curator.framework.imps;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -38,9 +37,9 @@ public class TestGzipCompressionProvider
         byte[] data = "Hello, world!".getBytes();
         byte[] compressedData = provider.compress(null, data);
         byte[] jdkCompressedData = jdkCompress(data);
-        assertArrayEquals(compressedData, jdkCompressedData);
+        assertTrue(Arrays.equals(compressedData, jdkCompressedData));
         byte[] decompressedData = provider.decompress(null, compressedData);
-        assertArrayEquals(decompressedData, data);
+        assertTrue(Arrays.equals(decompressedData, data));
     }
 
     @Test
@@ -51,8 +50,8 @@ public class TestGzipCompressionProvider
         byte[] compressedData2 = GzipCompressionProvider.doCompress(new byte[0]);
         byte[] jdkCompress = jdkCompress(new byte[0]);
         // Ensures GzipCompressionProvider.COMPRESSED_EMPTY_BYTES value is valid
-        assertArrayEquals(compressedData, compressedData2);
-        assertArrayEquals(compressedData, jdkCompress);
+        assertTrue(Arrays.equals(compressedData, compressedData2));
+        assertTrue(Arrays.equals(compressedData, jdkCompress));
         byte[] decompressedData = provider.decompress(null, compressedData);
         assertEquals(0, decompressedData.length);
     }
@@ -106,9 +105,9 @@ public class TestGzipCompressionProvider
             for (int i = 0; i < 100; i++) {
                 byte[] compressedData = provider.compress(null, data);
                 byte[] jdkCompressedData = jdkCompress(data);
-                assertArrayEquals(compressedData, jdkCompressedData);
+                assertTrue(Arrays.equals(compressedData, jdkCompressedData));
                 byte[] decompressedData = provider.decompress(null, compressedData);
-                assertArrayEquals(decompressedData, data);
+                assertTrue(Arrays.equals(decompressedData, data));
                 // in the end of the iteration to test empty array first
                 random.nextBytes(data);
             }

@@ -92,7 +92,7 @@
         <guava-version>27.0.1-jre</guava-version>
         <guava-listenablefuture-version>1.0</guava-listenablefuture-version>
         <guava-failureaccess-version>1.0.1</guava-failureaccess-version>
-        <junit-version>5.8.2</junit-version>
+        <junit-version>5.6.2</junit-version>
         <swift-version>0.23.1</swift-version>
         <maven-shade-plugin-version>3.2.1</maven-shade-plugin-version>
         <slf4j-version>1.7.25</slf4j-version>
@@ -374,7 +374,7 @@
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
-                <version>4.3.1</version>
+                <version>1.9.5</version>
             </dependency>
 
             <dependency>
