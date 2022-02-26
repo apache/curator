@@ -70,9 +70,12 @@
 
         <!-- versions -->
         <zookeeper-version>3.6.3</zookeeper-version>
-        <maven-bundle-plugin-version>5.1.1</maven-bundle-plugin-version>
-        <maven-javadoc-plugin-version>3.0.1</maven-javadoc-plugin-version>
-        <doxia-module-confluence-version>1.8</doxia-module-confluence-version>
+        <maven-bundle-plugin-version>5.1.4</maven-bundle-plugin-version>
+        <maven-compiler-plugin-version>3.10.0</maven-compiler-plugin-version>
+        <maven-dependency-plugin-version>3.2.0</maven-dependency-plugin-version>
+        <maven-javadoc-plugin-version>3.3.2</maven-javadoc-plugin-version>
+        <maven-surefire-plugin-version>3.0.0-M5</maven-surefire-plugin-version>
+        <doxia-module-confluence-version>1.11.1</doxia-module-confluence-version>
         <maven-license-plugin-version>1.9.0</maven-license-plugin-version>
         <directory-maven-plugin-version>1.0</directory-maven-plugin-version>
         <javassist-version>3.24.1-GA</javassist-version>
@@ -95,13 +98,13 @@
         <guava-failureaccess-version>1.0.1</guava-failureaccess-version>
         <junit-version>5.6.2</junit-version>
         <swift-version>0.23.1</swift-version>
-        <maven-shade-plugin-version>3.2.1</maven-shade-plugin-version>
+        <maven-shade-plugin-version>3.2.4</maven-shade-plugin-version>
         <slf4j-version>1.7.25</slf4j-version>
         <clirr-maven-plugin-version>2.8</clirr-maven-plugin-version>
         <dropwizard-version>3.2.5</dropwizard-version>
         <snappy-version>1.1.7</snappy-version>
-        <build-helper-maven-plugin-version>3.1.0</build-helper-maven-plugin-version>
-        <awaitility-version>4.1.0</awaitility-version>
+        <build-helper-maven-plugin-version>3.3.0</build-helper-maven-plugin-version>
+        <awaitility-version>4.1.1</awaitility-version>
 
         <!-- OSGi Properties -->
         <osgi.export.package />
@@ -724,7 +727,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-dependency-plugin</artifactId>
-                    <version>3.1.1</version>
+                    <version>${maven-dependency-plugin-version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -780,7 +783,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.0.0-M5</version>
+                <version>${maven-surefire-plugin-version}</version>
                 <configuration>
                     <threadCount>1</threadCount>
                     <reuseForks>false</reuseForks>
@@ -1056,7 +1059,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
-                <version>3.1.1</version>
+                <version>${maven-dependency-plugin-version}</version>
             </plugin>
         </plugins>
     </build>
@@ -1072,6 +1075,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-compiler-plugin</artifactId>
+                        <version>${maven-compiler-plugin-version}</version>
                         <configuration>
                             <source>${jdk-version}</source>
                             <target>${jdk-version}</target>
@@ -1090,6 +1094,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-compiler-plugin</artifactId>
+                        <version>${maven-compiler-plugin-version}</version>
                         <configuration>
                             <release>${short-jdk-version}</release>
                         </configuration>
