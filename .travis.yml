@@ -1,0 +1,59 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+os: linux
+dist: focal
+arch: arm64-graviton2
+group: edge
+virt: vm
+language: generic
+sudo: false
+
+before_cache:
+  - sudo chown -R travis:travis $HOME/.m2
+  - rm -rf $HOME/.m2/repository/org/apache/curator/
+
+cache:
+  apt: true
+  directories:
+    - ${HOME}/.m2
+
+matrix:
+  include:
+    - name: Linux aarch64
+      addons:
+        apt:
+          update: true
+          packages:
+            - openjdk-8-jdk
+            - wget
+      install:
+        - export MAVEN_VERSION="3.8.4"
+        - wget https://archive.apache.org/dist/maven/maven-3/$MAVEN_VERSION/binaries/apache-maven-$MAVEN_VERSION-bin.tar.gz
+        - tar zxvf apache-maven-$MAVEN_VERSION-bin.tar.gz
+        - export M2_HOME=$PWD/apache-maven-$MAVEN_VERSION
+        - export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-arm64"
+        - export PATH="$M2_HOME/bin:$JAVA_HOME/bin:$PATH"
+      before_script:
+        - java -version
+        - mvn -version
+      script:
+        - mvn -B clean install -DskipTests
+        - mvn -B verify
+
+before_install:
+  - lscpu
