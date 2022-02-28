@@ -43,9 +43,9 @@ matrix:
             - wget
       install:
         - export MAVEN_VERSION="3.8.4"
-        - wget https://archive.apache.org/dist/maven/maven-3/$MAVEN_VERSION/binaries/apache-maven-$MAVEN_VERSION-bin.tar.gz
-        - tar zxvf apache-maven-$MAVEN_VERSION-bin.tar.gz
-        - export M2_HOME=$PWD/apache-maven-$MAVEN_VERSION
+        - wget -O /tmp/maven.tar.gz https://archive.apache.org/dist/maven/maven-3/$MAVEN_VERSION/binaries/apache-maven-$MAVEN_VERSION-bin.tar.gz
+        - (cd /tmp && tar zxvf maven.tar.gz)
+        - export M2_HOME=/tmp/apache-maven-$MAVEN_VERSION
         - export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-arm64"
         - export PATH="$M2_HOME/bin:$JAVA_HOME/bin:$PATH"
       before_script:
