@@ -27,15 +27,15 @@ import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.discovery.ServiceType;
 import org.apache.curator.x.discovery.server.entity.ServiceInstances;
 import org.apache.curator.x.discovery.server.entity.ServiceNames;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyBootstrap;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mortbay.jetty.Server;
-import org.mortbay.jetty.servlet.Context;
-import org.mortbay.jetty.servlet.ServletHolder;
 import javax.ws.rs.core.MediaType;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -48,7 +48,7 @@ import java.net.URL;
 import java.net.URLConnection;
 
 @SuppressWarnings("unchecked")
-public class TestStringsWithRestEasy
+class TestStringsWithRestEasy
 {
     private static final String HOST = "127.0.0.1";
     private Server server;
@@ -65,7 +65,11 @@ public class TestStringsWithRestEasy
 
         port = InstanceSpec.getRandomPort();
         server = new Server(port);
-        Context root = new Context(server, "/", Context.SESSIONS);
+        ServletContextHandler root = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        root.setContextPath("/");
+        server.setHandler(root);
+        root.setServer(server);
+        root.setContextPath("/");
         root.getInitParams().put("javax.ws.rs.Application", RestEasyApplication.class.getName());
         root.addServlet(new ServletHolder(dispatcher), "/*");
         root.addEventListener(new ResteasyBootstrap());
@@ -73,14 +77,14 @@ public class TestStringsWithRestEasy
     }
 
     @AfterEach
-    public void         teardown() throws Exception
+    public void teardown() throws Exception
     {
         server.stop();
         server.join();
     }
 
     @Test
-    public void     testRegisterService() throws Exception
+    void testRegisterService() throws Exception
     {
         RestEasySingletons  restEasySingletons = RestEasyApplication.singletonsRef.get();
 
@@ -112,7 +116,7 @@ public class TestStringsWithRestEasy
     }
 
     @Test
-    public void     testEmptyServiceNames() throws Exception
+    void testEmptyServiceNames() throws Exception
     {
         String          json = getJson("http://" + HOST + ":" + port + "/v1/service", null);
         ServiceNames    names = RestEasyApplication.singletonsRef.get().serviceNamesMarshallerSingleton.readFrom(ServiceNames.class, null, null, MediaType.APPLICATION_JSON_TYPE, null, new ByteArrayInputStream(json.getBytes()));
@@ -136,14 +140,8 @@ public class TestStringsWithRestEasy
             OutputStream        out = urlConnection.getOutputStream();
             ByteSource.wrap(body.getBytes()).copyTo(out);
         }
-        BufferedReader in = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
-        try
-        {
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()))) {
             return CharStreams.toString(in);
-        }
-        finally
-        {
-            in.close();
         }
     }
 

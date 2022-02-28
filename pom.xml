@@ -78,18 +78,18 @@
         <doxia-module-confluence-version>1.11.1</doxia-module-confluence-version>
         <maven-license-plugin-version>1.9.0</maven-license-plugin-version>
         <directory-maven-plugin-version>1.0</directory-maven-plugin-version>
-        <javassist-version>3.24.1-GA</javassist-version>
+        <javassist-version>3.28.0-GA</javassist-version>
         <commons-math-version>2.2</commons-math-version>
         <jackson-mapper-asl-version>1.9.13</jackson-mapper-asl-version>
         <jackson-version>2.10.0</jackson-version>
         <!-- Upgrading to Jersey 2.x is difficult and of unclear benefits, see
              https://stackoverflow.com/questions/17098341#22033825 -->
-        <jersey-version>1.19.4</jersey-version>
-        <jsr311-api-version>1.1.1</jsr311-api-version>
+        <jersey-version>2.35</jersey-version>
+        <jakarta.ws.rs-api-version>2.1.6</jakarta.ws.rs-api-version>
         <!-- See https://stackoverflow.com/questions/43574426#comment93992044_43574427 -->
         <jaxb-version>2.2.11</jaxb-version>
         <javax-activation-version>1.1.1</javax-activation-version>
-        <jetty-version>6.1.26</jetty-version>
+        <jetty-version>9.4.45.v20220203</jetty-version>
         <scannotation-version>1.0.2</scannotation-version>
         <!-- resteasy-jaxrs dependency cannot be higher than 2.x for compatibility with Jersey 1.x -->
         <resteasy-jaxrs-version>2.3.5.Final</resteasy-jaxrs-version>
@@ -456,33 +456,51 @@
             </dependency>
 
             <dependency>
-                <groupId>com.sun.jersey</groupId>
+                <groupId>org.glassfish.jersey.core</groupId>
                 <artifactId>jersey-server</artifactId>
                 <version>${jersey-version}</version>
             </dependency>
 
             <dependency>
-                <groupId>com.sun.jersey</groupId>
+                <groupId>org.glassfish.jersey.core</groupId>
                 <artifactId>jersey-servlet</artifactId>
                 <version>${jersey-version}</version>
             </dependency>
 
             <dependency>
-                <groupId>com.sun.jersey</groupId>
+                <groupId>org.glassfish.jersey.core</groupId>
                 <artifactId>jersey-client</artifactId>
                 <version>${jersey-version}</version>
             </dependency>
 
             <dependency>
-                <groupId>com.sun.jersey</groupId>
-                <artifactId>jersey-core</artifactId>
+                <groupId>org.glassfish.jersey.core</groupId>
+                <artifactId>jersey-common</artifactId>
                 <version>${jersey-version}</version>
             </dependency>
 
             <dependency>
-                <groupId>javax.ws.rs</groupId>
-                <artifactId>jsr311-api</artifactId>
-                <version>${jsr311-api-version}</version>
+                <groupId>org.glassfish.jersey.containers</groupId>
+                <artifactId>jersey-container-servlet-core</artifactId>
+                <version>${jersey-version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.glassfish.jersey.media</groupId>
+                <artifactId>jersey-media-json-jackson</artifactId>
+                <version>${jersey-version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.glassfish.jersey.inject</groupId>
+                <artifactId>jersey-hk2</artifactId>
+                <version>${jersey-version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>jakarta.ws.rs</groupId>
+                <artifactId>jakarta.ws.rs-api</artifactId>
+                <version>${jakarta.ws.rs-api-version}</version>
             </dependency>
 
             <dependency>
@@ -510,8 +528,8 @@
             </dependency>
 
             <dependency>
-                <groupId>org.mortbay.jetty</groupId>
-                <artifactId>jetty</artifactId>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-webapp</artifactId>
                 <version>${jetty-version}</version>
             </dependency>
 
@@ -1097,6 +1115,19 @@
                         <version>${maven-compiler-plugin-version}</version>
                         <configuration>
                             <release>${short-jdk-version}</release>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <argLine>--add-opens=java.base/java.lang=ALL-UNNAMED
+                                --add-opens=java.base/java.math=ALL-UNNAMED
+                                --add-opens=java.base/java.util=ALL-UNNAMED
+                                --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+                                --add-opens=java.base/java.net=ALL-UNNAMED
+                                --add-opens=java.base/java.text=ALL-UNNAMED
+                                --add-opens=java.sql/java.sql=ALL-UNNAMED</argLine>
                         </configuration>
                     </plugin>
                 </plugins>

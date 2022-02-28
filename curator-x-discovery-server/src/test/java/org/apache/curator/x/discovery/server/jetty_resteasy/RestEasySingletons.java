@@ -31,9 +31,9 @@ import org.apache.curator.x.discovery.strategies.RandomStrategy;
  */
 public class RestEasySingletons
 {
-    public final ServiceDiscovery<String> serviceDiscoverySingleton = new MockServiceDiscovery<String>();
-    public final StringDiscoveryContext contextSingleton = new StringDiscoveryContext(serviceDiscoverySingleton, new RandomStrategy<String>(), 1000);
-    public final JsonServiceInstanceMarshaller<String> serviceInstanceMarshallerSingleton = new JsonServiceInstanceMarshaller<String>(contextSingleton);
-    public final JsonServiceInstancesMarshaller<String> serviceInstancesMarshallerSingleton = new JsonServiceInstancesMarshaller<String>(contextSingleton);
+    public final ServiceDiscovery<String> serviceDiscoverySingleton = new MockServiceDiscovery<>();
+    public final StringDiscoveryContext contextSingleton = new StringDiscoveryContext(serviceDiscoverySingleton, new RandomStrategy<>(), 1000);
+    public final JsonServiceInstanceMarshaller<String> serviceInstanceMarshallerSingleton = new JsonServiceInstanceMarshaller<>(contextSingleton);
+    public final JsonServiceInstancesMarshaller<String> serviceInstancesMarshallerSingleton = new JsonServiceInstancesMarshaller<>(contextSingleton);
     public final JsonServiceNamesMarshaller serviceNamesMarshallerSingleton = new JsonServiceNamesMarshaller();
 }

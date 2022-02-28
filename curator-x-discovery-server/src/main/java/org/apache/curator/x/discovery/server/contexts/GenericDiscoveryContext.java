@@ -76,7 +76,7 @@ public class GenericDiscoveryContext<T> implements DiscoveryContext<T>, ContextR
         if ( payload == null )
         {
             //noinspection unchecked
-            payload = (T)payloadType.getRawType().newInstance();
+            payload = (T)payloadType.getRawType().getDeclaredConstructor().newInstance();
         }
         
         node.putPOJO(fieldName, payload);
