@@ -60,6 +60,10 @@ public class GzipCompressionProvider implements CompressionProvider
             JAVA_VERSION = Integer.parseInt(JAVA_VERSION_STR, 10);
         }
     }
+    /*
+     * The value of the OS bit has changed in JDK 16
+     * See https://bugs.openjdk.java.net/browse/JDK-8244706 for more information.
+     */
     private static final byte OS_BIT = JAVA_VERSION >= 16 ? (byte) -1 : 0;
 
     /** See {@code java.util.zip.GZIPOutputStream.writeHeader()} */
