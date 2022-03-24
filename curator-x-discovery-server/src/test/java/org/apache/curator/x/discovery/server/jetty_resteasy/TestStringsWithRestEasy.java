@@ -65,14 +65,16 @@ public class TestStringsWithRestEasy
 
         port = InstanceSpec.getRandomPort();
         server = new Server(port);
+        
         ServletContextHandler root = new ServletContextHandler(ServletContextHandler.SESSIONS);
         root.setContextPath("/");
-        server.setHandler(root);
         root.setServer(server);
         root.setContextPath("/");
         root.getInitParams().put("javax.ws.rs.Application", RestEasyApplication.class.getName());
         root.addServlet(new ServletHolder(dispatcher), "/*");
         root.addEventListener(new ResteasyBootstrap());
+
+        server.setHandler(root);
         server.start();
     }
 
