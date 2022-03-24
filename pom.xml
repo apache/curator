@@ -89,7 +89,7 @@
         <!-- See https://stackoverflow.com/questions/43574426#comment93992044_43574427 -->
         <jaxb-version>2.2.11</jaxb-version>
         <javax-activation-version>1.1.1</javax-activation-version>
-        <jetty-version>6.1.26</jetty-version>
+        <jetty-version>9.4.45.v20220203</jetty-version>
         <scannotation-version>1.0.2</scannotation-version>
         <!-- resteasy-jaxrs dependency cannot be higher than 2.x for compatibility with Jersey 1.x -->
         <resteasy-jaxrs-version>2.3.5.Final</resteasy-jaxrs-version>
@@ -510,8 +510,8 @@
             </dependency>
 
             <dependency>
-                <groupId>org.mortbay.jetty</groupId>
-                <artifactId>jetty</artifactId>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-webapp</artifactId>
                 <version>${jetty-version}</version>
             </dependency>
 
