@@ -70,6 +70,7 @@ public class LeaderLatch implements Closeable
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
     private final AtomicBoolean hasLeadership = new AtomicBoolean(false);
     private final AtomicReference<String> ourPath = new AtomicReference<String>();
+    private final AtomicReference<String> lastPathIsLeader = new AtomicReference<String>();
     private final StandardListenerManager<LeaderLatchListener> listeners = StandardListenerManager.standard();
     private final CloseMode closeMode;
     private final AtomicReference<Future<?>> startTask = new AtomicReference<Future<?>>();
@@ -480,17 +481,17 @@ public class LeaderLatch implements Closeable
     }
 
     /**
-     * Return this instance's lock node path. IMPORTANT: this instance
-     * owns the path returned. This method is meant for reference only. Also,
-     * it is possible for <code>null</code> to be returned. The path, if any,
-     * returned is not guaranteed to be valid at any point in the future as internal
-     * state changes might require the instance to delete and create a new path.
+     * Return last of this instance's lock node path that was leader ever.
+     * IMPORTANT: this instance owns the path returned. This method is meant for reference only.
+     * Also, it is possible for <code>null</code> to be returned (for this instance never becomes
+     * a leader). The path, if any, returned is not guaranteed to be valid at any point in the future
+     * as internal state changes might require the instance to delete the path.
      *
-     * @return lock node path or <code>null</code>
+     * @return last lock node path that was leader ever or <code>null</code>
      */
-    public String getOurPath()
+    public String getLastPathIsLeader()
     {
-        return ourPath.get();
+        return lastPathIsLeader.get();
     }
 
     @VisibleForTesting
@@ -571,6 +572,7 @@ public class LeaderLatch implements Closeable
         }
         else if ( ourIndex == 0 )
         {
+            lastPathIsLeader.set(localOurPath);
             setLeadership(true);
         }
         else
