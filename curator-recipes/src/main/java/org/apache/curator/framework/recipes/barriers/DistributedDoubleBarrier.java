@@ -30,13 +30,13 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
+
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.curator.utils.PathUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -57,22 +57,11 @@ public class DistributedDoubleBarrier
     private final int memberQty;
     private final String ourPath;
     private final String readyPath;
+    private final Logger log;
     private final AtomicBoolean hasBeenNotified = new AtomicBoolean(false);
     private final AtomicBoolean connectionLost = new AtomicBoolean(false);
-    private final Watcher watcher = new Watcher()
-    {
-        @Override
-        public void process(WatchedEvent event)
-        {
-            connectionLost.set(event.getState() != Event.KeeperState.SyncConnected);
-            client.runSafe(() -> {
-                synchronized(DistributedDoubleBarrier.this) {
-                    hasBeenNotified.set(true);
-                    DistributedDoubleBarrier.this.notifyAll();
-                }
-            });
-        }
-    };
+    private final AutoWakeWatcher enterWakeWatcher = new AutoWakeWatcher();
+    private final AutoWakeWatcher leaveWakeWatcher = new AutoWakeWatcher();
 
     private static final String     READY_NODE = "ready";
 
@@ -93,6 +82,7 @@ public class DistributedDoubleBarrier
         this.client = client;
         this.barrierPath = PathUtils.validatePath(barrierPath);
         this.memberQty = memberQty;
+        this.log = LoggerFactory.getLogger(this.getClass());
         ourPath = ZKPaths.makePath(barrierPath, UUID.randomUUID().toString());
         readyPath = ZKPaths.makePath(barrierPath, READY_NODE);
     }
@@ -122,7 +112,7 @@ public class DistributedDoubleBarrier
         boolean         hasMaxWait = (unit != null);
         long            maxWaitMs = hasMaxWait ? TimeUnit.MILLISECONDS.convert(maxWait, unit) : Long.MAX_VALUE;
 
-        boolean         readyPathExists = (client.checkExists().usingWatcher(watcher).forPath(readyPath) != null);
+        boolean         readyPathExists = (client.checkExists().usingWatcher(enterWakeWatcher).forPath(readyPath) != null);
         client.create().creatingParentContainersIfNeeded().withMode(CreateMode.EPHEMERAL).forPath(ourPath);
 
         boolean         result = (readyPathExists || internalEnter(startMs, hasMaxWait, maxWaitMs));
@@ -139,9 +129,12 @@ public class DistributedDoubleBarrier
      *
      * @throws Exception interruptions, errors, etc.
      */
-    public synchronized void     leave() throws Exception
+    public void     leave() throws Exception
     {
-        leave(-1, null);
+        synchronized (leaveWakeWatcher.monitor)
+        {
+            leave(-1, null);
+        }
     }
 
     /**
@@ -153,13 +146,16 @@ public class DistributedDoubleBarrier
      * @return true if leaving was successful, false if the timeout elapsed first
      * @throws Exception interruptions, errors, etc.
      */
-    public synchronized boolean     leave(long maxWait, TimeUnit unit) throws Exception
+    public boolean     leave(long maxWait, TimeUnit unit) throws Exception
     {
-        long            startMs = System.currentTimeMillis();
-        boolean         hasMaxWait = (unit != null);
-        long            maxWaitMs = hasMaxWait ? TimeUnit.MILLISECONDS.convert(maxWait, unit) : Long.MAX_VALUE;
+        synchronized (leaveWakeWatcher.monitor)
+        {
+            long            startMs = System.currentTimeMillis();
+            boolean         hasMaxWait = (unit != null);
+            long            maxWaitMs = hasMaxWait ? TimeUnit.MILLISECONDS.convert(maxWait, unit) : Long.MAX_VALUE;
 
-        return internalLeave(startMs, hasMaxWait, maxWaitMs);
+            return internalLeave(startMs, hasMaxWait, maxWaitMs);
+        }
     }
 
     @VisibleForTesting
@@ -243,12 +239,12 @@ public class DistributedDoubleBarrier
             if ( IsLowestNode )
             {
                 String  highestNodePath = ZKPaths.makePath(barrierPath, children.get(children.size() - 1));
-                stat = client.checkExists().usingWatcher(watcher).forPath(highestNodePath);
+                stat = client.checkExists().usingWatcher(leaveWakeWatcher).forPath(highestNodePath);
             }
             else
             {
                 String  lowestNodePath = ZKPaths.makePath(barrierPath, children.get(0));
-                stat = client.checkExists().usingWatcher(watcher).forPath(lowestNodePath);
+                stat = client.checkExists().usingWatcher(leaveWakeWatcher).forPath(lowestNodePath);
 
                 checkDeleteOurPath(ourNodeShouldExist);
                 ourNodeShouldExist = false;
@@ -267,12 +263,12 @@ public class DistributedDoubleBarrier
                     }
                     else
                     {
-                        wait(thisWaitMs);
+                        leaveWakeWatcher.monitor.wait(thisWaitMs);
                     }
                 }
                 else
                 {
-                    wait();
+                    leaveWakeWatcher.monitor.wait();
                 }
             }
         }
@@ -297,50 +293,79 @@ public class DistributedDoubleBarrier
         }
     }
 
-    private synchronized boolean internalEnter(long startMs, boolean hasMaxWait, long maxWaitMs) throws Exception
+    private boolean internalEnter(long startMs, boolean hasMaxWait, long maxWaitMs) throws Exception
     {
-        boolean result = true;
-        do
+        synchronized (enterWakeWatcher.monitor)
         {
-            List<String>    children = getChildrenForEntering();
-            int             count = (children != null) ? children.size() : 0;
-            if ( count >= memberQty )
-            {
-                try
-                {
-                    client.create().forPath(readyPath);
-                }
-                catch ( KeeperException.NodeExistsException ignore )
-                {
-                    // ignore
-                }
-                break;
-            }
 
-            if ( hasMaxWait && !hasBeenNotified.get() )
+            boolean result = true;
+            do
             {
-                long        elapsed = System.currentTimeMillis() - startMs;
-                long        thisWaitMs = maxWaitMs - elapsed;
-                if ( thisWaitMs <= 0 )
+                List<String>    children = getChildrenForEntering();
+                int             count = (children != null) ? children.size() : 0;
+                if ( count >= memberQty )
                 {
-                    result = false;
+                    try
+                    {
+                        client.create().forPath(readyPath);
+                    }
+                    catch ( KeeperException.NodeExistsException ignore )
+                    {
+                        // ignore
+                    }
+                    break;
+                }
+
+                if ( hasMaxWait && !hasBeenNotified.get() )
+                {
+                    long        elapsed = System.currentTimeMillis() - startMs;
+                    long        thisWaitMs = maxWaitMs - elapsed;
+                    if ( thisWaitMs <= 0 )
+                    {
+                        result = false;
+                    }
+                    else
+                    {
+                        enterWakeWatcher.monitor.wait(thisWaitMs);
+                    }
+
+                    if ( !hasBeenNotified.get() )
+                    {
+                        result = false;
+                    }
                 }
                 else
                 {
-                    wait(thisWaitMs);
+                    enterWakeWatcher.monitor.wait();
                 }
+            } while ( false );
 
-                if ( !hasBeenNotified.get() )
-                {
-                    result = false;
-                }
-            }
-            else
-            {
-                wait();
-            }
-        } while ( false );
-
-        return result;
+            return result;
+        }
     }
+
+    private class AutoWakeWatcher implements Watcher
+    {
+        private Object monitor = new Object();
+
+        @Override
+        public void process(WatchedEvent event)
+        {
+            boolean conLost = event.getState() != Event.KeeperState.SyncConnected;
+            connectionLost.set(conLost);
+            client.runSafe(() -> {
+                synchronized(monitor)
+                {
+                    hasBeenNotified.set(true);
+                    if(log.isTraceEnabled()){
+                        String suffix = conLost
+                                ? "connection lost"
+                                : event.getType().name()+" " +event.getPath();
+                        log.trace(String.format("notify all by %s",suffix));
+                    }
+                    monitor.notifyAll();
+                }
+            });
+        }
+    };
 }
