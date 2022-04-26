@@ -481,11 +481,32 @@ public class LeaderLatch implements Closeable
     }
 
     /**
+     * Return this instance's lock node path. IMPORTANT: this instance
+     * owns the path returned. This method is meant for reference only. Also,
+     * it is possible for <code>null</code> to be returned. The path, if any,
+     * returned is not guaranteed to be valid at any point in the future as internal
+     * state changes might require the instance to delete and create a new path.
+     *
+     * However, the existence of <code>ourPath</code> doesn't mean that this instance
+     * holds leadership.
+     *
+     * @see #getLastPathIsLeader
+     *
+     * @return lock node path or <code>null</code>
+     */
+    public String getOurPath()
+    {
+        return ourPath.get();
+    }
+
+    /**
      * Return last of this instance's lock node path that was leader ever.
      * IMPORTANT: this instance owns the path returned. This method is meant for reference only.
      * Also, it is possible for <code>null</code> to be returned (for this instance never becomes
      * a leader). The path, if any, returned is not guaranteed to be valid at any point in the future
      * as internal state changes might require the instance to delete the path.
+     *
+     * The existence of <code>lastPathIsLeader</code> means that this instance holds leadership.
      *
      * @return last lock node path that was leader ever or <code>null</code>
      */
