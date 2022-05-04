@@ -95,6 +95,7 @@ class TestMapsWithJersey
                 return singletons;
             }
         };
+
         ServletContainer container = new ServletContainer(ResourceConfig.forApplication(application));
 
         port = InstanceSpec.getRandomPort();
@@ -104,7 +105,6 @@ class TestMapsWithJersey
         final ServletHolder servletHolder = new ServletHolder(container);
         root.addServlet(servletHolder, "/*");
         servletHolder.setInitOrder(1);
-//        servletHolder.setInitParameter("jersey.config.server.provider.packages", "org.apache.curator.x.discovery.server.entity;org.apache.curator.x.discovery.server.contexts");
         server.setHandler(root);
         server.start();
     }

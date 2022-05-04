@@ -73,6 +73,8 @@ class TestStringsWithRestEasy
         root.getInitParams().put("javax.ws.rs.Application", RestEasyApplication.class.getName());
         root.addServlet(new ServletHolder(dispatcher), "/*");
         root.addEventListener(new ResteasyBootstrap());
+
+        server.setHandler(root);
         server.start();
     }
 
