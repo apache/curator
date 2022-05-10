@@ -28,7 +28,7 @@
 
     <groupId>org.apache.curator</groupId>
     <artifactId>apache-curator</artifactId>
-    <version>5.2.1-SNAPSHOT</version>
+    <version>5.2.2-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Apache Curator</name>
@@ -57,7 +57,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <dependency.locations.enabled>false</dependency.locations.enabled>
 
-        <currentStableVersion>5.2.0</currentStableVersion>
+        <currentStableVersion>5.2.1</currentStableVersion>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.build.resourceEncoding>UTF-8</project.build.resourceEncoding>
@@ -70,10 +70,14 @@
 
         <!-- versions -->
         <zookeeper-version>3.7.0</zookeeper-version>
-        <maven-bundle-plugin-version>5.1.1</maven-bundle-plugin-version>
-        <maven-javadoc-plugin-version>3.0.1</maven-javadoc-plugin-version>
-        <doxia-module-confluence-version>1.8</doxia-module-confluence-version>
+        <maven-bundle-plugin-version>5.1.4</maven-bundle-plugin-version>
+        <maven-compiler-plugin-version>3.10.0</maven-compiler-plugin-version>
+        <maven-dependency-plugin-version>3.2.0</maven-dependency-plugin-version>
+        <maven-javadoc-plugin-version>3.3.2</maven-javadoc-plugin-version>
+        <maven-surefire-plugin-version>3.0.0-M5</maven-surefire-plugin-version>
+        <doxia-module-confluence-version>1.11.1</doxia-module-confluence-version>
         <maven-license-plugin-version>1.9.0</maven-license-plugin-version>
+        <directory-maven-plugin-version>1.0</directory-maven-plugin-version>
         <javassist-version>3.24.1-GA</javassist-version>
         <commons-math-version>2.2</commons-math-version>
         <jackson-mapper-asl-version>1.9.13</jackson-mapper-asl-version>
@@ -85,7 +89,7 @@
         <!-- See https://stackoverflow.com/questions/43574426#comment93992044_43574427 -->
         <jaxb-version>2.2.11</jaxb-version>
         <javax-activation-version>1.1.1</javax-activation-version>
-        <jetty-version>6.1.26</jetty-version>
+        <jetty-version>9.4.45.v20220203</jetty-version>
         <scannotation-version>1.0.2</scannotation-version>
         <!-- resteasy-jaxrs dependency cannot be higher than 2.x for compatibility with Jersey 1.x -->
         <resteasy-jaxrs-version>2.3.5.Final</resteasy-jaxrs-version>
@@ -94,13 +98,13 @@
         <guava-failureaccess-version>1.0.1</guava-failureaccess-version>
         <junit-version>5.6.2</junit-version>
         <swift-version>0.23.1</swift-version>
-        <maven-shade-plugin-version>3.2.1</maven-shade-plugin-version>
+        <maven-shade-plugin-version>3.2.4</maven-shade-plugin-version>
         <slf4j-version>1.7.25</slf4j-version>
         <clirr-maven-plugin-version>2.8</clirr-maven-plugin-version>
         <dropwizard-version>3.2.5</dropwizard-version>
         <snappy-version>1.1.7</snappy-version>
-        <build-helper-maven-plugin-version>3.1.0</build-helper-maven-plugin-version>
-        <awaitility-version>4.1.0</awaitility-version>
+        <build-helper-maven-plugin-version>3.3.0</build-helper-maven-plugin-version>
+        <awaitility-version>4.1.1</awaitility-version>
 
         <!-- OSGi Properties -->
         <osgi.export.package />
@@ -506,8 +510,8 @@
             </dependency>
 
             <dependency>
-                <groupId>org.mortbay.jetty</groupId>
-                <artifactId>jetty</artifactId>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-webapp</artifactId>
                 <version>${jetty-version}</version>
             </dependency>
 
@@ -682,7 +686,7 @@
                 <plugin>
                     <groupId>org.commonjava.maven.plugins</groupId>
                     <artifactId>directory-maven-plugin</artifactId>
-                    <version>0.1</version>
+                    <version>${directory-maven-plugin-version}</version>
                 </plugin>
 
                 <plugin>
@@ -723,7 +727,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-dependency-plugin</artifactId>
-                    <version>3.1.1</version>
+                    <version>${maven-dependency-plugin-version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -779,7 +783,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.0.0-M5</version>
+                <version>${maven-surefire-plugin-version}</version>
                 <configuration>
                     <threadCount>1</threadCount>
                     <reuseForks>false</reuseForks>
@@ -847,7 +851,6 @@
             <plugin>
                 <groupId>org.commonjava.maven.plugins</groupId>
                 <artifactId>directory-maven-plugin</artifactId>
-                <version>0.1</version>
                 <executions>
                     <execution>
                         <id>directories</id>
@@ -1056,7 +1059,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
-                <version>3.1.1</version>
+                <version>${maven-dependency-plugin-version}</version>
             </plugin>
         </plugins>
     </build>
@@ -1072,6 +1075,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-compiler-plugin</artifactId>
+                        <version>${maven-compiler-plugin-version}</version>
                         <configuration>
                             <source>${jdk-version}</source>
                             <target>${jdk-version}</target>
@@ -1090,6 +1094,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-compiler-plugin</artifactId>
+                        <version>${maven-compiler-plugin-version}</version>
                         <configuration>
                             <release>${short-jdk-version}</release>
                         </configuration>

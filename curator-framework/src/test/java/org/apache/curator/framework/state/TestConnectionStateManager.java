@@ -39,10 +39,10 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-@Tag(CuratorTestBase.zk35TestCompatibilityGroup)
 public class TestConnectionStateManager extends BaseClassForTests {
 
     @Test
+    @Tag(CuratorTestBase.zk35TestCompatibilityGroup)
     public void testSessionConnectionStateErrorPolicyWithExpirationPercent30() throws Exception {
         Timing2 timing = new Timing2();
         CuratorFramework client = CuratorFrameworkFactory.builder()
@@ -91,6 +91,7 @@ public class TestConnectionStateManager extends BaseClassForTests {
     }
 
     @Test
+    @Tag(CuratorTestBase.zk36Group)
     public void testConnectionStateRecoversFromUnexpectedExpiredConnection() throws Exception {
         Timing2 timing = new Timing2();
         CuratorFramework client = CuratorFrameworkFactory.builder()
