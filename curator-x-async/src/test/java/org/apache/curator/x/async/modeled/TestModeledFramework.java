@@ -151,11 +151,18 @@ public class TestModeledFramework extends TestModeledFrameworkBase
         complete(versioned.read().whenComplete((v, e) -> {
             assertNull(e);
             assertTrue(v.version() > 0);
-        }).thenCompose(versioned::set), (s, e) -> assertNull(e)); // version is correct should succeed
-        
+        }).thenCompose(versioned::set), (s, e) -> assertNull(e)); // read version is correct; set moves version to 2
+
         Versioned<TestModel> badVersion = Versioned.from(model, 100000);
         complete(versioned.set(badVersion), (v, e) -> assertTrue(e instanceof KeeperException.BadVersionException));
-        
+        complete(versioned.update(badVersion), (v, e) -> assertTrue(e instanceof KeeperException.BadVersionException));
+
+        final Versioned<TestModel> goodVersion = Versioned.from(model, 2);
+        complete(versioned.update(goodVersion).whenComplete((v, e) -> {
+            assertNull(e);
+            assertEquals(3, v.getVersion());
+        }));
+
         final Stat stat = new Stat();
         complete(client.read(stat));
         // wrong version, needs to fail
