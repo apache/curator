@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.io.File;
 
 import org.apache.zookeeper.server.ZooKeeperServer;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -49,5 +50,13 @@ public class TestTestingServer {
          zkTickTime = main.getZkServer().getTickTime();
       }
       assertEquals(customTickMs, zkTickTime);
+   }
+
+   @Test
+   public void testIsRunning() throws Exception {
+      final int defaultZkTickTime = ZooKeeperServer.DEFAULT_TICK_TIME;
+      final int customTickMs = defaultZkTickTime + (defaultZkTickTime == Integer.MAX_VALUE ? -1 : +1);
+      final InstanceSpec spec = new InstanceSpec(zkTmpDir, -1, -1, 2, true, -1, customTickMs, -1);
+      Assertions.assertEquals(2, spec.getQuorumPort());
    }
 }
