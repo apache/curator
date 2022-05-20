@@ -31,6 +31,7 @@ import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
+import org.apache.curator.utils.Compatibility;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -39,7 +40,6 @@ import org.apache.zookeeper.server.quorum.flexible.QuorumMaj;
 import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.util.Properties;
@@ -74,7 +74,7 @@ public class EnsembleTracker implements Closeable, CuratorWatcher
         }
 
         @Override
-        public boolean doNotDecorate()
+        public boolean doNotProxy()
         {
             return true;
         }
@@ -182,7 +182,7 @@ public class EnsembleTracker implements Closeable, CuratorWatcher
             String hostAddress;
             if ( server.clientAddr.getAddress().isAnyLocalAddress() )
             {
-                hostAddress = server.addr.getAddress().getHostAddress();
+                hostAddress = Compatibility.getHostAddress(server);
             }
             else
             {
@@ -211,7 +211,7 @@ public class EnsembleTracker implements Closeable, CuratorWatcher
             }
             else
             {
-                log.error("Invalid config event received: {}", properties);
+                log.debug("Invalid config event received: {}", properties);
             }
         }
         else

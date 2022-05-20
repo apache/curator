@@ -18,21 +18,23 @@
  */
 package org.apache.curator.framework.recipes.leader;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import com.google.common.collect.Lists;
-import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
-import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
-import org.apache.curator.test.Timing;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.apache.curator.test.compatibility.CuratorTestBase;
+import org.apache.curator.test.compatibility.Timing2;
+import org.apache.curator.utils.CloseableUtils;
+import org.junit.jupiter.api.Test;
+
 import java.util.Collection;
 import java.util.List;
 
-public class TestLeaderLatchCluster
+public class TestLeaderLatchCluster extends CuratorTestBase
 {
     private static final int MAX_LOOPS = 5;
 
@@ -54,18 +56,16 @@ public class TestLeaderLatchCluster
     public void testInCluster() throws Exception
     {
         final int PARTICIPANT_QTY = 3;
+        final int sessionLength = timing.session() / 4;
 
         List<ClientAndLatch>    clients = Lists.newArrayList();
-        Timing                  timing = new Timing();
-        TestingCluster          cluster = new TestingCluster(PARTICIPANT_QTY);
+        TestingCluster          cluster = createAndStartCluster(PARTICIPANT_QTY);
         try
         {
-            cluster.start();
-
             List<InstanceSpec>      instances = Lists.newArrayList(cluster.getInstances());
             for ( int i = 0; i < PARTICIPANT_QTY; ++i )
             {
-                CuratorFramework        client = CuratorFrameworkFactory.newClient(instances.get(i).getConnectString(), timing.session(), timing.connection(), new ExponentialBackoffRetry(100, 3));
+                CuratorFramework        client = CuratorFrameworkFactory.newClient(instances.get(i).getConnectString(), sessionLength, sessionLength, new ExponentialBackoffRetry(100, 3));
                 LeaderLatch             latch = new LeaderLatch(client, "/latch");
 
                 clients.add(new ClientAndLatch(client, latch, i));
@@ -74,16 +74,16 @@ public class TestLeaderLatchCluster
             }
 
             ClientAndLatch leader = waitForALeader(clients, timing);
-            Assert.assertNotNull(leader);
+            assertNotNull(leader);
 
             cluster.killServer(instances.get(leader.index));
 
-            Thread.sleep(timing.multiple(2).session());
+            Thread.sleep(sessionLength * 2);
 
             leader = waitForALeader(clients, timing);
-            Assert.assertNotNull(leader);
+            assertNotNull(leader);
 
-            Assert.assertEquals(getLeaders(clients).size(), 1);
+            assertEquals(getLeaders(clients).size(), 1);
         }
         finally
         {
@@ -96,7 +96,13 @@ public class TestLeaderLatchCluster
         }
     }
 
-    private ClientAndLatch waitForALeader(List<ClientAndLatch> latches, Timing timing) throws InterruptedException
+    @Override
+    protected void createServer()
+    {
+        // NOP
+    }
+
+    private ClientAndLatch waitForALeader(List<ClientAndLatch> latches, Timing2 timing) throws InterruptedException
     {
         for ( int i = 0; i < MAX_LOOPS; ++i )
         {

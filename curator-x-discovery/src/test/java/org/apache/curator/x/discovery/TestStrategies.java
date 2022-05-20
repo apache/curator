@@ -18,14 +18,16 @@
  */
 package org.apache.curator.x.discovery;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
 import org.apache.curator.x.discovery.details.InstanceProvider;
 import org.apache.curator.x.discovery.strategies.RandomStrategy;
 import org.apache.curator.x.discovery.strategies.RoundRobinStrategy;
 import org.apache.curator.x.discovery.strategies.StickyStrategy;
 import org.apache.commons.math.stat.descriptive.SummaryStatistics;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 import java.util.List;
 
 public class TestStrategies
@@ -78,7 +80,7 @@ public class TestStrategies
         {
             statistic.addValue(counts[i]);
         }
-        Assert.assertTrue(statistic.getStandardDeviation() <= (QTY * 2), "" + statistic.getStandardDeviation()); // meager check for even distribution
+        assertTrue(statistic.getStandardDeviation() <= (QTY * 2), "" + statistic.getStandardDeviation()); // meager check for even distribution
     }
 
     @Test
@@ -92,13 +94,13 @@ public class TestStrategies
         for ( int i = 0; i < QTY; ++i )
         {
             ServiceInstance<Void> instance = strategy.getInstance(instanceProvider);
-            Assert.assertEquals(instance.getId(), Integer.toString(i));
+            assertEquals(instance.getId(), Integer.toString(i));
         }
 
         for ( int i = 0; i < (1234 * QTY); ++i )
         {
             ServiceInstance<Void> instance = strategy.getInstance(instanceProvider);
-            Assert.assertEquals(instance.getId(), Integer.toString(i % QTY));
+            assertEquals(instance.getId(), Integer.toString(i % QTY));
         }
     }
 
@@ -114,18 +116,18 @@ public class TestStrategies
         int                             instanceNumber = strategy.getInstanceNumber();
         for ( int i = 0; i < 1000; ++i )
         {
-            Assert.assertEquals(strategy.getInstance(instanceProvider), theInstance);
+            assertEquals(strategy.getInstance(instanceProvider), theInstance);
         }
 
         // assert what happens when an instance goes down
         instanceProvider = new TestInstanceProvider(QTY, QTY);
-        Assert.assertFalse(strategy.getInstance(instanceProvider).equals(theInstance));
-        Assert.assertFalse(instanceNumber == strategy.getInstanceNumber());
+        assertFalse(strategy.getInstance(instanceProvider).equals(theInstance));
+        assertFalse(instanceNumber == strategy.getInstanceNumber());
 
         theInstance = strategy.getInstance(instanceProvider);
         for ( int i = 0; i < 1000; ++i )
         {
-            Assert.assertEquals(strategy.getInstance(instanceProvider), theInstance);
+            assertEquals(strategy.getInstance(instanceProvider), theInstance);
         }
     }
 }

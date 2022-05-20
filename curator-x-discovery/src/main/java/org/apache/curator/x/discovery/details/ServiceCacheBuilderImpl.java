@@ -18,7 +18,6 @@
  */
 package org.apache.curator.x.discovery.details;
 
-import org.apache.curator.utils.CloseableExecutorService;
 import org.apache.curator.x.discovery.ServiceCache;
 import org.apache.curator.x.discovery.ServiceCacheBuilder;
 import java.util.concurrent.ExecutorService;
@@ -32,7 +31,7 @@ class ServiceCacheBuilderImpl<T> implements ServiceCacheBuilder<T>
     private ServiceDiscoveryImpl<T> discovery;
     private String name;
     private ThreadFactory threadFactory;
-    private CloseableExecutorService executorService;
+    private ExecutorService executorService;
 
     ServiceCacheBuilderImpl(ServiceDiscoveryImpl<T> discovery)
     {
@@ -47,13 +46,13 @@ class ServiceCacheBuilderImpl<T> implements ServiceCacheBuilder<T>
     @Override
     public ServiceCache<T> build()
     {
-        if (executorService != null)
+        if (threadFactory != null)
         {
-            return new ServiceCacheImpl<T>(discovery, name, executorService);
+            return new ServiceCacheImpl<T>(discovery, name, threadFactory);
         }
         else
         {
-            return new ServiceCacheImpl<T>(discovery, name, threadFactory);
+            return new ServiceCacheImpl<T>(discovery, name, executorService);
         }
     }
 
@@ -77,6 +76,7 @@ class ServiceCacheBuilderImpl<T> implements ServiceCacheBuilder<T>
      * @return this
      */
     @Override
+    @Deprecated
     public ServiceCacheBuilder<T> threadFactory(ThreadFactory threadFactory)
     {
         this.threadFactory = threadFactory;
@@ -91,22 +91,9 @@ class ServiceCacheBuilderImpl<T> implements ServiceCacheBuilder<T>
      * @return this
      */
     @Override
-    public ServiceCacheBuilder<T> executorService(ExecutorService executorService) {
-        this.executorService = new CloseableExecutorService(executorService);
-        this.threadFactory = null;
-        return this;
-    }
-
-    /**
-     * Optional CloseableExecutorService to use for the cache's background thread
-     *
-     * @param executorService an instance of CloseableExecutorService
-     * @return this
-     */
-    @Override
-    public ServiceCacheBuilder<T> executorService(CloseableExecutorService executorService) {
+    public ServiceCacheBuilder<T> executorService(ExecutorService executorService)
+    {
         this.executorService = executorService;
-        this.threadFactory = null;
         return this;
     }
 }

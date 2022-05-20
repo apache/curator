@@ -18,6 +18,7 @@
  */
 package org.apache.curator.x.discovery.details;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -25,21 +26,23 @@ import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
+import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.CloseableExecutorService;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.x.discovery.ServiceCache;
 import org.apache.curator.x.discovery.ServiceDiscovery;
 import org.apache.curator.x.discovery.ServiceDiscoveryBuilder;
 import org.apache.curator.x.discovery.ServiceInstance;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
-import org.testng.Assert;
-import org.testng.annotations.Test;
 import java.io.Closeable;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 
+@Tag(CuratorTestBase.zk35TestCompatibilityGroup)
 public class TestServiceCacheRace extends BaseClassForTests
 {
     private final Timing timing = new Timing();
@@ -90,7 +93,7 @@ public class TestServiceCacheRace extends BaseClassForTests
                 }
             };
             closeableExecutorService.submit(proc);
-            Assert.assertTrue(timing.awaitLatch(cacheStartLatch));  // wait until ServiceCacheImpl's internal PathChildrenCache is started and primed
+            assertTrue(timing.awaitLatch(cacheStartLatch));  // wait until ServiceCacheImpl's internal PathChildrenCache is started and primed
 
             final CountDownLatch cacheChangedLatch = new CountDownLatch(1);
             ServiceCacheListener listener = new ServiceCacheListener()
@@ -110,11 +113,11 @@ public class TestServiceCacheRace extends BaseClassForTests
             cache.addListener(listener);
             ServiceInstance<String> instance2 = ServiceInstance.<String>builder().payload("test").name("test").port(10065).build();
             discovery.registerService(instance2);   // cause ServiceCacheImpl's internal PathChildrenCache listener to get called which will clear the dataBytes
-            Assert.assertTrue(timing.awaitLatch(cacheChangedLatch));
+            assertTrue(timing.awaitLatch(cacheChangedLatch));
 
             cacheWaitLatch.countDown();
 
-            Assert.assertTrue(timing.awaitLatch(startCompletedLatch));
+            assertTrue(timing.awaitLatch(startCompletedLatch));
         }
         finally
         {

@@ -19,7 +19,6 @@
 package org.apache.curator.framework.recipes.cache;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 
@@ -27,7 +26,8 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
-import org.apache.curator.framework.listen.ListenerContainer;
+import org.apache.curator.framework.listen.Listenable;
+import org.apache.curator.framework.listen.StandardListenerManager;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.PathUtils;
@@ -53,7 +53,10 @@ import java.util.concurrent.atomic.AtomicReference;
  * <p><b>IMPORTANT</b> - it's not possible to stay transactionally in sync. Users of this class must
  * be prepared for false-positives and false-negatives. Additionally, always use the version number
  * when updating data to avoid overwriting another process' change.</p>
+ *
+ * @deprecated replace by {@link org.apache.curator.framework.recipes.cache.CuratorCache}
  */
+@Deprecated
 public class NodeCache implements Closeable
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -62,7 +65,7 @@ public class NodeCache implements Closeable
     private final boolean dataIsCompressed;
     private final AtomicReference<ChildData> data = new AtomicReference<ChildData>(null);
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
-    private final ListenerContainer<NodeCacheListener> listeners = new ListenerContainer<NodeCacheListener>();
+    private final StandardListenerManager<NodeCacheListener> listeners = StandardListenerManager.standard();
     private final AtomicBoolean isConnected = new AtomicBoolean(true);
     private ConnectionStateListener connectionStateListener = new ConnectionStateListener()
     {
@@ -125,7 +128,7 @@ public class NodeCache implements Closeable
     };
 
     /**
-     * @param client curztor client
+     * @param client curator client
      * @param path the full path to the node to cache
      */
     public NodeCache(CuratorFramework client, String path)
@@ -134,7 +137,7 @@ public class NodeCache implements Closeable
     }
 
     /**
-     * @param client curztor client
+     * @param client curator client
      * @param path the full path to the node to cache
      * @param dataIsCompressed if true, data in the path is compressed
      */
@@ -204,7 +207,7 @@ public class NodeCache implements Closeable
      *
      * @return listenable
      */
-    public ListenerContainer<NodeCacheListener> getListenable()
+    public Listenable<NodeCacheListener> getListenable()
     {
         Preconditions.checkState(state.get() != State.CLOSED, "Closed");
 
@@ -314,26 +317,17 @@ public class NodeCache implements Closeable
         ChildData   previousData = data.getAndSet(newData);
         if ( !Objects.equal(previousData, newData) )
         {
-            listeners.forEach
-            (
-                new Function<NodeCacheListener, Void>()
+            listeners.forEach(listener -> {
+                try
                 {
-                    @Override
-                    public Void apply(NodeCacheListener listener)
-                    {
-                        try
-                        {
-                            listener.nodeChanged();
-                        }
-                        catch ( Exception e )
-                        {
-                            ThreadUtils.checkInterrupted(e);
-                            log.error("Calling listener", e);
-                        }
-                        return null;
-                    }
+                    listener.nodeChanged();
                 }
-            );
+                catch ( Exception e )
+                {
+                    ThreadUtils.checkInterrupted(e);
+                    log.error("Calling listener", e);
+                }
+            });
 
             if ( rebuildTestExchanger != null )
             {

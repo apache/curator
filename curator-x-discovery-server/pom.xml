@@ -24,11 +24,11 @@
     <parent>
         <groupId>org.apache.curator</groupId>
         <artifactId>apache-curator</artifactId>
-        <version>4.1.1-SNAPSHOT</version>
+        <version>5.2.2-SNAPSHOT</version>
     </parent>
 
     <artifactId>curator-x-discovery-server</artifactId>
-    <version>4.1.1-SNAPSHOT</version>
+    <version>5.2.2-SNAPSHOT</version>
     <packaging>bundle</packaging>
 
     <name>Curator Service Discovery Server</name>
@@ -37,10 +37,10 @@
 
     <properties>
         <osgi.import.package>
-            *
+            org.apache.zookeeper.*;version="[3.4,4.0)", *
         </osgi.import.package>
         <osgi.export.package>
-            org.apache.curator.x.discovery.server*;version="${project.version}";-noimport:=true
+            org.apache.curator.x.discovery.server.*;version="${project.version}";-noimport:=true
         </osgi.export.package>
     </properties>
 
@@ -62,8 +62,8 @@
         </dependency>
 
         <dependency>
-            <groupId>org.testng</groupId>
-            <artifactId>testng</artifactId>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -92,8 +92,8 @@
         </dependency>
 
         <dependency>
-            <groupId>org.mortbay.jetty</groupId>
-            <artifactId>jetty</artifactId>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-webapp</artifactId>
             <scope>test</scope>
         </dependency>
 

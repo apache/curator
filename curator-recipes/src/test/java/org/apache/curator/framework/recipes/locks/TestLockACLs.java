@@ -19,6 +19,9 @@
 
 package org.apache.curator.framework.recipes.locks;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import org.apache.curator.framework.imps.TestCleanState;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
@@ -30,15 +33,15 @@ import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Id;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
+
 import java.util.Collections;
 import java.util.List;
 
 public class TestLockACLs extends BaseClassForTests
 {
     private static final List<ACL> ACLS1 = Collections.singletonList(new ACL(ZooDefs.Perms.ALL, new Id("ip", "127.0.0.1")));
-    private static final List<ACL> ACLS2 = Collections.singletonList(new ACL(ZooDefs.Perms.CREATE, new Id("ip", "127.0.0.1")));
+    private static final List<ACL> ACLS2 = Collections.singletonList(new ACL(ZooDefs.Perms.CREATE | ZooDefs.Perms.READ, new Id("ip", "127.0.0.1")));
 
     private CuratorFramework createClient(ACLProvider provider) throws Exception
     {
@@ -60,18 +63,18 @@ public class TestLockACLs extends BaseClassForTests
         try
         {
             client.create().forPath("/foo");
-            Assert.assertNotNull(client.checkExists().forPath("/foo"));
-            Assert.assertEquals(ZooDefs.Perms.ALL, client.getACL().forPath("/foo").get(0).getPerms());
-            Assert.assertEquals("ip", client.getACL().forPath("/foo").get(0).getId().getScheme());
-            Assert.assertEquals("127.0.0.1", client.getACL().forPath("/foo").get(0).getId().getId());
+            assertNotNull(client.checkExists().forPath("/foo"));
+            assertEquals(ZooDefs.Perms.ALL, client.getACL().forPath("/foo").get(0).getPerms());
+            assertEquals("ip", client.getACL().forPath("/foo").get(0).getId().getScheme());
+            assertEquals("127.0.0.1", client.getACL().forPath("/foo").get(0).getId().getId());
 
             InterProcessReadWriteLock lock = new InterProcessReadWriteLock(client, "/bar");
             InterProcessMutex writeLock = lock.writeLock();
             writeLock.acquire();
-            Assert.assertNotNull(client.checkExists().forPath("/bar"));
-            Assert.assertEquals(ZooDefs.Perms.ALL, client.getACL().forPath("/bar").get(0).getPerms());
-            Assert.assertEquals("ip", client.getACL().forPath("/bar").get(0).getId().getScheme());
-            Assert.assertEquals("127.0.0.1", client.getACL().forPath("/bar").get(0).getId().getId());
+            assertNotNull(client.checkExists().forPath("/bar"));
+            assertEquals(ZooDefs.Perms.ALL, client.getACL().forPath("/bar").get(0).getPerms());
+            assertEquals("ip", client.getACL().forPath("/bar").get(0).getId().getScheme());
+            assertEquals("127.0.0.1", client.getACL().forPath("/bar").get(0).getId().getId());
         }
         finally
         {
@@ -86,8 +89,8 @@ public class TestLockACLs extends BaseClassForTests
         try
         {
             client.create().creatingParentsIfNeeded().forPath("/parent/foo");
-            Assert.assertEquals(ZooDefs.Perms.CREATE, client.getACL().forPath("/parent").get(0).getPerms());
-            Assert.assertEquals(ZooDefs.Perms.ALL, client.getACL().forPath("/parent/foo").get(0).getPerms());
+            assertEquals(ZooDefs.Perms.CREATE | ZooDefs.Perms.READ, client.getACL().forPath("/parent").get(0).getPerms());
+            assertEquals(ZooDefs.Perms.ALL, client.getACL().forPath("/parent/foo").get(0).getPerms());
         }
         finally
         {

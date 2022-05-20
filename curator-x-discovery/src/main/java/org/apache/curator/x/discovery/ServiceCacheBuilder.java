@@ -18,7 +18,6 @@
  */
 package org.apache.curator.x.discovery;
 
-import org.apache.curator.utils.CloseableExecutorService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 
@@ -45,7 +44,9 @@ public interface ServiceCacheBuilder<T>
      *
      * @param threadFactory factory
      * @return this
+     * @deprecated use {@link #executorService(ExecutorService)} instead
      */
+    @Deprecated
     public ServiceCacheBuilder<T> threadFactory(ThreadFactory threadFactory);
 
     /**
@@ -57,13 +58,4 @@ public interface ServiceCacheBuilder<T>
      * @return this
      */
     public ServiceCacheBuilder<T> executorService(ExecutorService executorService);
-
-    /**
-     * Optional CloseableExecutorService to use for the cache's background thread. The specified ExecutorService
-     * overrides any prior ThreadFactory or ExecutorService set on the ServiceCacheBuilder.
-     *
-     * @param executorService an instance of CloseableExecutorService
-     * @return this
-     */
-    public ServiceCacheBuilder<T> executorService(CloseableExecutorService executorService);
 }

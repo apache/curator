@@ -221,7 +221,7 @@ public class LeaderSelector implements Closeable
 
     /**
      * Re-queue an attempt for leadership. If this instance is already queued, nothing
-     * happens and false is returned. If the instance was not queued, it is re-qeued and true
+     * happens and false is returned. If the instance was not queued, it is re-queued and true
      * is returned
      *
      * @return true if re-queue is successful

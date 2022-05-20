@@ -39,7 +39,7 @@ class TestingQuorumPeerMain extends QuorumPeerMain implements ZooKeeperMainFace
                 Field               cnxnFactoryField = QuorumPeer.class.getDeclaredField("cnxnFactory");
                 cnxnFactoryField.setAccessible(true);
                 ServerCnxnFactory   cnxnFactory = (ServerCnxnFactory)cnxnFactoryField.get(quorumPeer);
-                cnxnFactory.closeAll();
+                Compatibility.serverCnxnFactoryCloseAll(cnxnFactory);
 
                 Field               ssField = cnxnFactory.getClass().getDeclaredField("ss");
                 ssField.setAccessible(true);
@@ -60,7 +60,7 @@ class TestingQuorumPeerMain extends QuorumPeerMain implements ZooKeeperMainFace
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         if ( (quorumPeer != null) && !isClosed )
         {
@@ -70,7 +70,7 @@ class TestingQuorumPeerMain extends QuorumPeerMain implements ZooKeeperMainFace
     }
 
     @Override
-    public void blockUntilStarted() throws Exception
+    public void blockUntilStarted()
     {
         long startTime = System.currentTimeMillis();
         while ( (quorumPeer == null) && ((System.currentTimeMillis() - startTime) <= TestingZooKeeperMain.MAX_WAIT_MS) )
@@ -87,7 +87,7 @@ class TestingQuorumPeerMain extends QuorumPeerMain implements ZooKeeperMainFace
         }
         if ( quorumPeer == null )
         {
-            throw new Exception("quorumPeer never got set");
+            throw new FailedServerStartException("quorumPeer never got set");
         }
     }
 }

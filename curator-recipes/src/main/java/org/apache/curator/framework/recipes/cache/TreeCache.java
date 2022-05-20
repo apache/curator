@@ -20,7 +20,6 @@
 package org.apache.curator.framework.recipes.cache;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -33,7 +32,7 @@ import org.apache.curator.framework.api.Pathable;
 import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.api.Watchable;
 import org.apache.curator.framework.listen.Listenable;
-import org.apache.curator.framework.listen.ListenerContainer;
+import org.apache.curator.framework.listen.StandardListenerManager;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.PathUtils;
@@ -48,6 +47,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -71,7 +71,10 @@ import static org.apache.curator.utils.PathUtils.validatePath;
  * <p><b>IMPORTANT</b> - it's not possible to stay transactionally in sync. Users of this class must
  * be prepared for false-positives and false-negatives. Additionally, always use the version number
  * when updating data to avoid overwriting another process' change.</p>
+ *
+ * @deprecated replace by {@link org.apache.curator.framework.recipes.cache.CuratorCache}
  */
+@Deprecated
 public class TreeCache implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(TreeCache.class);
@@ -215,7 +218,7 @@ public class TreeCache implements Closeable
 
     private static final ChildData DEAD = new ChildData("/", null, null);
 
-    private static boolean isLive(ChildData cd)
+    static boolean isLive(ChildData cd)
     {
         return cd != null && cd != DEAD;
     }
@@ -224,7 +227,7 @@ public class TreeCache implements Closeable
 
     private static final AtomicReferenceFieldUpdater<TreeNode, ConcurrentMap<String, TreeNode>> childrenUpdater = (AtomicReferenceFieldUpdater)AtomicReferenceFieldUpdater.newUpdater(TreeNode.class, ConcurrentMap.class, "children");
 
-    private final class TreeNode implements Watcher, BackgroundCallback
+    final class TreeNode implements Watcher, BackgroundCallback
     {
         volatile ChildData childData;
         final TreeNode parent;
@@ -341,7 +344,7 @@ public class TreeCache implements Closeable
 
             if ( isLive(oldChildData) )
             {
-                publishEvent(TreeCacheEvent.Type.NODE_REMOVED, oldChildData);
+                publishEvent(TreeCacheEvent.Type.NODE_REMOVED, oldChildData, null);
             }
 
             if ( parent == null )
@@ -480,7 +483,14 @@ public class TreeCache implements Closeable
                         }
                         if ( childDataUpdater.compareAndSet(this, oldChildData, toUpdate) )
                         {
-                            publishEvent(isLive(oldChildData) ? TreeCacheEvent.Type.NODE_UPDATED : TreeCacheEvent.Type.NODE_ADDED, toPublish);
+                            if ( isLive(oldChildData) )
+                            {
+                                publishEvent(TreeCacheEvent.Type.NODE_UPDATED, toPublish, oldChildData);
+                            }
+                            else
+                            {
+                                publishEvent(TreeCacheEvent.Type.NODE_ADDED, toPublish, null);
+                            }
                             break;
                         }
                     }
@@ -531,8 +541,8 @@ public class TreeCache implements Closeable
     private final boolean cacheData;
     private final boolean dataIsCompressed;
     private final int maxDepth;
-    private final ListenerContainer<TreeCacheListener> listeners = new ListenerContainer<TreeCacheListener>();
-    private final ListenerContainer<UnhandledErrorListener> errorListeners = new ListenerContainer<UnhandledErrorListener>();
+    private final StandardListenerManager<TreeCacheListener> listeners = StandardListenerManager.standard();
+    private final StandardListenerManager<UnhandledErrorListener> errorListeners = StandardListenerManager.standard();
     private final AtomicReference<TreeState> treeState = new AtomicReference<TreeState>(TreeState.LATENT);
 
     private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
@@ -748,23 +758,61 @@ public class TreeCache implements Closeable
         return isLive(result) ? result : null;
     }
 
+    /**
+     * Return an iterator over all nodes in the cache. There are no
+     * guarantees of accuracy; this is merely the most recent view of the data.
+     *
+     * @return a possibly-empty iterator of nodes in the cache
+     */
+    public Iterator<ChildData> iterator()
+    {
+        return new TreeCacheIterator(root);
+    }
+
+    /**
+     * Return the number of nodes in the cache. There are no
+     * guarantees of accuracy; this is merely the most recent view of the data.
+     *
+     * @return size
+     */
+    public int size()
+    {
+        return size(root);
+    }
+
+    private int size(TreeNode node)
+    {
+        int size;
+        if ( isLive(node.childData) )
+        {
+            size = 1;
+            if ( node.children != null )
+            {
+                for ( TreeNode child : node.children.values() )
+                {
+                    size += size(child);
+                }
+            }
+        }
+        else
+        {
+            size = 0;
+        }
+        return size;
+    }
+
     private void callListeners(final TreeCacheEvent event)
     {
-        listeners.forEach(new Function<TreeCacheListener, Void>()
+        listeners.forEach(listener ->
         {
-            @Override
-            public Void apply(TreeCacheListener listener)
+            try
             {
-                try
-                {
-                    listener.childEvent(client, event);
-                }
-                catch ( Exception e )
-                {
-                    ThreadUtils.checkInterrupted(e);
-                    handleException(e);
-                }
-                return null;
+                listener.childEvent(client, event);
+            }
+            catch ( Exception e )
+            {
+                ThreadUtils.checkInterrupted(e);
+                handleException(e);
             }
         });
     }
@@ -780,21 +828,16 @@ public class TreeCache implements Closeable
         }
         else
         {
-            errorListeners.forEach(new Function<UnhandledErrorListener, Void>()
+            errorListeners.forEach(listener ->
             {
-                @Override
-                public Void apply(UnhandledErrorListener listener)
+                try
                 {
-                    try
-                    {
-                        listener.unhandledError("", e);
-                    }
-                    catch ( Exception e )
-                    {
-                        ThreadUtils.checkInterrupted(e);
-                        LOG.error("Exception handling exception", e);
-                    }
-                    return null;
+                    listener.unhandledError("", e);
+                }
+                catch ( Exception e2 )
+                {
+                    ThreadUtils.checkInterrupted(e2);
+                    LOG.error("Exception handling exception", e2);
                 }
             });
         }
@@ -845,9 +888,9 @@ public class TreeCache implements Closeable
         publishEvent(new TreeCacheEvent(type, null));
     }
 
-    private void publishEvent(TreeCacheEvent.Type type, ChildData data)
+    private void publishEvent(TreeCacheEvent.Type type, ChildData data, ChildData oldData)
     {
-        publishEvent(new TreeCacheEvent(type, data));
+        publishEvent(new TreeCacheEvent(type, data, oldData));
     }
 
     private void publishEvent(final TreeCacheEvent event)

@@ -18,6 +18,11 @@
  */
 package org.apache.curator.framework.imps;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.BackgroundCallback;
@@ -26,15 +31,13 @@ import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.test.Timing;
-import org.apache.curator.test.compatibility.Zk35MethodInterceptor;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.data.Stat;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
-@Test(groups = Zk35MethodInterceptor.zk35Group)
 public class TestCreateReturningStat extends CuratorTestBase
 {
     private CuratorFramework createClient()
@@ -50,7 +53,7 @@ public class TestCreateReturningStat extends CuratorTestBase
     {
         Stat queriedStat = client.checkExists().forPath(path);
         
-        Assert.assertEquals(queriedStat, expected);
+        assertEquals(queriedStat, expected);
     }
     
     @Test
@@ -64,22 +67,22 @@ public class TestCreateReturningStat extends CuratorTestBase
 
             final Stat versionZeroStat = new Stat();
             client.create().orSetData().storingStatIn(versionZeroStat).forPath(path);
-            Assert.assertEquals(0, versionZeroStat.getVersion());
+            assertEquals(0, versionZeroStat.getVersion());
 
             final Stat versionOneStat = new Stat();
             client.create().orSetData().storingStatIn(versionOneStat).forPath(path);
             
-            Assert.assertEquals(versionZeroStat.getAversion(), versionOneStat.getAversion());
-            Assert.assertEquals(versionZeroStat.getCtime(), versionOneStat.getCtime());
-            Assert.assertEquals(versionZeroStat.getCversion(), versionOneStat.getCversion());
-            Assert.assertEquals(versionZeroStat.getCzxid(), versionOneStat.getCzxid());
-            Assert.assertEquals(versionZeroStat.getDataLength(), versionOneStat.getDataLength());
-            Assert.assertEquals(versionZeroStat.getEphemeralOwner(), versionOneStat.getEphemeralOwner());
-            Assert.assertTrue(versionZeroStat.getMtime() <= versionOneStat.getMtime());
-            Assert.assertNotEquals(versionZeroStat.getMzxid(), versionOneStat.getMzxid());
-            Assert.assertEquals(versionZeroStat.getNumChildren(), versionOneStat.getNumChildren());
-            Assert.assertEquals(versionZeroStat.getPzxid(), versionOneStat.getPzxid());
-            Assert.assertEquals(1, versionOneStat.getVersion());
+            assertEquals(versionZeroStat.getAversion(), versionOneStat.getAversion());
+            assertEquals(versionZeroStat.getCtime(), versionOneStat.getCtime());
+            assertEquals(versionZeroStat.getCversion(), versionOneStat.getCversion());
+            assertEquals(versionZeroStat.getCzxid(), versionOneStat.getCzxid());
+            assertEquals(versionZeroStat.getDataLength(), versionOneStat.getDataLength());
+            assertEquals(versionZeroStat.getEphemeralOwner(), versionOneStat.getEphemeralOwner());
+            assertTrue(versionZeroStat.getMtime() <= versionOneStat.getMtime());
+            assertNotEquals(versionZeroStat.getMzxid(), versionOneStat.getMzxid());
+            assertEquals(versionZeroStat.getNumChildren(), versionOneStat.getNumChildren());
+            assertEquals(versionZeroStat.getPzxid(), versionOneStat.getPzxid());
+            assertEquals(1, versionOneStat.getVersion());
         }
     }
     
@@ -214,10 +217,32 @@ public class TestCreateReturningStat extends CuratorTestBase
             
             if(!timing.awaitLatch(latch))
             {
-                Assert.fail("Timed out awaing latch");
+                fail("Timed out awaing latch");
             }
             
             compare(client, path, statRef.get());
+            compare(client, path, stat);
+        }
+        finally
+        {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void testIdempotentCreateReturningStat() throws Exception
+    {
+        CuratorFramework client = createClient();
+        try
+        {
+            client.start();
+
+            String path = "/testidp";
+            client.create().forPath(path);
+
+            Stat stat = new Stat();
+            client.create().idempotent().storingStatIn(stat).forPath(path);
+
             compare(client, path, stat);
         }
         finally

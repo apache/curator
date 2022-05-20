@@ -24,7 +24,7 @@
     <parent>
         <groupId>org.apache.curator</groupId>
         <artifactId>apache-curator</artifactId>
-        <version>4.1.1-SNAPSHOT</version>
+        <version>5.2.2-SNAPSHOT</version>
     </parent>
 
     <artifactId>curator-examples</artifactId>
@@ -64,16 +64,4 @@
             <artifactId>slf4j-log4j12</artifactId>
         </dependency>
     </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>

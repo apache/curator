@@ -34,15 +34,6 @@ class HandleHolder
 
     private volatile Helper helper;
 
-    private interface Helper
-    {
-        ZooKeeper getZooKeeper() throws Exception;
-
-        String getConnectionString();
-
-        int getNegotiatedSessionTimeoutMs();
-    }
-
     HandleHolder(ZookeeperFactory zookeeperFactory, Watcher watcher, EnsembleProvider ensembleProvider, int sessionTimeout, boolean canBeReadOnly)
     {
         this.zookeeperFactory = zookeeperFactory;
@@ -70,7 +61,16 @@ class HandleHolder
     String getNewConnectionString()
     {
         String helperConnectionString = (helper != null) ? helper.getConnectionString() : null;
-        return ((helperConnectionString != null) && !ensembleProvider.getConnectionString().equals(helperConnectionString)) ? helperConnectionString : null;
+        String ensembleProviderConnectionString = ensembleProvider.getConnectionString();
+        return ((helperConnectionString != null) && !ensembleProviderConnectionString.equals(helperConnectionString)) ? ensembleProviderConnectionString : null;
+    }
+
+    void resetConnectionString(String connectionString)
+    {
+        if ( helper != null )
+        {
+            helper.resetConnectionString(connectionString);
+        }
     }
 
     void closeAndClear(int waitForShutdownTimeoutMs) throws Exception
@@ -83,59 +83,27 @@ class HandleHolder
     {
         internalClose(0);
 
+        Helper.Data data = new Helper.Data();   // data shared between initial Helper and the un-synchronized Helper
         // first helper is synchronized when getZooKeeper is called. Subsequent calls
         // are not synchronized.
-        helper = new Helper()
+        //noinspection NonAtomicOperationOnVolatileField
+        helper = new Helper(data)
         {
-            private volatile ZooKeeper zooKeeperHandle = null;
-            private volatile String connectionString = null;
-
             @Override
-            public ZooKeeper getZooKeeper() throws Exception
+            ZooKeeper getZooKeeper() throws Exception
             {
                 synchronized(this)
                 {
-                    if ( zooKeeperHandle == null )
+                    if ( data.zooKeeperHandle == null )
                     {
-                        connectionString = ensembleProvider.getConnectionString();
-                        zooKeeperHandle = zookeeperFactory.newZooKeeper(connectionString, sessionTimeout, watcher, canBeReadOnly);
+                        resetConnectionString(ensembleProvider.getConnectionString());
+                        data.zooKeeperHandle = zookeeperFactory.newZooKeeper(data.connectionString, sessionTimeout, watcher, canBeReadOnly);
                     }
 
-                    helper = new Helper()
-                    {
-                        @Override
-                        public ZooKeeper getZooKeeper() throws Exception
-                        {
-                            return zooKeeperHandle;
-                        }
+                    helper = new Helper(data);
 
-                        @Override
-                        public String getConnectionString()
-                        {
-                            return connectionString;
-                        }
-
-                        @Override
-                        public int getNegotiatedSessionTimeoutMs()
-                        {
-                            return (zooKeeperHandle != null) ? zooKeeperHandle.getSessionTimeout() : 0;
-                        }
-                    };
-
-                    return zooKeeperHandle;
+                    return super.getZooKeeper();
                 }
-            }
-
-            @Override
-            public String getConnectionString()
-            {
-                return connectionString;
-            }
-
-            @Override
-            public int getNegotiatedSessionTimeoutMs()
-            {
-                return (zooKeeperHandle != null) ? zooKeeperHandle.getSessionTimeout() : 0;
             }
         };
     }

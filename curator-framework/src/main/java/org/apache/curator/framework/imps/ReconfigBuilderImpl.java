@@ -24,6 +24,7 @@ import org.apache.curator.RetryLoop;
 import org.apache.curator.TimeTrace;
 import org.apache.curator.framework.api.*;
 import org.apache.zookeeper.AsyncCallback;
+import org.apache.zookeeper.admin.ZooKeeperAdmin;
 import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.server.DataTree;
 import java.util.Arrays;
@@ -129,7 +130,7 @@ public class ReconfigBuilderImpl implements ReconfigBuilder, BackgroundOperation
     @Override
     public StatConfigureEnsembleable withNewMembers(List<String> servers)
     {
-        newMembers = (servers != null) ? ImmutableList.copyOf(servers) : ImmutableList.<String>of();
+        newMembers = (servers != null && !servers.isEmpty()) ? ImmutableList.copyOf(servers) : null;
         return new StatConfigureEnsembleable()
         {
             @Override
@@ -163,7 +164,7 @@ public class ReconfigBuilderImpl implements ReconfigBuilder, BackgroundOperation
     @Override
     public LeaveStatConfigEnsembleable joining(List<String> servers)
     {
-        joining = (servers != null) ? ImmutableList.copyOf(servers) : ImmutableList.<String>of();
+        joining = (servers != null && !servers.isEmpty()) ? ImmutableList.copyOf(servers) : null;
 
         return new LeaveStatConfigEnsembleable()
         {
@@ -210,7 +211,7 @@ public class ReconfigBuilderImpl implements ReconfigBuilder, BackgroundOperation
     @Override
     public JoinStatConfigEnsembleable leaving(List<String> servers)
     {
-        leaving = (servers != null) ? ImmutableList.copyOf(servers) : ImmutableList.<String>of();
+        leaving = (servers != null && !servers.isEmpty()) ? ImmutableList.copyOf(servers) : null;
 
         return new JoinStatConfigEnsembleable()
         {
@@ -268,7 +269,7 @@ public class ReconfigBuilderImpl implements ReconfigBuilder, BackgroundOperation
                     client.processBackgroundOperation(data, event);
                 }
             };
-            client.getZooKeeper().reconfig(joining, leaving, newMembers, fromConfig, callback, backgrounding.getContext());
+            ((ZooKeeperAdmin)client.getZooKeeper()).reconfigure(joining, leaving, newMembers, fromConfig, callback, backgrounding.getContext());
         }
         catch ( Throwable e )
         {
@@ -287,7 +288,7 @@ public class ReconfigBuilderImpl implements ReconfigBuilder, BackgroundOperation
                     @Override
                     public byte[] call() throws Exception
                     {
-                        return client.getZooKeeper().reconfig(joining, leaving, newMembers, fromConfig, responseStat);
+                        return ((ZooKeeperAdmin)client.getZooKeeper()).reconfigure(joining, leaving, newMembers, fromConfig, responseStat);
                     }
                 }
             );

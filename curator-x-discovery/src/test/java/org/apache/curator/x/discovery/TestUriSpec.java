@@ -18,9 +18,9 @@
  */
 package org.apache.curator.x.discovery;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.google.common.collect.Maps;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -36,11 +36,11 @@ public class TestUriSpec
         builder.name("foo");
         builder.port(5);
         ServiceInstance<Void>               instance = builder.build();
-        Assert.assertEquals(spec.build(instance), "http://foo.com");
+        assertEquals(spec.build(instance), "http://foo.com");
 
         builder.sslPort(5);
         instance = builder.build();
-        Assert.assertEquals(spec.build(instance), "https://foo.com");
+        assertEquals(spec.build(instance), "https://foo.com");
     }
 
     @Test
@@ -60,7 +60,7 @@ public class TestUriSpec
 
         Map<String, Object>     m = Maps.newHashMap();
         m.put("scheme", "test");
-        Assert.assertEquals(spec.build(instance, m), "test://1.2.3.4:5:6/foo/bar/789/permanent");
+        assertEquals(spec.build(instance, m), "test://1.2.3.4:5:6/foo/bar/789/permanent");
     }
 
     @Test
@@ -79,7 +79,7 @@ public class TestUriSpec
         Map<String, Object>     m = Maps.newHashMap();
         m.put("one", 1);
         m.put("six", 6);
-        Assert.assertEquals(spec.build(m), "1two-three-{four}-five6");
+        assertEquals(spec.build(m), "1two-three-{four}-five6");
     }
 
     @Test
@@ -97,7 +97,7 @@ public class TestUriSpec
 
     private void    checkPart(UriSpec.Part p, String value, boolean isVariable)
     {
-        Assert.assertEquals(p.getValue(), value);
-        Assert.assertEquals(p.isVariable(), isVariable);
+        assertEquals(p.getValue(), value);
+        assertEquals(p.isVariable(), isVariable);
     }
 }

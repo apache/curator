@@ -36,6 +36,7 @@ public class Timing2
     private final TimeUnit unit;
     private final int waitingMultiple;
 
+    private static final double TICK_TIME_MULTIPLE = .10;
     private static final int DEFAULT_SECONDS = 10;
     private static final int DEFAULT_WAITING_MULTIPLE = 5;
     private static final double SESSION_MULTIPLE = 1.5;
@@ -290,6 +291,16 @@ public class Timing2
     public int connection()
     {
         return milliseconds();
+    }
+
+    /**
+     * Value to use for server "tickTime"
+     *
+     * @return tick time
+     */
+    public int tickTime()
+    {
+        return (int)Math.max(1, milliseconds() * TICK_TIME_MULTIPLE);
     }
 
     private static Integer getWaitingMultiple()

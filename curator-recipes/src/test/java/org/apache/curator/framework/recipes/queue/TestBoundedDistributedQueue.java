@@ -18,6 +18,10 @@
  */
 package org.apache.curator.framework.recipes.queue;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
@@ -28,8 +32,8 @@ import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -180,7 +184,7 @@ public class TestBoundedDistributedQueue extends BaseClassForTests
 
             for ( int count : counts )
             {
-                Assert.assertTrue(count <= (MAX_ITEMS * CLIENT_QTY), counts.toString());
+                assertTrue(count <= (MAX_ITEMS * CLIENT_QTY), counts.toString());
             }
         }
         finally
@@ -235,16 +239,16 @@ public class TestBoundedDistributedQueue extends BaseClassForTests
             };
             queue.getPutListenerContainer().addListener(listener);
 
-            Assert.assertTrue(queue.put("1", timing.milliseconds(), TimeUnit.MILLISECONDS));   // should end up in consumer
-            Assert.assertTrue(queue.put("2", timing.milliseconds(), TimeUnit.MILLISECONDS));   // should sit blocking in DistributedQueue
-            Assert.assertTrue(timing.awaitLatch(latch));
+            assertTrue(queue.put("1", timing.milliseconds(), TimeUnit.MILLISECONDS));   // should end up in consumer
+            assertTrue(queue.put("2", timing.milliseconds(), TimeUnit.MILLISECONDS));   // should sit blocking in DistributedQueue
+            assertTrue(timing.awaitLatch(latch));
             timing.sleepABit();
-            Assert.assertFalse(queue.put("3", timing.multiple(.5).milliseconds(), TimeUnit.MILLISECONDS));
+            assertFalse(queue.put("3", timing.multiple(.5).milliseconds(), TimeUnit.MILLISECONDS));
 
             semaphore.release(100);
-            Assert.assertTrue(queue.put("3", timing.milliseconds(), TimeUnit.MILLISECONDS));
-            Assert.assertTrue(queue.put("4", timing.milliseconds(), TimeUnit.MILLISECONDS));
-            Assert.assertTrue(queue.put("5", timing.milliseconds(), TimeUnit.MILLISECONDS));
+            assertTrue(queue.put("3", timing.milliseconds(), TimeUnit.MILLISECONDS));
+            assertTrue(queue.put("4", timing.milliseconds(), TimeUnit.MILLISECONDS));
+            assertTrue(queue.put("5", timing.milliseconds(), TimeUnit.MILLISECONDS));
 
             for ( int i = 0; i < 5; ++i )
             {
@@ -256,7 +260,7 @@ public class TestBoundedDistributedQueue extends BaseClassForTests
             }
             timing.sleepABit();
 
-            Assert.assertEquals(messages, Arrays.asList("1", "2", "3", "4", "5"));
+            assertEquals(messages, Arrays.asList("1", "2", "3", "4", "5"));
         }
         finally
         {

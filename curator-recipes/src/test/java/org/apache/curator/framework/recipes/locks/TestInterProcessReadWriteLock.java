@@ -19,14 +19,22 @@
 
 package org.apache.curator.framework.recipes.locks;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.imps.TestCleanState;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.apache.curator.test.KillSession;
+import org.apache.zookeeper.KeeperException;
+import org.junit.jupiter.api.Test;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
@@ -92,7 +100,7 @@ public class TestInterProcessReadWriteLock extends BaseClassForTests
                         @Override
                         public Void call() throws Exception
                         {
-                            Assert.assertTrue(readLatch.await(10, TimeUnit.SECONDS));
+                            assertTrue(readLatch.await(10, TimeUnit.SECONDS));
                             latch.countDown();  // must be before as there can only be one writer
                             lock.writeLock().acquire();
                             try
@@ -109,13 +117,13 @@ public class TestInterProcessReadWriteLock extends BaseClassForTests
                 );
             }
 
-            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+            assertTrue(latch.await(10, TimeUnit.SECONDS));
 
             Collection<String> readers = lock.readLock().getParticipantNodes();
             Collection<String> writers = lock.writeLock().getParticipantNodes();
 
-            Assert.assertEquals(readers.size(), READERS);
-            Assert.assertEquals(writers.size(), WRITERS);
+            assertEquals(readers.size(), READERS);
+            assertEquals(writers.size(), WRITERS);
 
             exitLatch.countDown();
             for ( int i = 0; i < (READERS + WRITERS); ++i )
@@ -139,7 +147,7 @@ public class TestInterProcessReadWriteLock extends BaseClassForTests
 
             InterProcessReadWriteLock lock = new InterProcessReadWriteLock(client, "/lock");
             lock.readLock().acquire();
-            Assert.assertFalse(lock.writeLock().acquire(5, TimeUnit.SECONDS));
+            assertFalse(lock.writeLock().acquire(5, TimeUnit.SECONDS));
 
             lock.readLock().release();
         }
@@ -193,8 +201,8 @@ public class TestInterProcessReadWriteLock extends BaseClassForTests
                         @Override
                         public Object call() throws Exception
                         {
-                            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
-                            Assert.assertFalse(lock.readLock().acquire(5, TimeUnit.SECONDS));
+                            assertTrue(latch.await(10, TimeUnit.SECONDS));
+                            assertFalse(lock.readLock().acquire(5, TimeUnit.SECONDS));
                             return null;
                         }
                     }
@@ -220,7 +228,7 @@ public class TestInterProcessReadWriteLock extends BaseClassForTests
 
             InterProcessReadWriteLock lock = new InterProcessReadWriteLock(client, "/lock");
             lock.writeLock().acquire();
-            Assert.assertTrue(lock.readLock().acquire(5, TimeUnit.SECONDS));
+            assertTrue(lock.readLock().acquire(5, TimeUnit.SECONDS));
             lock.writeLock().release();
 
             lock.readLock().release();
@@ -291,9 +299,9 @@ public class TestInterProcessReadWriteLock extends BaseClassForTests
 
         System.out.println("Writes: " + writeCount.get() + " - Reads: " + readCount.get() + " - Max Reads: " + maxConcurrentCount.get());
 
-        Assert.assertTrue(writeCount.get() > 0);
-        Assert.assertTrue(readCount.get() > 0);
-        Assert.assertTrue(maxConcurrentCount.get() > 1);
+        assertTrue(writeCount.get() > 0);
+        assertTrue(readCount.get() > 0);
+        assertTrue(maxConcurrentCount.get() > 1);
     }
 
     @Test
@@ -315,11 +323,11 @@ public class TestInterProcessReadWriteLock extends BaseClassForTests
             lock.writeLock().acquire();
 
             List<String> children = client.getChildren().forPath("/lock");
-            Assert.assertEquals(1, children.size());
+            assertEquals(1, children.size());
 
             byte dataInZk[] = client.getData().forPath("/lock/" + children.get(0));
-            Assert.assertNotNull(dataInZk);
-            Assert.assertEquals(new byte[]{1, 2, 3, 4}, dataInZk);
+            assertNotNull(dataInZk);
+            assertArrayEquals(new byte[]{1, 2, 3, 4}, dataInZk);
 
             lock.writeLock().release();
         }
@@ -333,7 +341,7 @@ public class TestInterProcessReadWriteLock extends BaseClassForTests
     {
         try
         {
-            Assert.assertTrue(lock.acquire(10, TimeUnit.SECONDS));
+            assertTrue(lock.acquire(10, TimeUnit.SECONDS));
             int localConcurrentCount;
             synchronized(this)
             {
@@ -344,7 +352,7 @@ public class TestInterProcessReadWriteLock extends BaseClassForTests
                 }
             }
 
-            Assert.assertTrue(localConcurrentCount <= maxAllowed, "" + localConcurrentCount);
+            assertTrue(localConcurrentCount <= maxAllowed, "" + localConcurrentCount);
 
             Thread.sleep(random.nextInt(9) + 1);
         }
@@ -355,6 +363,108 @@ public class TestInterProcessReadWriteLock extends BaseClassForTests
                 concurrentCount.decrementAndGet();
                 lock.release();
             }
+        }
+    }
+
+    public static class LockPathInterProcessReadWriteLock extends InterProcessReadWriteLock
+    {
+        private final WriteLock writeLock;
+        private final ReadLock readLock;
+
+        public LockPathInterProcessReadWriteLock(CuratorFramework client, String basePath)
+        {
+            this(client, basePath, null);
+        }
+
+        public LockPathInterProcessReadWriteLock(CuratorFramework client, String basePath, byte[] lockData)
+        {
+            this(client, basePath, lockData, new WriteLock(client, basePath, lockData));
+        }
+
+        private LockPathInterProcessReadWriteLock(
+            CuratorFramework client,
+            String basePath,
+            byte[] lockData,
+            WriteLock writeLock
+        )
+        {
+            this(writeLock, new ReadLock(client, basePath, lockData, writeLock));
+        }
+
+        private LockPathInterProcessReadWriteLock(WriteLock writeLock, ReadLock readLock)
+        {
+            super(writeLock, readLock);
+            this.writeLock = writeLock;
+            this.readLock = readLock;
+        }
+
+        @Override
+        public WriteLock writeLock()
+        {
+            return writeLock;
+        }
+
+        @Override
+        public ReadLock readLock()
+        {
+            return readLock;
+        }
+
+        public static class WriteLock extends InterProcessReadWriteLock.WriteLock
+        {
+            private WriteLock(CuratorFramework client, String basePath, byte[] lockData)
+            {
+                super(client, basePath, lockData);
+            }
+
+            @Override
+            public String getLockPath()
+            {
+                return super.getLockPath();
+            }
+        }
+
+        public static class ReadLock extends InterProcessReadWriteLock.ReadLock
+        {
+            private ReadLock(CuratorFramework client, String basePath, byte[] lockData, WriteLock writeLock)
+            {
+                super(client, basePath, lockData, writeLock);
+            }
+
+            @Override
+            public String getLockPath()
+            {
+                return super.getLockPath();
+            }
+        }
+    }
+
+    @Test
+    public void testLockPath() throws Exception
+    {
+        CuratorFramework client1 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        CuratorFramework client2 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try
+        {
+            client1.start();
+            client2.start();
+            LockPathInterProcessReadWriteLock lock1 = new LockPathInterProcessReadWriteLock(client1, "/lock");
+            LockPathInterProcessReadWriteLock lock2 = new LockPathInterProcessReadWriteLock(client2, "/lock");
+            lock1.writeLock().acquire();
+            KillSession.kill(client1.getZookeeperClient().getZooKeeper());
+            lock2.readLock().acquire();
+            try {
+                client1.getData().forPath(lock1.writeLock().getLockPath());
+                fail("expected not to find node");
+            } catch (KeeperException.NoNodeException ignored) {
+            }
+            lock2.readLock().release();
+            lock1.writeLock().release();
+        }
+        finally
+        {
+            TestCleanState.closeAndTestClean(client2);
+            TestCleanState.closeAndTestClean(client1);
         }
     }
 }

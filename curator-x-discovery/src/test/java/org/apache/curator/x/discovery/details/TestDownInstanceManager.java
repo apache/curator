@@ -18,10 +18,11 @@
  */
 package org.apache.curator.x.discovery.details;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.apache.curator.x.discovery.DownInstancePolicy;
 import org.apache.curator.x.discovery.ServiceInstance;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 import java.util.concurrent.TimeUnit;
 
 public class TestDownInstanceManager
@@ -36,12 +37,12 @@ public class TestDownInstanceManager
         ServiceInstance<Void> instance2 = ServiceInstance.<Void>builder().name("hey").id("2").build();
 
         DownInstanceManager<Void> downInstanceManager = new DownInstanceManager<Void>(debugDownInstancePolicy);
-        Assert.assertTrue(downInstanceManager.apply(instance1));
-        Assert.assertTrue(downInstanceManager.apply(instance2));
+        assertTrue(downInstanceManager.apply(instance1));
+        assertTrue(downInstanceManager.apply(instance2));
 
         downInstanceManager.add(instance1);
-        Assert.assertFalse(downInstanceManager.apply(instance1));
-        Assert.assertTrue(downInstanceManager.apply(instance2));
+        assertFalse(downInstanceManager.apply(instance1));
+        assertTrue(downInstanceManager.apply(instance2));
     }
 
     @Test
@@ -51,16 +52,16 @@ public class TestDownInstanceManager
         ServiceInstance<Void> instance2 = ServiceInstance.<Void>builder().name("hey").id("2").build();
 
         DownInstanceManager<Void> downInstanceManager = new DownInstanceManager<Void>(debugMultiDownInstancePolicy);
-        Assert.assertTrue(downInstanceManager.apply(instance1));
-        Assert.assertTrue(downInstanceManager.apply(instance2));
+        assertTrue(downInstanceManager.apply(instance1));
+        assertTrue(downInstanceManager.apply(instance2));
 
         downInstanceManager.add(instance1);
-        Assert.assertTrue(downInstanceManager.apply(instance1));
-        Assert.assertTrue(downInstanceManager.apply(instance2));
+        assertTrue(downInstanceManager.apply(instance1));
+        assertTrue(downInstanceManager.apply(instance2));
 
         downInstanceManager.add(instance1);
-        Assert.assertFalse(downInstanceManager.apply(instance1));
-        Assert.assertTrue(downInstanceManager.apply(instance2));
+        assertFalse(downInstanceManager.apply(instance1));
+        assertTrue(downInstanceManager.apply(instance2));
     }
 
     @Test
@@ -72,12 +73,12 @@ public class TestDownInstanceManager
         DownInstanceManager<Void> downInstanceManager = new DownInstanceManager<Void>(debugDownInstancePolicy);
 
         downInstanceManager.add(instance1);
-        Assert.assertFalse(downInstanceManager.apply(instance1));
-        Assert.assertTrue(downInstanceManager.apply(instance2));
+        assertFalse(downInstanceManager.apply(instance1));
+        assertTrue(downInstanceManager.apply(instance2));
 
         Thread.sleep(debugDownInstancePolicy.getTimeoutMs());
 
-        Assert.assertTrue(downInstanceManager.apply(instance1));
-        Assert.assertTrue(downInstanceManager.apply(instance2));
+        assertTrue(downInstanceManager.apply(instance1));
+        assertTrue(downInstanceManager.apply(instance2));
     }
 }

@@ -20,6 +20,9 @@ package org.apache.curator.framework.recipes.locks;
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ * NOTE: depending on its implementation, {@link #release()} may throw an exception if the current thread does not own the lock
+ */
 public interface InterProcessLock
 {
     /**
@@ -44,7 +47,7 @@ public interface InterProcessLock
     /**
      * Perform one release of the mutex.
      *
-     * @throws Exception ZK errors, interruptions, current thread does not own the lock
+     * @throws Exception ZK errors, interruptions
      */
     public void release() throws Exception;
 

@@ -48,6 +48,8 @@ import java.lang.reflect.Type;
 @Produces(MediaType.APPLICATION_JSON)
 public class JsonServiceInstanceMarshaller<T> implements MessageBodyReader<ServiceInstance<T>>, MessageBodyWriter<ServiceInstance<T>>
 {
+    private final static ObjectMapper mapper = new ObjectMapper();
+
     private final DiscoveryContext<T> context;
 
     public JsonServiceInstanceMarshaller(DiscoveryContext<T> context)
@@ -140,8 +142,7 @@ public class JsonServiceInstanceMarshaller<T> implements MessageBodyReader<Servi
     {
         try
         {
-            ObjectMapper                mapper = new ObjectMapper();
-            JsonNode                    node = mapper.reader().readTree(entityStream);
+            JsonNode                    node = mapper.readTree(entityStream);
             return readInstance(node, context);
         }
         catch ( Exception e )
@@ -154,8 +155,7 @@ public class JsonServiceInstanceMarshaller<T> implements MessageBodyReader<Servi
     @Override
     public void writeTo(ServiceInstance<T> serviceInstance, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException
     {
-        ObjectMapper    mapper = new ObjectMapper();
         ObjectNode      node = writeInstance(mapper, serviceInstance, context);
-        mapper.writer().writeValue(entityStream, node);
+        mapper.writeValue(entityStream, node);
     }
 }

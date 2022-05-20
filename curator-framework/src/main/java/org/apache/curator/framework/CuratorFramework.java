@@ -194,9 +194,20 @@ public interface CuratorFramework extends Closeable
 
     /**
      * Start a remove watches builder.
+     *
      * @return builder object
+     * @deprecated use {@link #watchers()} in ZooKeeper 3.6+
      */
     public RemoveWatchesBuilder watches();
+
+    /**
+     * Start a watch builder. Supported only when ZooKeeper JAR of version 3.6 or
+     * above is used, throws {@code IllegalStateException} for ZooKeeper JAR 3.5 or below
+     *
+     * @return builder object
+     * @throws IllegalStateException ZooKeeper JAR is 3.5 or below
+     */
+    public WatchesBuilder watchers();
 
     /**
      * Returns the listenable interface for the Connect State
@@ -323,13 +334,6 @@ public interface CuratorFramework extends Closeable
      * @return schema set
      */
     SchemaSet getSchemaSet();
-
-    /**
-     * Return true if this instance is running in ZK 3.4.x compatibility mode
-     *
-     * @return true/false
-     */
-    boolean isZk34CompatibilityMode();
 
     /**
      * Calls {@link #notifyAll()} on the given object after first synchronizing on it. This is

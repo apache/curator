@@ -18,22 +18,26 @@
  */
 package org.apache.curator;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.time.Duration;
 import org.apache.curator.ensemble.fixed.FixedEnsembleProvider;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
-import org.apache.curator.utils.Compatibility;
 import org.apache.curator.utils.ZookeeperFactory;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
+import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -43,17 +47,11 @@ public class BasicTests extends BaseClassForTests
     public void     testFactory() throws Exception
     {
         final ZooKeeper         mockZookeeper = Mockito.mock(ZooKeeper.class);
-        ZookeeperFactory        zookeeperFactory = new ZookeeperFactory()
-        {
-            @Override
-            public ZooKeeper newZooKeeper(String connectString, int sessionTimeout, Watcher watcher, boolean canBeReadOnly) throws Exception
-            {
-                return mockZookeeper;
-            }
-        };
+        ZookeeperFactory        zookeeperFactory =
+                (connectString, sessionTimeout, watcher, canBeReadOnly) -> mockZookeeper;
         CuratorZookeeperClient  client = new CuratorZookeeperClient(zookeeperFactory, new FixedEnsembleProvider(server.getConnectString()), 10000, 10000, null, new RetryOneTime(1), false);
         client.start();
-        Assert.assertEquals(client.getZooKeeper(), mockZookeeper);
+        assertEquals(client.getZooKeeper(), mockZookeeper);
     }
 
     @Test
@@ -64,15 +62,10 @@ public class BasicTests extends BaseClassForTests
         final Timing                  timing = new Timing();
 
         final CountDownLatch    latch = new CountDownLatch(1);
-        Watcher                 watcher = new Watcher()
-        {
-            @Override
-            public void process(WatchedEvent event)
+        Watcher                 watcher = event -> {
+            if ( event.getState() == Watcher.Event.KeeperState.Expired )
             {
-                if ( event.getState() == Event.KeeperState.Expired )
-                {
-                    latch.countDown();
-                }
+                latch.countDown();
             }
         };
 
@@ -84,11 +77,7 @@ public class BasicTests extends BaseClassForTests
             RetryLoop.callWithRetry
             (
                 client,
-                new Callable<Object>()
-                {
-                    @Override
-                    public Object call() throws Exception
-                    {
+                    () -> {
                         if ( firstTime.compareAndSet(true, false) )
                         {
                             try
@@ -100,16 +89,15 @@ public class BasicTests extends BaseClassForTests
                                 // ignore
                             }
 
-                            Compatibility.injectSessionExpiration(client.getZooKeeper());
+                            client.getZooKeeper().getTestable().injectSessionExpiration();
 
-                            Assert.assertTrue(timing.awaitLatch(latch));
+                            assertTrue(timing.awaitLatch(latch));
                         }
                         ZooKeeper zooKeeper = client.getZooKeeper();
                         client.blockUntilConnectedOrTimedOut();
-                        Assert.assertNotNull(zooKeeper.exists("/foo", false));
+                        assertNotNull(zooKeeper.exists("/foo", false));
                         return null;
                     }
-                }
             );
         }
         finally
@@ -134,9 +122,9 @@ public class BasicTests extends BaseClassForTests
             Thread.sleep(1000);
 
             server.restart();
-            Assert.assertTrue(client.blockUntilConnectedOrTimedOut());
+            assertTrue(client.blockUntilConnectedOrTimedOut());
             byte[]      readData = client.getZooKeeper().getData("/test", false, null);
-            Assert.assertEquals(readData, writtenData);
+            assertArrayEquals(readData, writtenData);
         }
         finally
         {
@@ -153,7 +141,7 @@ public class BasicTests extends BaseClassForTests
         {
             client.blockUntilConnectedOrTimedOut();
             String              path = client.getZooKeeper().create("/test", new byte[]{1,2,3}, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-            Assert.assertEquals(path, "/test");
+            assertEquals(path, "/test");
         }
         finally
         {
@@ -162,34 +150,16 @@ public class BasicTests extends BaseClassForTests
     }
 
     @Test
-    public void     testBackgroundConnect() throws Exception
+    public void  testBackgroundConnect() throws Exception
     {
         final int CONNECTION_TIMEOUT_MS = 4000;
-
-        CuratorZookeeperClient client = new CuratorZookeeperClient(server.getConnectString(), 10000, CONNECTION_TIMEOUT_MS, null, new RetryOneTime(1));
-        try
-        {
-            Assert.assertFalse(client.isConnected());
+        try (CuratorZookeeperClient client = new CuratorZookeeperClient(server.getConnectString(), 10000,
+                CONNECTION_TIMEOUT_MS, null, new RetryOneTime(1))) {
+            assertFalse(client.isConnected());
             client.start();
-
-            outer: do
-            {
-                for ( int i = 0; i < (CONNECTION_TIMEOUT_MS / 1000); ++i )
-                {
-                    if ( client.isConnected() )
-                    {
-                        break outer;
-                    }
-
-                    Thread.sleep(CONNECTION_TIMEOUT_MS);
-                }
-
-                Assert.fail();
-            } while ( false );
-        }
-        finally
-        {
-            client.close();
+            Awaitility.await()
+                    .atMost(Duration.ofMillis(CONNECTION_TIMEOUT_MS))
+                    .untilAsserted(() -> Assertions.assertTrue(client.isConnected()));
         }
     }
 }

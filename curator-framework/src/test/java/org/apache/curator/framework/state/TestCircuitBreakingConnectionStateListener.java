@@ -18,6 +18,9 @@
  */
 package org.apache.curator.framework.state;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.RetrySleeper;
 import org.apache.curator.framework.CuratorFramework;
@@ -25,10 +28,9 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryForever;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.compatibility.Timing2;
-import org.testng.Assert;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -68,13 +70,13 @@ public class TestCircuitBreakingConnectionStateListener
         }
     }
 
-    @BeforeMethod
+    @BeforeEach
     public void setup()
     {
         service = new ScheduledThreadPoolExecutor(1);
     }
 
-    @AfterMethod
+    @AfterEach
     public void tearDown()
     {
         service.shutdownNow();
@@ -88,14 +90,14 @@ public class TestCircuitBreakingConnectionStateListener
         CircuitBreakingConnectionStateListener listener = new CircuitBreakingConnectionStateListener(dummyClient, recordingListener, retryPolicy, service);
 
         listener.stateChanged(dummyClient, ConnectionState.RECONNECTED);
-        Assert.assertEquals(timing.takeFromQueue(recordingListener.stateChanges), ConnectionState.RECONNECTED);
+        assertEquals(timing.takeFromQueue(recordingListener.stateChanges), ConnectionState.RECONNECTED);
 
         listener.stateChanged(dummyClient, ConnectionState.SUSPENDED);
-        Assert.assertEquals(timing.takeFromQueue(recordingListener.stateChanges), ConnectionState.SUSPENDED);
+        assertEquals(timing.takeFromQueue(recordingListener.stateChanges), ConnectionState.SUSPENDED);
         listener.stateChanged(dummyClient, ConnectionState.SUSPENDED);  // 2nd suspended is ignored
-        Assert.assertTrue(recordingListener.stateChanges.isEmpty());
+        assertTrue(recordingListener.stateChanges.isEmpty());
         listener.stateChanged(dummyClient, ConnectionState.LOST);
-        Assert.assertEquals(timing.takeFromQueue(recordingListener.stateChanges), ConnectionState.LOST);
+        assertEquals(timing.takeFromQueue(recordingListener.stateChanges), ConnectionState.LOST);
 
         synchronized(listener)  // don't let retry policy run while we're pushing state changes
         {
@@ -106,10 +108,10 @@ public class TestCircuitBreakingConnectionStateListener
             listener.stateChanged(dummyClient, ConnectionState.SUSPENDED);   // all further events are ignored - this will be the last event
         }
         retryTiming.multiple(2).sleep();
-        Assert.assertTrue(recordingListener.stateChanges.isEmpty());
+        assertTrue(recordingListener.stateChanges.isEmpty());
 
         retryPolicy.isRetrying = false; // retry policy will return false
-        Assert.assertEquals(timing.takeFromQueue(recordingListener.stateChanges), ConnectionState.SUSPENDED);
+        assertEquals(timing.takeFromQueue(recordingListener.stateChanges), ConnectionState.SUSPENDED);
     }
 
     @Test
@@ -124,11 +126,11 @@ public class TestCircuitBreakingConnectionStateListener
             listener.stateChanged(dummyClient, ConnectionState.LOST);
             listener.stateChanged(dummyClient, ConnectionState.LOST);   // second LOST ignored
         }
-        Assert.assertEquals(timing.takeFromQueue(recordingListener.stateChanges), ConnectionState.LOST);
-        Assert.assertTrue(recordingListener.stateChanges.isEmpty());
+        assertEquals(timing.takeFromQueue(recordingListener.stateChanges), ConnectionState.LOST);
+        assertTrue(recordingListener.stateChanges.isEmpty());
 
         listener.stateChanged(dummyClient, ConnectionState.RECONNECTED);   // causes circuit to close on next retry
-        Assert.assertEquals(timing.takeFromQueue(recordingListener.stateChanges), ConnectionState.RECONNECTED);
+        assertEquals(timing.takeFromQueue(recordingListener.stateChanges), ConnectionState.RECONNECTED);
     }
 
     @Test
@@ -139,11 +141,11 @@ public class TestCircuitBreakingConnectionStateListener
         CircuitBreakingConnectionStateListener listener = new CircuitBreakingConnectionStateListener(dummyClient, recordingListener, retryNever, service);
 
         listener.stateChanged(dummyClient, ConnectionState.LOST);
-        Assert.assertEquals(timing.takeFromQueue(recordingListener.stateChanges), ConnectionState.LOST);
-        Assert.assertFalse(listener.isOpen());
+        assertEquals(timing.takeFromQueue(recordingListener.stateChanges), ConnectionState.LOST);
+        assertFalse(listener.isOpen());
         listener.stateChanged(dummyClient, ConnectionState.LOST);
-        Assert.assertEquals(timing.takeFromQueue(recordingListener.stateChanges), ConnectionState.LOST);
-        Assert.assertFalse(listener.isOpen());
+        assertEquals(timing.takeFromQueue(recordingListener.stateChanges), ConnectionState.LOST);
+        assertFalse(listener.isOpen());
     }
 
     @Test
@@ -157,11 +159,11 @@ public class TestCircuitBreakingConnectionStateListener
         {
             listener.stateChanged(dummyClient, ConnectionState.LOST);
             listener.stateChanged(dummyClient, ConnectionState.SUSPENDED);
-            Assert.assertTrue(listener.isOpen());
+            assertTrue(listener.isOpen());
         }
-        Assert.assertEquals(timing.takeFromQueue(recordingListener.stateChanges), ConnectionState.LOST);
-        Assert.assertEquals(timing.takeFromQueue(recordingListener.stateChanges), ConnectionState.SUSPENDED);
-        Assert.assertFalse(listener.isOpen());
+        assertEquals(timing.takeFromQueue(recordingListener.stateChanges), ConnectionState.LOST);
+        assertEquals(timing.takeFromQueue(recordingListener.stateChanges), ConnectionState.SUSPENDED);
+        assertFalse(listener.isOpen());
     }
 
     @Test
@@ -172,28 +174,12 @@ public class TestCircuitBreakingConnectionStateListener
         CircuitBreakingConnectionStateListener listener = new CircuitBreakingConnectionStateListener(dummyClient, recordingListener, retryInfinite, service);
 
         listener.stateChanged(dummyClient, ConnectionState.RECONNECTED);
-        Assert.assertFalse(listener.isOpen());
-        Assert.assertEquals(timing.takeFromQueue(recordingListener.stateChanges), ConnectionState.RECONNECTED);
+        assertFalse(listener.isOpen());
+        assertEquals(timing.takeFromQueue(recordingListener.stateChanges), ConnectionState.RECONNECTED);
 
         listener.stateChanged(dummyClient, ConnectionState.SUSPENDED);
-        Assert.assertTrue(listener.isOpen());
-        Assert.assertEquals(timing.takeFromQueue(recordingListener.stateChanges), ConnectionState.SUSPENDED);
-
-        listener.stateChanged(dummyClient, ConnectionState.RECONNECTED);
-        listener.stateChanged(dummyClient, ConnectionState.READ_ONLY);
-        listener.stateChanged(dummyClient, ConnectionState.SUSPENDED);
-        listener.stateChanged(dummyClient, ConnectionState.SUSPENDED);
-        listener.stateChanged(dummyClient, ConnectionState.SUSPENDED);
-        listener.stateChanged(dummyClient, ConnectionState.SUSPENDED);
-        listener.stateChanged(dummyClient, ConnectionState.RECONNECTED);
-        listener.stateChanged(dummyClient, ConnectionState.READ_ONLY);
-        listener.stateChanged(dummyClient, ConnectionState.SUSPENDED);
-        Assert.assertTrue(recordingListener.stateChanges.isEmpty());
-        Assert.assertTrue(listener.isOpen());
-
-        listener.stateChanged(dummyClient, ConnectionState.LOST);
-        Assert.assertEquals(timing.takeFromQueue(recordingListener.stateChanges), ConnectionState.LOST);
-        Assert.assertTrue(listener.isOpen());
+        assertTrue(listener.isOpen());
+        assertEquals(timing.takeFromQueue(recordingListener.stateChanges), ConnectionState.SUSPENDED);
 
         listener.stateChanged(dummyClient, ConnectionState.RECONNECTED);
         listener.stateChanged(dummyClient, ConnectionState.READ_ONLY);
@@ -204,8 +190,24 @@ public class TestCircuitBreakingConnectionStateListener
         listener.stateChanged(dummyClient, ConnectionState.RECONNECTED);
         listener.stateChanged(dummyClient, ConnectionState.READ_ONLY);
         listener.stateChanged(dummyClient, ConnectionState.SUSPENDED);
-        Assert.assertTrue(recordingListener.stateChanges.isEmpty());
-        Assert.assertTrue(listener.isOpen());
+        assertTrue(recordingListener.stateChanges.isEmpty());
+        assertTrue(listener.isOpen());
+
+        listener.stateChanged(dummyClient, ConnectionState.LOST);
+        assertEquals(timing.takeFromQueue(recordingListener.stateChanges), ConnectionState.LOST);
+        assertTrue(listener.isOpen());
+
+        listener.stateChanged(dummyClient, ConnectionState.RECONNECTED);
+        listener.stateChanged(dummyClient, ConnectionState.READ_ONLY);
+        listener.stateChanged(dummyClient, ConnectionState.SUSPENDED);
+        listener.stateChanged(dummyClient, ConnectionState.SUSPENDED);
+        listener.stateChanged(dummyClient, ConnectionState.SUSPENDED);
+        listener.stateChanged(dummyClient, ConnectionState.SUSPENDED);
+        listener.stateChanged(dummyClient, ConnectionState.RECONNECTED);
+        listener.stateChanged(dummyClient, ConnectionState.READ_ONLY);
+        listener.stateChanged(dummyClient, ConnectionState.SUSPENDED);
+        assertTrue(recordingListener.stateChanges.isEmpty());
+        assertTrue(listener.isOpen());
 
         listener.stateChanged(dummyClient, ConnectionState.RECONNECTED);
         listener.stateChanged(dummyClient, ConnectionState.READ_ONLY);
@@ -221,7 +223,7 @@ public class TestCircuitBreakingConnectionStateListener
         listener.stateChanged(dummyClient, ConnectionState.LOST);
         listener.stateChanged(dummyClient, ConnectionState.SUSPENDED);
         listener.stateChanged(dummyClient, ConnectionState.LOST);
-        Assert.assertTrue(recordingListener.stateChanges.isEmpty());
-        Assert.assertTrue(listener.isOpen());
+        assertTrue(recordingListener.stateChanges.isEmpty());
+        assertTrue(listener.isOpen());
     }
 }

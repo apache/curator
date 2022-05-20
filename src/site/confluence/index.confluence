@@ -8,6 +8,16 @@ Apache Curator is a Java/JVM client library for [[Apache ZooKeeper|https://zooke
 
 !images/ph-quote.png!
 
+h2. Download
+
+[[Download Apache Curator|releases.html]] from the release page.
+
+h2. Important Compatibility Updates
+
+Note: version 5.0 of Curator has a few breaking changes. Please read the details here:
+
+[[Curator 5.0 Breaking Changes|breaking-changes.html]].
+
 h2. Getting Started
 
 See the page for quick start: [[Getting Started|getting-started.html]].
@@ -17,7 +27,6 @@ h2. Stack Overflow
 There's lots of great help on Stack Overflow:
 
 * [[Main "Apache Curator" tag|https://stackoverflow.com/questions/tagged/apache-curator]]
-* [[Old "Curator" tag|https://stackoverflow.com/questions/tagged/curator]]
 
 h2. Nav Bar
 
@@ -30,6 +39,10 @@ h2. Maven / Artifacts
 Curator binaries are published to Maven Central. Curator consists of several artifacts. Which artifacts to use depends on your needs. For
 most users, the only artifact you need is curator\-recipes.
 
+For OSGi users, there's another set of artifacts of classifier osgi available in Maven Central. These artifacts are not
+shaded, thus no package relocation is performed inside, so hopefully they could start as bundles when their dependencies
+are fulfilled by dedicated bundles, e.g. guava.
+
 ||GroupID/Org||ArtifactID/Name||Description||
 |org.apache.curator|curator\-recipes|All of the recipes. Note: this artifact has dependencies on client and framework and, so, Maven (or whatever tool you're using) should pull those in automatically.|
 |org.apache.curator|curator\-async|Asynchronous DSL with O/R modeling, migrations and many other features.|
@@ -39,9 +52,3 @@ most users, the only artifact you need is curator\-recipes.
 |org.apache.curator|curator\-examples|Example usages of various Curator features.|
 |org.apache.curator|curator\-x\-discovery|A Service Discovery implementation built on the Curator Framework.|
 |org.apache.curator|curator\-x\-discovery\-server|A RESTful server that can be used with Curator Discovery.|
-
-h2. ZooKeeper Compatibility
-
-Apache Curator is meant to be used with ZooKeeper 3.5\+. However, it is also compatible with ZooKeeper 3.4.x.
-See [[Compatibility|zk-compatibility.html]] for details.
-

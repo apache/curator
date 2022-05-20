@@ -26,8 +26,8 @@ import org.apache.curator.x.async.AsyncCuratorFramework;
 import org.apache.curator.x.async.CompletableBaseClassForTests;
 import org.apache.curator.x.async.modeled.models.TestModel;
 import org.apache.curator.x.async.modeled.models.TestNewerModel;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 public class TestModeledFrameworkBase extends CompletableBaseClassForTests
 {
@@ -37,7 +37,7 @@ public class TestModeledFrameworkBase extends CompletableBaseClassForTests
     protected ModelSpec<TestNewerModel> newModelSpec;
     protected AsyncCuratorFramework async;
 
-    @BeforeMethod
+    @BeforeEach
     @Override
     public void setup() throws Exception
     {
@@ -54,7 +54,7 @@ public class TestModeledFrameworkBase extends CompletableBaseClassForTests
         newModelSpec = ModelSpec.builder(path, newSerializer).build();
     }
 
-    @AfterMethod
+    @AfterEach
     @Override
     public void teardown() throws Exception
     {

@@ -41,4 +41,9 @@ public interface ListenerManager<K, V> extends Listenable<K>
      * @param function function to call for each listener
      */
     void forEach(Consumer<V> function);
+
+    default boolean isEmpty()
+    {
+        return size() == 0;
+    }
 }

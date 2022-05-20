@@ -81,7 +81,7 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
         {
             if ( cnxnFactory != null )
             {
-                cnxnFactory.closeAll();
+                Compatibility.serverCnxnFactoryCloseAll(cnxnFactory);
 
                 Field ssField = cnxnFactory.getClass().getDeclaredField("ss");
                 ssField.setAccessible(true);
@@ -95,6 +95,10 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
         {
             e.printStackTrace();    // just ignore - this class is only for testing
         }
+    }
+
+    TestZooKeeperServer getZkServer() {
+        return zkServer;
     }
 
     @Override
@@ -140,10 +144,12 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
 
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     @Override
-    public void blockUntilStarted() throws Exception
+    public void blockUntilStarted()
     {
-        if(!timing.awaitLatch(latch))
-            throw new IllegalStateException("Timed out waiting for watch removal");
+        if (!timing.awaitLatch(latch))
+        {
+            throw new FailedServerStartException("Timed out waiting for server startup");
+        }
 
         if ( zkServer != null )
         {
@@ -152,19 +158,27 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
             {
                 while ( !zkServer.isRunning() )
                 {
-                    zkServer.wait();
+                    try
+                    {
+                        zkServer.wait();
+                    }
+                    catch ( InterruptedException e )
+                    {
+                        Thread.currentThread().interrupt();
+                        throw new FailedServerStartException("Server start interrupted");
+                    }
                 }
             }
         }
         else
         {
-            throw new Exception("No zkServer.");
+            throw new FailedServerStartException("No zkServer.");
         }
 
         Exception exception = startingException.get();
         if ( exception != null )
         {
-            throw exception;
+            throw new FailedServerStartException(exception);
         }
     }
 
@@ -216,13 +230,12 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
     private void internalRunFromConfig(ServerConfig config) throws IOException
     {
         log.info("Starting server");
-        FileTxnSnapLog txnLog = null;
         try {
             // Note that this thread isn't going to be doing anything else,
             // so rather than spawning another thread, we will just call
             // run() in this thread.
             // create a file logger url from the command line args
-            txnLog = new FileTxnSnapLog(config.getDataLogDir(), config.getDataDir());
+            FileTxnSnapLog txnLog = new FileTxnSnapLog(config.getDataLogDir(), config.getDataDir());
             zkServer = new TestZooKeeperServer(txnLog, config);
 
             try
@@ -251,18 +264,35 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
             // warn, but generally this is ok
             Thread.currentThread().interrupt();
             log.warn("Server interrupted", e);
-        } finally {
-            if (txnLog != null) {
-                txnLog.close();
-            }
         }
     }
 
     public static class TestZooKeeperServer extends ZooKeeperServer
     {
+        private final FileTxnSnapLog txnLog;
+
         public TestZooKeeperServer(FileTxnSnapLog txnLog, ServerConfig config)
         {
-            super(txnLog, config.getTickTime(), config.getMinSessionTimeout(), config.getMaxSessionTimeout(), null);
+            this.txnLog = txnLog;
+            this.setTxnLogFactory(txnLog);
+            // tickTime would affect min and max session timeout: should be set first
+            this.setTickTime(config.getTickTime());
+            this.setMinSessionTimeout(config.getMinSessionTimeout());
+            this.setMaxSessionTimeout(config.getMaxSessionTimeout());
+        }
+
+        @Override
+        public synchronized void shutdown(boolean fullyShutDown)
+        {
+            super.shutdown(fullyShutDown);
+            try
+            {
+                txnLog.close();
+            }
+            catch ( IOException e )
+            {
+                // ignore
+            }
         }
 
         private final AtomicBoolean isRunning = new AtomicBoolean(false);

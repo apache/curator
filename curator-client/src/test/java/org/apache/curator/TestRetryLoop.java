@@ -18,15 +18,19 @@
  */
 package org.apache.curator;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.retry.RetryForever;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
+import org.apache.curator.test.Timing;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.testng.Assert;
-import org.testng.annotations.Test;
 
 import java.util.concurrent.TimeUnit;
 
@@ -42,7 +46,7 @@ public class TestRetryLoop extends BaseClassForTests
             @Override
             public void sleepFor(long time, TimeUnit unit) throws InterruptedException
             {
-                Assert.assertTrue(unit.toMillis(time) <= 100);
+                assertTrue(unit.toMillis(time) <= 100);
             }
         };
         ExponentialBackoffRetry         retry = new ExponentialBackoffRetry(1, Integer.MAX_VALUE, 100);
@@ -87,7 +91,7 @@ public class TestRetryLoop extends BaseClassForTests
 
                     default:
                     {
-                        Assert.fail();
+                        fail();
                         break outer;
                     }
                 }
@@ -104,7 +108,7 @@ public class TestRetryLoop extends BaseClassForTests
                 }
             }
 
-            Assert.assertTrue(loopCount >= 2);
+            assertTrue(loopCount >= 2);
         }
         finally
         {
@@ -125,7 +129,7 @@ public class TestRetryLoop extends BaseClassForTests
             {
                 if ( ++loopCount > 2 )
                 {
-                    Assert.fail();
+                    fail();
                     break;
                 }
 
@@ -140,7 +144,7 @@ public class TestRetryLoop extends BaseClassForTests
                 }
             }
 
-            Assert.assertTrue(loopCount > 0);
+            assertTrue(loopCount > 0);
         }
         finally
         {
@@ -158,8 +162,59 @@ public class TestRetryLoop extends BaseClassForTests
         for (int i = 0; i < 10; i++)
         {
             boolean allowed = retryForever.allowRetry(i, 0, sleeper);
-            Assert.assertTrue(allowed);
+            assertTrue(allowed);
             Mockito.verify(sleeper, times(i + 1)).sleepFor(retryIntervalMs, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    @Test
+    public void testRetryForeverWithSessionFailed() throws Exception
+    {
+        final Timing timing = new Timing();
+        final RetryPolicy retryPolicy = new SessionFailedRetryPolicy(new RetryForever(1000));
+        final CuratorZookeeperClient client = new CuratorZookeeperClient(server.getConnectString(), timing.session(), timing.connection(), null, retryPolicy);
+        client.start();
+
+        try
+        {
+            int loopCount = 0;
+            final RetryLoop retryLoop = client.newRetryLoop();
+            while ( retryLoop.shouldContinue()  )
+            {
+                if ( ++loopCount > 1 )
+                {
+                    break;
+                }
+
+                try
+                {
+                    client.getZooKeeper().getTestable().injectSessionExpiration();
+                    client.getZooKeeper().create("/test", new byte[]{1,2,3}, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+                    retryLoop.markComplete();
+                }
+                catch ( Exception e )
+                {
+                    retryLoop.takeException(e);
+                }
+            }
+
+            fail("Should failed with SessionExpiredException.");
+        }
+        catch ( Exception e )
+        {
+            if ( e instanceof KeeperException )
+            {
+                int rc = ((KeeperException) e).code().intValue();
+                assertEquals(rc, KeeperException.Code.SESSIONEXPIRED.intValue());
+            }
+            else
+            {
+                throw e;
+            }
+        }
+        finally
+        {
+            client.close();
         }
     }
 }

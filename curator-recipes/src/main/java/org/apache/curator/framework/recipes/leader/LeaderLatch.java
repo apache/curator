@@ -20,13 +20,12 @@
 package org.apache.curator.framework.recipes.leader;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
-import org.apache.curator.framework.listen.ListenerContainer;
+import org.apache.curator.framework.listen.StandardListenerManager;
 import org.apache.curator.framework.recipes.AfterConnectionEstablished;
 import org.apache.curator.framework.recipes.locks.LockInternals;
 import org.apache.curator.framework.recipes.locks.LockInternalsSorter;
@@ -71,7 +70,8 @@ public class LeaderLatch implements Closeable
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
     private final AtomicBoolean hasLeadership = new AtomicBoolean(false);
     private final AtomicReference<String> ourPath = new AtomicReference<String>();
-    private final ListenerContainer<LeaderLatchListener> listeners = new ListenerContainer<LeaderLatchListener>();
+    private final AtomicReference<String> lastPathIsLeader = new AtomicReference<String>();
+    private final StandardListenerManager<LeaderLatchListener> listeners = StandardListenerManager.standard();
     private final CloseMode closeMode;
     private final AtomicReference<Future<?>> startTask = new AtomicReference<Future<?>>();
 
@@ -480,10 +480,39 @@ public class LeaderLatch implements Closeable
         return (state.get() == State.STARTED) && hasLeadership.get();
     }
 
-    @VisibleForTesting
-    String getOurPath()
+    /**
+     * Return this instance's lock node path. IMPORTANT: this instance
+     * owns the path returned. This method is meant for reference only. Also,
+     * it is possible for <code>null</code> to be returned. The path, if any,
+     * returned is not guaranteed to be valid at any point in the future as internal
+     * state changes might require the instance to delete and create a new path.
+     *
+     * However, the existence of <code>ourPath</code> doesn't mean that this instance
+     * holds leadership.
+     *
+     * @see #getLastPathIsLeader
+     *
+     * @return lock node path or <code>null</code>
+     */
+    public String getOurPath()
     {
         return ourPath.get();
+    }
+
+    /**
+     * Return last of this instance's lock node path that was leader ever.
+     * IMPORTANT: this instance owns the path returned. This method is meant for reference only.
+     * Also, it is possible for <code>null</code> to be returned (for this instance never becomes
+     * a leader). The path, if any, returned is not guaranteed to be valid at any point in the future
+     * as internal state changes might require the instance to delete the path.
+     *
+     * The existence of <code>lastPathIsLeader</code> means that this instance holds leadership.
+     *
+     * @return last lock node path that was leader ever or <code>null</code>
+     */
+    public String getLastPathIsLeader()
+    {
+        return lastPathIsLeader.get();
     }
 
     @VisibleForTesting
@@ -564,6 +593,7 @@ public class LeaderLatch implements Closeable
         }
         else if ( ourIndex == 0 )
         {
+            lastPathIsLeader.set(localOurPath);
             setLeadership(true);
         }
         else
@@ -622,7 +652,8 @@ public class LeaderLatch implements Closeable
         client.getChildren().inBackground(callback).forPath(ZKPaths.makePath(latchPath, null));
     }
 
-    private void handleStateChange(ConnectionState newState)
+    @VisibleForTesting
+    protected void handleStateChange(ConnectionState newState)
     {
         switch ( newState )
         {
@@ -673,27 +704,11 @@ public class LeaderLatch implements Closeable
 
         if ( oldValue && !newValue )
         { // Lost leadership, was true, now false
-            listeners.forEach(new Function<LeaderLatchListener, Void>()
-                {
-                    @Override
-                    public Void apply(LeaderLatchListener listener)
-                    {
-                        listener.notLeader();
-                        return null;
-                    }
-                });
+            listeners.forEach(LeaderLatchListener::notLeader);
         }
         else if ( !oldValue && newValue )
         { // Gained leadership, was false, now true
-            listeners.forEach(new Function<LeaderLatchListener, Void>()
-                {
-                    @Override
-                    public Void apply(LeaderLatchListener input)
-                    {
-                        input.isLeader();
-                        return null;
-                    }
-                });
+            listeners.forEach(LeaderLatchListener::isLeader);
         }
 
         notifyAll();
