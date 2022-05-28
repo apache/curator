@@ -1151,4 +1151,44 @@ public class TestPathChildrenCache extends BaseClassForTests
             TestCleanState.closeAndTestClean(client);
         }
     }
+
+    @Test
+    public void testIsolatedThreadGroup() throws Exception {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), 30000, 30000, new RetryOneTime(1));
+        client.start();
+
+        AtomicReference<Exception> exception = new AtomicReference<>();
+
+        ThreadGroup threadGroup1 = new ThreadGroup("testGroup1");
+        Thread thread1 = new Thread(threadGroup1, () -> {
+            try ( final PathChildrenCache cache = new PathChildrenCache(client, "/test1", true) ) {
+                cache.start();
+                Thread.sleep(1000);
+            } catch (Exception e) {
+                exception.set(e);
+            }
+        });
+
+        thread1.start();
+        thread1.join();
+        assertNull(exception.get());
+
+        // After the thread group is destroyed, all PathChildrenCache instances
+        // will fail to start due to inability to add new threads into the first thread group
+        threadGroup1.destroy();
+
+        ThreadGroup threadGroup2 = new ThreadGroup("testGroup2");
+        Thread thread2 = new Thread(threadGroup2, () -> {
+            try ( final PathChildrenCache cache = new PathChildrenCache(client, "/test1", true) ) {
+                cache.start();
+                Thread.sleep(1000);
+            } catch (Exception e) {
+                exception.set(e);
+            }
+        });
+
+        thread2.start();
+        thread2.join();
+        assertNull(exception.get());
+    }
 }
