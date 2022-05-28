@@ -25,6 +25,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import java.util.function.Supplier;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.EnsureContainers;
 import org.apache.curator.framework.WatcherRemoveCuratorFramework;
@@ -138,7 +139,7 @@ public class PathChildrenCache implements Closeable
             handleStateChange(newState);
         }
     };
-    public static final ThreadFactory defaultThreadFactory = ThreadUtils.newThreadFactory("PathChildrenCache");
+    public static final Supplier<ThreadFactory> defaultThreadFactorySupplier = () -> ThreadUtils.newThreadFactory("PathChildrenCache");
 
     /**
      * @param client the client
@@ -150,7 +151,7 @@ public class PathChildrenCache implements Closeable
     @SuppressWarnings("deprecation")
     public PathChildrenCache(CuratorFramework client, String path, PathChildrenCacheMode mode)
     {
-        this(client, path, mode != PathChildrenCacheMode.CACHE_PATHS_ONLY, false, new CloseableExecutorService(Executors.newSingleThreadExecutor(defaultThreadFactory), true));
+        this(client, path, mode != PathChildrenCacheMode.CACHE_PATHS_ONLY, false, new CloseableExecutorService(Executors.newSingleThreadExecutor(defaultThreadFactorySupplier.get()), true));
     }
 
     /**
@@ -174,7 +175,7 @@ public class PathChildrenCache implements Closeable
      */
     public PathChildrenCache(CuratorFramework client, String path, boolean cacheData)
     {
-        this(client, path, cacheData, false, new CloseableExecutorService(Executors.newSingleThreadExecutor(defaultThreadFactory), true));
+        this(client, path, cacheData, false, new CloseableExecutorService(Executors.newSingleThreadExecutor(defaultThreadFactorySupplier.get()), true));
     }
 
     /**
