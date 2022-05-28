@@ -1154,10 +1154,11 @@ public class TestPathChildrenCache extends BaseClassForTests
 
     @Test
     public void testIsolatedThreadGroup() throws Exception {
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), 30000, 30000, new RetryOneTime(1));
-        client.start();
+        AtomicReference<Throwable> exception = new AtomicReference<>();
 
-        AtomicReference<Exception> exception = new AtomicReference<>();
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), 30000, 30000, new RetryOneTime(1));
+        client.getUnhandledErrorListenable().addListener((message, e) -> exception.set(e));
+        client.start();
 
         ThreadGroup threadGroup1 = new ThreadGroup("testGroup1");
         Thread thread1 = new Thread(threadGroup1, () -> {
