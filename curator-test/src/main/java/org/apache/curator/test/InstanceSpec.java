@@ -19,12 +19,14 @@
 
 package org.apache.curator.test;
 
-import com.google.common.io.Files;
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -169,7 +171,7 @@ public class InstanceSpec
      */
     public InstanceSpec(File dataDirectory, int port, int electionPort, int quorumPort, boolean deleteDataDirectoryOnClose, int serverId, int tickTime, int maxClientCnxns, Map<String,Object> customProperties,String hostname)
     {
-        this.dataDirectory = (dataDirectory != null) ? dataDirectory : Files.createTempDir();
+        this.dataDirectory = (dataDirectory != null) ? dataDirectory : createTempDirectory();
         this.port = (port >= 0) ? port : getRandomPort();
         this.electionPort = (electionPort >= 0) ? electionPort : getRandomPort();
         this.quorumPort = (quorumPort >= 0) ? quorumPort : getRandomPort();
@@ -273,5 +275,14 @@ public class InstanceSpec
     public int hashCode()
     {
         return hostname.hashCode() + port;
+    }
+
+    private static File createTempDirectory() {
+        try {
+            final Path tempDirectory = Files.createTempDirectory(InstanceSpec.class.getSimpleName());
+            return tempDirectory.toFile();
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 }
