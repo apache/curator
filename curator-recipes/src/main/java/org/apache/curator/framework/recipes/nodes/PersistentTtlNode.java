@@ -58,6 +58,7 @@ public class PersistentTtlNode implements Closeable
 {
     public static final String DEFAULT_CHILD_NODE_NAME = "touch";
     public static final int DEFAULT_TOUCH_SCHEDULE_FACTOR = 2;
+    public static final boolean DEFAULT_USE_PARENT_CREATION = true;
 
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final PersistentNode node;
@@ -76,7 +77,7 @@ public class PersistentTtlNode implements Closeable
      */
     public PersistentTtlNode(CuratorFramework client, String path, long ttlMs, byte[] initData)
     {
-        this(client, Executors.newSingleThreadScheduledExecutor(ThreadUtils.newThreadFactory("PersistentTtlNode")), path, ttlMs, initData, DEFAULT_CHILD_NODE_NAME, DEFAULT_TOUCH_SCHEDULE_FACTOR, true);
+        this(client, Executors.newSingleThreadScheduledExecutor(ThreadUtils.newThreadFactory("PersistentTtlNode")), path, ttlMs, initData, DEFAULT_CHILD_NODE_NAME, DEFAULT_TOUCH_SCHEDULE_FACTOR, DEFAULT_USE_PARENT_CREATION);
     }
 
     /**
@@ -103,7 +104,7 @@ public class PersistentTtlNode implements Closeable
      */
     public PersistentTtlNode(CuratorFramework client, ScheduledExecutorService executorService, String path, long ttlMs, byte[] initData, String childNodeName, int touchScheduleFactor)
     {
-        this(client, executorService, path, ttlMs, initData, childNodeName, touchScheduleFactor, true);
+        this(client, executorService, path, ttlMs, initData, childNodeName, touchScheduleFactor, DEFAULT_USE_PARENT_CREATION);
     }
 
     /**
