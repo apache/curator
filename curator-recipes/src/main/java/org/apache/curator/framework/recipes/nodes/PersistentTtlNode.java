@@ -76,7 +76,19 @@ public class PersistentTtlNode implements Closeable
      */
     public PersistentTtlNode(CuratorFramework client, String path, long ttlMs, byte[] initData)
     {
-        this(client, Executors.newSingleThreadScheduledExecutor(ThreadUtils.newThreadFactory("PersistentTtlNode")), path, ttlMs, initData, DEFAULT_CHILD_NODE_NAME, DEFAULT_TOUCH_SCHEDULE_FACTOR);
+        this(client, Executors.newSingleThreadScheduledExecutor(ThreadUtils.newThreadFactory("PersistentTtlNode")), path, ttlMs, initData, DEFAULT_CHILD_NODE_NAME, DEFAULT_TOUCH_SCHEDULE_FACTOR, true);
+    }
+
+    /**
+     * @param client the client
+     * @param path path for the parent ZNode
+     * @param ttlMs max ttl for the node in milliseconds
+     * @param initData data for the node
+     * @param useParentCreation if true, parent ZNode can be created without ancestors
+     */
+    public PersistentTtlNode(CuratorFramework client, String path, long ttlMs, byte[] initData, boolean useParentCreation)
+    {
+        this(client, Executors.newSingleThreadScheduledExecutor(ThreadUtils.newThreadFactory("PersistentTtlNode")), path, ttlMs, initData, DEFAULT_CHILD_NODE_NAME, DEFAULT_TOUCH_SCHEDULE_FACTOR, useParentCreation);
     }
 
     /**
@@ -88,13 +100,14 @@ public class PersistentTtlNode implements Closeable
      * @param childNodeName name to use for the child node of the node created at <code>path</code>
      * @param touchScheduleFactor how ofter to set/create the child node as a factor of the ttlMs. i.e.
      *                            the child is touched every <code>(ttlMs / touchScheduleFactor)</code>
+     * @param useParentCreation if true, parent ZNode can be created without ancestors
      */
-    public PersistentTtlNode(CuratorFramework client, ScheduledExecutorService executorService, String path, long ttlMs, byte[] initData, String childNodeName, int touchScheduleFactor)
+    public PersistentTtlNode(CuratorFramework client, ScheduledExecutorService executorService, String path, long ttlMs, byte[] initData, String childNodeName, int touchScheduleFactor, boolean useParentCreation)
     {
         this.client = Objects.requireNonNull(client, "client cannot be null");
         this.ttlMs = ttlMs;
         this.touchScheduleFactor = touchScheduleFactor;
-        node = new PersistentNode(client, CreateMode.CONTAINER, false, path, initData)
+        node = new PersistentNode(client, CreateMode.CONTAINER, false, path, initData, useParentCreation)
         {
             @Override
             protected void deleteNode()
