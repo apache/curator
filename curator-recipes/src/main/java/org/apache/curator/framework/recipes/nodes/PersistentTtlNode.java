@@ -100,6 +100,21 @@ public class PersistentTtlNode implements Closeable
      * @param childNodeName name to use for the child node of the node created at <code>path</code>
      * @param touchScheduleFactor how ofter to set/create the child node as a factor of the ttlMs. i.e.
      *                            the child is touched every <code>(ttlMs / touchScheduleFactor)</code>
+     */
+    public PersistentTtlNode(CuratorFramework client, ScheduledExecutorService executorService, String path, long ttlMs, byte[] initData, String childNodeName, int touchScheduleFactor)
+    {
+        this(client, executorService, path, ttlMs, initData, childNodeName, touchScheduleFactor, true);
+    }
+
+    /**
+     * @param client the client
+     * @param executorService  ExecutorService to use for background thread. This service should be single threaded, otherwise you may see inconsistent results.
+     * @param path path for the parent ZNode
+     * @param ttlMs max ttl for the node in milliseconds
+     * @param initData data for the node
+     * @param childNodeName name to use for the child node of the node created at <code>path</code>
+     * @param touchScheduleFactor how ofter to set/create the child node as a factor of the ttlMs. i.e.
+     *                            the child is touched every <code>(ttlMs / touchScheduleFactor)</code>
      * @param useParentCreation if true, parent ZNode can be created without ancestors
      */
     public PersistentTtlNode(CuratorFramework client, ScheduledExecutorService executorService, String path, long ttlMs, byte[] initData, String childNodeName, int touchScheduleFactor, boolean useParentCreation)
