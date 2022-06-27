@@ -65,11 +65,9 @@ public class TestStringsWithRestEasy
 
         port = InstanceSpec.getRandomPort();
         server = new Server(port);
-        
         ServletContextHandler root = new ServletContextHandler(ServletContextHandler.SESSIONS);
         root.setContextPath("/");
         root.setServer(server);
-        root.setContextPath("/");
         root.getInitParams().put("javax.ws.rs.Application", RestEasyApplication.class.getName());
         root.addServlet(new ServletHolder(dispatcher), "/*");
         root.addEventListener(new ResteasyBootstrap());
@@ -142,14 +140,9 @@ public class TestStringsWithRestEasy
             OutputStream        out = urlConnection.getOutputStream();
             ByteSource.wrap(body.getBytes()).copyTo(out);
         }
-        BufferedReader in = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
-        try
-        {
+
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()))) {
             return CharStreams.toString(in);
-        }
-        finally
-        {
-            in.close();
         }
     }
 
