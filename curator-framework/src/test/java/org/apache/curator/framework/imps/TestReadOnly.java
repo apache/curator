@@ -65,17 +65,26 @@ public class TestReadOnly extends BaseClassForTests
         TestingCluster cluster = createAndStartCluster(3);
         try
         {
+            final CountDownLatch lostLatch = new CountDownLatch(1);
             client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(100));
             client.start();
             client.checkExists().forPath("/");
-            client.close();
-            client = null;
+            client.getConnectionStateListenable().addListener(new ConnectionStateListener() {
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState) {
+                    if (newState == ConnectionState.LOST) {
+                        lostLatch.countDown();
+                    }
+                }
+            });
 
             Iterator<InstanceSpec> iterator = cluster.getInstances().iterator();
             for ( int i = 0; i < 2; ++i )
             {
                 cluster.killServer(iterator.next());
             }
+            timing.awaitLatch(lostLatch);
+            client.close();
 
             client = CuratorFrameworkFactory.builder()
                 .connectString(cluster.getConnectString())
