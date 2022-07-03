@@ -920,6 +920,7 @@
                     <excludeSubProjects>false</excludeSubProjects>
                     <excludes>
                         <exclude>**/*.confluence</exclude>
+                        <exclude>**/*.iml</exclude>
                         <exclude>**/*.rdf</exclude>
                         <exclude>**/help.txt</exclude>
                         <exclude>**/.gitignore</exclude>
@@ -934,6 +935,7 @@
                         <exclude>**/README</exclude>
                         <exclude>**/CHANGES</exclude>
                         <exclude>**/RELEASE-NOTES</exclude>
+                        <exclude>**/target/**</exclude>
                         <exclude>**/generated/**</exclude>
                     </excludes>
                 </configuration>
