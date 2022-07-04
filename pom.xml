@@ -81,7 +81,7 @@
         <javassist-version>3.24.1-GA</javassist-version>
         <commons-math-version>2.2</commons-math-version>
         <jackson-mapper-asl-version>1.9.13</jackson-mapper-asl-version>
-        <jackson-version>2.10.0</jackson-version>
+        <jackson-version>2.12.6.1</jackson-version>
         <!-- Upgrading to Jersey 2.x is difficult and of unclear benefits, see
              https://stackoverflow.com/questions/17098341#22033825 -->
         <jersey-version>1.19.4</jersey-version>
