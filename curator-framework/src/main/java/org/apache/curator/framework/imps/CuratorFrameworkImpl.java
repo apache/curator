@@ -1006,43 +1006,35 @@ public class CuratorFrameworkImpl implements CuratorFramework
             if ( !operationAndData.isConnectionRequired() || client.isConnected() )
             {
                 operationAndData.callPerformBackgroundOperation();
+                return;
+            }
+
+            client.getZooKeeper();  // important - allow connection resets, timeouts, etc. to occur
+            if ( operationAndData.getElapsedTimeMs() < client.getConnectionTimeoutMs() )
+            {
+                sleepAndQueueOperation(operationAndData);
+                return;
+            }
+
+            /*
+             * Fix edge case reported as CURATOR-52. Connection timeout is detected when the initial (or previously failed) connection
+             * cannot be re-established. This needs to be run through the retry policy and callbacks need to get invoked, etc.
+             */
+            WatchedEvent watchedEvent = new WatchedEvent(Watcher.Event.EventType.None, Watcher.Event.KeeperState.Disconnected, null);
+            CuratorEvent event = new CuratorEventImpl(this, CuratorEventType.WATCHED, KeeperException.Code.CONNECTIONLOSS.intValue(), null, null, operationAndData.getContext(), null, null, null, watchedEvent, null, null);
+            if ( checkBackgroundRetry(operationAndData, event) )
+            {
+                queueOperation(operationAndData);
             }
             else
             {
-                client.getZooKeeper();  // important - allow connection resets, timeouts, etc. to occur
-                if ( operationAndData.getElapsedTimeMs() >= client.getConnectionTimeoutMs() )
-                {
-                    throw new CuratorConnectionLossException();
-                }
-                sleepAndQueueOperation(operationAndData);
+                logError("Background retry gave up", new CuratorConnectionLossException());
             }
         }
         catch ( Throwable e )
         {
             ThreadUtils.checkInterrupted(e);
-
-            /**
-             * Fix edge case reported as CURATOR-52. ConnectionState.checkTimeouts() throws KeeperException.ConnectionLossException
-             * when the initial (or previously failed) connection cannot be re-established. This needs to be run through the retry policy
-             * and callbacks need to get invoked, etc.
-             */
-            if ( e instanceof CuratorConnectionLossException )
-            {
-                WatchedEvent watchedEvent = new WatchedEvent(Watcher.Event.EventType.None, Watcher.Event.KeeperState.Disconnected, null);
-                CuratorEvent event = new CuratorEventImpl(this, CuratorEventType.WATCHED, KeeperException.Code.CONNECTIONLOSS.intValue(), null, null, operationAndData.getContext(), null, null, null, watchedEvent, null, null);
-                if ( checkBackgroundRetry(operationAndData, event) )
-                {
-                    queueOperation(operationAndData);
-                }
-                else
-                {
-                    logError("Background retry gave up", e);
-                }
-            }
-            else
-            {
-                handleBackgroundOperationException(operationAndData, e);
-            }
+            handleBackgroundOperationException(operationAndData, e);
         }
     }
 
