@@ -604,7 +604,7 @@ public class LeaderLatch implements Closeable
                 @Override
                 public void process(WatchedEvent event)
                 {
-                    if ( (state.get() == State.STARTED) && (event.getType() == Event.EventType.NodeDeleted) && (localOurPath != null) )
+                    if ( state.get() == State.STARTED && event.getType() == Event.EventType.NodeDeleted )
                     {
                         try
                         {
@@ -626,8 +626,8 @@ public class LeaderLatch implements Closeable
                 {
                     if ( event.getResultCode() == KeeperException.Code.NONODE.intValue() )
                     {
-                        // previous node is gone - reset
-                        reset();
+                        // previous node is gone - retry getChildren
+                        getChildren();
                     }
                 }
             };
