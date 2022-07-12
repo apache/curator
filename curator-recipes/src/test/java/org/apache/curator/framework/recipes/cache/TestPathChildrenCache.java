@@ -48,7 +48,16 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Exchanger;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -1150,46 +1159,5 @@ public class TestPathChildrenCache extends BaseClassForTests
         {
             TestCleanState.closeAndTestClean(client);
         }
-    }
-
-    @Test
-    public void testIsolatedThreadGroup() throws Exception {
-        AtomicReference<Throwable> exception = new AtomicReference<>();
-
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), 30000, 30000, new RetryOneTime(1));
-        client.getUnhandledErrorListenable().addListener((message, e) -> exception.set(e));
-        client.start();
-
-        ThreadGroup threadGroup1 = new ThreadGroup("testGroup1");
-        Thread thread1 = new Thread(threadGroup1, () -> {
-            try ( final PathChildrenCache cache = new PathChildrenCache(client, "/test1", true) ) {
-                cache.start();
-                Thread.sleep(1000);
-            } catch (Exception e) {
-                exception.set(e);
-            }
-        });
-
-        thread1.start();
-        thread1.join();
-        assertNull(exception.get());
-
-        // After the thread group is destroyed, all PathChildrenCache instances
-        // will fail to start due to inability to add new threads into the first thread group
-        threadGroup1.destroy();
-
-        ThreadGroup threadGroup2 = new ThreadGroup("testGroup2");
-        Thread thread2 = new Thread(threadGroup2, () -> {
-            try ( final PathChildrenCache cache = new PathChildrenCache(client, "/test1", true) ) {
-                cache.start();
-                Thread.sleep(1000);
-            } catch (Exception e) {
-                exception.set(e);
-            }
-        });
-
-        thread2.start();
-        thread2.join();
-        assertNull(exception.get());
     }
 }

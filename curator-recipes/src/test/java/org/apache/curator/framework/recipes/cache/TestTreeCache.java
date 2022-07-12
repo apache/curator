@@ -25,12 +25,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.ImmutableSet;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.recipes.cache.TreeCacheEvent.Type;
-import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.CreateMode;
@@ -642,46 +639,5 @@ public class TestTreeCache extends BaseTestTreeCache
         assertEvent(TreeCacheEvent.Type.NODE_UPDATED, "/test");
 
         assertNoMoreEvents();
-    }
-
-    @Test
-    public void testIsolatedThreadGroup() throws Exception {
-        AtomicReference<Throwable> exception = new AtomicReference<>();
-
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), 30000, 30000, new RetryOneTime(1));
-        client.getUnhandledErrorListenable().addListener((message, e) -> exception.set(e));
-        client.start();
-
-        ThreadGroup threadGroup1 = new ThreadGroup("testGroup1");
-        Thread thread1 = new Thread(threadGroup1, () -> {
-            try ( final TreeCache cache = new TreeCache(client, "/test1") ) {
-                cache.start();
-                Thread.sleep(1000);
-            } catch (Exception e) {
-                exception.set(e);
-            }
-        });
-
-        thread1.start();
-        thread1.join();
-        assertNull(exception.get());
-
-        // After the thread group is destroyed, all PathChildrenCache instances
-        // will fail to start due to inability to add new threads into the first thread group
-        threadGroup1.destroy();
-
-        ThreadGroup threadGroup2 = new ThreadGroup("testGroup2");
-        Thread thread2 = new Thread(threadGroup2, () -> {
-            try ( final TreeCache cache = new TreeCache(client, "/test1") ) {
-                cache.start();
-                Thread.sleep(1000);
-            } catch (Exception e) {
-                exception.set(e);
-            }
-        });
-
-        thread2.start();
-        thread2.join();
-        assertNull(exception.get());
     }
 }
