@@ -576,7 +576,7 @@ public class LeaderLatch implements Closeable
     @VisibleForTesting
     volatile CountDownLatch debugCheckLeaderShipLatch = null;
 
-    private void checkLeadership(List<String> children) throws Exception
+    private synchronized void checkLeadership(List<String> children) throws Exception
     {
         if ( debugCheckLeaderShipLatch != null )
         {
