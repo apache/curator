@@ -16,15 +16,31 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.test.compatibility;
+package org.apache.curator;
 
-import org.apache.curator.test.BaseClassForTests;
+import org.apache.curator.test.compatibility.CuratorTestBase;
+import org.apache.zookeeper.ZooKeeper;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
-public class CuratorTestBase extends BaseClassForTests
+public class TestIs37 extends CuratorTestBase
 {
-    public static final String zk36Group = "zk36";
-    public static final String zk37Group = "zk37";
-    public static final String zk35TestCompatibilityGroup = "zk35TestCompatibility";
+    /**
+     * Ensure that ZooKeeper is 3.7 or above.
+     *
+     * <p>It uses reflection to get {@link ZooKeeper#whoAmI()} which was introduced in 3.7.0.
+     *
+     * @see <a href="https://issues.apache.org/jira/browse/ZOOKEEPER-3969">ZOOKEEPER-3969</a>
+     */
+    @Test
+    @Tag(zk37Group)
+    public void testIsZk37() throws Exception {
+        ZooKeeper.class.getMethod("whoAmI");
+    }
 
-    protected final Timing2 timing = new Timing2();
+    @Override
+    protected void createServer()
+    {
+        // NOP
+    }
 }
