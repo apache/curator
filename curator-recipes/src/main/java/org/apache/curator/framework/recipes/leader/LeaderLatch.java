@@ -76,8 +76,6 @@ public class LeaderLatch implements Closeable {
     private final AtomicReference<Future<?>> startTask = new AtomicReference<>();
     private final ConnectionStateListener listener = (client, newState) -> handleStateChange(newState);
 
-    private final Object leadershipLock = new Object();
-
     public enum State {
         LATENT,
         STARTED,
@@ -166,34 +164,32 @@ public class LeaderLatch implements Closeable {
      * @param closeMode allows the default close mode to be overridden at the time the latch is closed.
      * @throws IOException errors
      */
-    public void close(CloseMode closeMode) throws IOException {
-        synchronized (leadershipLock) {
-            Preconditions.checkState(state.compareAndSet(State.STARTED, State.CLOSED), "Already closed or has not been started");
-            Preconditions.checkNotNull(closeMode, "closeMode cannot be null");
+    public synchronized void close(CloseMode closeMode) throws IOException {
+        Preconditions.checkState(state.compareAndSet(State.STARTED, State.CLOSED), "Already closed or has not been started");
+        Preconditions.checkNotNull(closeMode, "closeMode cannot be null");
 
-            cancelStartTask();
+        cancelStartTask();
 
-            try {
-                setNode(null);
-                client.removeWatchers();
-            } catch (Exception e) {
-                ThreadUtils.checkInterrupted(e);
-                throw new IOException(e);
-            } finally {
-                client.getConnectionStateListenable().removeListener(listener);
+        try {
+            setNode(null);
+            client.removeWatchers();
+        } catch (Exception e) {
+            ThreadUtils.checkInterrupted(e);
+            throw new IOException(e);
+        } finally {
+            client.getConnectionStateListenable().removeListener(listener);
 
-                switch (closeMode) {
-                    case NOTIFY_LEADER: {
-                        setLeadership(false);
-                        listeners.clear();
-                        break;
-                    }
+            switch (closeMode) {
+                case NOTIFY_LEADER: {
+                    setLeadership(false);
+                    listeners.clear();
+                    break;
+                }
 
-                    case SILENT: {
-                        listeners.clear();
-                        setLeadership(false);
-                        break;
-                    }
+                case SILENT: {
+                    listeners.clear();
+                    setLeadership(false);
+                    break;
                 }
             }
         }
@@ -279,9 +275,9 @@ public class LeaderLatch implements Closeable {
      *                              while waiting
      */
     public void await() throws InterruptedException, EOFException {
-        synchronized (leadershipLock) {
+        synchronized (this) {
             while ((state.get() == State.STARTED) && !hasLeadership.get()) {
-                leadershipLock.wait();
+                wait();
             }
         }
         if (state.get() != State.STARTED) {
@@ -330,7 +326,7 @@ public class LeaderLatch implements Closeable {
     public boolean await(long timeout, TimeUnit unit) throws InterruptedException {
         long waitNanos = TimeUnit.NANOSECONDS.convert(timeout, unit);
 
-        synchronized (leadershipLock) {
+        synchronized (this) {
             while (true) {
                 if (state.get() != State.STARTED) {
                     return false;
@@ -345,7 +341,7 @@ public class LeaderLatch implements Closeable {
                 }
 
                 long startNanos = System.nanoTime();
-                TimeUnit.NANOSECONDS.timedWait(leadershipLock, waitNanos);
+                TimeUnit.NANOSECONDS.timedWait(this, waitNanos);
                 long elapsed = System.nanoTime() - startNanos;
                 waitNanos -= elapsed;
             }
@@ -482,16 +478,14 @@ public class LeaderLatch implements Closeable {
         client.create().creatingParentContainersIfNeeded().withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).inBackground(callback).forPath(ZKPaths.makePath(latchPath, LOCK_NAME), LeaderSelector.getIdBytes(id));
     }
 
-    private void internalStart() {
-        synchronized (leadershipLock) {
-            if (state.get() == State.STARTED) {
-                client.getConnectionStateListenable().addListener(listener);
-                try {
-                    reset();
-                } catch (Exception e) {
-                    ThreadUtils.checkInterrupted(e);
-                    log.error("An error occurred checking resetting leadership.", e);
-                }
+    private synchronized void internalStart() {
+        if (state.get() == State.STARTED) {
+            client.getConnectionStateListenable().addListener(listener);
+            try {
+                reset();
+            } catch (Exception e) {
+                ThreadUtils.checkInterrupted(e);
+                log.error("An error occurred checking resetting leadership.", e);
             }
         }
     }
@@ -499,43 +493,41 @@ public class LeaderLatch implements Closeable {
     @VisibleForTesting
     volatile CountDownLatch debugCheckLeaderShipLatch = null;
 
-    private void checkLeadership(List<String> children) throws Exception {
+    private synchronized void checkLeadership(List<String> children) throws Exception {
         if (debugCheckLeaderShipLatch != null) {
             debugCheckLeaderShipLatch.await();
         }
 
-        synchronized (leadershipLock) {
-            final String localOurPath = ourPath.get();
-            List<String> sortedChildren = LockInternals.getSortedChildren(LOCK_NAME, sorter, children);
-            int ourIndex = (localOurPath != null) ? sortedChildren.indexOf(ZKPaths.getNodeFromPath(localOurPath)) : -1;
-            if (ourIndex < 0) {
-                log.error("Can't find our node. Resetting. Index: " + ourIndex);
-                reset();
-            } else if (ourIndex == 0) {
-                lastPathIsLeader.set(localOurPath);
-                setLeadership(true);
-            } else {
-                String watchPath = sortedChildren.get(ourIndex - 1);
-                Watcher watcher = event -> {
-                    if (state.get() == State.STARTED && event.getType() == Watcher.Event.EventType.NodeDeleted) {
-                        try {
-                            getChildren();
-                        } catch (Exception ex) {
-                            ThreadUtils.checkInterrupted(ex);
-                            log.error("An error occurred checking the leadership.", ex);
-                        }
-                    }
-                };
-
-                BackgroundCallback callback = (client, event) -> {
-                    if (event.getResultCode() == KeeperException.Code.NONODE.intValue()) {
-                        // previous node is gone - retry getChildren
+        final String localOurPath = ourPath.get();
+        List<String> sortedChildren = LockInternals.getSortedChildren(LOCK_NAME, sorter, children);
+        int ourIndex = (localOurPath != null) ? sortedChildren.indexOf(ZKPaths.getNodeFromPath(localOurPath)) : -1;
+        if (ourIndex < 0) {
+            log.error("Can't find our node. Resetting. Index: " + ourIndex);
+            reset();
+        } else if (ourIndex == 0) {
+            lastPathIsLeader.set(localOurPath);
+            setLeadership(true);
+        } else {
+            String watchPath = sortedChildren.get(ourIndex - 1);
+            Watcher watcher = event -> {
+                if (state.get() == State.STARTED && event.getType() == Watcher.Event.EventType.NodeDeleted) {
+                    try {
                         getChildren();
+                    } catch (Exception ex) {
+                        ThreadUtils.checkInterrupted(ex);
+                        log.error("An error occurred checking the leadership.", ex);
                     }
-                };
-                // use getData() instead of exists() to avoid leaving unneeded watchers which is a type of resource leak
-                client.getData().usingWatcher(watcher).inBackground(callback).forPath(ZKPaths.makePath(latchPath, watchPath));
-            }
+                }
+            };
+
+            BackgroundCallback callback = (client, event) -> {
+                if (event.getResultCode() == KeeperException.Code.NONODE.intValue()) {
+                    // previous node is gone - retry getChildren
+                    getChildren();
+                }
+            };
+            // use getData() instead of exists() to avoid leaving unneeded watchers which is a type of resource leak
+            client.getData().usingWatcher(watcher).inBackground(callback).forPath(ZKPaths.makePath(latchPath, watchPath));
         }
     }
 
@@ -583,18 +575,16 @@ public class LeaderLatch implements Closeable {
         }
     }
 
-    private void setLeadership(boolean newValue) {
-        synchronized (leadershipLock) {
-            boolean oldValue = hasLeadership.getAndSet(newValue);
+    private synchronized void setLeadership(boolean newValue) {
+        boolean oldValue = hasLeadership.getAndSet(newValue);
 
-            if (oldValue && !newValue) { // Lost leadership, was true, now false
-                listeners.forEach(LeaderLatchListener::notLeader);
-            } else if (!oldValue && newValue) { // Gained leadership, was false, now true
-                listeners.forEach(LeaderLatchListener::isLeader);
-            }
-
-            leadershipLock.notifyAll();
+        if (oldValue && !newValue) { // Lost leadership, was true, now false
+            listeners.forEach(LeaderLatchListener::notLeader);
+        } else if (!oldValue && newValue) { // Gained leadership, was false, now true
+            listeners.forEach(LeaderLatchListener::isLeader);
         }
+
+        notifyAll();
     }
 
     private void setNode(String newValue) throws Exception {
