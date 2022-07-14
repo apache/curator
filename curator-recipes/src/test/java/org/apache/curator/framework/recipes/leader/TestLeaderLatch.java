@@ -219,6 +219,30 @@ public class TestLeaderLatch extends BaseClassForTests
     }
 
     @Test
+    public void testOurPathDeletedOnReconnect() throws Exception
+    {
+        final String latchPath = "/foo/bar";
+        Timing2 timing = new Timing2();
+        try ( CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1)) )
+        {
+            client.start();
+            try ( LeaderLatch latch = new LeaderLatch(client, latchPath, "0") )
+            {
+                latch.debugCheckLeaderShipLatch = new CountDownLatch(1);
+                latch.start(); // hold before checkLeadership()
+                timing.sleepABit();
+                latch.reset(); // force the internal "ourPath" to get reset
+                latch.debugCheckLeaderShipLatch.countDown();   // allow checkLeadership() to continue
+
+                assertTrue(latch.await(timing.forSessionSleep().forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
+                timing.sleepABit();
+                assertTrue(latch.hasLeadership());
+                assertEquals(client.getChildren().forPath(latchPath).size(), 1);
+            }
+        }
+    }
+
+    @Test
     public void testSessionErrorPolicy() throws Exception
     {
         Timing timing = new Timing();

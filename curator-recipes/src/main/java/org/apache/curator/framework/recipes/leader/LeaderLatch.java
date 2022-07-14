@@ -586,6 +586,9 @@ public class LeaderLatch implements Closeable
         final String localOurPath = ourPath.get();
         List<String> sortedChildren = LockInternals.getSortedChildren(LOCK_NAME, sorter, children);
         int ourIndex = (localOurPath != null) ? sortedChildren.indexOf(ZKPaths.getNodeFromPath(localOurPath)) : -1;
+
+        log.debug("checkLeadership with ourPath: {}, children: {}", localOurPath, sortedChildren);
+
         if ( ourIndex < 0 )
         {
             log.error("Can't find our node. Resetting. Index: " + ourIndex);
@@ -717,6 +720,7 @@ public class LeaderLatch implements Closeable
     private void setNode(String newValue) throws Exception
     {
         String oldPath = ourPath.getAndSet(newValue);
+        log.debug("setNode with oldPath: {}, newValue: {}", oldPath, newValue);
         if ( oldPath != null )
         {
             client.delete().guaranteed().inBackground().forPath(oldPath);
