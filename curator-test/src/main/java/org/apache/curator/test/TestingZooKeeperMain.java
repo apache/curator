@@ -94,8 +94,7 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace {
         return zkServer;
     }
 
-    @Override
-    public void runFromConfig(QuorumPeerConfig config) throws Exception {
+    private void runFromConfig(QuorumPeerConfig config) throws Exception {
         try {
             Field instance = MBeanRegistry.class.getDeclaredField("instance");
             instance.setAccessible(true);
@@ -299,7 +298,7 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace {
                     log.error(String.format("From testing server (random state: %s) for instance: %s", String.valueOf(configBuilder.isFromRandom()), configBuilder.getInstanceSpec(instanceIndex)), e);
                 }
             }
-        }).start();
+        }, "zk-main-thread").start();
 
         blockUntilStarted();
     }

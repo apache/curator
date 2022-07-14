@@ -21,10 +21,14 @@
 package org.apache.curator.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.File;
+import java.lang.reflect.Field;
 
 import org.apache.zookeeper.server.ZooKeeperServer;
+import org.apache.zookeeper.server.embedded.ZooKeeperServerEmbedded;
+import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -45,8 +49,21 @@ public class TestTestingServer {
       final InstanceSpec spec = new InstanceSpec(zkTmpDir, -1, -1, -1, true, -1, customTickMs, -1);
       final int zkTickTime;
       try (TestingServer testingServer = new TestingServer(spec, true)) {
-         TestingZooKeeperMain main = (TestingZooKeeperMain) testingServer.getTestingZooKeeperServer().getMain();
-         zkTickTime = main.getZkServer().getTickTime();
+         ZooKeeperMainFace main = testingServer.getTestingZooKeeperServer().getMain();
+         if (main instanceof TestingZooKeeperMain) {
+            TestingZooKeeperMain testingZooKeeperMain = (TestingZooKeeperMain) main;
+            zkTickTime = testingZooKeeperMain.getZkServer().getTickTime();
+         } else if (main instanceof ZooKeeperEmbeddedRunner) {
+            ZooKeeperEmbeddedRunner testingZooKeeperMain = (ZooKeeperEmbeddedRunner) main;
+            ZooKeeperServerEmbedded zooKeeperEmbedded = testingZooKeeperMain.getZooKeeperEmbedded();
+            Field configField = zooKeeperEmbedded.getClass().getDeclaredField("config");
+            configField.setAccessible(true);
+            QuorumPeerConfig config = (QuorumPeerConfig) configField.get(zooKeeperEmbedded);
+            zkTickTime = config.getTickTime();
+         } else {
+            fail("unsupported main " + main.getClass());
+            zkTickTime = -1;
+         }
       }
       assertEquals(customTickMs, zkTickTime);
    }

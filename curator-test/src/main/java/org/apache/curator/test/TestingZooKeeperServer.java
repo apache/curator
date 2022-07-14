@@ -165,4 +165,8 @@ public class TestingZooKeeperServer implements Closeable
         main.start();
 
     }
+
+    public ZooKeeperMainFace getMain() {
+        return main;
+    }
 }

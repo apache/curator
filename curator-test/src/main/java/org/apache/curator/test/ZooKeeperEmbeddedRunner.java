@@ -84,4 +84,8 @@ public class ZooKeeperEmbeddedRunner implements ZooKeeperMainFace
     {
         kill();
     }
+
+    public ZooKeeperServerEmbedded getZooKeeperEmbedded() {
+        return zooKeeperEmbedded;
+    }
 }
