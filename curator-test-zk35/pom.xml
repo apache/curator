@@ -195,7 +195,7 @@
                         <dependency>org.apache.curator:curator-recipes</dependency>
                     </dependenciesToScan>
                     <groups>zk35TestCompatibility</groups>
-                    <excludedGroups>zk36</excludedGroups>
+                    <excludedGroups>zk36,zk37</excludedGroups>
                 </configuration>
             </plugin>
         </plugins>
