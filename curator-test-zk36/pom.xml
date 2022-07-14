@@ -220,6 +220,7 @@
                         <dependency>org.apache.curator:curator-recipes</dependency>
                         <dependency>org.apache.curator:curator-client</dependency>
                     </dependenciesToScan>
+                    <groups>zk36,zk35TestCompatibility</groups>
                     <excludedGroups>zk37</excludedGroups>
                 </configuration>
             </plugin>
