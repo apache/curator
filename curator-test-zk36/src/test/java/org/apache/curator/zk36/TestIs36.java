@@ -16,9 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator;
+package org.apache.curator.zk36;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.Compatibility;
@@ -34,6 +36,10 @@ public class TestIs36 extends CuratorTestBase
         assertTrue(Compatibility.hasGetReachableOrOneMethod());
         assertTrue(Compatibility.hasAddrField());
         assertTrue(Compatibility.hasPersistentWatchers());
+        try {
+            Class.forName("org.apache.zookeeper.proto.WhoAmIResponse");
+            fail("WhoAmIResponse is introduced after ZooKeeper 3.7");
+        } catch (ClassNotFoundException ignore) {}
     }
 
     @Override
