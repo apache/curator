@@ -23,6 +23,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 // copied from Google Guava as these methods are now deprecated
 // NOTE: removed the line of code documented: Symbolic links will have different canonical and absolute paths
@@ -30,6 +33,15 @@ import java.io.IOException;
 public class DirectoryUtils
 {
     private static final Logger log = LoggerFactory.getLogger(DirectoryUtils.class);
+
+    public static File createTempDirectory() {
+        try {
+            final Path tempDirectory = Files.createTempDirectory(DirectoryUtils.class.getSimpleName());
+            return tempDirectory.toFile();
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
 
     public static void deleteRecursively(File file) throws IOException
     {

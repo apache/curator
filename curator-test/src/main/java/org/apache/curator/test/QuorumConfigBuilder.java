@@ -106,6 +106,9 @@ public class QuorumConfigBuilder implements Closeable
         }
 
         Properties properties = new Properties();
+        String localSessionsEnabled = System.getProperty("readonlymode.enabled", "false");
+        properties.setProperty("localSessionsEnabled", localSessionsEnabled);
+        properties.setProperty("localSessionsUpgradingEnabled", localSessionsEnabled);
         properties.setProperty("initLimit", "10");
         properties.setProperty("syncLimit", "5");
         properties.setProperty("dataDir", spec.getDataDirectory().getCanonicalPath());

@@ -19,7 +19,6 @@
 
 package org.apache.curator.test;
 
-import com.google.common.io.Files;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -169,7 +168,7 @@ public class InstanceSpec
      */
     public InstanceSpec(File dataDirectory, int port, int electionPort, int quorumPort, boolean deleteDataDirectoryOnClose, int serverId, int tickTime, int maxClientCnxns, Map<String,Object> customProperties,String hostname)
     {
-        this.dataDirectory = (dataDirectory != null) ? dataDirectory : Files.createTempDir();
+        this.dataDirectory = (dataDirectory != null) ? dataDirectory : DirectoryUtils.createTempDirectory();
         this.port = (port >= 0) ? port : getRandomPort();
         this.electionPort = (electionPort >= 0) ? electionPort : getRandomPort();
         this.quorumPort = (quorumPort >= 0) ? quorumPort : getRandomPort();
