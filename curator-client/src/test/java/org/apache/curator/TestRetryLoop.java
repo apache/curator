@@ -18,6 +18,7 @@
  */
 package org.apache.curator;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -108,7 +109,7 @@ public class TestRetryLoop extends BaseClassForTests
                 }
             }
 
-            assertTrue(loopCount >= 2);
+            assertThat(loopCount).isGreaterThanOrEqualTo(2);
         }
         finally
         {
