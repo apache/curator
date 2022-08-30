@@ -152,22 +152,7 @@ public class TestingZooKeeperServer implements Closeable
             return;
         }
 
-        new Thread(new Runnable()
-        {
-            public void run()
-            {
-                try
-                {
-                    QuorumPeerConfig config = configBuilder.buildConfig(thisInstanceIndex);
-                    main.runFromConfig(config);
-                }
-                catch ( Exception e )
-                {
-                    logger.error(String.format("From testing server (random state: %s) for instance: %s", String.valueOf(configBuilder.isFromRandom()), getInstanceSpec()), e);
-                }
-            }
-        }).start();
-
-        main.blockUntilStarted();
+        main.configure(configBuilder, thisInstanceIndex);
+        main.start();
     }
 }

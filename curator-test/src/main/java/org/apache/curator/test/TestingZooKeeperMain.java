@@ -102,8 +102,7 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
         return zkServer;
     }
 
-    @Override
-    public void runFromConfig(QuorumPeerConfig config) throws Exception
+    private void runFromConfig(QuorumPeerConfig config) throws Exception
     {
         try
         {
@@ -143,8 +142,7 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
         }
     }
 
-    @Override
-    public void blockUntilStarted()
+    private void blockUntilStarted()
     {
         if (!timing.awaitLatch(latch))
         {

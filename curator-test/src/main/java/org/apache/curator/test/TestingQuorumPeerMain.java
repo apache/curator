@@ -75,8 +75,7 @@ class TestingQuorumPeerMain extends QuorumPeerMain implements ZooKeeperMainFace
         }
     }
 
-    @Override
-    public void blockUntilStarted()
+    private void blockUntilStarted()
     {
         long startTime = System.currentTimeMillis();
         while ( (quorumPeer == null) && ((System.currentTimeMillis() - startTime) <= TestingZooKeeperMain.MAX_WAIT_MS) )
