@@ -98,8 +98,13 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
         }
     }
 
-    TestZooKeeperServer getZkServer() {
-        return zkServer;
+    @Override
+    public QuorumPeerConfig getConfig() throws Exception {
+        if (configBuilder != null) {
+            return configBuilder.buildConfig(instanceIndex);
+        }
+
+        return null;
     }
 
     private void runFromConfig(QuorumPeerConfig config) throws Exception
@@ -276,8 +281,7 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
         new Thread(() -> {
             try
             {
-                QuorumPeerConfig config = configBuilder.buildConfig(instanceIndex);
-                runFromConfig(config);
+                runFromConfig(getConfig());
             }
             catch ( Exception e )
             {

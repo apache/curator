@@ -19,6 +19,7 @@
 package org.apache.curator.test;
 
 import java.io.Closeable;
+import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 
 public interface ZooKeeperMainFace extends Closeable
 {
@@ -27,4 +28,6 @@ public interface ZooKeeperMainFace extends Closeable
     void start();
 
     void kill();
+
+    QuorumPeerConfig getConfig() throws Exception;
 }

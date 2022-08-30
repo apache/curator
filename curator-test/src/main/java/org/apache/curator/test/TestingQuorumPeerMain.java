@@ -98,11 +98,19 @@ class TestingQuorumPeerMain extends QuorumPeerMain implements ZooKeeperMainFace
     }
 
     @Override
+    public QuorumPeerConfig getConfig() throws Exception {
+        if (configBuilder != null) {
+            return configBuilder.buildConfig(instanceIndex);
+        }
+
+        return null;
+    }
+
+    @Override
     public void start() {
         new Thread(() -> {
             try {
-                QuorumPeerConfig config = configBuilder.buildConfig(instanceIndex);
-                runFromConfig(config);
+                runFromConfig(getConfig());
             } catch (Exception e) {
                 log.error("From testing server (random state: {}) for instance: {}", configBuilder.isFromRandom(), configBuilder.getInstanceSpec(instanceIndex), e);
             }
