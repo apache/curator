@@ -113,7 +113,7 @@ public class Compatibility
                 log.error("Could not call addrField.get({})", server, e);
             }
         }
-        return (address != null) ? address.getAddress().getHostAddress() : "unknown";
+        return (address != null && address.getAddress() != null) ? address.getAddress().getHostAddress() : "unknown";
     }
 
     public static boolean hasPersistentWatchers()
