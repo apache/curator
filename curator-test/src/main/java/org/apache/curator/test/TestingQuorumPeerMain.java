@@ -18,12 +18,11 @@
  */
 package org.apache.curator.test;
 
+import java.lang.reflect.Field;
+import java.nio.channels.ServerSocketChannel;
 import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.apache.zookeeper.server.quorum.QuorumPeerMain;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.nio.channels.ServerSocketChannel;
 
 class TestingQuorumPeerMain extends QuorumPeerMain implements ZooKeeperMainFace
 {
