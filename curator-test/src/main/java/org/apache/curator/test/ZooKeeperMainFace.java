@@ -27,5 +27,9 @@ public interface ZooKeeperMainFace extends Closeable
 
     void blockUntilStarted();
 
+    void configure(QuorumConfigBuilder config, int instanceIndex);
+
+    void start();
+
     void kill();
 }
