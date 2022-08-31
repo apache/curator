@@ -97,6 +97,22 @@ public class QuorumConfigBuilder implements Closeable
 
     public QuorumPeerConfig buildConfig(int instanceIndex) throws Exception
     {
+        Properties properties = buildConfigProperties(instanceIndex);
+        QuorumPeerConfig config = new QuorumPeerConfig()
+        {
+            {
+                if ( fakeConfigFile != null )
+                {
+                    configFileStr = fakeConfigFile.getPath();
+                }
+            }
+        };
+        config.parseProperties(properties);
+        return config;
+    }
+
+    public Properties buildConfigProperties(int instanceIndex) throws Exception
+    {
         boolean isCluster = (instanceSpecs.size() > 1);
         InstanceSpec spec = instanceSpecs.get(instanceIndex);
 
@@ -131,21 +147,9 @@ public class QuorumConfigBuilder implements Closeable
         }
         Map<String,Object> customProperties = spec.getCustomProperties();
         if (customProperties != null) {
-            for (Map.Entry<String,Object> property : customProperties.entrySet()) {
-                properties.put(property.getKey(), property.getValue());
-            }
+            properties.putAll(customProperties);
         }
 
-        QuorumPeerConfig config = new QuorumPeerConfig()
-        {
-            {
-                if ( fakeConfigFile != null )
-                {
-                    configFileStr = fakeConfigFile.getPath();
-                }
-            }
-        };
-        config.parseProperties(properties);
-        return config;
+        return properties;
     }
 }

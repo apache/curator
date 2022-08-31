@@ -19,6 +19,7 @@
 
 package org.apache.curator.framework.imps;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Queues;
@@ -69,12 +70,9 @@ public class TestReadOnly extends BaseClassForTests
             client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(100));
             client.start();
             client.checkExists().forPath("/");
-            client.getConnectionStateListenable().addListener(new ConnectionStateListener() {
-                @Override
-                public void stateChanged(CuratorFramework client, ConnectionState newState) {
-                    if (newState == ConnectionState.LOST) {
-                        lostLatch.countDown();
-                    }
+            client.getConnectionStateListenable().addListener((client1, newState) -> {
+                if (newState == ConnectionState.LOST) {
+                    lostLatch.countDown();
                 }
             });
 
@@ -95,23 +93,13 @@ public class TestReadOnly extends BaseClassForTests
                 .build();
 
             final BlockingQueue<ConnectionState> states = Queues.newLinkedBlockingQueue();
-            client.getConnectionStateListenable().addListener
-            (
-                new ConnectionStateListener()
-                {
-                    @Override
-                    public void stateChanged(CuratorFramework client, ConnectionState newState)
-                    {
-                        states.add(newState);
-                    }
-                }
-            );
+            client.getConnectionStateListenable().addListener((client12, newState) -> states.add(newState));
             client.start();
 
             client.checkExists().forPath("/");
 
             ConnectionState state = states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS);
-            assertEquals(state, ConnectionState.READ_ONLY);
+            assertThat(state).isEqualTo(ConnectionState.READ_ONLY);
         }
         finally
         {
@@ -136,19 +124,14 @@ public class TestReadOnly extends BaseClassForTests
 
             final CountDownLatch readOnlyLatch = new CountDownLatch(1);
             final CountDownLatch reconnectedLatch = new CountDownLatch(1);
-            ConnectionStateListener listener = new ConnectionStateListener()
-            {
-                @Override
-                public void stateChanged(CuratorFramework client, ConnectionState newState)
+            ConnectionStateListener listener = (client1, newState) -> {
+                if ( newState == ConnectionState.READ_ONLY )
                 {
-                    if ( newState == ConnectionState.READ_ONLY )
-                    {
-                        readOnlyLatch.countDown();
-                    }
-                    else if ( newState == ConnectionState.RECONNECTED )
-                    {
-                        reconnectedLatch.countDown();
-                    }
+                    readOnlyLatch.countDown();
+                }
+                else if ( newState == ConnectionState.RECONNECTED )
+                {
+                    reconnectedLatch.countDown();
                 }
             };
             client.getConnectionStateListenable().addListener(listener);
@@ -177,7 +160,7 @@ public class TestReadOnly extends BaseClassForTests
     }
 
     @Override
-    protected void createServer() throws Exception
+    protected void createServer()
     {
         // NOP
     }

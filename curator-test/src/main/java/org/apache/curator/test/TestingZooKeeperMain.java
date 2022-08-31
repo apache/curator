@@ -19,6 +19,15 @@
 
 package org.apache.curator.test;
 
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.nio.channels.ServerSocketChannel;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.zookeeper.jmx.MBeanRegistry;
 import org.apache.zookeeper.jmx.ZKMBeanInfo;
 import org.apache.zookeeper.server.ContainerManager;
@@ -31,27 +40,19 @@ import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import javax.management.JMException;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.nio.channels.ServerSocketChannel;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class TestingZooKeeperMain implements ZooKeeperMainFace
 {
     private static final Logger log = LoggerFactory.getLogger(TestingZooKeeperMain.class);
 
     private final CountDownLatch latch = new CountDownLatch(1);
-    private final AtomicReference<Exception> startingException = new AtomicReference<Exception>(null);
+    private final AtomicReference<Exception> startingException = new AtomicReference<>(null);
 
     private volatile ServerCnxnFactory cnxnFactory;
     private volatile TestZooKeeperServer zkServer;
     private volatile ContainerManager containerManager;
+    private volatile QuorumConfigBuilder configBuilder;
+    private volatile int instanceIndex;
 
     private static final Timing timing = new Timing();
 
@@ -97,12 +98,16 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
         }
     }
 
-    TestZooKeeperServer getZkServer() {
-        return zkServer;
+    @Override
+    public QuorumPeerConfig getConfig() throws Exception {
+        if (configBuilder != null) {
+            return configBuilder.buildConfig(instanceIndex);
+        }
+
+        return null;
     }
 
-    @Override
-    public void runFromConfig(QuorumPeerConfig config) throws Exception
+    private void runFromConfig(QuorumPeerConfig config) throws Exception
     {
         try
         {
@@ -111,7 +116,7 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
             MBeanRegistry nopMBeanRegistry = new MBeanRegistry()
             {
                 @Override
-                public void register(ZKMBeanInfo bean, ZKMBeanInfo parent) throws JMException
+                public void register(ZKMBeanInfo bean, ZKMBeanInfo parent)
                 {
                     // NOP
                 }
@@ -142,9 +147,7 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
         }
     }
 
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    @Override
-    public void blockUntilStarted()
+    private void blockUntilStarted()
     {
         if (!timing.awaitLatch(latch))
         {
@@ -265,6 +268,28 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
             Thread.currentThread().interrupt();
             log.warn("Server interrupted", e);
         }
+    }
+
+    @Override
+    public void configure(QuorumConfigBuilder configBuilder, int instanceIndex) {
+        this.configBuilder = configBuilder;
+        this.instanceIndex = instanceIndex;
+    }
+
+    @Override
+    public void start() {
+        new Thread(() -> {
+            try
+            {
+                runFromConfig(getConfig());
+            }
+            catch ( Exception e )
+            {
+                log.error(String.format("From testing server (random state: %s) for instance: %s", String.valueOf(configBuilder.isFromRandom()), configBuilder.getInstanceSpec(instanceIndex)), e);
+            }
+        }, "zk-main-thread").start();
+
+        blockUntilStarted();
     }
 
     public static class TestZooKeeperServer extends ZooKeeperServer
