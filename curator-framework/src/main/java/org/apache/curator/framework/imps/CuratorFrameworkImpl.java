@@ -425,7 +425,12 @@ public class CuratorFrameworkImpl implements CuratorFramework
                     Thread.currentThread().interrupt();
                 }
             }
-
+            
+            if ( runSafeService != null )
+            {
+            	runSafeService.shutdownNow();
+            }
+            
             if ( ensembleTracker != null )
             {
                 ensembleTracker.close();
