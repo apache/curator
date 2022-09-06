@@ -22,7 +22,6 @@ import java.lang.reflect.Field;
 import java.nio.channels.ServerSocketChannel;
 import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.apache.zookeeper.server.quorum.QuorumPeer;
-import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 import org.apache.zookeeper.server.quorum.QuorumPeerMain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,9 +30,6 @@ class TestingQuorumPeerMain extends QuorumPeerMain implements ZooKeeperMainFace
 {
     private static final Logger log = LoggerFactory.getLogger(TestingQuorumPeerMain.class);
     private volatile boolean isClosed = false;
-
-    private volatile QuorumConfigBuilder configBuilder;
-    private volatile int instanceIndex;
 
     @Override
     public void kill()
@@ -92,30 +88,20 @@ class TestingQuorumPeerMain extends QuorumPeerMain implements ZooKeeperMainFace
     }
 
     @Override
-    public void configure(QuorumConfigBuilder configBuilder, int instanceIndex) {
-        this.configBuilder = configBuilder;
-        this.instanceIndex = instanceIndex;
-    }
-
-    @Override
-    public QuorumPeerConfig getConfig() throws Exception {
-        if (configBuilder != null) {
-            return configBuilder.buildConfig(instanceIndex);
-        }
-
-        return null;
-    }
-
-    @Override
-    public void start() {
+    public void start(QuorumPeerConfigBuilder configBuilder) {
         new Thread(() -> {
             try {
-                runFromConfig(getConfig());
+                runFromConfig(configBuilder.buildConfig());
             } catch (Exception e) {
-                log.error("From testing server (random state: {}) for instance: {}", configBuilder.isFromRandom(), configBuilder.getInstanceSpec(instanceIndex), e);
+                log.error("From testing server (random state: {}) for instance: {}", configBuilder.isFromRandom(), configBuilder.getInstanceSpec(), e);
             }
         }).start();
 
         blockUntilStarted();
+    }
+
+    @Override
+    public int getClientPort() {
+        return quorumPeer == null ? -1 : quorumPeer.getClientPort();
     }
 }

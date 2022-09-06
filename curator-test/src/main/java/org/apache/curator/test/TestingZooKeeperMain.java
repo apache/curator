@@ -51,8 +51,6 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
     private volatile ServerCnxnFactory cnxnFactory;
     private volatile TestZooKeeperServer zkServer;
     private volatile ContainerManager containerManager;
-    private volatile QuorumConfigBuilder configBuilder;
-    private volatile int instanceIndex;
 
     private static final Timing timing = new Timing();
 
@@ -98,13 +96,8 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
         }
     }
 
-    @Override
-    public QuorumPeerConfig getConfig() throws Exception {
-        if (configBuilder != null) {
-            return configBuilder.buildConfig(instanceIndex);
-        }
-
-        return null;
+    TestZooKeeperServer getZkServer() {
+        return zkServer;
     }
 
     private void runFromConfig(QuorumPeerConfig config) throws Exception
@@ -271,25 +264,24 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
     }
 
     @Override
-    public void configure(QuorumConfigBuilder configBuilder, int instanceIndex) {
-        this.configBuilder = configBuilder;
-        this.instanceIndex = instanceIndex;
-    }
-
-    @Override
-    public void start() {
+    public void start(QuorumPeerConfigBuilder configBuilder) {
         new Thread(() -> {
             try
             {
-                runFromConfig(getConfig());
+                runFromConfig(configBuilder.buildConfig());
             }
             catch ( Exception e )
             {
-                log.error(String.format("From testing server (random state: %s) for instance: %s", String.valueOf(configBuilder.isFromRandom()), configBuilder.getInstanceSpec(instanceIndex)), e);
+                log.error(String.format("From testing server (random state: %s) for instance: %s", configBuilder.isFromRandom(), configBuilder.getInstanceSpec()), e);
             }
         }, "zk-main-thread").start();
 
         blockUntilStarted();
+    }
+
+    @Override
+    public int getClientPort() {
+        return cnxnFactory == null ? -1 : cnxnFactory.getLocalPort();
     }
 
     public static class TestZooKeeperServer extends ZooKeeperServer

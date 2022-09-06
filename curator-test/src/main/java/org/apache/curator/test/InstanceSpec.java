@@ -205,6 +205,10 @@ public class InstanceSpec
         return quorumPort;
     }
 
+    /**
+     * @deprecated use {@link TestingServer#getConnectString()} or {@link TestingCluster#getConnectString()} instead
+     */
+    @Deprecated
     public String getConnectString()
     {
         return hostname + ":" + port;

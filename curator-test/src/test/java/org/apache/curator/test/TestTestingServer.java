@@ -35,6 +35,8 @@ public class TestTestingServer {
 
    @Test
    public void setCustomTickTimeTest() throws Exception {
+      TestingZooKeeperServer.hasZooKeeperServerEmbedded = false;
+
       final int defaultZkTickTime = ZooKeeperServer.DEFAULT_TICK_TIME;
       final int customTickMs;
       if (defaultZkTickTime > 0) {
@@ -45,7 +47,8 @@ public class TestTestingServer {
       final InstanceSpec spec = new InstanceSpec(zkTmpDir, -1, -1, -1, true, -1, customTickMs, -1);
       final int zkTickTime;
       try (TestingServer testingServer = new TestingServer(spec, true)) {
-         zkTickTime = testingServer.getTestingZooKeeperServer().getMain().getConfig().getTickTime();
+         TestingZooKeeperMain main = (TestingZooKeeperMain) testingServer.getTestingZooKeeperServer().getMain();
+         zkTickTime = main.getZkServer().getTickTime();
       }
       assertEquals(customTickMs, zkTickTime);
    }

@@ -23,6 +23,8 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,11 +34,12 @@ import org.slf4j.LoggerFactory;
 public class TestingZooKeeperServer implements Closeable
 {
     private static final Logger log = LoggerFactory.getLogger(TestingZooKeeperServer.class);
-    private static final boolean hasZooKeeperServerEmbedded;
+    static boolean hasZooKeeperServerEmbedded;
 
     private final AtomicReference<State> state = new AtomicReference<>(State.LATENT);
     private final QuorumConfigBuilder configBuilder;
     private final int thisInstanceIndex;
+    private int thisInstancePort;
     private volatile ZooKeeperMainFace main;
 
     static {
@@ -71,6 +74,7 @@ public class TestingZooKeeperServer implements Closeable
 
         this.configBuilder = configBuilder;
         this.thisInstanceIndex = thisInstanceIndex;
+        this.thisInstancePort = configBuilder.getInstanceSpec(thisInstanceIndex).getPort();
         main = createServerMain();
     }
 
@@ -163,7 +167,14 @@ public class TestingZooKeeperServer implements Closeable
             return;
         }
 
-        main.configure(configBuilder, thisInstanceIndex);
-        main.start();
+        main.start(configBuilder.bindInstance(thisInstanceIndex, thisInstancePort));
+        thisInstancePort = main.getClientPort();
+    }
+
+    public int getLocalPort() {
+        if (thisInstancePort == 0) {
+            throw new IllegalStateException("server is configured to bind to port 0 but not started");
+        }
+        return thisInstancePort;
     }
 }
