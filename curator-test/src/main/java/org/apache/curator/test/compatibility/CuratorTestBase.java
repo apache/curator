@@ -23,6 +23,7 @@ import org.apache.curator.test.BaseClassForTests;
 public class CuratorTestBase extends BaseClassForTests
 {
     public static final String zk36Group = "zk36";
+    public static final String zk37Group = "zk37";
     public static final String zk35TestCompatibilityGroup = "zk35TestCompatibility";
 
     protected final Timing2 timing = new Timing2();

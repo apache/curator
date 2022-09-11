@@ -477,6 +477,14 @@ public class TestReconfiguration extends CuratorTestBase
     }
 
     @Test
+    public void testHostname() throws Exception
+    {
+        String config = "server.1=localhost:2888:3888:participant;localhost:2181";
+        String configString = EnsembleTracker.configToConnectionString(toQuorumVerifier(config.getBytes()));
+        assertEquals("localhost:2181", configString);
+    }
+
+    @Test
     public void testIPv6Wildcard1() throws Exception
     {
         String config = "server.1=[2001:db8:85a3:0:0:8a2e:370:7334]:2888:3888:participant;[::]:2181";

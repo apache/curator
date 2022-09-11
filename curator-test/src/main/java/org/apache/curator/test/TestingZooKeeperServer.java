@@ -19,26 +19,37 @@
 
 package org.apache.curator.test;
 
-import org.apache.zookeeper.server.quorum.QuorumPeer;
-import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicReference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Thanks to Jeremie BORDIER (ahfeel) for this code
  */
 public class TestingZooKeeperServer implements Closeable
 {
-    private static final Logger logger = LoggerFactory.getLogger(TestingZooKeeperServer.class);
+    private static final Logger log = LoggerFactory.getLogger(TestingZooKeeperServer.class);
+    private static final boolean hasZooKeeperServerEmbedded;
 
+    private final AtomicReference<State> state = new AtomicReference<>(State.LATENT);
     private final QuorumConfigBuilder configBuilder;
     private final int thisInstanceIndex;
     private volatile ZooKeeperMainFace main;
-    private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
+
+    static {
+        boolean localHasZooKeeperServerEmbedded;
+        try {
+            Class.forName("org.apache.zookeeper.server.embedded.ZooKeeperServerEmbedded");
+            localHasZooKeeperServerEmbedded = true;
+        } catch (Throwable t) {
+            localHasZooKeeperServerEmbedded = false;
+            log.info("ZooKeeperServerEmbedded is not available in the version of the ZooKeeper library being used");
+        }
+        hasZooKeeperServerEmbedded = localHasZooKeeperServerEmbedded;
+    }
 
     ZooKeeperMainFace getMain() {
         return main;
@@ -60,19 +71,21 @@ public class TestingZooKeeperServer implements Closeable
 
         this.configBuilder = configBuilder;
         this.thisInstanceIndex = thisInstanceIndex;
-        main = isCluster() ? new TestingQuorumPeerMain() : new TestingZooKeeperMain();
+        main = createServerMain();
+    }
+
+    private ZooKeeperMainFace createServerMain() {
+        if (hasZooKeeperServerEmbedded) {
+            return new ZooKeeperServerEmbeddedAdapter();
+        } else if (isCluster()) {
+            return new TestingQuorumPeerMain();
+        } else {
+            return new TestingZooKeeperMain();
+        }
     }
 
     private boolean isCluster() {
         return configBuilder.size() > 1;
-    }
-    
-    public QuorumPeer getQuorumPeer()
-    {
-        if (isCluster()) {
-            return ((TestingQuorumPeerMain) main).getTestingQuorumPeer();
-        }
-        throw new UnsupportedOperationException();
     }
 
     public Collection<InstanceSpec> getInstanceSpecs()
@@ -91,8 +104,6 @@ public class TestingZooKeeperServer implements Closeable
      * started again. If it is not running (in a LATENT or STOPPED state) then
      * it will be restarted. If it is in a CLOSED state then an exception will
      * be thrown.
-     *
-     * @throws Exception
      */
     public void restart() throws Exception
     {
@@ -111,7 +122,7 @@ public class TestingZooKeeperServer implements Closeable
         // Set to a LATENT state so we can restart
         state.set(State.LATENT);
 
-        main = isCluster() ? new TestingQuorumPeerMain() : new TestingZooKeeperMain();
+        main = createServerMain();
         start();
     }
 
@@ -152,22 +163,7 @@ public class TestingZooKeeperServer implements Closeable
             return;
         }
 
-        new Thread(new Runnable()
-        {
-            public void run()
-            {
-                try
-                {
-                    QuorumPeerConfig config = configBuilder.buildConfig(thisInstanceIndex);
-                    main.runFromConfig(config);
-                }
-                catch ( Exception e )
-                {
-                    logger.error(String.format("From testing server (random state: %s) for instance: %s", String.valueOf(configBuilder.isFromRandom()), getInstanceSpec()), e);
-                }
-            }
-        }).start();
-
-        main.blockUntilStarted();
+        main.configure(configBuilder, thisInstanceIndex);
+        main.start();
     }
 }

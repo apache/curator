@@ -17,7 +17,7 @@
     under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -35,20 +35,20 @@
     <description>
         Curator is a set of Java libraries that make using Apache ZooKeeper much easier.
     </description>
-    <url>http://curator.apache.org</url>
+    <url>https://curator.apache.org</url>
     <inceptionYear>2011</inceptionYear>
 
     <licenses>
         <license>
             <name>The Apache Software License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
             <distribution>repo</distribution>
         </license>
     </licenses>
 
     <organization>
         <name>The Apache Software Foundation</name>
-        <url>http://www.apache.org/</url>
+        <url>https://www.apache.org/</url>
     </organization>
 
     <properties>
@@ -69,7 +69,7 @@
         <redirectTestOutputToFile>true</redirectTestOutputToFile>
 
         <!-- versions -->
-        <zookeeper-version>3.6.3</zookeeper-version>
+        <zookeeper-version>3.7.1</zookeeper-version>
         <maven-bundle-plugin-version>5.1.4</maven-bundle-plugin-version>
         <maven-compiler-plugin-version>3.10.0</maven-compiler-plugin-version>
         <maven-dependency-plugin-version>3.2.0</maven-dependency-plugin-version>
@@ -82,6 +82,7 @@
         <commons-math-version>2.2</commons-math-version>
         <jackson-mapper-asl-version>1.9.13</jackson-mapper-asl-version>
         <jackson-version>2.10.0</jackson-version>
+        <assertj-version>3.23.1</assertj-version>
         <!-- Upgrading to Jersey 2.x is difficult and of unclear benefits, see
              https://stackoverflow.com/questions/17098341#22033825 -->
         <jersey-version>1.19.4</jersey-version>
@@ -93,7 +94,7 @@
         <scannotation-version>1.0.2</scannotation-version>
         <!-- resteasy-jaxrs dependency cannot be higher than 2.x for compatibility with Jersey 1.x -->
         <resteasy-jaxrs-version>2.3.5.Final</resteasy-jaxrs-version>
-        <guava-version>27.0.1-jre</guava-version>
+        <guava-version>31.1-jre</guava-version>
         <guava-listenablefuture-version>1.0</guava-listenablefuture-version>
         <guava-failureaccess-version>1.0.1</guava-failureaccess-version>
         <junit-version>5.6.2</junit-version>
@@ -126,7 +127,7 @@
 
     <issueManagement>
         <system>JIRA</system>
-        <url>http://issues.apache.org/jira/browse/CURATOR</url>
+        <url>https://issues.apache.org/jira/browse/CURATOR</url>
     </issueManagement>
 
     <ciManagement>
@@ -159,21 +160,21 @@
             <subscribe>mailto:user-subscribe@curator.apache.org</subscribe>
             <unsubscribe>mailto:user-unsubscribe@curator.apache.org</unsubscribe>
             <post>mailto:user@curator.apache.org</post>
-            <archive>http://mail-archives.apache.org/mod_mbox/curator-user/</archive>
+            <archive>https://mail-archives.apache.org/mod_mbox/curator-user/</archive>
         </mailingList>
         <mailingList>
             <name>Development</name>
             <subscribe>mailto:dev-subscribe@curator.apache.org</subscribe>
             <unsubscribe>mailto:dev-unsubscribe@curator.apache.org</unsubscribe>
             <post>mailto:dev@curator.apache.org</post>
-            <archive>http://mail-archives.apache.org/mod_mbox/curator-dev/</archive>
+            <archive>https://mail-archives.apache.org/mod_mbox/curator-dev/</archive>
         </mailingList>
         <mailingList>
             <name>Commits</name>
             <subscribe>mailto:commits-subscribe@curator.apache.org</subscribe>
             <unsubscribe>mailto:commits-unsubscribe@curator.apache.org</unsubscribe>
             <post>mailto:commits@curator.apache.org</post>
-            <archive>http://mail-archives.apache.org/mod_mbox/curator-commits/</archive>
+            <archive>https://mail-archives.apache.org/mod_mbox/curator-commits/</archive>
         </mailingList>
     </mailingLists>
 
@@ -199,7 +200,7 @@
                 <role>Committer</role>
                 <role>PMC Member</role>
             </roles>
-            <url>http://www.linkedin.com/pub/jay-zarfoss/34/56/a19</url>
+            <url>https://www.linkedin.com/pub/jay-zarfoss/34/56/a19</url>
         </developer>
 
         <developer>
@@ -222,7 +223,7 @@
                 <role>Committer</role>
                 <role>PMC Member</role>
             </roles>
-            <url>http://iocanel.blogspot.com</url>
+            <url>https://iocanel.blogspot.com</url>
         </developer>
 
         <developer>
@@ -246,7 +247,7 @@
                 <role>Committer</role>
                 <role>PMC Member</role>
             </roles>
-            <url>http://github.com/dragonsinth</url>
+            <url>https://github.com/dragonsinth</url>
         </developer>
 
         <developer>
@@ -258,7 +259,7 @@
                 <role>Committer</role>
                 <role>PMC Member</role>
             </roles>
-            <url>http://people.apache.org/~mdrob</url>
+            <url>https://people.apache.org/~mdrob</url>
         </developer>
 
         <developer>
@@ -268,7 +269,7 @@
                 <role>PMC Member</role>
             </roles>
             <timezone>-8</timezone>
-            <url>http://www.linkedin.com/pub/patrick-hunt/2/5b2/24a</url>
+            <url>https://www.linkedin.com/pub/patrick-hunt/2/5b2/24a</url>
         </developer>
 
         <developer>
@@ -278,7 +279,7 @@
                 <role>PMC Member</role>
             </roles>
             <timezone>-8</timezone>
-            <url>http://www.linkedin.com/in/mahadevkonar</url>
+            <url>https://www.linkedin.com/in/mahadevkonar</url>
         </developer>
 
         <developer>
@@ -359,6 +360,7 @@
         <module>curator-x-discovery-server</module>
         <module>curator-x-async</module>
         <module>curator-test-zk35</module>
+        <module>curator-test-zk36</module>
     </modules>
 
     <dependencyManagement>
@@ -382,8 +384,21 @@
             </dependency>
 
             <dependency>
+                <groupId>org.assertj</groupId>
+                <artifactId>assertj-core</artifactId>
+                <version>${assertj-version}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>org.apache.curator</groupId>
                 <artifactId>curator-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.curator</groupId>
+                <artifactId>curator-client</artifactId>
+                <type>test-jar</type>
                 <version>${project.version}</version>
             </dependency>
 
