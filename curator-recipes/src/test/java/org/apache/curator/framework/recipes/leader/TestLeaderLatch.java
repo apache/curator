@@ -219,25 +219,51 @@ public class TestLeaderLatch extends BaseClassForTests
     }
 
     @Test
-    public void testOurPathDeletedOnReconnect() throws Exception
+    public void testLeadershipElectionWhenNodeDisappearsAfterChildrenAreRetrieved() throws Exception
     {
         final String latchPath = "/foo/bar";
-        Timing2 timing = new Timing2();
-        try ( CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1)) )
+        final Timing2 timing = new Timing2();
+        try (CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1)))
         {
             client.start();
-            try ( LeaderLatch latch = new LeaderLatch(client, latchPath, "0") )
-            {
-                latch.debugCheckLeaderShipLatch = new CountDownLatch(1);
-                latch.start(); // hold before checkLeadership()
-                timing.sleepABit();
-                latch.reset(); // force the internal "ourPath" to get reset
-                latch.debugCheckLeaderShipLatch.countDown();   // allow checkLeadership() to continue
+            LeaderLatch latchInitialLeader = new LeaderLatch(client, latchPath, "initial-leader");
+            LeaderLatch latchCandidate0 = new LeaderLatch(client, latchPath, "candidate-0");
+            LeaderLatch latchCandidate1 = new LeaderLatch(client, latchPath, "candidate-1");
 
-                assertTrue(latch.await(timing.forSessionSleep().forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
+            try
+            {
+                latchInitialLeader.start();
+
+                // we want to make sure that the leader gets leadership before other instances joining the party
+                waitForALeader(Collections.singletonList(latchInitialLeader), new Timing());
+
+                // candidate #0 will wait for the leader to go away - this should happen after the child nodes are retrieved by candidate #0
+                latchCandidate0.debugCheckLeaderShipLatch = new CountDownLatch(1);
+
+                latchCandidate0.start();
                 timing.sleepABit();
-                assertTrue(latch.hasLeadership());
-                assertEquals(client.getChildren().forPath(latchPath).size(), 1);
+
+                // no extract CountDownLatch needs to be set here because candidate #1 will rely on candidate #0
+                latchCandidate1.start();
+                timing.sleepABit();
+
+                // triggers the removal of the corresponding child node after candidate #0 retrieved the children
+                latchInitialLeader.close();
+
+                latchCandidate0.debugCheckLeaderShipLatch.countDown();
+
+                waitForALeader(Arrays.asList(latchCandidate0, latchCandidate1), new Timing());
+
+                assertTrue(latchCandidate0.hasLeadership() ^ latchCandidate1.hasLeadership());
+            } finally
+            {
+                for (LeaderLatch latchToClose : Arrays.asList(latchInitialLeader, latchCandidate0, latchCandidate1))
+                {
+                    if ( latchToClose.getState() != LeaderLatch.State.CLOSED )
+                    {
+                        latchToClose.close();
+                    }
+                }
             }
         }
     }
