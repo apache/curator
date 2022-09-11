@@ -720,7 +720,7 @@ public class LeaderLatch implements Closeable
     private void setNode(String newValue) throws Exception
     {
         String oldPath = ourPath.getAndSet(newValue);
-        log.debug("setNode with oldPath: {}, newValue: {}", oldPath, newValue);
+        log.debug("setNode with id: {}, oldPath: {}, newValue: {}", id, oldPath, newValue);
         if ( oldPath != null )
         {
             client.delete().guaranteed().inBackground().forPath(oldPath);
