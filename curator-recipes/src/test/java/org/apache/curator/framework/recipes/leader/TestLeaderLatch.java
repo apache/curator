@@ -234,7 +234,7 @@ public class TestLeaderLatch extends BaseClassForTests
             {
                 latchInitialLeader.start();
 
-                // we want to make sure that the leader gets leadership before other instances joining the party
+                // we want to make sure that the leader gets leadership before other instances are joining the party
                 waitForALeader(Collections.singletonList(latchInitialLeader), new Timing());
 
                 // candidate #0 will wait for the leader to go away - this should happen after the child nodes are retrieved by candidate #0
@@ -243,7 +243,7 @@ public class TestLeaderLatch extends BaseClassForTests
                 latchCandidate0.start();
                 timing.sleepABit();
 
-                // no extract CountDownLatch needs to be set here because candidate #1 will rely on candidate #0
+                // no extra CountDownLatch needs to be set here because candidate #1 will rely on candidate #0
                 latchCandidate1.start();
                 timing.sleepABit();
 
