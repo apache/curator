@@ -270,10 +270,7 @@ public class TestLeaderLatch extends BaseClassForTests
             {
                 for (LeaderLatch latchToClose : Arrays.asList(latchInitialLeader, latchCandidate0, latchCandidate1))
                 {
-                    if ( latchToClose.getState() != LeaderLatch.State.CLOSED )
-                    {
-                        latchToClose.close();
-                    }
+                    latchToClose.closeOnDemand();
                 }
             }
         }
