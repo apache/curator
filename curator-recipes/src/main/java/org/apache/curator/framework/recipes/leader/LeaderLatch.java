@@ -587,7 +587,7 @@ public class LeaderLatch implements Closeable
         List<String> sortedChildren = LockInternals.getSortedChildren(LOCK_NAME, sorter, children);
         int ourIndex = (localOurPath != null) ? sortedChildren.indexOf(ZKPaths.getNodeFromPath(localOurPath)) : -1;
 
-        log.debug("checkLeadership with ourPath: {}, children: {}", localOurPath, sortedChildren);
+        log.debug("checkLeadership with id: {},ourPath: {}, children: {}", id, localOurPath, sortedChildren);
 
         if ( ourIndex < 0 )
         {
