@@ -306,7 +306,8 @@ public class TestLeaderLatch extends BaseClassForTests
                 client.getConnectionStateListenable().addListener(stateListener);
                 client.start();
 
-                latch = new LeaderLatch(client, "/test");
+                final String latchPatch = "/test";
+                latch = new LeaderLatch(client, latchPatch);
                 LeaderLatchListener listener = new LeaderLatchListener()
                 {
                     @Override
@@ -325,6 +326,7 @@ public class TestLeaderLatch extends BaseClassForTests
                 latch.start();
                 assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.CONNECTED.name());
                 assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), "true");
+                final List<String> beforeResetChildren = client.getChildren().forPath(latchPatch);
                 server.stop();
                 if ( isSessionIteration )
                 {
@@ -342,6 +344,8 @@ public class TestLeaderLatch extends BaseClassForTests
                     server.restart();
                     assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.RECONNECTED.name());
                     assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), "true");
+                    final List<String> afterResetChildren = client.getChildren().forPath(latchPatch);
+                    assertEquals(beforeResetChildren, afterResetChildren);
                 }
             }
             finally
