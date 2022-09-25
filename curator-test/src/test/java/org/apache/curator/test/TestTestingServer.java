@@ -45,8 +45,7 @@ public class TestTestingServer {
       final InstanceSpec spec = new InstanceSpec(zkTmpDir, -1, -1, -1, true, -1, customTickMs, -1);
       final int zkTickTime;
       try (TestingServer testingServer = new TestingServer(spec, true)) {
-         TestingZooKeeperMain main = (TestingZooKeeperMain) testingServer.getTestingZooKeeperServer().getMain();
-         zkTickTime = main.getZkServer().getTickTime();
+         zkTickTime = testingServer.getTestingZooKeeperServer().getMain().getConfig().getTickTime();
       }
       assertEquals(customTickMs, zkTickTime);
    }

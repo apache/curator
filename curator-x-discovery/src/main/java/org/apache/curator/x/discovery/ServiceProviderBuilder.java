@@ -68,7 +68,7 @@ public interface ServiceProviderBuilder<T>
 
     /**
      * Add an instance filter. NOTE: this does not remove previously added filters. i.e.
-     * a l;ist is created of all added filters. Filters are called in the order they were
+     * a list is created of all added filters. Filters are called in the order they were
      * added.
      *
      * @param filter filter to add

@@ -105,7 +105,7 @@ public class Schema
 
     Schema(String name, Pattern pathRegex, String path, String documentation, SchemaValidator schemaValidator, Allowance ephemeral, Allowance sequential, Allowance watched, boolean canBeDeleted, Map<String, String> metadata)
     {
-        Preconditions.checkNotNull((pathRegex != null) || (path != null), "pathRegex and path cannot both be null");
+        Preconditions.checkArgument((pathRegex != null) || (path != null), "pathRegex and path cannot both be null");
         this.pathRegex = pathRegex;
         this.fixedPath = fixPath(path);
         this.metadata = ImmutableMap.copyOf(Preconditions.checkNotNull(metadata, "metadata cannot be null"));

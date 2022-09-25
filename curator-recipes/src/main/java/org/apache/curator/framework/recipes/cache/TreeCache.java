@@ -23,6 +23,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import java.util.function.Supplier;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
@@ -108,7 +109,7 @@ public class TreeCache implements Closeable
             ExecutorService executor = executorService;
             if ( executor == null )
             {
-                executor = Executors.newSingleThreadExecutor(defaultThreadFactory);
+                executor = Executors.newSingleThreadExecutor(defaultThreadFactorySupplier.get());
             }
             return new TreeCache(client, path, cacheData, dataIsCompressed, maxDepth, executor, createParentNodes, disableZkWatches, selector);
         }
@@ -554,7 +555,7 @@ public class TreeCache implements Closeable
         }
     };
 
-    static final ThreadFactory defaultThreadFactory = ThreadUtils.newThreadFactory("TreeCache");
+    private static final Supplier<ThreadFactory> defaultThreadFactorySupplier = () -> ThreadUtils.newThreadFactory("TreeCache");
 
     /**
      * Create a TreeCache for the given client and path with default options.
@@ -571,7 +572,7 @@ public class TreeCache implements Closeable
      */
     public TreeCache(CuratorFramework client, String path)
     {
-        this(client, path, true, false, Integer.MAX_VALUE, Executors.newSingleThreadExecutor(defaultThreadFactory), false, false, new DefaultTreeCacheSelector());
+        this(client, path, true, false, Integer.MAX_VALUE, Executors.newSingleThreadExecutor(defaultThreadFactorySupplier.get()), false, false, new DefaultTreeCacheSelector());
     }
 
     /**

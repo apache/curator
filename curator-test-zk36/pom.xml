@@ -24,10 +24,10 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>curator-test-zk35</artifactId>
+    <artifactId>curator-test-zk36</artifactId>
 
     <properties>
-        <zookeeper-35-version>3.5.7</zookeeper-35-version>
+        <zookeeper-36-version>3.6.3</zookeeper-36-version>
     </properties>
 
     <dependencies>
@@ -67,7 +67,7 @@
         <dependency>
             <groupId>org.apache.zookeeper</groupId>
             <artifactId>zookeeper</artifactId>
-            <version>${zookeeper-35-version}</version>
+            <version>${zookeeper-36-version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.sun.jmx</groupId>
@@ -131,6 +131,19 @@
         </dependency>
 
         <dependency>
+            <groupId>org.apache.curator</groupId>
+            <artifactId>curator-client</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.zookeeper</groupId>
+                    <artifactId>zookeeper</artifactId>
+                </exclusion>
+            </exclusions>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math</artifactId>
             <scope>test</scope>
@@ -158,6 +171,18 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -193,9 +218,10 @@
                     <dependenciesToScan>
                         <dependency>org.apache.curator:curator-framework</dependency>
                         <dependency>org.apache.curator:curator-recipes</dependency>
+                        <dependency>org.apache.curator:curator-client</dependency>
                     </dependenciesToScan>
-                    <groups>zk35TestCompatibility</groups>
-                    <excludedGroups>zk36,zk37</excludedGroups>
+                    <groups>zk36,zk35TestCompatibility</groups>
+                    <excludedGroups>zk37</excludedGroups>
                 </configuration>
             </plugin>
         </plugins>

@@ -56,7 +56,10 @@ public interface ZPath extends Resolvable
     }
 
     /**
-     * Take a string path and return a ZPath
+     * Take a string path and return a ZPath.
+     * <p>
+     * Note: This method always produces a fully resolved path despite the presence of any parameter-like elements (i.e, {@code {one}}).
+     * For substituting parameter elements and for proper parameter resolution status checks, use {@code parseWithIds()} instead.
      *
      * @param fullPath the path to parse
      * @return ZPath
@@ -79,7 +82,7 @@ public interface ZPath extends Resolvable
      */
     static ZPath parseWithIds(String fullPath)
     {
-        return ZPathImpl.parse(fullPath, s -> isId(s) ? (PATH_SEPARATOR + s) : s); // TODO
+        return ZPathImpl.parse(fullPath, s -> isId(s) ? (PATH_SEPARATOR + s) : s);
     }
 
     /**
@@ -241,7 +244,13 @@ public interface ZPath extends Resolvable
     boolean isRoot();
 
     /**
-     * Return true if this path is fully resolved (i.e. has no unresoled parameters)
+     * Return true if this path is fully resolved (i.e. has no unresolved parameters).
+     * <p>
+     * Note: ZPath's returned by the {@code parse()} method are always considered fully resolved, despite if there are
+     * remaining elements in the path which appear to be parameters (but are not, i.e. {@code {one}}).
+     * <p>
+     * When working with parameters, use the {@code parseWithIds()} method, which returns a ZPath with a
+     * resolved state based on the presence of unresolved parameter elements in the ZPath.
      *
      * @return true/false
      */
