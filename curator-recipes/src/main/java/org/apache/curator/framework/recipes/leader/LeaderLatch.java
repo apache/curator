@@ -190,7 +190,7 @@ public class LeaderLatch implements Closeable
         close(closeMode);
     }
 
-    // for testing
+    @VisibleForTesting
     void closeOnDemand() throws IOException
     {
         internalClose(closeMode, false);
