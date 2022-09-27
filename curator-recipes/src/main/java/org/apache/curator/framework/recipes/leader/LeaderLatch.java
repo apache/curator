@@ -190,6 +190,12 @@ public class LeaderLatch implements Closeable
         close(closeMode);
     }
 
+    @VisibleForTesting
+    void closeOnDemand() throws IOException
+    {
+        internalClose(closeMode, false);
+    }
+
     /**
      * Remove this instance from the leadership election. If this instance is the leader, leadership
      * is released. IMPORTANT: the only way to release leadership is by calling close(). All LeaderLatch
@@ -198,9 +204,25 @@ public class LeaderLatch implements Closeable
      * @param closeMode allows the default close mode to be overridden at the time the latch is closed.
      * @throws IOException errors
      */
-    public synchronized void close(CloseMode closeMode) throws IOException
+    public void close(CloseMode closeMode) throws IOException
     {
-        Preconditions.checkState(state.compareAndSet(State.STARTED, State.CLOSED), "Already closed or has not been started");
+        internalClose(closeMode, true);
+    }
+
+    private synchronized void internalClose(CloseMode closeMode, boolean failOnClosed) throws IOException
+    {
+        if (!state.compareAndSet(State.STARTED, State.CLOSED))
+        {
+            if (failOnClosed)
+            {
+                throw new IllegalStateException("Already closed or has not been started");
+            }
+            else
+            {
+                return;
+            }
+        }
+
         Preconditions.checkNotNull(closeMode, "closeMode cannot be null");
 
         cancelStartTask();
@@ -593,6 +615,9 @@ public class LeaderLatch implements Closeable
         final String localOurPath = ourPath.get();
         List<String> sortedChildren = LockInternals.getSortedChildren(LOCK_NAME, sorter, children);
         int ourIndex = (localOurPath != null) ? sortedChildren.indexOf(ZKPaths.getNodeFromPath(localOurPath)) : -1;
+
+        log.debug("checkLeadership with id: {}, ourPath: {}, children: {}", id, localOurPath, sortedChildren);
+
         if ( ourIndex < 0 )
         {
             log.error("Can't find our node. Resetting. Index: " + ourIndex);
@@ -612,7 +637,7 @@ public class LeaderLatch implements Closeable
                 @Override
                 public void process(WatchedEvent event)
                 {
-                    if ( (state.get() == State.STARTED) && (event.getType() == Event.EventType.NodeDeleted) && (localOurPath != null) )
+                    if ( state.get() == State.STARTED && event.getType() == Event.EventType.NodeDeleted )
                     {
                         try
                         {
@@ -634,8 +659,8 @@ public class LeaderLatch implements Closeable
                 {
                     if ( event.getResultCode() == KeeperException.Code.NONODE.intValue() )
                     {
-                        // previous node is gone - reset
-                        reset();
+                        // previous node is gone - retry getChildren
+                        getChildren();
                     }
                 }
             };
@@ -677,7 +702,7 @@ public class LeaderLatch implements Closeable
                 {
                     if ( client.getConnectionStateErrorPolicy().isErrorState(ConnectionState.SUSPENDED) || !hasLeadership.get() )
                     {
-                        reset();
+                        getChildren();
                     }
                 }
                 catch ( Exception e )
@@ -724,6 +749,7 @@ public class LeaderLatch implements Closeable
     private void setNode(String newValue) throws Exception
     {
         String oldPath = ourPath.getAndSet(newValue);
+        log.debug("setNode with id: {}, oldPath: {}, newValue: {}", id, oldPath, newValue);
         if ( oldPath != null )
         {
             client.delete().guaranteed().inBackground().forPath(oldPath);
