@@ -29,6 +29,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import java.time.Duration;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.imps.TestCleanState;
@@ -46,6 +47,7 @@ import org.apache.curator.test.Timing;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -219,6 +221,62 @@ public class TestLeaderLatch extends BaseClassForTests
     }
 
     @Test
+    public void testLeadershipElectionWhenNodeDisappearsAfterChildrenAreRetrieved() throws Exception
+    {
+        final String latchPath = "/foo/bar";
+        final Timing2 timing = new Timing2();
+        final Duration pollInterval = Duration.ofMillis(100);
+        try (CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1)))
+        {
+            client.start();
+            LeaderLatch latchInitialLeader = new LeaderLatch(client, latchPath, "initial-leader");
+            LeaderLatch latchCandidate0 = new LeaderLatch(client, latchPath, "candidate-0");
+            LeaderLatch latchCandidate1 = new LeaderLatch(client, latchPath, "candidate-1");
+
+            try
+            {
+                latchInitialLeader.start();
+
+                // we want to make sure that the leader gets leadership before other instances are going to join the party
+                waitForALeader(Collections.singletonList(latchInitialLeader), new Timing());
+                // candidate #0 will wait for the leader to go away - this should happen after the child nodes are retrieved by candidate #0
+                latchCandidate0.debugCheckLeaderShipLatch = new CountDownLatch(1);
+                latchCandidate0.start();
+
+                final int expectedChildrenAfterCandidate0Joins = 2;
+                Awaitility.await("There should be " + expectedChildrenAfterCandidate0Joins + " child nodes created after candidate #0 joins the leader election.")
+                        .pollInterval(pollInterval)
+                        .pollInSameThread()
+                        .until(() -> client.getChildren().forPath(latchPath).size() == expectedChildrenAfterCandidate0Joins);
+                // no extra CountDownLatch needs to be set here because candidate #1 will rely on candidate #0
+                latchCandidate1.start();
+
+                final int expectedChildrenAfterCandidate1Joins = 3;
+                Awaitility.await("There should be " + expectedChildrenAfterCandidate1Joins + " child nodes created after candidate #1 joins the leader election.")
+                        .pollInterval(pollInterval)
+                        .pollInSameThread()
+                        .until(() -> client.getChildren().forPath(latchPath).size() == expectedChildrenAfterCandidate1Joins);
+
+                // triggers the removal of the corresponding child node after candidate #0 retrieved the children
+                latchInitialLeader.close();
+
+                latchCandidate0.debugCheckLeaderShipLatch.countDown();
+
+                waitForALeader(Arrays.asList(latchCandidate0, latchCandidate1), new Timing());
+
+                assertTrue(latchCandidate0.hasLeadership() ^ latchCandidate1.hasLeadership());
+            }
+            finally
+            {
+                for (LeaderLatch latchToClose : Arrays.asList(latchInitialLeader, latchCandidate0, latchCandidate1))
+                {
+                    latchToClose.closeOnDemand();
+                }
+            }
+        }
+    }
+
+    @Test
     public void testSessionErrorPolicy() throws Exception
     {
         Timing timing = new Timing();
@@ -248,7 +306,8 @@ public class TestLeaderLatch extends BaseClassForTests
                 client.getConnectionStateListenable().addListener(stateListener);
                 client.start();
 
-                latch = new LeaderLatch(client, "/test");
+                final String latchPatch = "/test";
+                latch = new LeaderLatch(client, latchPatch);
                 LeaderLatchListener listener = new LeaderLatchListener()
                 {
                     @Override
@@ -267,6 +326,7 @@ public class TestLeaderLatch extends BaseClassForTests
                 latch.start();
                 assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.CONNECTED.name());
                 assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), "true");
+                final List<String> beforeResetChildren = client.getChildren().forPath(latchPatch);
                 server.stop();
                 if ( isSessionIteration )
                 {
@@ -284,6 +344,8 @@ public class TestLeaderLatch extends BaseClassForTests
                     server.restart();
                     assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.RECONNECTED.name());
                     assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), "true");
+                    final List<String> afterResetChildren = client.getChildren().forPath(latchPatch);
+                    assertEquals(beforeResetChildren, afterResetChildren);
                 }
             }
             finally
