@@ -30,6 +30,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ForkJoinPool;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.imps.TestCleanState;
@@ -48,6 +50,7 @@ import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
 import org.awaitility.Awaitility;
+import org.awaitility.core.ThrowingRunnable;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -280,35 +283,38 @@ public class TestLeaderLatch extends BaseClassForTests
         LeaderLatch latch1 = latches.get(0);
         LeaderLatch latch2 = latches.get(1);
         assertTrue(latch1.hasLeadership());
-        assertTrue(!latch2.hasLeadership());
+        assertFalse(latch2.hasLeadership());
         try {
             latch2.debugRestWaitBeforeNodeDelete = new CountDownLatch(1);
             latch2.debugResetWaitLatch = new CountDownLatch(1);
             latch1.debugResetWaitLatch = new CountDownLatch(1);
-            server.restart();
-            // latch1 and latch2 connection stat from suspend to reconnected
+
+            // force latch1 and latch2 reset
+            latch1.reset();
+            ForkJoinPool.commonPool().submit(() -> {
+                latch2.reset();
+                return null;
+            });
+
             // latch1 set itself is not the leader state and will delete old path and create new path then wait before getChildren
             // latch2 wait before delete its old path and receive nodeDeleteEvent and then getChildren find itself is leader
-            assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS),
-                    "false"); //latch1 is not leader
-            assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS),
-                    "true");  //latch2 is leader
+            assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), "false"); //latch1 is not leader
+            assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), "true");  //latch2 is leader
             assertTrue(latch2.hasLeadership());
-            assertTrue(!latch1.hasLeadership());
+            assertFalse(latch1.hasLeadership());
             // latch1 continue and getChildren and find itself is not the leader and listen to the node created by latch2
             latch1.debugResetWaitLatch.countDown();
             timing.sleepABit();
             // latch2 continue and delete old path and create new path then wait before getChildren
             latch2.debugRestWaitBeforeNodeDelete.countDown();
             // latch1 receive nodeDeleteEvent and then getChildren find itself is leader
-            assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS),
-                    "true");
+            assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), "true");
             assertTrue(latch1.hasLeadership());
             latch2.debugResetWaitLatch.countDown(); // latch2 continue and getChildren find itself is not leader
             timing.forWaiting().sleepABit();
 
             assertTrue(latch1.hasLeadership());
-            assertTrue(!latch2.hasLeadership());
+            assertFalse(latch2.hasLeadership());
         }
         finally {
             for(int i = 0; i < clients.size(); ++i) {
