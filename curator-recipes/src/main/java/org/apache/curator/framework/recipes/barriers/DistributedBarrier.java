@@ -19,6 +19,7 @@
 package org.apache.curator.framework.recipes.barriers;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -37,7 +38,7 @@ import org.apache.curator.utils.PathUtils;
  */
 public class DistributedBarrier
 {
-    private final CuratorFramework client;
+    private final WatcherRemoveCuratorFramework client;
     private final String barrierPath;
     private final Watcher watcher = new Watcher()
     {
@@ -54,7 +55,7 @@ public class DistributedBarrier
      */
     public DistributedBarrier(CuratorFramework client, String barrierPath)
     {
-        this.client = client;
+        this.client = client.newWatcherRemoveCuratorFramework();
         this.barrierPath = PathUtils.validatePath(barrierPath);
     }
 
@@ -93,6 +94,16 @@ public class DistributedBarrier
     }
 
     /**
+     * Indicates if the barrier is set or not.
+     *
+     * @return true if the barrier is set.
+     */
+    public synchronized boolean     isSet() throws Exception
+    {
+        return client.checkExists().forPath(barrierPath) != null;
+    }
+
+    /**
      * Blocks until the barrier node comes into existence
      *
      * @throws Exception errors
@@ -117,28 +128,35 @@ public class DistributedBarrier
         long            maxWaitMs = hasMaxWait ? TimeUnit.MILLISECONDS.convert(maxWait, unit) : Long.MAX_VALUE;
 
         boolean         result;
-        for(;;)
+        try
         {
-            result = (client.checkExists().usingWatcher(watcher).forPath(barrierPath) == null);
-            if ( result )
+            for(;;)
             {
-                break;
-            }
-
-            if ( hasMaxWait )
-            {
-                long        elapsed = System.currentTimeMillis() - startMs;
-                long        thisWaitMs = maxWaitMs - elapsed;
-                if ( thisWaitMs <= 0 )
+                result = (client.checkExists().usingWatcher(watcher).forPath(barrierPath) == null);
+                if ( result )
                 {
                     break;
                 }
-                wait(thisWaitMs);
+
+                if ( hasMaxWait )
+                {
+                    long        elapsed = System.currentTimeMillis() - startMs;
+                    long        thisWaitMs = maxWaitMs - elapsed;
+                    if ( thisWaitMs <= 0 )
+                    {
+                        break;
+                    }
+                    wait(thisWaitMs);
+                }
+                else
+                {
+                    wait();
+                }
             }
-            else
-            {
-                wait();
-            }
+        }
+        finally
+        {
+            client.removeWatchers();
         }
         return result;
     }

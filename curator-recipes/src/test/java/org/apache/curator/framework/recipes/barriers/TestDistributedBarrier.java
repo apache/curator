@@ -18,16 +18,15 @@
  */
 package org.apache.curator.framework.recipes.barriers;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import com.google.common.collect.Lists;
-import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.utils.CloseableUtils;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.retry.RetryOneTime;
-import org.apache.zookeeper.KeeperException;
-import org.junit.jupiter.api.Test;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -35,6 +34,19 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.WatcherRemoveCuratorFramework;
+import org.apache.curator.framework.api.ExistsBuilder;
+import org.apache.curator.retry.RetryOneTime;
+import org.apache.curator.test.BaseClassForTests;
+import org.apache.curator.utils.CloseableUtils;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.Watcher;
+import org.junit.jupiter.api.Test;
+
+import com.google.common.collect.Lists;
 
 public class TestDistributedBarrier extends BaseClassForTests
 {
@@ -218,4 +230,48 @@ public class TestDistributedBarrier extends BaseClassForTests
             client.close();
         }
     }
+
+    @Test
+    public void     testIsSet() throws Exception
+    {
+        try (CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1))) {
+            client.start();
+
+            final DistributedBarrier barrier = new DistributedBarrier(client, "/barrier");
+            barrier.setBarrier();
+
+            assertTrue(barrier.isSet());
+        }
+    }
+
+    @Test
+    public void     testIsNotSet() throws Exception
+    {
+        try (CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1))) {
+            client.start();
+
+            final DistributedBarrier barrier = new DistributedBarrier(client, "/barrier");
+            barrier.setBarrier();
+            barrier.removeBarrier();
+
+            assertFalse(barrier.isSet());
+        }
+    }
+
+    @Test
+    public void     testWatchersRemoved() throws Exception
+    {
+        CuratorFramework              client = mock(CuratorFramework.class);
+        WatcherRemoveCuratorFramework watcherRemoveClient = mock(WatcherRemoveCuratorFramework.class);
+        ExistsBuilder                 existsBuilder = mock(ExistsBuilder.class);
+
+        when(client.newWatcherRemoveCuratorFramework()).thenReturn(watcherRemoveClient);
+        when(watcherRemoveClient.checkExists()).thenReturn(existsBuilder);
+        when(existsBuilder.usingWatcher(any(Watcher.class))).thenReturn(existsBuilder);
+
+        final DistributedBarrier      barrier = new DistributedBarrier(client, "/barrier");
+        barrier.waitOnBarrier(1, TimeUnit.SECONDS);
+        verify(watcherRemoveClient, atLeastOnce()).removeWatchers();
+    }
+
 }
