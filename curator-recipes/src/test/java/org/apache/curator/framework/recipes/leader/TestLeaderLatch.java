@@ -224,7 +224,7 @@ public class TestLeaderLatch extends BaseClassForTests
     }
 
     @Test
-    public void testCheckLeaderShipTiming() throws Exception
+    public void testResettingOfLeadershipAfterConcurrentLeadershipChange() throws Exception
     {
         final String latchPath = "/test";
         final Timing2 timing = new Timing2();
