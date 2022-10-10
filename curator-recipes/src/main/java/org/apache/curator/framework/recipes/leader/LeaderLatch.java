@@ -541,15 +541,15 @@ public class LeaderLatch implements Closeable
     volatile CountDownLatch debugResetWaitLatch = null;
 
     @VisibleForTesting
-    volatile CountDownLatch debugRestWaitBeforeNodeDelete = null;
+    volatile CountDownLatch debugResetWaitBeforeNodeDelete = null;
 
     @VisibleForTesting
     void reset() throws Exception
     {
         setLeadership(false);
-        if ( debugRestWaitBeforeNodeDelete != null )
+        if ( debugResetWaitBeforeNodeDelete != null )
         {
-            debugRestWaitBeforeNodeDelete.await();
+            debugResetWaitBeforeNodeDelete.await();
         }
         setNode(null);
 
