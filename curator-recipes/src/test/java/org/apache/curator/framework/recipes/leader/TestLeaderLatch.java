@@ -227,7 +227,7 @@ public class TestLeaderLatch extends BaseClassForTests
     public void testCheckLeaderShipTiming() throws Exception
     {
         final String latchPath = "/test";
-        final Timing timing = new Timing();
+        final Timing2 timing = new Timing2();
         final List<LeaderLatch> latches = Lists.newArrayList();
         final List<CuratorFramework> clients = Lists.newArrayList();
         final BlockingQueue<String> states = Queues.newLinkedBlockingQueue();
@@ -235,8 +235,8 @@ public class TestLeaderLatch extends BaseClassForTests
             try {
                 CuratorFramework client = CuratorFrameworkFactory.builder()
                         .connectString(server.getConnectString())
-                        .connectionTimeoutMs(10000)
-                        .sessionTimeoutMs(60000)
+                        .connectionTimeoutMs(timing.connection())
+                        .sessionTimeoutMs(timing.session())
                         .retryPolicy(new RetryOneTime(1))
                         .connectionStateErrorPolicy(new StandardConnectionStateErrorPolicy())
                         .build();
