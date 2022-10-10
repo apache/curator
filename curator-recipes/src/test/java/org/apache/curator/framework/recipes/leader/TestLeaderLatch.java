@@ -289,6 +289,7 @@ public class TestLeaderLatch extends BaseClassForTests
 
             // force latch1 and latch2 reset
             latch1.reset();
+            // latch2 needs to be reset in a separate thread because it will block the thread due to the beforeNodeDeletion latch
             ForkJoinPool.commonPool().submit(() -> {
                 latch2.reset();
                 return null;
