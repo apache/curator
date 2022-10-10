@@ -21,6 +21,7 @@ package org.apache.curator.framework.recipes.leader;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -29,7 +30,9 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import java.io.Closeable;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.concurrent.ForkJoinPool;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -226,94 +229,142 @@ public class TestLeaderLatch extends BaseClassForTests
     {
         final String latchPath = "/test";
         final Timing2 timing = new Timing2();
-        final List<LeaderLatch> latches = Lists.newArrayList();
-        final List<CuratorFramework> clients = Lists.newArrayList();
-        final BlockingQueue<String> states = Queues.newLinkedBlockingQueue();
+        final BlockingQueue<TestEvent> states = Queues.newLinkedBlockingQueue();
+
+        final List<Closeable> closeableResources = new ArrayList<>();
         try
         {
-            for ( int i = 0; i < 2; ++i )
-            {
-                CuratorFramework client = CuratorFrameworkFactory.builder()
-                        .connectString(server.getConnectString())
-                        .connectionTimeoutMs(timing.connection())
-                        .sessionTimeoutMs(timing.session())
-                        .retryPolicy(new RetryOneTime(1))
-                        .connectionStateErrorPolicy(new StandardConnectionStateErrorPolicy())
-                        .build();
-                ConnectionStateListener stateListener = (client1, newState) -> {
-                    if ( newState == ConnectionState.CONNECTED )
-                    {
-                        states.add(newState.name());
-                    }
-                };
-                client.getConnectionStateListenable().addListener(stateListener);
-                client.start();
-                clients.add(client);
-                LeaderLatch latch = new LeaderLatch(client, latchPath, String.valueOf(i));
-                LeaderLatchListener listener = new LeaderLatchListener() {
-                    @Override
-                    public void isLeader() {
-                        states.add("true");
-                    }
+            final String connectionLabel0 = "connection #0";
+            final CuratorFramework client0 = createAndStartClient(server.getConnectString(), timing, connectionLabel0, states);
+            closeableResources.add(client0);
+            final LeaderLatch latch0 = createAndStartLeaderLatch(client0, latchPath, connectionLabel0, states);
+            closeableResources.add(latch0);
 
-                    @Override
-                    public void notLeader() {
-                        states.add("false");
-                    }
-                };
-                latch.addListener(listener);
-                latch.start();
-                latches.add(latch);
-                assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.CONNECTED.name());
-                if (i == 0) {
-                    assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), "true");
-                }
-            }
-            // waiting for the non-leading LeaderLatch instance to finalize its initialization
+            pollAndAssertNextEvent(states, timing.forWaiting().milliseconds(), connectionLabel0, TestEventType.GAINED_CONNECTION);
+            pollAndAssertNextEvent(states, timing.forWaiting().milliseconds(), connectionLabel0, TestEventType.GAINED_LEADERSHIP);
+
+            final String connectionLabel1 = "connection #1";
+            final CuratorFramework client1 = createAndStartClient(server.getConnectString(), timing, connectionLabel1, states);
+            closeableResources.add(client1);
+            final LeaderLatch latch1 = createAndStartLeaderLatch(client1, latchPath, connectionLabel1, states);
+            closeableResources.add(latch1);
+
+            pollAndAssertNextEvent(states, timing.forWaiting().milliseconds(), connectionLabel1, TestEventType.GAINED_CONNECTION);
+
+            // wait for the non-leading LeaderLatch (i.e. latch1) instance to be done with its creation
+            // this call is time-consuming but necessary because we don't have a handle to detect the end of the reset call
             timing.forWaiting().sleepABit();
 
-            // now initiallyLeadingLeaderLatch is leader, initiallyNotLeadingLeaderLatch is not leader. initiallyNotLeadingLeaderLatch listens to the ephemeral node created by initiallyLeadingLeaderLatch
-            LeaderLatch initiallyLeadingLeaderLatch = latches.get(0);
-            LeaderLatch initiallyNotLeadingLeaderLatch = latches.get(1);
-            assertTrue(initiallyLeadingLeaderLatch.hasLeadership());
-            assertFalse(initiallyNotLeadingLeaderLatch.hasLeadership());
-            initiallyNotLeadingLeaderLatch.debugResetWaitBeforeNodeDeleteLatch = new CountDownLatch(1);
-            initiallyNotLeadingLeaderLatch.debugResetWaitLatch = new CountDownLatch(1);
-            initiallyLeadingLeaderLatch.debugResetWaitLatch = new CountDownLatch(1);
+            assertTrue(latch0.hasLeadership());
+            assertFalse(latch1.hasLeadership());
 
-            // force initiallyLeadingLeaderLatch and initiallyNotLeadingLeaderLatch reset
-            initiallyLeadingLeaderLatch.reset();
-            // initiallyNotLeadingLeaderLatch needs to be reset in a separate thread because it will block the thread due to the beforeNodeDeletion latch
+            latch1.debugResetWaitBeforeNodeDeleteLatch = new CountDownLatch(1);
+            latch1.debugResetWaitLatch = new CountDownLatch(1);
+            latch0.debugResetWaitLatch = new CountDownLatch(1);
+
+            // force latch0 and latch1 reset to trigger the actual test
+            latch0.reset();
+            // latch1 needs to be called within a separate thread since it's going to be blocked by the CountDownLatch outside of an async call
             ForkJoinPool.commonPool().submit(() -> {
-                initiallyNotLeadingLeaderLatch.reset();
+                latch1.reset();
                 return null;
             });
 
-            // initiallyLeadingLeaderLatch set itself is not the leader state and will delete old path and create new path then wait before getChildren
-            // initiallyNotLeadingLeaderLatch wait before delete its old path and receive nodeDeleteEvent and then getChildren find itself is leader
-            assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), "false"); //initiallyLeadingLeaderLatch is not leader
-            assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), "true");  //initiallyNotLeadingLeaderLatch is leader
-            assertTrue(initiallyNotLeadingLeaderLatch.hasLeadership());
-            assertFalse(initiallyLeadingLeaderLatch.hasLeadership());
-            // initiallyLeadingLeaderLatch continue and getChildren and find itself is not the leader and listen to the node created by initiallyNotLeadingLeaderLatch
-            initiallyLeadingLeaderLatch.debugResetWaitLatch.countDown();
+            // latch0.reset() will result in it losing its leadership, deleting its old child node and creating a new child node before being blocked by its debugResetWaitLatch
+            pollAndAssertNextEvent(states, timing.forWaiting().milliseconds(), connectionLabel0, TestEventType.LOST_LEADERSHIP);
+            // latch1.reset() is blocked but latch1 will gain leadership due its node watching latch0's node to be deleted
+            pollAndAssertNextEvent(states, timing.forWaiting().milliseconds(), connectionLabel1, TestEventType.GAINED_LEADERSHIP);
+            assertFalse(latch0.hasLeadership());
+            assertTrue(latch1.hasLeadership());
+
+            // latch0.reset() continues with the getChildren call, finds itself not being the leader and starts listening to the node created by latch1
+            latch0.debugResetWaitLatch.countDown();
             timing.sleepABit();
-            // initiallyNotLeadingLeaderLatch continue and delete old path and create new path then wait before getChildren
-            initiallyNotLeadingLeaderLatch.debugResetWaitBeforeNodeDeleteLatch.countDown();
-            // initiallyLeadingLeaderLatch receive nodeDeleteEvent and then getChildren find itself is leader
-            assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), "true");
-            assertTrue(initiallyLeadingLeaderLatch.hasLeadership());
-            initiallyNotLeadingLeaderLatch.debugResetWaitLatch.countDown(); // initiallyNotLeadingLeaderLatch continue and getChildren find itself is not leader
+
+            // latch1.reset() continues, deletes its old child node and creates a new child node before being blocked by its debugResetWaitLatch
+            latch1.debugResetWaitBeforeNodeDeleteLatch.countDown();
+
+            // latch0 receives NodeDeleteEvent and then finds itself to be the leader
+            pollAndAssertNextEvent(states, timing.forWaiting().milliseconds(), connectionLabel0, TestEventType.GAINED_LEADERSHIP);
+            assertTrue(latch0.hasLeadership());
+
+            // latch1.reset() continues and finds itself not being the leader
+            latch1.debugResetWaitLatch.countDown();
+            // this call is time-consuming but necessary because we don't have a handle to detect the end of the reset call
             timing.forWaiting().sleepABit();
 
-            assertTrue(initiallyLeadingLeaderLatch.hasLeadership());
-            assertFalse(initiallyNotLeadingLeaderLatch.hasLeadership());
+            assertTrue(latch0.hasLeadership());
+            assertFalse(latch1.hasLeadership());
+        } finally
+        {
+            // reverse is necessary for closing the LeaderLatch instances before closing the corresponding client
+            Collections.reverse(closeableResources);
+            closeableResources.forEach(CloseableUtils::closeQuietly);
         }
-        finally {
-            for(int i = 0; i < clients.size(); ++i) {
-                CloseableUtils.closeQuietly(latches.get(i));
-                CloseableUtils.closeQuietly(clients.get(i));
+    }
+
+    private static void pollAndAssertNextEvent(BlockingQueue<TestEvent> eventQueue, long timeoutInMillis, String expectedConnectionLabel, TestEventType expectedEventType) throws InterruptedException
+    {
+        TestEvent nextEvent = eventQueue.poll(timeoutInMillis, TimeUnit.MILLISECONDS);
+        assertNotNull(nextEvent);
+        assertEquals(expectedConnectionLabel, nextEvent.id);
+        assertEquals(expectedEventType, nextEvent.eventType);
+    }
+
+    private static CuratorFramework createAndStartClient(String zkConnectString, Timing2 timing, String connectionLabel, Collection<TestEvent> eventQueue) {
+        final CuratorFramework client = CuratorFrameworkFactory.builder()
+            .connectString(zkConnectString)
+            .connectionTimeoutMs(timing.connection())
+            .sessionTimeoutMs(timing.session())
+            .retryPolicy(new RetryOneTime(1))
+            .connectionStateErrorPolicy(new StandardConnectionStateErrorPolicy())
+            .build();
+
+        client.getConnectionStateListenable().addListener((client1, newState) -> {
+            if ( newState == ConnectionState.CONNECTED )
+            {
+                eventQueue.add(new TestEvent(connectionLabel, TestEventType.GAINED_CONNECTION));
             }
+        });
+        client.start();
+
+        return client;
+    }
+
+    private static LeaderLatch createAndStartLeaderLatch(CuratorFramework zkClient, String leaderLatchPath, String connectionLabel, Collection<TestEvent> eventQueue) throws Exception
+    {
+        final LeaderLatch latch = new LeaderLatch(zkClient, leaderLatchPath, connectionLabel);
+        latch.addListener(new LeaderLatchListener() {
+            @Override
+            public void isLeader() {
+                eventQueue.add(new TestEvent(connectionLabel, TestEventType.GAINED_LEADERSHIP));
+            }
+
+            @Override
+            public void notLeader() {
+                eventQueue.add(new TestEvent(connectionLabel, TestEventType.LOST_LEADERSHIP));
+            }
+        });
+        latch.start();
+
+        return latch;
+    }
+
+    private enum TestEventType
+    {
+        GAINED_LEADERSHIP,
+        LOST_LEADERSHIP,
+        GAINED_CONNECTION;
+    }
+
+    private static class TestEvent {
+        private final String id;
+        private final TestEventType eventType;
+
+        public TestEvent(String id, TestEventType eventType)
+        {
+            this.id = id;
+            this.eventType = eventType;
         }
     }
 
