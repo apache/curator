@@ -227,9 +227,9 @@ public class TestLeaderLatch extends BaseClassForTests
     public void testCheckLeaderShipTiming() throws Exception
     {
         final String latchPath = "/test";
-        Timing timing = new Timing();
-        List<LeaderLatch> latches = Lists.newArrayList();
-        List<CuratorFramework> clients = Lists.newArrayList();
+        final Timing timing = new Timing();
+        final List<LeaderLatch> latches = Lists.newArrayList();
+        final List<CuratorFramework> clients = Lists.newArrayList();
         final BlockingQueue<String> states = Queues.newLinkedBlockingQueue();
         for ( int i = 0; i < 2; ++i ) {
             try {
