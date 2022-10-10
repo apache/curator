@@ -278,42 +278,42 @@ public class TestLeaderLatch extends BaseClassForTests
             // waiting for the non-leading LeaderLatch instance to finalize its initialization
             timing.forWaiting().sleepABit();
 
-            // now latch1 is leader, latch2 is not leader. latch2 listens to the ephemeral node created by latch1
-            LeaderLatch latch1 = latches.get(0);
-            LeaderLatch latch2 = latches.get(1);
-            assertTrue(latch1.hasLeadership());
-            assertFalse(latch2.hasLeadership());
-            latch2.debugResetWaitBeforeNodeDeleteLatch = new CountDownLatch(1);
-            latch2.debugResetWaitLatch = new CountDownLatch(1);
-            latch1.debugResetWaitLatch = new CountDownLatch(1);
+            // now initiallyLeadingLeaderLatch is leader, initiallyNotLeadingLeaderLatch is not leader. initiallyNotLeadingLeaderLatch listens to the ephemeral node created by initiallyLeadingLeaderLatch
+            LeaderLatch initiallyLeadingLeaderLatch = latches.get(0);
+            LeaderLatch initiallyNotLeadingLeaderLatch = latches.get(1);
+            assertTrue(initiallyLeadingLeaderLatch.hasLeadership());
+            assertFalse(initiallyNotLeadingLeaderLatch.hasLeadership());
+            initiallyNotLeadingLeaderLatch.debugResetWaitBeforeNodeDeleteLatch = new CountDownLatch(1);
+            initiallyNotLeadingLeaderLatch.debugResetWaitLatch = new CountDownLatch(1);
+            initiallyLeadingLeaderLatch.debugResetWaitLatch = new CountDownLatch(1);
 
-            // force latch1 and latch2 reset
-            latch1.reset();
-            // latch2 needs to be reset in a separate thread because it will block the thread due to the beforeNodeDeletion latch
+            // force initiallyLeadingLeaderLatch and initiallyNotLeadingLeaderLatch reset
+            initiallyLeadingLeaderLatch.reset();
+            // initiallyNotLeadingLeaderLatch needs to be reset in a separate thread because it will block the thread due to the beforeNodeDeletion latch
             ForkJoinPool.commonPool().submit(() -> {
-                latch2.reset();
+                initiallyNotLeadingLeaderLatch.reset();
                 return null;
             });
 
-            // latch1 set itself is not the leader state and will delete old path and create new path then wait before getChildren
-            // latch2 wait before delete its old path and receive nodeDeleteEvent and then getChildren find itself is leader
-            assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), "false"); //latch1 is not leader
-            assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), "true");  //latch2 is leader
-            assertTrue(latch2.hasLeadership());
-            assertFalse(latch1.hasLeadership());
-            // latch1 continue and getChildren and find itself is not the leader and listen to the node created by latch2
-            latch1.debugResetWaitLatch.countDown();
+            // initiallyLeadingLeaderLatch set itself is not the leader state and will delete old path and create new path then wait before getChildren
+            // initiallyNotLeadingLeaderLatch wait before delete its old path and receive nodeDeleteEvent and then getChildren find itself is leader
+            assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), "false"); //initiallyLeadingLeaderLatch is not leader
+            assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), "true");  //initiallyNotLeadingLeaderLatch is leader
+            assertTrue(initiallyNotLeadingLeaderLatch.hasLeadership());
+            assertFalse(initiallyLeadingLeaderLatch.hasLeadership());
+            // initiallyLeadingLeaderLatch continue and getChildren and find itself is not the leader and listen to the node created by initiallyNotLeadingLeaderLatch
+            initiallyLeadingLeaderLatch.debugResetWaitLatch.countDown();
             timing.sleepABit();
-            // latch2 continue and delete old path and create new path then wait before getChildren
-            latch2.debugResetWaitBeforeNodeDeleteLatch.countDown();
-            // latch1 receive nodeDeleteEvent and then getChildren find itself is leader
+            // initiallyNotLeadingLeaderLatch continue and delete old path and create new path then wait before getChildren
+            initiallyNotLeadingLeaderLatch.debugResetWaitBeforeNodeDeleteLatch.countDown();
+            // initiallyLeadingLeaderLatch receive nodeDeleteEvent and then getChildren find itself is leader
             assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), "true");
-            assertTrue(latch1.hasLeadership());
-            latch2.debugResetWaitLatch.countDown(); // latch2 continue and getChildren find itself is not leader
+            assertTrue(initiallyLeadingLeaderLatch.hasLeadership());
+            initiallyNotLeadingLeaderLatch.debugResetWaitLatch.countDown(); // initiallyNotLeadingLeaderLatch continue and getChildren find itself is not leader
             timing.forWaiting().sleepABit();
 
-            assertTrue(latch1.hasLeadership());
-            assertFalse(latch2.hasLeadership());
+            assertTrue(initiallyLeadingLeaderLatch.hasLeadership());
+            assertFalse(initiallyNotLeadingLeaderLatch.hasLeadership());
         }
         finally {
             for(int i = 0; i < clients.size(); ++i) {
