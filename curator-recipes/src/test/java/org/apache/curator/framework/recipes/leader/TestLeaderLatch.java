@@ -30,7 +30,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -50,7 +49,6 @@ import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
 import org.awaitility.Awaitility;
-import org.awaitility.core.ThrowingRunnable;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
