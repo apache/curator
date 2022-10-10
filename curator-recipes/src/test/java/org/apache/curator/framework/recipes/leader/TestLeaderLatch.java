@@ -285,7 +285,7 @@ public class TestLeaderLatch extends BaseClassForTests
         assertTrue(latch1.hasLeadership());
         assertFalse(latch2.hasLeadership());
         try {
-            latch2.debugResetWaitBeforeNodeDelete = new CountDownLatch(1);
+            latch2.debugResetWaitBeforeNodeDeleteLatch = new CountDownLatch(1);
             latch2.debugResetWaitLatch = new CountDownLatch(1);
             latch1.debugResetWaitLatch = new CountDownLatch(1);
 
@@ -306,7 +306,7 @@ public class TestLeaderLatch extends BaseClassForTests
             latch1.debugResetWaitLatch.countDown();
             timing.sleepABit();
             // latch2 continue and delete old path and create new path then wait before getChildren
-            latch2.debugResetWaitBeforeNodeDelete.countDown();
+            latch2.debugResetWaitBeforeNodeDeleteLatch.countDown();
             // latch1 receive nodeDeleteEvent and then getChildren find itself is leader
             assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), "true");
             assertTrue(latch1.hasLeadership());
