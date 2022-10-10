@@ -275,7 +275,9 @@ public class TestLeaderLatch extends BaseClassForTests
                     assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), "true");
                 }
             }
+            // waiting for the non-leading LeaderLatch instance to finalize its initialization
             timing.forWaiting().sleepABit();
+
             // now latch1 is leader, latch2 is not leader. latch2 listens to the ephemeral node created by latch1
             LeaderLatch latch1 = latches.get(0);
             LeaderLatch latch2 = latches.get(1);
