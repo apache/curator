@@ -231,8 +231,10 @@ public class TestLeaderLatch extends BaseClassForTests
         final List<LeaderLatch> latches = Lists.newArrayList();
         final List<CuratorFramework> clients = Lists.newArrayList();
         final BlockingQueue<String> states = Queues.newLinkedBlockingQueue();
-        for ( int i = 0; i < 2; ++i ) {
-            try {
+        try
+        {
+            for ( int i = 0; i < 2; ++i )
+            {
                 CuratorFramework client = CuratorFrameworkFactory.builder()
                         .connectString(server.getConnectString())
                         .connectionTimeoutMs(timing.connection())
@@ -273,17 +275,12 @@ public class TestLeaderLatch extends BaseClassForTests
                     assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), "true");
                 }
             }
-            catch (Exception e){
-                return;
-            }
-        }
-        timing.forWaiting().sleepABit();
-        // now latch1 is leader, latch2 is not leader. latch2 listens to the ephemeral node created by latch1
-        LeaderLatch latch1 = latches.get(0);
-        LeaderLatch latch2 = latches.get(1);
-        assertTrue(latch1.hasLeadership());
-        assertFalse(latch2.hasLeadership());
-        try {
+            timing.forWaiting().sleepABit();
+            // now latch1 is leader, latch2 is not leader. latch2 listens to the ephemeral node created by latch1
+            LeaderLatch latch1 = latches.get(0);
+            LeaderLatch latch2 = latches.get(1);
+            assertTrue(latch1.hasLeadership());
+            assertFalse(latch2.hasLeadership());
             latch2.debugResetWaitBeforeNodeDeleteLatch = new CountDownLatch(1);
             latch2.debugResetWaitLatch = new CountDownLatch(1);
             latch1.debugResetWaitLatch = new CountDownLatch(1);
