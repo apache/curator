@@ -231,7 +231,6 @@ public class TestLeaderLatch extends BaseClassForTests
         List<LeaderLatch> latches = Lists.newArrayList();
         List<CuratorFramework> clients = Lists.newArrayList();
         final BlockingQueue<String> states = Queues.newLinkedBlockingQueue();
-        ExecutorService executorService = Executors.newFixedThreadPool(2);
         for ( int i = 0; i < 2; ++i ) {
             try {
                 CuratorFramework client = CuratorFrameworkFactory.builder()
@@ -321,7 +320,6 @@ public class TestLeaderLatch extends BaseClassForTests
                 CloseableUtils.closeQuietly(latches.get(i));
                 CloseableUtils.closeQuietly(clients.get(i));
             }
-            executorService.shutdown();
         }
     }
 
