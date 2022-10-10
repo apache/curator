@@ -242,14 +242,10 @@ public class TestLeaderLatch extends BaseClassForTests
                         .retryPolicy(new RetryOneTime(1))
                         .connectionStateErrorPolicy(new StandardConnectionStateErrorPolicy())
                         .build();
-                ConnectionStateListener stateListener = new ConnectionStateListener()
-                {
-                    @Override
-                    public void stateChanged(CuratorFramework client, ConnectionState newState)
+                ConnectionStateListener stateListener = (client1, newState) -> {
+                    if ( newState == ConnectionState.CONNECTED )
                     {
-                        if (newState == ConnectionState.CONNECTED) {
-                            states.add(newState.name());
-                        }
+                        states.add(newState.name());
                     }
                 };
                 client.getConnectionStateListenable().addListener(stateListener);
