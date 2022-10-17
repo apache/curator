@@ -243,9 +243,15 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
 
             try
             {
+                boolean secure = config.getSecureClientPortAddress() != null;
                 cnxnFactory = ServerCnxnFactory.createFactory();
-                cnxnFactory.configure(config.getClientPortAddress(),
-                    config.getMaxClientCnxns());
+                if (secure) {
+                    cnxnFactory.configure(config.getSecureClientPortAddress(),
+                            config.getMaxClientCnxns(), config.getClientPortListenBacklog(), true);
+                } else {
+                    cnxnFactory.configure(config.getClientPortAddress(),
+                            config.getMaxClientCnxns(), config.getClientPortListenBacklog());
+                }
             }
             catch ( IOException e )
             {
