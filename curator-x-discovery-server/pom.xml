@@ -127,41 +127,4 @@
             </plugin>
         </plugins>
     </build>
-
-    <profiles>
-        <profile>
-            <id>jdk-9-plus</id>
-            <activation>
-                <jdk>[1.9,)</jdk>
-            </activation>
-            <dependencies>
-                <!-- The following dependencies are added to make tests work with JDK 9 or later,
-                      as per this answer: https://stackoverflow.com/questions/43574426#43574427 -->
-
-                <dependency>
-                    <groupId>javax.xml.bind</groupId>
-                    <artifactId>jaxb-api</artifactId>
-                    <scope>test</scope>
-                </dependency>
-
-                <dependency>
-                    <groupId>com.sun.xml.bind</groupId>
-                    <artifactId>jaxb-core</artifactId>
-                    <scope>test</scope>
-                </dependency>
-
-                <dependency>
-                    <groupId>com.sun.xml.bind</groupId>
-                    <artifactId>jaxb-impl</artifactId>
-                    <scope>test</scope>
-                </dependency>
-
-                <dependency>
-                    <groupId>javax.activation</groupId>
-                    <artifactId>activation</artifactId>
-                    <scope>test</scope>
-                </dependency>
-            </dependencies>
-        </profile>
-    </profiles>
 </project>
