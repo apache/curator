@@ -28,7 +28,7 @@
 
     <groupId>org.apache.curator</groupId>
     <artifactId>apache-curator</artifactId>
-    <version>5.4.0</version>
+    <version>5.5.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Apache Curator</name>
