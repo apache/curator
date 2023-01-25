@@ -115,6 +115,10 @@
         <osgi.require.bundle />
         <osgi.export.service />
         <osgi.activator />
+
+        <!-- Coverage properties -->
+        <jacoco.version>0.8.8</jacoco.version>
+        <sonar.version>3.9.1.2184</sonar.version>
     </properties>
 
     <scm>
@@ -1127,6 +1131,56 @@
                     <url>https://repository.apache.org/content/groups/staging/</url>
                 </repository>
             </repositories>
+        </profile>
+        <profile>
+            <id>coverage</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <sonar.coverage.exclusions>**/curator-examples/**/*</sonar.coverage.exclusions>
+                <sonar.coverage.jacoco.xmlReportPaths>
+                    ${project.build.directory}/jacoco-coverage/jacoco.xml
+                </sonar.coverage.jacoco.xmlReportPaths>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <version>${jacoco.version}</version>
+                        <executions>
+                            <execution>
+                                <id>prepare-agent</id>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>prepare-agent</goal>
+                                </goals>
+                                <configuration>
+                                    <destFile>${project.build.directory}/jacoco-coverage/jacoco.exec</destFile>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>report</id>
+                                <goals>
+                                    <goal>report</goal>
+                                </goals>
+                                <configuration>
+                                    <dataFile>${project.build.directory}/jacoco-coverage/jacoco.exec</dataFile>
+                                    <outputDirectory>
+                                        ${project.build.directory}/jacoco-coverage
+                                    </outputDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.sonarsource.scanner.maven</groupId>
+                        <artifactId>sonar-maven-plugin</artifactId>
+                        <version>${sonar.version}</version>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 </project>
