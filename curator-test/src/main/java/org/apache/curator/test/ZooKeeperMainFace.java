@@ -19,15 +19,12 @@
 package org.apache.curator.test;
 
 import java.io.Closeable;
-import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 
-public interface ZooKeeperMainFace extends Closeable
+interface ZooKeeperMainFace extends Closeable
 {
-    void configure(QuorumConfigBuilder config, int instanceIndex) throws Exception;
-
-    void start();
+    void start(QuorumPeerConfigBuilder configBuilder);
 
     void kill();
 
-    QuorumPeerConfig getConfig() throws Exception;
+    int getClientPort() throws Exception;
 }

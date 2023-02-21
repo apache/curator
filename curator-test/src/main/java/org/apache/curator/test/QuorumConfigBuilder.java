@@ -97,7 +97,13 @@ public class QuorumConfigBuilder implements Closeable
 
     public QuorumPeerConfig buildConfig(int instanceIndex) throws Exception
     {
-        Properties properties = buildConfigProperties(instanceIndex);
+        InstanceSpec spec = instanceSpecs.get(instanceIndex);
+        return buildConfig(instanceIndex, spec.getPort());
+    }
+
+    public QuorumPeerConfig buildConfig(int instanceIndex, int instancePort) throws Exception
+    {
+        Properties properties = buildConfigProperties(instanceIndex, instancePort);
         QuorumPeerConfig config = new QuorumPeerConfig()
         {
             {
@@ -112,6 +118,12 @@ public class QuorumConfigBuilder implements Closeable
     }
 
     public Properties buildConfigProperties(int instanceIndex) throws Exception
+    {
+        InstanceSpec spec = instanceSpecs.get(instanceIndex);
+        return buildConfigProperties(instanceIndex, spec.getPort());
+    }
+
+    public Properties buildConfigProperties(int instanceIndex, int instancePort) throws Exception
     {
         boolean isCluster = (instanceSpecs.size() > 1);
         InstanceSpec spec = instanceSpecs.get(instanceIndex);
@@ -128,7 +140,7 @@ public class QuorumConfigBuilder implements Closeable
         properties.setProperty("initLimit", "10");
         properties.setProperty("syncLimit", "5");
         properties.setProperty("dataDir", spec.getDataDirectory().getCanonicalPath());
-        properties.setProperty("clientPort", Integer.toString(spec.getPort()));
+        properties.setProperty("clientPort", Integer.toString(instancePort));
         String tickTime = Integer.toString((spec.getTickTime() >= 0) ? spec.getTickTime() : new Timing2().tickTime());
         properties.setProperty("tickTime", tickTime);
         properties.setProperty("minSessionTimeout", tickTime);
@@ -142,7 +154,8 @@ public class QuorumConfigBuilder implements Closeable
         {
             for ( InstanceSpec thisSpec : instanceSpecs )
             {
-                properties.setProperty("server." + thisSpec.getServerId(), String.format("%s:%d:%d;%s:%d", thisSpec.getHostname(), thisSpec.getQuorumPort(), thisSpec.getElectionPort(), thisSpec.getHostname(), thisSpec.getPort()));
+                int clientPort = thisSpec == spec ? instancePort : thisSpec.getPort();
+                properties.setProperty("server." + thisSpec.getServerId(), String.format("%s:%d:%d;%s:%d", thisSpec.getHostname(), thisSpec.getQuorumPort(), thisSpec.getElectionPort(), thisSpec.getHostname(), clientPort));
             }
         }
         Map<String,Object> customProperties = spec.getCustomProperties();
@@ -151,5 +164,9 @@ public class QuorumConfigBuilder implements Closeable
         }
 
         return properties;
+    }
+
+    public QuorumPeerConfigBuilder bindInstance(int instanceIndex, int instancePort) {
+        return new QuorumPeerConfigBuilder(this, instanceIndex, instancePort);
     }
 }
