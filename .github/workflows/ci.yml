@@ -41,7 +41,7 @@ jobs:
     timeout-minutes: 120
     strategy:
       matrix:
-        java: ['8', '10']
+        java: ['8', '11']
     steps:
       - uses: actions/checkout@v3
       - name: Cache Local Maven Repository
@@ -56,10 +56,10 @@ jobs:
         with:
           java-version: ${{ matrix.java }}
           distribution: 'temurin'
-      - name: Build with ${{ matrix.java }}
-        run: mvn -B clean install -DskipTests
-      - name: Test with ${{ matrix.java }}
-        run: mvn -B verify
+      - name: Build with JDK ${{ matrix.java }}
+        run: ./mvnw clean install -DskipTests
+      - name: Test with JDK ${{ matrix.java }}
+        run: ./mvnw verify
 
   required:
     name: Required
