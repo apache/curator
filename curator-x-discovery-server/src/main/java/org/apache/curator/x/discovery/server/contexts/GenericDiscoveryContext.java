@@ -79,7 +79,7 @@ public class GenericDiscoveryContext<T> implements DiscoveryContext<T>, ContextR
             //noinspection unchecked
             payload = (T)payloadType.getRawType().newInstance();
         }
-        
+
         node.putPOJO(fieldName, payload);
     }
 
