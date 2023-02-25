@@ -16,11 +16,12 @@
 # under the License.
 
 name: CI
+
 on:
   push:
+    branches: [master]
   pull_request:
-    branches:
-      - master
+    branches: [master]
 
 env:
   MAVEN_OPTS: -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.count=3
