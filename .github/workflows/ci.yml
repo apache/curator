@@ -34,7 +34,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: Check license header
         run: |
-          docker run -it --rm -v $(pwd):/github/workspace ghcr.io/korandoru/hawkeye-native:v1 check
+          docker run --rm -v $(pwd):/github/workspace ghcr.io/korandoru/hawkeye-native:v1 check
 
   unittest:
     name: Unit tests
