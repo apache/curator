@@ -1,0 +1,8 @@
+headerPath = "Apache-2.0-ASF.txt"
+
+excludes = [
+    "DEPENDENCIES",
+    "doap.rdf",
+    "**/NOTICE",
+    "**/*.confluence",
+]
