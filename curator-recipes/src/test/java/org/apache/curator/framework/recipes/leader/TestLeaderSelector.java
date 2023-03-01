@@ -46,8 +46,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -257,6 +260,48 @@ public class TestLeaderSelector extends BaseClassForTests
         }
     }
 
+    private static class DelayedExecutorService extends AbstractExecutorService {
+        private final ExecutorService executor = Executors.newFixedThreadPool(4);
+
+        @Override
+        public void shutdown() {
+            executor.shutdown();
+        }
+
+        @Override
+        public List<Runnable> shutdownNow() {
+            return executor.shutdownNow();
+        }
+
+        @Override
+        public boolean isShutdown() {
+            return executor.isShutdown();
+        }
+
+        @Override
+        public boolean isTerminated() {
+            return executor.isTerminated();
+        }
+
+        @Override
+        public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
+            return executor.awaitTermination(timeout, unit);
+        }
+
+        @Override
+        public void execute(Runnable command) {
+            executor.execute(() -> {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException ignored) {
+                    // Mimic cancel before execution.
+                    return;
+                }
+                command.run();
+            });
+        }
+    }
+
     @Test
     public void testInterruptLeadershipWithRequeue() throws Exception
     {
@@ -278,11 +323,16 @@ public class TestLeaderSelector extends BaseClassForTests
                     Thread.currentThread().join();
                 }
             };
-            selector = new LeaderSelector(client, "/leader", listener);
+            selector = new LeaderSelector(client, "/leader", new DelayedExecutorService(), listener);
             selector.autoRequeue();
             selector.start();
 
+            // There is only one participant, so semaphore acquire should succeed in finite
+            // duration no matter how we interrupt.
             assertTrue(timing.acquireSemaphore(semaphore));
+            Thread.sleep(20);
+            selector.interruptLeadership();
+            Thread.sleep(20);
             selector.interruptLeadership();
 
             assertTrue(timing.acquireSemaphore(semaphore));
