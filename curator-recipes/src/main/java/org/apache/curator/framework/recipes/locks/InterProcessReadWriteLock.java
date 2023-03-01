@@ -113,17 +113,7 @@ public class InterProcessReadWriteLock
     {
         public WriteLock(CuratorFramework client, String basePath, byte[] lockData)
         {
-            super(client, basePath, WRITE_LOCK_NAME, lockData, 1, new SortingLockInternalsDriver() {
-                @Override
-                public PredicateResults getsTheLock(
-                    CuratorFramework client,
-                    List<String> children,
-                    String sequenceNodeName,
-                    int maxLeases
-                ) throws Exception {
-                    return super.getsTheLock(client, children, sequenceNodeName, maxLeases);
-                }
-            });
+            super(client, basePath, WRITE_LOCK_NAME, lockData, 1, new SortingLockInternalsDriver());
         }
 
         @Override
@@ -137,6 +127,15 @@ public class InterProcessReadWriteLock
         public ReadLock(CuratorFramework client, String basePath, byte[] lockData, WriteLock writeLock)
         {
             super(client, basePath, READ_LOCK_NAME, lockData, Integer.MAX_VALUE, new SortingLockInternalsDriver() {
+                @Override
+                protected String getSortingSequence() {
+                    String writePath = writeLock.getLockPath();
+                    if (writePath != null) {
+                        return fixForSorting(writePath, WRITE_LOCK_NAME);
+                    }
+                    return null;
+                }
+
                 @Override
                 public PredicateResults getsTheLock(
                     CuratorFramework client,
