@@ -366,79 +366,6 @@ public class TestInterProcessReadWriteLock extends BaseClassForTests
         }
     }
 
-    public static class LockPathInterProcessReadWriteLock extends InterProcessReadWriteLock
-    {
-        private final WriteLock writeLock;
-        private final ReadLock readLock;
-
-        public LockPathInterProcessReadWriteLock(CuratorFramework client, String basePath)
-        {
-            this(client, basePath, null);
-        }
-
-        public LockPathInterProcessReadWriteLock(CuratorFramework client, String basePath, byte[] lockData)
-        {
-            this(client, basePath, lockData, new WriteLock(client, basePath, lockData));
-        }
-
-        private LockPathInterProcessReadWriteLock(
-            CuratorFramework client,
-            String basePath,
-            byte[] lockData,
-            WriteLock writeLock
-        )
-        {
-            this(writeLock, new ReadLock(client, basePath, lockData, writeLock));
-        }
-
-        private LockPathInterProcessReadWriteLock(WriteLock writeLock, ReadLock readLock)
-        {
-            super(writeLock, readLock);
-            this.writeLock = writeLock;
-            this.readLock = readLock;
-        }
-
-        @Override
-        public WriteLock writeLock()
-        {
-            return writeLock;
-        }
-
-        @Override
-        public ReadLock readLock()
-        {
-            return readLock;
-        }
-
-        public static class WriteLock extends InterProcessReadWriteLock.WriteLock
-        {
-            private WriteLock(CuratorFramework client, String basePath, byte[] lockData)
-            {
-                super(client, basePath, lockData);
-            }
-
-            @Override
-            public String getLockPath()
-            {
-                return super.getLockPath();
-            }
-        }
-
-        public static class ReadLock extends InterProcessReadWriteLock.ReadLock
-        {
-            private ReadLock(CuratorFramework client, String basePath, byte[] lockData, WriteLock writeLock)
-            {
-                super(client, basePath, lockData, writeLock);
-            }
-
-            @Override
-            public String getLockPath()
-            {
-                return super.getLockPath();
-            }
-        }
-    }
-
     @Test
     public void testLockPath() throws Exception
     {
@@ -448,8 +375,8 @@ public class TestInterProcessReadWriteLock extends BaseClassForTests
         {
             client1.start();
             client2.start();
-            LockPathInterProcessReadWriteLock lock1 = new LockPathInterProcessReadWriteLock(client1, "/lock");
-            LockPathInterProcessReadWriteLock lock2 = new LockPathInterProcessReadWriteLock(client2, "/lock");
+            InterProcessReadWriteLock lock1 = new InterProcessReadWriteLock(client1, "/lock");
+            InterProcessReadWriteLock lock2 = new InterProcessReadWriteLock(client2, "/lock");
             lock1.writeLock().acquire();
             KillSession.kill(client1.getZookeeperClient().getZooKeeper());
             lock2.readLock().acquire();
