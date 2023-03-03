@@ -127,7 +127,7 @@ public class InterProcessReadWriteLock
         }
 
         @Override
-        protected String getLockPath()
+        public String getLockPath()
         {
             return super.getLockPath();
         }
@@ -172,7 +172,7 @@ public class InterProcessReadWriteLock
         }
 
         @Override
-        protected String getLockPath()
+        public String getLockPath()
         {
             return super.getLockPath();
         }
