@@ -231,7 +231,7 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
     @Override
     public AsyncStage<Void> delete(int version)
     {
-        return dslClient.delete().withVersion(version).forPath(modelSpec.path().fullPath());
+        return dslClient.delete().withOptionsAndVersion(modelSpec.deleteOptions(), version).forPath(modelSpec.path().fullPath());
     }
 
     @Override
