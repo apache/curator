@@ -26,8 +26,8 @@ env:
   MAVEN_OPTS: -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.count=3
 
 jobs:
-  rat:
-    name: RAT reports
+  check:
+    name: Check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -40,9 +40,9 @@ jobs:
           distribution: 'temurin'
 
       - name: RAT check
-        run: mvn -B apache-rat:check
+        run: ./mvnw apache-rat:check
 
-  check:
+  test:
     name: Unit tests
     runs-on: ubuntu-latest
     timeout-minutes: 120
