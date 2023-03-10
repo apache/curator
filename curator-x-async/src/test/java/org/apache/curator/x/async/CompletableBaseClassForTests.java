@@ -18,6 +18,7 @@
  */
 package org.apache.curator.x.async;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import com.google.common.base.Throwables;
 import org.apache.curator.test.BaseClassForTests;
@@ -31,6 +32,20 @@ import java.util.function.BiConsumer;
 public abstract class CompletableBaseClassForTests extends BaseClassForTests
 {
     protected static final Timing2 timing = new Timing2();
+
+    protected void joinThrowable(CompletionStage<?> stage) throws Throwable {
+        try {
+            stage.toCompletableFuture().get();
+        } catch (Exception ex) {
+            throw Throwables.getRootCause(ex);
+        }
+    }
+
+    protected void exceptional(CompletionStage<?> stage, Class<? extends Throwable> throwable) {
+        assertThrows(throwable, () -> {
+            joinThrowable(stage);
+        });
+    }
 
     protected <T, U> void complete(CompletionStage<T> stage)
     {
