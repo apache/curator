@@ -76,7 +76,6 @@
         <maven-javadoc-plugin-version>3.3.2</maven-javadoc-plugin-version>
         <maven-surefire-plugin-version>3.0.0-M5</maven-surefire-plugin-version>
         <doxia-module-confluence-version>1.11.1</doxia-module-confluence-version>
-        <maven-license-plugin-version>1.9.0</maven-license-plugin-version>
         <directory-maven-plugin-version>1.0</directory-maven-plugin-version>
         <javassist-version>3.24.1-GA</javassist-version>
         <commons-math-version>2.2</commons-math-version>
@@ -705,12 +704,6 @@
                 </plugin>
 
                 <plugin>
-                    <groupId>com.mycila.maven-license-plugin</groupId>
-                    <artifactId>maven-license-plugin</artifactId>
-                    <version>${maven-license-plugin-version}</version>
-                </plugin>
-
-                <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-release-plugin</artifactId>
                     <configuration>
@@ -876,44 +869,6 @@
                         <configuration>
                             <property>main.basedir</property>
                         </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>com.mycila.maven-license-plugin</groupId>
-                <artifactId>maven-license-plugin</artifactId>
-                <configuration>
-                    <header>${main.basedir}/src/etc/header.txt</header>
-                    <excludes>
-                        <exclude>**/merge-pr.py</exclude>
-                        <exclude>**/*.confluence</exclude>
-                        <exclude>**/*.confluence.vm</exclude>
-                        <exclude>**/help.txt</exclude>
-                        <exclude>**/*.rdf</exclude>
-                        <exclude>**/.gitignore</exclude>
-                        <exclude>**/*.thrift</exclude>
-                        <exclude>**/*.json</exclude>
-                        <exclude>**/.idea/**</exclude>
-                        <exclude>**/DISCLAIMER</exclude>
-                        <exclude>**/DEPENDENCIES</exclude>
-                        <exclude>**/KEYS</exclude>
-                        <exclude>**/LICENSE</exclude>
-                        <exclude>**/NOTICE</exclude>
-                        <exclude>**/README</exclude>
-                        <exclude>**/CHANGES</exclude>
-                        <exclude>**/RELEASE-NOTES</exclude>
-                        <exclude>**/generated/**</exclude>
-                    </excludes>
-                    <strictCheck>true</strictCheck>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>license</id>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
                     </execution>
                 </executions>
             </plugin>

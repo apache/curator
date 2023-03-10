@@ -25,7 +25,7 @@ under the License.
 [![Twitter](https://img.shields.io/badge/Follow-@Curator-55acee?logo=Twitter&logoColor=55acee)](https://twitter.com/intent/follow?original_referer=https%3A%2F%2Fgithub.com%2Fapache%2Fcurator&ref_src=twsrc%5Etfw&region=follow_link&screen_name=ApacheCurator&tw_p=followbutton)
 
 
-## What's is Apache Curator?
+## What is Apache Curator?
 
 Apache Curator is a Java/JVM client library for [Apache ZooKeeper](https://zookeeper.apache.org/), a distributed coordination service.
 
