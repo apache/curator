@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -72,7 +72,10 @@ public class LeaderSelector implements Closeable
     private final InterProcessMutex mutex;
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
     private final AtomicBoolean autoRequeue = new AtomicBoolean(false);
-    private final AtomicReference<Future<?>> ourTask = new AtomicReference<Future<?>>(null);
+
+    // guarded by synchronization
+    private Future<?> ourTask = null;
+    private Thread ourThread = null;
 
     private volatile boolean hasLeadership;
     private volatile String id = "";
@@ -87,9 +90,6 @@ public class LeaderSelector implements Closeable
         STARTED,
         CLOSED
     }
-
-    // guarded by synchronization
-    private boolean isQueued = false;
 
     private static final ThreadFactory defaultThreadFactory = ThreadUtils.newThreadFactory("LeaderSelector");
 
@@ -224,6 +224,10 @@ public class LeaderSelector implements Closeable
      * happens and false is returned. If the instance was not queued, it is re-queued and true
      * is returned
      *
+     * <p>The attempt will finish after session error, leadership release. This method is inherently
+     * hard to use as there is no public API to guarantee successful requeue. Try {@link #autoRequeue()}
+     * if you are in doubt.</p>
+     *
      * @return true if re-queue is successful
      */
     public boolean requeue()
@@ -234,30 +238,25 @@ public class LeaderSelector implements Closeable
 
     private synchronized boolean internalRequeue()
     {
-        if ( !isQueued && (state.get() == State.STARTED) )
+        if ( ourTask == null && (state.get() == State.STARTED) )
         {
-            isQueued = true;
-            Future<Void> task = executorService.submit(new Callable<Void>()
+            ourTask = executorService.submit(new Callable<Void>()
             {
                 @Override
                 public Void call() throws Exception
                 {
                     try
                     {
+                        taskStarted();
                         doWorkLoop();
                     }
                     finally
                     {
-                        clearIsQueued();
-                        if ( autoRequeue.get() )
-                        {
-                            internalRequeue();
-                        }
+                        taskDone();
                     }
                     return null;
                 }
             });
-            ourTask.set(task);
 
             return true;
         }
@@ -273,7 +272,7 @@ public class LeaderSelector implements Closeable
 
         client.getConnectionStateListenable().removeListener(listener);
         executorService.close();
-        ourTask.set(null);
+        ourTask = null;
     }
 
     /**
@@ -374,15 +373,39 @@ public class LeaderSelector implements Closeable
         return hasLeadership;
     }
 
+    private synchronized void taskStarted() {
+        ourThread = Thread.currentThread();
+    }
+
+    private synchronized void taskDone() {
+        ourTask = null;
+        ourThread = null;
+        if (autoRequeue.get()) {
+            internalRequeue();
+        }
+    }
+
+    /**
+     * Cancel ongoing election regardless of leadership.
+     */
+    private synchronized void cancelElection() {
+        // Correctness with requeue:
+        // * Cancel, taskStarted and taskDone are guarded by synchronized(this).
+        // * If ourThread is null, new task will observe this cancellation after taskStarted.
+        // * If ourThread is not null, old task will be cancelled and new task will observe
+        //   this cancellation.
+        if (ourThread != null) {
+            ourThread.interrupt();
+        }
+    }
+
     /**
      * Attempt to cancel and interrupt the current leadership if this instance has leadership
      */
     public synchronized void interruptLeadership()
     {
-        Future<?> task = ourTask.get();
-        if ( task != null )
-        {
-            task.cancel(true);
+        if (hasLeadership) {
+            cancelElection();
         }
     }
 
@@ -403,6 +426,10 @@ public class LeaderSelector implements Closeable
     @VisibleForTesting
     volatile AtomicInteger failedMutexReleaseCount = null;
 
+    /**
+     * This method must not be called concurrently to obey guarantee to
+     * {@link LeaderSelectorListener#takeLeadership(CuratorFramework)}.
+     */
     @VisibleForTesting
     void doWork() throws Exception
     {
@@ -432,10 +459,6 @@ public class LeaderSelector implements Closeable
             catch ( Throwable e )
             {
                 ThreadUtils.checkInterrupted(e);
-            }
-            finally
-            {
-                clearIsQueued();
             }
         }
         catch ( InterruptedException e )
@@ -498,11 +521,6 @@ public class LeaderSelector implements Closeable
         {
             throw exception;
         }
-    }
-
-    private synchronized void clearIsQueued()
-    {
-        isQueued = false;
     }
 
     // temporary wrapper for deprecated constructor
@@ -585,7 +603,11 @@ public class LeaderSelector implements Closeable
             }
             catch ( CancelLeadershipException dummy )
             {
-                leaderSelector.interruptLeadership();
+                // If we cancel only leadership but not whole election, then we could hand over
+                // dated leadership to client with no further cancellation. Dated leadership is
+                // possible due to separated steps in leadership acquire: server data(e.g. election sequence)
+                // change and client flag(e.g. hasLeadership) set.
+                leaderSelector.cancelElection();
             }
         }
     }

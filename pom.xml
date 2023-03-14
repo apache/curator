@@ -1,4 +1,6 @@
-<?xml version="1.0" encoding="UTF-8"?><!--
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
     Licensed to the Apache Software Foundation (ASF) under one
     or more contributor license agreements.  See the NOTICE file
     distributed with this work for additional information
@@ -15,7 +17,8 @@
     KIND, either express or implied.  See the License for the
     specific language governing permissions and limitations
     under the License.
-  -->
+
+-->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
@@ -73,11 +76,10 @@
         <maven-bundle-plugin-version>5.1.4</maven-bundle-plugin-version>
         <maven-compiler-plugin-version>3.10.0</maven-compiler-plugin-version>
         <maven-dependency-plugin-version>3.2.0</maven-dependency-plugin-version>
+        <maven-project-info-reports-plugin-version>3.0.0</maven-project-info-reports-plugin-version>
         <maven-javadoc-plugin-version>3.3.2</maven-javadoc-plugin-version>
         <maven-surefire-plugin-version>3.0.0-M5</maven-surefire-plugin-version>
         <doxia-module-confluence-version>1.11.1</doxia-module-confluence-version>
-        <maven-license-plugin-version>1.9.0</maven-license-plugin-version>
-        <directory-maven-plugin-version>1.0</directory-maven-plugin-version>
         <javassist-version>3.24.1-GA</javassist-version>
         <commons-math-version>2.2</commons-math-version>
         <jackson-mapper-asl-version>1.9.13</jackson-mapper-asl-version>
@@ -663,6 +665,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-project-info-reports-plugin</artifactId>
+                <version>${maven-project-info-reports-plugin-version}</version>
             </plugin>
 
             <plugin>
@@ -696,18 +699,6 @@
                     <groupId>org.apache.felix</groupId>
                     <artifactId>maven-bundle-plugin</artifactId>
                     <version>${maven-bundle-plugin-version}</version>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.commonjava.maven.plugins</groupId>
-                    <artifactId>directory-maven-plugin</artifactId>
-                    <version>${directory-maven-plugin-version}</version>
-                </plugin>
-
-                <plugin>
-                    <groupId>com.mycila.maven-license-plugin</groupId>
-                    <artifactId>maven-license-plugin</artifactId>
-                    <version>${maven-license-plugin-version}</version>
                 </plugin>
 
                 <plugin>
@@ -862,97 +853,12 @@
                 </executions>
             </plugin>
 
-            <!-- Directory plugin to find parent root directory absolute path -->
-            <plugin>
-                <groupId>org.commonjava.maven.plugins</groupId>
-                <artifactId>directory-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>directories</id>
-                        <goals>
-                            <goal>highest-basedir</goal>
-                        </goals>
-                        <phase>validate</phase>
-                        <configuration>
-                            <property>main.basedir</property>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>com.mycila.maven-license-plugin</groupId>
-                <artifactId>maven-license-plugin</artifactId>
-                <configuration>
-                    <header>${main.basedir}/src/etc/header.txt</header>
-                    <excludes>
-                        <exclude>**/merge-pr.py</exclude>
-                        <exclude>**/*.confluence</exclude>
-                        <exclude>**/*.confluence.vm</exclude>
-                        <exclude>**/help.txt</exclude>
-                        <exclude>**/*.rdf</exclude>
-                        <exclude>**/.gitignore</exclude>
-                        <exclude>**/*.thrift</exclude>
-                        <exclude>**/*.json</exclude>
-                        <exclude>**/.idea/**</exclude>
-                        <exclude>**/DISCLAIMER</exclude>
-                        <exclude>**/DEPENDENCIES</exclude>
-                        <exclude>**/KEYS</exclude>
-                        <exclude>**/LICENSE</exclude>
-                        <exclude>**/NOTICE</exclude>
-                        <exclude>**/README</exclude>
-                        <exclude>**/CHANGES</exclude>
-                        <exclude>**/RELEASE-NOTES</exclude>
-                        <exclude>**/generated/**</exclude>
-                    </excludes>
-                    <strictCheck>true</strictCheck>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>license</id>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-release-plugin</artifactId>
                 <configuration>
                     <arguments>-DskipTests</arguments>
                     <mavenExecutorId>forked-path</mavenExecutorId>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.rat</groupId>
-                <artifactId>apache-rat-plugin</artifactId>
-                <configuration>
-                    <numUnapprovedLicenses>0</numUnapprovedLicenses>
-                    <excludeSubProjects>false</excludeSubProjects>
-                    <excludes>
-                        <exclude>**/*.confluence</exclude>
-                        <exclude>**/*.iml</exclude>
-                        <exclude>**/*.rdf</exclude>
-                        <exclude>**/help.txt</exclude>
-                        <exclude>**/.gitignore</exclude>
-                        <exclude>**/*.thrift</exclude>
-                        <exclude>**/*.json</exclude>
-                        <exclude>**/.idea/**</exclude>
-                        <exclude>**/DISCLAIMER</exclude>
-                        <exclude>**/DEPENDENCIES</exclude>
-                        <exclude>**/KEYS</exclude>
-                        <exclude>**/LICENSE</exclude>
-                        <exclude>**/NOTICE</exclude>
-                        <exclude>**/README</exclude>
-                        <exclude>**/CHANGES</exclude>
-                        <exclude>**/RELEASE-NOTES</exclude>
-                        <exclude>**/target/**</exclude>
-                        <exclude>**/generated/**</exclude>
-                    </excludes>
                 </configuration>
             </plugin>
 

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -33,6 +33,7 @@ import org.apache.curator.framework.schema.SchemaViolation;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.x.async.AsyncCuratorFramework;
 import org.apache.curator.x.async.AsyncStage;
+import org.apache.curator.x.async.api.DeleteOption;
 import org.apache.curator.x.async.modeled.models.TestModel;
 import org.apache.curator.x.async.modeled.models.TestNewerModel;
 import org.apache.curator.x.async.modeled.versioned.Versioned;
@@ -104,6 +105,40 @@ public class TestModeledFramework extends TestModeledFrameworkBase
 
         Set<ZPath> expected = Sets.newHashSet(path.child("one"), path.child("two"), path.child("three"));
         complete(client.children(), (children, e) -> assertEquals(Sets.newHashSet(children), expected));
+    }
+
+    @Test
+    public void testDelete()
+    {
+        ModeledFramework<TestModel> client = ModeledFramework.wrap(async, modelSpec);
+        complete(client.set(new TestModel()));
+
+        Stat stat = new Stat();
+        client.child("a").set(new TestModel(), stat);
+        exceptional(client.child("a").delete(stat.getVersion() + 1), KeeperException.BadVersionException.class);
+        complete(client.child("a").delete(stat.getVersion()));
+
+        client.child("b").set(new TestModel());
+        complete(client.child("b").delete(-1));
+
+        client.child("c").set(new TestModel());
+
+        exceptional(client.delete(), KeeperException.NotEmptyException.class);
+
+        ModelSpec<TestModel> deleteChildren = ModelSpec
+                .builder(modelSpec.path(), modelSpec.serializer())
+                .withDeleteOptions(Collections.singleton(DeleteOption.deletingChildrenIfNeeded))
+                .build();
+
+        complete(ModeledFramework.wrap(async, deleteChildren).delete());
+        exceptional(ModeledFramework.wrap(async, deleteChildren).delete(), KeeperException.NoNodeException.class);
+        exceptional(client.read(), KeeperException.NoNodeException.class);
+
+        ModelSpec<TestModel> quietly = ModelSpec
+                .builder(modelSpec.path(), modelSpec.serializer())
+                .withDeleteOptions(Collections.singleton(DeleteOption.quietly))
+                .build();
+        complete(ModeledFramework.wrap(async, quietly).delete());
     }
 
     @Test
