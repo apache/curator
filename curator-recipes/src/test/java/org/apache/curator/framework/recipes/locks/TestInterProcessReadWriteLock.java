@@ -244,21 +244,19 @@ public class TestInterProcessReadWriteLock extends BaseClassForTests
     @Test
     public void testContendingDowngrading() throws Exception
     {
-        CuratorFramework client1 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        CuratorFramework client2 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
         ExecutorService executor = Executors.newCachedThreadPool();
         try
         {
-            client1.start();
-            client2.start();
+            client.start();
 
-            InterProcessReadWriteLock lock1 = new InterProcessReadWriteLock(client1, "/lock");
+            InterProcessReadWriteLock lock1 = new InterProcessReadWriteLock(client, "/lock");
             lock1.writeLock().acquire();
 
             CountDownLatch ready = new CountDownLatch(1);
             Future<?> writeAcquire = executor.submit(() -> {
                 ready.countDown();
-                InterProcessReadWriteLock lock2 = new InterProcessReadWriteLock(client1, "/lock");
+                InterProcessReadWriteLock lock2 = new InterProcessReadWriteLock(client, "/lock");
                 lock2.writeLock().acquire();
                 fail("expect no acquire");
                 return null;
@@ -279,8 +277,7 @@ public class TestInterProcessReadWriteLock extends BaseClassForTests
         }
         finally
         {
-            TestCleanState.closeAndTestClean(client1);
-            TestCleanState.closeAndTestClean(client2);
+            TestCleanState.closeAndTestClean(client);
             executor.shutdown();
         }
     }
