@@ -21,11 +21,14 @@ package org.apache.curator.utils;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
+import java.util.concurrent.CompletableFuture;
+import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.ACL;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Collections;
@@ -228,7 +231,7 @@ public class ZKPaths
     /**
      * Extracts the ten-digit suffix from a sequential znode path. Does not currently perform validation on the
      * provided path; it will just return a string comprising the last ten characters.
-     * 
+     *
      * @param path the path of a sequential znodes
      * @return the sequential suffix
      */
@@ -311,6 +314,11 @@ public class ZKPaths
      */
     public static void mkdirs(ZooKeeper zookeeper, String path, boolean makeLastNode, InternalACLProvider aclProvider, boolean asContainers) throws InterruptedException, KeeperException
     {
+        mkdirs(zookeeper, path, makeLastNode, aclProvider, asContainers, null);
+    }
+
+    public static void mkdirs(ZooKeeper zookeeper, String path, boolean makeLastNode, InternalACLProvider aclProvider, boolean asContainers, AsyncCallback.Create2Callback callback) throws InterruptedException, KeeperException
+    {
         PathUtils.validatePath(path);
 
         int pos = 1; // skip first slash, root is guaranteed to exist
@@ -333,26 +341,49 @@ public class ZKPaths
             String subPath = path.substring(0, pos);
             if ( zookeeper.exists(subPath, false) == null )
             {
-                try
+                List<ACL> acl = null;
+                if ( aclProvider != null )
                 {
-                    List<ACL> acl = null;
-                    if ( aclProvider != null )
-                    {
-                        acl = aclProvider.getAclForPath(subPath);
-                        if ( acl == null )
-                        {
-                            acl = aclProvider.getDefaultAcl();
-                        }
-                    }
+                    acl = aclProvider.getAclForPath(subPath);
                     if ( acl == null )
                     {
-                        acl = ZooDefs.Ids.OPEN_ACL_UNSAFE;
+                        acl = aclProvider.getDefaultAcl();
                     }
-                    zookeeper.create(subPath, new byte[0], acl, getCreateMode(asContainers));
                 }
-                catch ( KeeperException.NodeExistsException e )
+                if ( acl == null )
                 {
-                    // ignore... someone else has created it since we checked
+                    acl = ZooDefs.Ids.OPEN_ACL_UNSAFE;
+                }
+
+                CompletableFuture<KeeperException> f = new CompletableFuture<>();
+
+                zookeeper.create(subPath, new byte[0], acl, getCreateMode(asContainers), new AsyncCallback.Create2Callback()
+                {
+                    @Override
+                    public void processResult(int rc, String path, Object ctx, String name, Stat stat)
+                    {
+                        if ( rc == KeeperException.Code.OK.intValue() )
+                        {
+                            f.complete(null);
+                            return;
+                        }
+
+                        if ( rc == KeeperException.Code.NODEEXISTS.intValue() )
+                        {
+                            // ignore... someone else has created it since we checked
+                            f.complete(null);
+                            return;
+                        }
+
+                        callback.processResult(rc, path, ctx, name, stat);
+                        f.complete(KeeperException.create(KeeperException.Code.get(rc)));
+                    }
+                }, null);
+
+                KeeperException ke = f.join();
+                if ( ke != null )
+                {
+                    throw ke;
                 }
             }
 
