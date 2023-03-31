@@ -477,11 +477,35 @@ public class TestReconfiguration extends CuratorTestBase
     }
 
     @Test
-    public void testHostname() throws Exception
+    public void testConfigToConnectionStringPreservesHostnameNormal() throws Exception
     {
-        String config = "server.1=localhost:2888:3888:participant;localhost:2181";
+        String config = "server.1=server.addr:2888:3888:participant;client.addr:2181";
         String configString = EnsembleTracker.configToConnectionString(toQuorumVerifier(config.getBytes()));
-        assertEquals("localhost:2181", configString);
+        assertEquals("client.addr:2181", configString);
+    }
+
+    @Test
+    public void testConfigToConnectionStringPreservesHostnameNoClientAddr() throws Exception
+    {
+        String config = "server.1=server.addr:2888:3888:participant;2181";
+        String configString = EnsembleTracker.configToConnectionString(toQuorumVerifier(config.getBytes()));
+        assertEquals("server.addr:2181", configString);
+    }
+
+    @Test
+    public void testConfigToConnectionStringPreservesHostnameIPv4Wildcard() throws Exception
+    {
+        String config = "server.1=server.addr:2888:3888:participant;0.0.0.0:2181";
+        String configString = EnsembleTracker.configToConnectionString(toQuorumVerifier(config.getBytes()));
+        assertEquals("server.addr:2181", configString);
+    }
+
+    @Test
+    public void testConfigToConnectionStringPreservesHostnameIPv6Wildcard() throws Exception
+    {
+        String config = "server.1=server.addr:2888:3888:participant;[::]:2181";
+        String configString = EnsembleTracker.configToConnectionString(toQuorumVerifier(config.getBytes()));
+        assertEquals("server.addr:2181", configString);
     }
 
     @Test
