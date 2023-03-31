@@ -21,7 +21,10 @@ package org.apache.curator.utils;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
-import java.util.concurrent.CompletableFuture;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -31,8 +34,6 @@ import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.Collections;
-import java.util.List;
 
 public class ZKPaths
 {
@@ -355,35 +356,41 @@ public class ZKPaths
                     acl = ZooDefs.Ids.OPEN_ACL_UNSAFE;
                 }
 
-                CompletableFuture<KeeperException> f = new CompletableFuture<>();
+                BlockingQueue<Integer> queue = new LinkedBlockingQueue<>(1);
 
                 zookeeper.create(subPath, new byte[0], acl, getCreateMode(asContainers), new AsyncCallback.Create2Callback()
                 {
                     @Override
                     public void processResult(int rc, String path, Object ctx, String name, Stat stat)
                     {
+                        boolean offer;
+
                         if ( rc == KeeperException.Code.OK.intValue() )
                         {
-                            f.complete(null);
-                            return;
+                            offer = queue.offer(rc);
                         }
-
-                        if ( rc == KeeperException.Code.NODEEXISTS.intValue() )
+                        else if ( rc == KeeperException.Code.NODEEXISTS.intValue() )
                         {
                             // ignore... someone else has created it since we checked
-                            f.complete(null);
-                            return;
+                            offer = queue.offer(KeeperException.Code.OK.intValue());
+                        }
+                        else
+                        {
+                            if (callback != null)
+                            {
+                                callback.processResult(rc, path, ctx, name, stat);
+                            }
+                            offer = queue.offer(rc);
                         }
 
-                        callback.processResult(rc, path, ctx, name, stat);
-                        f.complete(KeeperException.create(KeeperException.Code.get(rc)));
+                        assert offer;
                     }
                 }, null);
 
-                KeeperException ke = f.join();
-                if ( ke != null )
+                int rc = queue.take();
+                if ( rc != KeeperException.Code.OK.intValue() )
                 {
-                    throw ke;
+                    throw KeeperException.create(KeeperException.Code.get(rc));
                 }
             }
 
