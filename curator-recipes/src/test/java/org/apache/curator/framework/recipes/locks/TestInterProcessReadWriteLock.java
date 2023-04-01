@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import com.google.common.collect.Lists;
@@ -45,6 +46,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestInterProcessReadWriteLock extends BaseClassForTests
@@ -236,6 +238,47 @@ public class TestInterProcessReadWriteLock extends BaseClassForTests
         finally
         {
             TestCleanState.closeAndTestClean(client);
+        }
+    }
+
+    @Test
+    public void testContendingDowngrading() throws Exception
+    {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        ExecutorService executor = Executors.newCachedThreadPool();
+        try
+        {
+            client.start();
+
+            InterProcessReadWriteLock lock1 = new InterProcessReadWriteLock(client, "/lock");
+            lock1.writeLock().acquire();
+
+            CountDownLatch ready = new CountDownLatch(1);
+            Future<?> writeAcquire = executor.submit(() -> {
+                ready.countDown();
+                InterProcessReadWriteLock lock2 = new InterProcessReadWriteLock(client, "/lock");
+                lock2.writeLock().acquire();
+                fail("expect no acquire");
+                return null;
+            });
+
+            ready.await();
+            // Let lock2 have chance to do write-acquire before downgrading.
+            Thread.sleep(20);
+
+            assertTrue(lock1.readLock().acquire(5, TimeUnit.SECONDS));
+
+            lock1.writeLock().release();
+            // We still hold read lock, other write-acquire should block.
+            assertThrows(TimeoutException.class, () -> {
+                // Let lock2 have chance to respond to write-release
+                writeAcquire.get(20, TimeUnit.MILLISECONDS);
+            });
+        }
+        finally
+        {
+            TestCleanState.closeAndTestClean(client);
+            executor.shutdown();
         }
     }
 
