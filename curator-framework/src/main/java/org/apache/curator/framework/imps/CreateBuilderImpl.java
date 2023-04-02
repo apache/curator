@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.curator.RetryLoop;
 import org.apache.curator.drivers.OperationTrace;
 import org.apache.curator.framework.api.ACLBackgroundPathAndBytesable;
@@ -790,24 +789,16 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
             @Override
             public void performBackgroundOperation(OperationAndData<T> dummy) throws Exception
             {
-                AtomicReference<CuratorEvent> event = new AtomicReference<>();
-                AsyncCallback.Create2Callback callback = new AsyncCallback.Create2Callback()
-                {
-                    @Override
-                    public void processResult(int rc, String path, Object ctx, String name, Stat stat)
-                    {
-                        event.set(createResponseEvent(client, rc, path, ctx, name, stat));
-                    }
-                };
                 try
                 {
-                    ZKPaths.mkdirs(client.getZooKeeper(), path, false, aclProvider, createParentsAsContainers, callback);
+                    ZKPaths.mkdirs(client.getZooKeeper(), path, false, aclProvider, createParentsAsContainers);
                 }
                 catch ( KeeperException e )
                 {
                     if ( !client.getZookeeperClient().getRetryPolicy().allowRetry(e) )
                     {
-                        client.processBackgroundOperation(mainOperationAndData, event.get());
+                        final CuratorEvent event = makeCuratorEvent(client, e.code().intValue(), e.getPath(), null, e.getPath(), null);
+                        client.processBackgroundOperation(mainOperationAndData, event);
                         throw e;
                     }
                     // otherwise safe to ignore as it will get retried
@@ -904,10 +895,10 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
 
     private void sendBackgroundResponse(int rc, String path, Object ctx, String name, Stat stat, OperationAndData<PathAndBytes> operationAndData)
     {
-        client.processBackgroundOperation(operationAndData, createResponseEvent(client, rc, path, ctx, name, stat));
+        client.processBackgroundOperation(operationAndData, makeCuratorEvent(client, rc, path, ctx, name, stat));
     }
 
-    private static CuratorEvent createResponseEvent(CuratorFrameworkImpl client, int rc, String path, Object ctx, String name, Stat stat)
+    private static CuratorEvent makeCuratorEvent(CuratorFrameworkImpl client, int rc, String path, Object ctx, String name, Stat stat)
     {
         path = client.unfixForNamespace(path);
         name = client.unfixForNamespace(name);

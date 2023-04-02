@@ -23,15 +23,11 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.ACL;
-import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -315,11 +311,6 @@ public class ZKPaths
      */
     public static void mkdirs(ZooKeeper zookeeper, String path, boolean makeLastNode, InternalACLProvider aclProvider, boolean asContainers) throws InterruptedException, KeeperException
     {
-        mkdirs(zookeeper, path, makeLastNode, aclProvider, asContainers, null);
-    }
-
-    public static void mkdirs(ZooKeeper zookeeper, String path, boolean makeLastNode, InternalACLProvider aclProvider, boolean asContainers, AsyncCallback.Create2Callback callback) throws InterruptedException, KeeperException
-    {
         PathUtils.validatePath(path);
 
         int pos = 1; // skip first slash, root is guaranteed to exist
@@ -342,55 +333,26 @@ public class ZKPaths
             String subPath = path.substring(0, pos);
             if ( zookeeper.exists(subPath, false) == null )
             {
-                List<ACL> acl = null;
-                if ( aclProvider != null )
+                try
                 {
-                    acl = aclProvider.getAclForPath(subPath);
+                    List<ACL> acl = null;
+                    if ( aclProvider != null )
+                    {
+                        acl = aclProvider.getAclForPath(subPath);
+                        if ( acl == null )
+                        {
+                            acl = aclProvider.getDefaultAcl();
+                        }
+                    }
                     if ( acl == null )
                     {
-                        acl = aclProvider.getDefaultAcl();
+                        acl = ZooDefs.Ids.OPEN_ACL_UNSAFE;
                     }
+                    zookeeper.create(subPath, new byte[0], acl, getCreateMode(asContainers));
                 }
-                if ( acl == null )
+                catch (KeeperException.NodeExistsException ignore)
                 {
-                    acl = ZooDefs.Ids.OPEN_ACL_UNSAFE;
-                }
-
-                BlockingQueue<Integer> queue = new LinkedBlockingQueue<>(1);
-
-                zookeeper.create(subPath, new byte[0], acl, getCreateMode(asContainers), new AsyncCallback.Create2Callback()
-                {
-                    @Override
-                    public void processResult(int rc, String path, Object ctx, String name, Stat stat)
-                    {
-                        boolean offer;
-
-                        if ( rc == KeeperException.Code.OK.intValue() )
-                        {
-                            offer = queue.offer(rc);
-                        }
-                        else if ( rc == KeeperException.Code.NODEEXISTS.intValue() )
-                        {
-                            // ignore... someone else has created it since we checked
-                            offer = queue.offer(KeeperException.Code.OK.intValue());
-                        }
-                        else
-                        {
-                            if (callback != null)
-                            {
-                                callback.processResult(rc, path, ctx, name, stat);
-                            }
-                            offer = queue.offer(rc);
-                        }
-
-                        assert offer;
-                    }
-                }, null);
-
-                int rc = queue.take();
-                if ( rc != KeeperException.Code.OK.intValue() )
-                {
-                    throw KeeperException.create(KeeperException.Code.get(rc));
+                    // ignore... someone else has created it since we checked
                 }
             }
 
