@@ -900,8 +900,6 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
 
     private static CuratorEvent makeCuratorEvent(CuratorFrameworkImpl client, int rc, String path, Object ctx, String name, Stat stat)
     {
-        path = client.unfixForNamespace(path);
-        name = client.unfixForNamespace(name);
         return new CuratorEventImpl(client, CuratorEventType.CREATE, rc, path, name, ctx, stat, null, null, null, null, null);
     }
 

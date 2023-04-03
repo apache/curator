@@ -133,7 +133,7 @@ class CuratorEventImpl implements CuratorEvent
         this.resultCode = resultCode;
         this.opResults = (opResults != null) ? ImmutableList.copyOf(opResults) : null;
         this.path = client.unfixForNamespace(path);
-        this.name = name;
+        this.name = client.unfixForNamespace(name);
         this.context = context;
         this.stat = stat;
         this.data = data;

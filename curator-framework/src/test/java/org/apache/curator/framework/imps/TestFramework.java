@@ -1032,6 +1032,33 @@ public class TestFramework extends BaseClassForTests
     }
 
     @Test
+    public void testBackgroundPathWithNamespace() throws Exception {
+        CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
+        try (CuratorFramework client = builder
+                .connectString(server.getConnectString())
+                .retryPolicy(new RetryOneTime(1))
+                .build()) {
+            client.start();
+            CuratorFramework namespaceZoo = client.usingNamespace("zoo");
+            BlockingQueue<CuratorEvent> events = new LinkedBlockingQueue<>();
+            BackgroundCallback callback = (CuratorFramework ignored, CuratorEvent event) -> {
+                events.add(event);
+            };
+
+            namespaceZoo.create().creatingParentsIfNeeded().inBackground(callback).forPath("/zoo/a");
+            CuratorEvent event = events.poll(10, TimeUnit.SECONDS);
+            assertNotNull(event);
+            assertEquals("/zoo/a", event.getPath());
+            assertEquals("/zoo/a", event.getName());
+
+            client.checkExists().inBackground(callback).forPath("/zoo/zoo/a");
+            event = events.poll(10, TimeUnit.SECONDS);
+            assertNotNull(event);
+            assertEquals("/zoo/zoo/a", event.getPath());
+        }
+    }
+
+    @Test
     public void testCreateModes() throws Exception
     {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
