@@ -797,7 +797,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                 {
                     if ( !client.getZookeeperClient().getRetryPolicy().allowRetry(e) )
                     {
-                        final CuratorEvent event = makeCuratorEvent(client, e.code().intValue(), e.getPath(), null, e.getPath(), null);
+                        final CuratorEvent event = makeCuratorEvent(client, e.code().intValue(), e.getPath(), null, null, null);
                         client.processBackgroundOperation(mainOperationAndData, event);
                         throw e;
                     }
