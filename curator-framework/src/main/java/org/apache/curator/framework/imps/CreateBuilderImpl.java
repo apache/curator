@@ -22,9 +22,32 @@ package org.apache.curator.framework.imps;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.curator.RetryLoop;
 import org.apache.curator.drivers.OperationTrace;
-import org.apache.curator.framework.api.*;
+import org.apache.curator.framework.api.ACLBackgroundPathAndBytesable;
+import org.apache.curator.framework.api.ACLCreateModeBackgroundPathAndBytesable;
+import org.apache.curator.framework.api.ACLCreateModePathAndBytesable;
+import org.apache.curator.framework.api.ACLCreateModeStatBackgroundPathAndBytesable;
+import org.apache.curator.framework.api.ACLPathAndBytesable;
+import org.apache.curator.framework.api.BackgroundCallback;
+import org.apache.curator.framework.api.BackgroundPathAndBytesable;
+import org.apache.curator.framework.api.CreateBackgroundModeACLable;
+import org.apache.curator.framework.api.CreateBackgroundModeStatACLable;
+import org.apache.curator.framework.api.CreateBuilder;
+import org.apache.curator.framework.api.CreateBuilder2;
+import org.apache.curator.framework.api.CreateBuilderMain;
+import org.apache.curator.framework.api.CreateProtectACLCreateModePathAndBytesable;
+import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.framework.api.CuratorEventType;
+import org.apache.curator.framework.api.ErrorListenerPathAndBytesable;
+import org.apache.curator.framework.api.PathAndBytesable;
+import org.apache.curator.framework.api.ProtectACLCreateModePathAndBytesable;
+import org.apache.curator.framework.api.ProtectACLCreateModeStatPathAndBytesable;
+import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.api.transaction.OperationType;
 import org.apache.curator.framework.api.transaction.TransactionCreateBuilder;
 import org.apache.curator.framework.api.transaction.TransactionCreateBuilder2;
@@ -40,10 +63,6 @@ import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.server.DataTree;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, BackgroundOperation<PathAndBytes>, ErrorListenerPathAndBytesable<String>
 {
@@ -778,6 +797,8 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                 {
                     if ( !client.getZookeeperClient().getRetryPolicy().allowRetry(e) )
                     {
+                        final CuratorEvent event = makeCuratorEvent(client, e.code().intValue(), e.getPath(), null, e.getPath(), null);
+                        client.processBackgroundOperation(mainOperationAndData, event);
                         throw e;
                     }
                     // otherwise safe to ignore as it will get retried
@@ -874,11 +895,14 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
 
     private void sendBackgroundResponse(int rc, String path, Object ctx, String name, Stat stat, OperationAndData<PathAndBytes> operationAndData)
     {
+        client.processBackgroundOperation(operationAndData, makeCuratorEvent(client, rc, path, ctx, name, stat));
+    }
+
+    private static CuratorEvent makeCuratorEvent(CuratorFrameworkImpl client, int rc, String path, Object ctx, String name, Stat stat)
+    {
         path = client.unfixForNamespace(path);
         name = client.unfixForNamespace(name);
-
-        CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.CREATE, rc, path, name, ctx, stat, null, null, null, null, null);
-        client.processBackgroundOperation(operationAndData, event);
+        return new CuratorEventImpl(client, CuratorEventType.CREATE, rc, path, name, ctx, stat, null, null, null, null, null);
     }
 
     private ACLCreateModePathAndBytesable<String> asACLCreateModePathAndBytesable()
