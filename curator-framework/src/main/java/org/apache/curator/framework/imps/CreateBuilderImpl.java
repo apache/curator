@@ -798,7 +798,7 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                     if ( !client.getZookeeperClient().getRetryPolicy().allowRetry(e) )
                     {
                         sendBackgroundResponse(client, e.code().intValue(), e.getPath(), null, null, null, mainOperationAndData);
-                        return;
+                        throw e;
                     }
                     // otherwise safe to ignore as it will get retried
                 }
