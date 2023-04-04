@@ -797,9 +797,8 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
                 {
                     if ( !client.getZookeeperClient().getRetryPolicy().allowRetry(e) )
                     {
-                        final CuratorEvent event = makeCuratorEvent(client, e.code().intValue(), e.getPath(), null, null, null);
-                        client.processBackgroundOperation(mainOperationAndData, event);
-                        throw e;
+                        sendBackgroundResponse(client, e.code().intValue(), e.getPath(), null, null, null, mainOperationAndData);
+                        return;
                     }
                     // otherwise safe to ignore as it will get retried
                 }
@@ -895,12 +894,13 @@ public class CreateBuilderImpl implements CreateBuilder, CreateBuilder2, Backgro
 
     private void sendBackgroundResponse(int rc, String path, Object ctx, String name, Stat stat, OperationAndData<PathAndBytes> operationAndData)
     {
-        client.processBackgroundOperation(operationAndData, makeCuratorEvent(client, rc, path, ctx, name, stat));
+        sendBackgroundResponse(client, rc, path, ctx, name, stat, operationAndData);
     }
 
-    private static CuratorEvent makeCuratorEvent(CuratorFrameworkImpl client, int rc, String path, Object ctx, String name, Stat stat)
+    private static <T> void sendBackgroundResponse(CuratorFrameworkImpl client, int rc, String path, Object ctx, String name, Stat stat, OperationAndData<T> operationAndData)
     {
-        return new CuratorEventImpl(client, CuratorEventType.CREATE, rc, path, name, ctx, stat, null, null, null, null, null);
+        CuratorEvent event = new CuratorEventImpl(client, CuratorEventType.CREATE, rc, path, name, ctx, stat, null, null, null, null, null);
+        client.processBackgroundOperation(operationAndData, event);
     }
 
     private ACLCreateModePathAndBytesable<String> asACLCreateModePathAndBytesable()
