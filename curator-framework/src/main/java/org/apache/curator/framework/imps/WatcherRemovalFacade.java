@@ -98,11 +98,11 @@ class WatcherRemovalFacade extends CuratorFrameworkImpl implements WatcherRemove
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public void close()
-    {
-        throw new UnsupportedOperationException();
-    }
+//    @Override
+//    public void close()
+//    {
+//        throw new UnsupportedOperationException();
+//    }
 
     @Override
     public Listenable<ConnectionStateListener> getConnectionStateListenable()
