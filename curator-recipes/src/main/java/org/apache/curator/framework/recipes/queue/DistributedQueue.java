@@ -556,7 +556,7 @@ public class DistributedQueue<T> implements QueueBase<T>
                 {
                     // swallow the interrupt as it's only possible from either a background
                     // operation and, thus, doesn't apply to this loop or the instance
-                    // is being closed in which case the while test will get it
+                    // is being closed in which case the while executeAndVerifyTestCleanup will get it
                 }
             }
         }
@@ -784,5 +784,24 @@ public class DistributedQueue<T> implements QueueBase<T>
     protected String makeRequeueItemPath(String itemPath)
     {
         return makeItemPath();
+    }
+
+    /**
+     * Same as {@link #putMulti(MultiItem, int)} but allows a maximum wait time if an upper bound was set
+     * via {@link QueueBuilder#maxItems}.
+     *
+     * @param items items to add
+     * @param priority item priority - lower numbers come out of the queue first
+     * @param maxWait maximum wait
+     * @param unit wait unit
+     * @return true if items was added, false if timed out
+     * @throws Exception
+     */
+    public boolean  putMulti(MultiItem<T> items, int maxWait, String priorityHex, TimeUnit unit) throws Exception
+    {
+        checkState();
+
+        //String      priorityHex = priorityToString(priority);
+        return internalPut(null, items, makeItemPath() + priorityHex, maxWait, unit);
     }
 }
