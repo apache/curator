@@ -40,7 +40,7 @@ public class TestCleanState
 
         try
         {
-            Timing2 timing = new Timing2();
+
             CuratorFrameworkImpl internalClient = (CuratorFrameworkImpl)client;
             EnsembleTracker ensembleTracker = internalClient.getEnsembleTracker();
             if ( ensembleTracker != null )
@@ -52,40 +52,7 @@ public class TestCleanState
             ZooKeeper zooKeeper = internalClient.getZooKeeper();
             if ( zooKeeper != null )
             {
-                final int maxLoops = 3;
-                for ( int i = 0; i < maxLoops; ++i )    // it takes time for the watcher removals to settle due to async/watchers, etc. So, if there are remaining watchers, sleep a bit
-                {
-                    if ( i > 0 )
-                    {
-                        timing.multiple(.5).sleepABit();
-                    }
-                    boolean isLast = (i + 1) == maxLoops;
-                    if ( WatchersDebug.getChildWatches(zooKeeper).size() != 0 )
-                    {
-                        if ( isLast )
-                        {
-                            throw new AssertionError("One or more child watchers are still registered: " + WatchersDebug.getChildWatches(zooKeeper));
-                        }
-                        continue;
-                    }
-                    if ( WatchersDebug.getExistWatches(zooKeeper).size() != 0 )
-                    {
-                        if ( isLast )
-                        {
-                            throw new AssertionError("One or more exists watchers are still registered: " + WatchersDebug.getExistWatches(zooKeeper));
-                        }
-                        continue;
-                    }
-                    if ( WatchersDebug.getDataWatches(zooKeeper).size() != 0 )
-                    {
-                        if ( isLast )
-                        {
-                            throw new AssertionError("One or more data watchers are still registered: " + WatchersDebug.getDataWatches(zooKeeper));
-                        }
-                        continue;
-                    }
-                    break;
-                }
+                waitForAllWatchersToBeRemoved(zooKeeper);
             }
         }
         catch ( IllegalStateException ignore )
@@ -102,7 +69,45 @@ public class TestCleanState
         }
     }
 
-    public static void test(CuratorFramework client, Callable<Void> proc) throws Exception
+    private static void waitForAllWatchersToBeRemoved(ZooKeeper zooKeeper ) throws InterruptedException {
+        Timing2 timing = new Timing2();
+        final int maxLoops = 3;
+        for ( int i = 0; i < maxLoops; ++i )    // it takes time for the watcher removals to settle due to async/watchers, etc. So, if there are remaining watchers, sleep a bit
+        {
+            if ( i > 0 )
+            {
+                timing.multiple(.5).sleepABit();
+            }
+            boolean isLast = (i + 1) == maxLoops;
+            if ( WatchersDebug.getChildWatches(zooKeeper).size() != 0 )
+            {
+                if ( isLast )
+                {
+                    throw new AssertionError("One or more child watchers are still registered: " + WatchersDebug.getChildWatches(zooKeeper));
+                }
+                continue;
+            }
+            if ( WatchersDebug.getExistWatches(zooKeeper).size() != 0 )
+            {
+                if ( isLast )
+                {
+                    throw new AssertionError("One or more exists watchers are still registered: " + WatchersDebug.getExistWatches(zooKeeper));
+                }
+                continue;
+            }
+            if ( WatchersDebug.getDataWatches(zooKeeper).size() != 0 )
+            {
+                if ( isLast )
+                {
+                    throw new AssertionError("One or more data watchers are still registered: " + WatchersDebug.getDataWatches(zooKeeper));
+                }
+                continue;
+            }
+            break;
+        }
+    }
+
+    public static void executeAndVerifyTestCleanup(CuratorFramework client, Callable<Void> proc) throws Exception
     {
         boolean succeeded = false;
         try
