@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,21 +16,31 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.zk35;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.Compatibility;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-public class TestIs35
+public class TestIs35 extends CuratorTestBase
 {
     @Test
+    @Tag(zk35TestCompatibilityGroup)
     public void testIsZk35()
     {
         assertFalse(Compatibility.hasGetReachableOrOneMethod());
         assertTrue(Compatibility.hasAddrField());
         assertFalse(Compatibility.hasPersistentWatchers());
+    }
+
+    @Override
+    protected void createServer()
+    {
+        // NOP
     }
 }
 

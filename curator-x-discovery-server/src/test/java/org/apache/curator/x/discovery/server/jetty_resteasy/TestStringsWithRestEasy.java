@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.discovery.server.jetty_resteasy;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,15 +28,15 @@ import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.discovery.ServiceType;
 import org.apache.curator.x.discovery.server.entity.ServiceInstances;
 import org.apache.curator.x.discovery.server.entity.ServiceNames;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyBootstrap;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mortbay.jetty.Server;
-import org.mortbay.jetty.servlet.Context;
-import org.mortbay.jetty.servlet.ServletHolder;
 import javax.ws.rs.core.MediaType;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -65,10 +66,16 @@ public class TestStringsWithRestEasy
 
         port = InstanceSpec.getRandomPort();
         server = new Server(port);
-        Context root = new Context(server, "/", Context.SESSIONS);
+        
+        ServletContextHandler root = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        root.setContextPath("/");
+        root.setServer(server);
+        root.setContextPath("/");
         root.getInitParams().put("javax.ws.rs.Application", RestEasyApplication.class.getName());
         root.addServlet(new ServletHolder(dispatcher), "/*");
         root.addEventListener(new ResteasyBootstrap());
+
+        server.setHandler(root);
         server.start();
     }
 

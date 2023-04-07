@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.locks;
 
 import org.apache.curator.framework.CuratorFramework;
@@ -41,17 +42,28 @@ public class StandardLockInternalsDriver implements LockInternalsDriver
         return new PredicateResults(pathToWatch, getsTheLock);
     }
 
+    protected String getSortingSequence() {
+        return null;
+    }
+
     @Override
     public String createsTheLock(CuratorFramework client, String path, byte[] lockNodeBytes) throws Exception
     {
+
+        CreateMode createMode = CreateMode.EPHEMERAL_SEQUENTIAL;
+        String sequence = getSortingSequence();
+        if (sequence != null) {
+            path += sequence;
+            createMode = CreateMode.EPHEMERAL;
+        }
         String ourPath;
         if ( lockNodeBytes != null )
         {
-            ourPath = client.create().creatingParentContainersIfNeeded().withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(path, lockNodeBytes);
+            ourPath = client.create().creatingParentContainersIfNeeded().withProtection().withMode(createMode).forPath(path, lockNodeBytes);
         }
         else
         {
-            ourPath = client.create().creatingParentContainersIfNeeded().withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(path);
+            ourPath = client.create().creatingParentContainersIfNeeded().withProtection().withMode(createMode).forPath(path);
         }
         return ourPath;
     }

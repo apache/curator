@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -25,18 +25,32 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import com.google.common.collect.Sets;
+import java.math.BigInteger;
+import java.security.NoSuchAlgorithmException;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.framework.schema.Schema;
 import org.apache.curator.framework.schema.SchemaSet;
 import org.apache.curator.framework.schema.SchemaViolation;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.x.async.AsyncCuratorFramework;
 import org.apache.curator.x.async.AsyncStage;
+import org.apache.curator.x.async.api.CreateOption;
+import org.apache.curator.x.async.api.DeleteOption;
 import org.apache.curator.x.async.modeled.models.TestModel;
 import org.apache.curator.x.async.modeled.models.TestNewerModel;
 import org.apache.curator.x.async.modeled.versioned.Versioned;
 import org.apache.curator.x.async.modeled.versioned.VersionedModeledFramework;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
@@ -44,13 +58,6 @@ import org.apache.zookeeper.data.Id;
 import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.server.auth.DigestAuthenticationProvider;
 import org.junit.jupiter.api.Test;
-
-import java.math.BigInteger;
-import java.security.NoSuchAlgorithmException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
 
 public class TestModeledFramework extends TestModeledFrameworkBase
 {
@@ -107,6 +114,40 @@ public class TestModeledFramework extends TestModeledFrameworkBase
     }
 
     @Test
+    public void testDelete()
+    {
+        ModeledFramework<TestModel> client = ModeledFramework.wrap(async, modelSpec);
+        complete(client.set(new TestModel()));
+
+        Stat stat = new Stat();
+        client.child("a").set(new TestModel(), stat);
+        exceptional(client.child("a").delete(stat.getVersion() + 1), KeeperException.BadVersionException.class);
+        complete(client.child("a").delete(stat.getVersion()));
+
+        client.child("b").set(new TestModel());
+        complete(client.child("b").delete(-1));
+
+        client.child("c").set(new TestModel());
+
+        exceptional(client.delete(), KeeperException.NotEmptyException.class);
+
+        ModelSpec<TestModel> deleteChildren = ModelSpec
+                .builder(modelSpec.path(), modelSpec.serializer())
+                .withDeleteOptions(Collections.singleton(DeleteOption.deletingChildrenIfNeeded))
+                .build();
+
+        complete(ModeledFramework.wrap(async, deleteChildren).delete());
+        exceptional(ModeledFramework.wrap(async, deleteChildren).delete(), KeeperException.NoNodeException.class);
+        exceptional(client.read(), KeeperException.NoNodeException.class);
+
+        ModelSpec<TestModel> quietly = ModelSpec
+                .builder(modelSpec.path(), modelSpec.serializer())
+                .withDeleteOptions(Collections.singleton(DeleteOption.quietly))
+                .build();
+        complete(ModeledFramework.wrap(async, quietly).delete());
+    }
+
+    @Test
     public void testBadNode()
     {
         complete(async.create().forPath(modelSpec.path().fullPath(), "fubar".getBytes()), (v, e) -> {
@@ -151,11 +192,18 @@ public class TestModeledFramework extends TestModeledFrameworkBase
         complete(versioned.read().whenComplete((v, e) -> {
             assertNull(e);
             assertTrue(v.version() > 0);
-        }).thenCompose(versioned::set), (s, e) -> assertNull(e)); // version is correct should succeed
-        
+        }).thenCompose(versioned::set), (s, e) -> assertNull(e)); // read version is correct; set moves version to 2
+
         Versioned<TestModel> badVersion = Versioned.from(model, 100000);
         complete(versioned.set(badVersion), (v, e) -> assertTrue(e instanceof KeeperException.BadVersionException));
-        
+        complete(versioned.update(badVersion), (v, e) -> assertTrue(e instanceof KeeperException.BadVersionException));
+
+        final Versioned<TestModel> goodVersion = Versioned.from(model, 2);
+        complete(versioned.update(goodVersion).whenComplete((v, e) -> {
+            assertNull(e);
+            assertEquals(3, v.getVersion());
+        }));
+
         final Stat stat = new Stat();
         complete(client.read(stat));
         // wrong version, needs to fail
@@ -178,6 +226,64 @@ public class TestModeledFramework extends TestModeledFrameworkBase
             authCurator.start();
             ModeledFramework<TestModel> authClient = ModeledFramework.wrap(AsyncCuratorFramework.wrap(authCurator), aclModelSpec);
             complete(authClient.update(new TestModel("John", "Galt", "Galt's Gulch", 42, BigInteger.valueOf(66))), (__, e) -> assertNull(e, "Should've succeeded"));
+        }
+    }
+
+    @Test
+    public void testExceptionHandling() throws Exception
+    {
+        final List<ACL> writeAcl = Collections.singletonList(new ACL(ZooDefs.Perms.WRITE, new Id("digest", DigestAuthenticationProvider.generateDigest("test:test"))));
+
+        // An ACLProvider is used to get the Write ACL (for the test user) for any path "/test/**".
+        final ACLProvider aclProvider = new ACLProvider() {
+            @Override
+            public List<ACL> getDefaultAcl() { return ZooDefs.Ids.READ_ACL_UNSAFE; }
+
+            @Override
+            public List<ACL> getAclForPath(String path)
+            {
+                // Any sub-path "/test/**" should only be writeable by the test user.
+                return path.startsWith("/test") ? writeAcl : getDefaultAcl();
+            }
+        };
+
+        try (CuratorFramework authorizedFramework = CuratorFrameworkFactory.builder()
+                .connectString(server.getConnectString())
+                .retryPolicy(new RetryOneTime(1))
+                .aclProvider(aclProvider)
+                .authorization("digest", "test:test".getBytes())
+                .build()) {
+
+            authorizedFramework.start();
+
+            // Create the parent path using the authorized framework, which will initially set the ACL accordingly.
+            authorizedFramework.create().withMode(CreateMode.PERSISTENT).forPath("/test");
+        }
+
+        // Now attempt to set the sub-node using an unauthorized client.
+        try (CuratorFramework unauthorizedFramework = CuratorFrameworkFactory.builder()
+                .connectString(server.getConnectString())
+                .retryPolicy(new RetryOneTime(1))
+                .aclProvider(aclProvider)
+                .build()) {
+            unauthorizedFramework.start();
+
+            // I overrode the TestModel provided path with a multi-component path under the "/test" parent path
+            // (which was previously created with ACL protection).
+            ModelSpec<TestModel> aclModelSpec = ModelSpec.builder(ZPath.parse("/test/foo/bar"), modelSpec.serializer())
+                    .withCreateOptions(EnumSet.of(CreateOption.createParentsIfNeeded, CreateOption.createParentsAsContainers))
+                    .build();
+
+            ModeledFramework<TestModel> noAuthClient = ModeledFramework.wrap(AsyncCuratorFramework.wrap(unauthorizedFramework), aclModelSpec);
+
+            noAuthClient.set(new TestModel("John", "Galt", "Galt's Gulch", 42, BigInteger.valueOf(66)))
+                    .toCompletableFuture()
+                    .get(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS);
+            fail("expect to throw a NoAuth KeeperException");
+        }
+        catch (ExecutionException | CompletionException e)
+        {
+             assertTrue(e.getCause() instanceof KeeperException.NoAuthException);
         }
     }
 }

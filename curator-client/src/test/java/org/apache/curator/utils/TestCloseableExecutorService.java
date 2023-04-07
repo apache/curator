@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -22,6 +22,7 @@ package org.apache.curator.utils;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -89,11 +90,7 @@ public class TestCloseableExecutorService
         {
             service.submit
             (
-                new Callable<Void>()
-                {
-                    @Override
-                    public Void call() throws Exception
-                    {
+                    (Callable<Void>) () -> {
                         try
                         {
                             startLatch.countDown();
@@ -109,7 +106,6 @@ public class TestCloseableExecutorService
                         }
                         return null;
                     }
-                }
             );
         }
 
@@ -128,11 +124,7 @@ public class TestCloseableExecutorService
         {
             Future<?> future = service.submit
             (
-                new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
+                    () -> {
                         try
                         {
                             startLatch.countDown();
@@ -143,7 +135,6 @@ public class TestCloseableExecutorService
                             Thread.currentThread().interrupt();
                         }
                     }
-                }
             );
             futures.add(future);
         }
@@ -168,11 +159,7 @@ public class TestCloseableExecutorService
         {
             Future<?> future = service.submit
             (
-                new Callable<Void>()
-                {
-                    @Override
-                    public Void call() throws Exception
-                    {
+                    (Callable<Void>) () -> {
                         try
                         {
                             startLatch.countDown();
@@ -184,7 +171,6 @@ public class TestCloseableExecutorService
                         }
                         return null;
                     }
-                }
             );
             futures.add(future);
         }
@@ -204,11 +190,7 @@ public class TestCloseableExecutorService
         final CountDownLatch outsideLatch = new CountDownLatch(1);
         executorService.submit
         (
-            new Runnable()
-            {
-                @Override
-                public void run()
-                {
+                () -> {
                     try
                     {
                         Thread.currentThread().join();
@@ -222,7 +204,6 @@ public class TestCloseableExecutorService
                         outsideLatch.countDown();
                     }
                 }
-            }
         );
 
         CloseableExecutorService service = new CloseableExecutorService(executorService);
@@ -233,10 +214,7 @@ public class TestCloseableExecutorService
             submitRunnable(service, startLatch, latch);
         }
 
-        while ( service.size() < QTY )
-        {
-            Thread.sleep(100);
-        }
+        Awaitility.await().until(()-> service.size() >= QTY);
 
         assertTrue(startLatch.await(3, TimeUnit.SECONDS));
         service.close();
@@ -248,11 +226,7 @@ public class TestCloseableExecutorService
     {
         service.submit
             (
-                new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
+                    () -> {
                         try
                         {
                             startLatch.countDown();
@@ -267,7 +241,6 @@ public class TestCloseableExecutorService
                             latch.countDown();
                         }
                     }
-                }
             );
     }
 }

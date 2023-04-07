@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.imps;
 
 import org.apache.curator.framework.CuratorFramework;
@@ -24,6 +25,7 @@ import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.ZooKeeper;
 import java.util.concurrent.Callable;
+import org.awaitility.Awaitility;
 
 public class TestCleanState
 {
@@ -43,10 +45,8 @@ public class TestCleanState
             EnsembleTracker ensembleTracker = internalClient.getEnsembleTracker();
             if ( ensembleTracker != null )
             {
-                while ( ensembleTracker.hasOutstanding() )
-                {
-                    Thread.sleep(100);
-                }
+                Awaitility.await()
+                        .until(() -> !ensembleTracker.hasOutstanding());
                 ensembleTracker.close();
             }
             ZooKeeper zooKeeper = internalClient.getZooKeeper();

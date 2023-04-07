@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.discovery;
 
 import org.apache.curator.x.discovery.strategies.RoundRobinStrategy;
@@ -68,7 +69,7 @@ public interface ServiceProviderBuilder<T>
 
     /**
      * Add an instance filter. NOTE: this does not remove previously added filters. i.e.
-     * a l;ist is created of all added filters. Filters are called in the order they were
+     * a list is created of all added filters. Filters are called in the order they were
      * added.
      *
      * @param filter filter to add

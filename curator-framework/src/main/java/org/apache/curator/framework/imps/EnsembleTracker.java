@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -42,6 +42,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -179,19 +181,23 @@ public class EnsembleTracker implements Closeable, CuratorWatcher
             {
                 sb.append(",");
             }
-            String hostAddress;
-            if ( server.clientAddr.getAddress().isAnyLocalAddress() )
-            {
-                hostAddress = Compatibility.getHostAddress(server);
-            }
-            else
-            {
-                hostAddress = server.clientAddr.getAddress().getHostAddress();
-            }
-            sb.append(hostAddress).append(":").append(server.clientAddr.getPort());
+            sb.append(getHostString(server)).append(":").append(server.clientAddr.getPort());
         }
 
         return sb.toString();
+    }
+
+    private static String getHostString(QuorumPeer.QuorumServer server) {
+        InetSocketAddress clientAddr = server.clientAddr;
+        InetAddress clientIpAddr = clientAddr.getAddress();
+        if ( clientIpAddr != null && clientIpAddr.isAnyLocalAddress() )
+        {
+            return Compatibility.getHostString(server);
+        }
+        else
+        {
+            return clientAddr.getHostString();
+        }
     }
 
     private void processConfigData(byte[] data) throws Exception

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,10 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.utils;
 
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.admin.ZooKeeperAdmin;
+import org.apache.zookeeper.client.ZKClientConfig;
 
 public interface ZookeeperFactory
 {
@@ -38,4 +41,26 @@ public interface ZookeeperFactory
      * @throws Exception errors
      */
     public ZooKeeper        newZooKeeper(String connectString, int sessionTimeout, Watcher watcher, boolean canBeReadOnly) throws Exception;
+    
+    /**
+     * Allocate a new ZooKeeper instance
+     *
+     *
+     * @param connectString the connection string
+     * @param sessionTimeout session timeout in milliseconds
+     * @param watcher optional watcher
+     * @param canBeReadOnly if true, allow ZooKeeper client to enter
+     *                      read only mode in case of a network partition. See
+     *                      {@link ZooKeeper#ZooKeeper(String, int, Watcher, long, byte[], boolean)}
+     *                      for details
+     * @param zkClientConfig ZooKeeper client config
+     * @return the instance
+     * @throws Exception errors
+     */
+    public default ZooKeeper newZooKeeper(String connectString, int sessionTimeout, Watcher watcher, boolean canBeReadOnly, ZKClientConfig zkClientConfig) throws Exception {
+		if (zkClientConfig == null) {
+			return newZooKeeper(connectString, sessionTimeout, watcher, canBeReadOnly);
+		}
+    	return new ZooKeeperAdmin(connectString, sessionTimeout, watcher, canBeReadOnly, zkClientConfig);
+    }
 }

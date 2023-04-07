@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async.modeled;
 
 import static org.apache.curator.x.async.modeled.ZPath.parameter;
@@ -56,12 +57,15 @@ public class TestZPath
         assertTrue(path.startsWith(ZPath.root.child("one")));
         assertFalse(path.startsWith(ZPath.root.child("two")));
 
+        // Despite these paths containing elements which appear to be parameters, ZPath.parse() always returns
+        // a ZPath which is considered fully resolved.  This allows users to include parameter-like elements in their
+        // ZPath's that aren't treated as parameters.
         ZPath checkIdLike = ZPath.parse("/one/{two}/three");
-        assertTrue(checkIdLike.isResolved());
+        assertTrue(checkIdLike.isResolved(), "parse method always returns a fully resolved ZPath");
         checkIdLike = ZPath.parse("/one/" + ZPath.parameter() + "/three");
-        assertTrue(checkIdLike.isResolved());
+        assertTrue(checkIdLike.isResolved(), "parse method always returns a fully resolved ZPath");
         checkIdLike = ZPath.parse("/one/" + ZPath.parameter("others") + "/three");
-        assertTrue(checkIdLike.isResolved());
+        assertTrue(checkIdLike.isResolved(), "parse method always returns a fully resolved ZPath");
     }
 
     @Test

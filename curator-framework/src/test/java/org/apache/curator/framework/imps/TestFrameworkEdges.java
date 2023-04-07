@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -670,9 +670,13 @@ public class TestFrameworkEdges extends BaseClassForTests
             client.checkExists().forPath("/hey");
             fail();
         }
+        catch ( KeeperException.SessionExpiredException e )
+        {
+            // correct, this happens on ZK 3.6.3+
+        }
         catch ( KeeperException.ConnectionLossException e )
         {
-            // correct
+            // correct, this happens on ZK 3.5.x, 3.6.0 -> 3.6.2
         }
         finally
         {

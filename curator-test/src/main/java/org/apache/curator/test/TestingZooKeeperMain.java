@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -19,6 +19,15 @@
 
 package org.apache.curator.test;
 
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.nio.channels.ServerSocketChannel;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.zookeeper.jmx.MBeanRegistry;
 import org.apache.zookeeper.jmx.ZKMBeanInfo;
 import org.apache.zookeeper.server.ContainerManager;
@@ -31,23 +40,13 @@ import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import javax.management.JMException;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.nio.channels.ServerSocketChannel;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class TestingZooKeeperMain implements ZooKeeperMainFace
 {
     private static final Logger log = LoggerFactory.getLogger(TestingZooKeeperMain.class);
 
     private final CountDownLatch latch = new CountDownLatch(1);
-    private final AtomicReference<Exception> startingException = new AtomicReference<Exception>(null);
+    private final AtomicReference<Exception> startingException = new AtomicReference<>(null);
 
     private volatile ServerCnxnFactory cnxnFactory;
     private volatile TestZooKeeperServer zkServer;
@@ -101,8 +100,7 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
         return zkServer;
     }
 
-    @Override
-    public void runFromConfig(QuorumPeerConfig config) throws Exception
+    private void runFromConfig(QuorumPeerConfig config) throws Exception
     {
         try
         {
@@ -111,7 +109,7 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
             MBeanRegistry nopMBeanRegistry = new MBeanRegistry()
             {
                 @Override
-                public void register(ZKMBeanInfo bean, ZKMBeanInfo parent) throws JMException
+                public void register(ZKMBeanInfo bean, ZKMBeanInfo parent)
                 {
                     // NOP
                 }
@@ -142,9 +140,7 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
         }
     }
 
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    @Override
-    public void blockUntilStarted()
+    private void blockUntilStarted()
     {
         if (!timing.awaitLatch(latch))
         {
@@ -265,6 +261,27 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace
             Thread.currentThread().interrupt();
             log.warn("Server interrupted", e);
         }
+    }
+
+    @Override
+    public void start(QuorumPeerConfigBuilder configBuilder) {
+        new Thread(() -> {
+            try
+            {
+                runFromConfig(configBuilder.buildConfig());
+            }
+            catch ( Exception e )
+            {
+                log.error(String.format("From testing server (random state: %s) for instance: %s", configBuilder.isFromRandom(), configBuilder.getInstanceSpec()), e);
+            }
+        }, "zk-main-thread").start();
+
+        blockUntilStarted();
+    }
+
+    @Override
+    public int getClientPort() {
+        return cnxnFactory == null ? -1 : cnxnFactory.getLocalPort();
     }
 
     public static class TestZooKeeperServer extends ZooKeeperServer

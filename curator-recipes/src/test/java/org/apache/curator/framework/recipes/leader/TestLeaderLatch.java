@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -29,6 +29,11 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import java.io.Closeable;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Objects;
+import java.util.concurrent.ForkJoinPool;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.imps.TestCleanState;
@@ -46,6 +51,7 @@ import org.apache.curator.test.Timing;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.CloseableUtils;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -219,6 +225,209 @@ public class TestLeaderLatch extends BaseClassForTests
     }
 
     @Test
+    public void testResettingOfLeadershipAfterConcurrentLeadershipChange() throws Exception
+    {
+        final String latchPath = "/test";
+        final Timing2 timing = new Timing2();
+        final BlockingQueue<TestEvent> events = Queues.newLinkedBlockingQueue();
+
+        final List<Closeable> closeableResources = new ArrayList<>();
+        try
+        {
+            final String id0 = "id0";
+            final CuratorFramework client0 = createAndStartClient(server.getConnectString(), timing, id0, events);
+            closeableResources.add(client0);
+            final LeaderLatch latch0 = createAndStartLeaderLatch(client0, latchPath, id0, events);
+            closeableResources.add(latch0);
+
+            assertEquals(new TestEvent(id0, TestEventType.GAINED_CONNECTION), events.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
+            assertEquals(new TestEvent(id0, TestEventType.GAINED_LEADERSHIP), events.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
+
+            final String id1 = "id1";
+            final CuratorFramework client1 = createAndStartClient(server.getConnectString(), timing, id1, events);
+            closeableResources.add(client1);
+            final LeaderLatch latch1 = createAndStartLeaderLatch(client1, latchPath, id1, events);
+            closeableResources.add(latch1);
+
+            assertEquals(new TestEvent(id1, TestEventType.GAINED_CONNECTION), events.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
+
+            // wait for the non-leading LeaderLatch (i.e. latch1) instance to be done with its creation
+            // this call is time-consuming but necessary because we don't have a handle to detect the end of the reset call
+            timing.forWaiting().sleepABit();
+
+            assertTrue(latch0.hasLeadership());
+            assertFalse(latch1.hasLeadership());
+
+            latch1.debugResetWaitBeforeNodeDeleteLatch = new CountDownLatch(1);
+            latch1.debugResetWaitLatch = new CountDownLatch(1);
+            latch0.debugResetWaitLatch = new CountDownLatch(1);
+
+            // force latch0 and latch1 reset to trigger the actual test
+            latch0.reset();
+            // latch1 needs to be called within a separate thread since it's going to be blocked by the CountDownLatch outside an async call
+            ForkJoinPool.commonPool().submit(() -> {
+                latch1.reset();
+                return null;
+            });
+
+            // latch0.reset() will result in it losing its leadership, deleting its old child node and creating a new child node before being blocked by its debugResetWaitLatch
+            assertEquals(new TestEvent(id0, TestEventType.LOST_LEADERSHIP), events.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
+            // latch1.reset() is blocked but latch1 will gain leadership due its node watching latch0's node to be deleted
+            assertEquals(new TestEvent(id1, TestEventType.GAINED_LEADERSHIP), events.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
+
+            assertFalse(latch0.hasLeadership());
+            assertTrue(latch1.hasLeadership());
+
+            // latch0.reset() continues with the getChildren call, finds itself not being the leader and starts listening to the node created by latch1
+            latch0.debugResetWaitLatch.countDown();
+            timing.sleepABit();
+
+            // latch1.reset() continues, deletes its old child node and creates a new child node before being blocked by its debugResetWaitLatch
+            latch1.debugResetWaitBeforeNodeDeleteLatch.countDown();
+
+            // latch0 receives NodeDeleteEvent and then finds itself to be the leader
+            assertEquals(new TestEvent(id0, TestEventType.GAINED_LEADERSHIP), events.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
+            assertTrue(latch0.hasLeadership());
+
+            // latch1.reset() continues and finds itself not being the leader
+            latch1.debugResetWaitLatch.countDown();
+            // this call is time-consuming but necessary because we don't have a handle to detect the end of the reset call
+            timing.forWaiting().sleepABit();
+
+            assertTrue(latch0.hasLeadership());
+            assertFalse(latch1.hasLeadership());
+        }
+        finally
+        {
+            // reverse is necessary for closing the LeaderLatch instances before closing the corresponding client
+            Collections.reverse(closeableResources);
+            closeableResources.forEach(CloseableUtils::closeQuietly);
+        }
+    }
+
+    private static CuratorFramework createAndStartClient(String zkConnectString, Timing2 timing, String id, Collection<TestEvent> events) {
+        final CuratorFramework client = CuratorFrameworkFactory.builder()
+            .connectString(zkConnectString)
+            .connectionTimeoutMs(timing.connection())
+            .sessionTimeoutMs(timing.session())
+            .retryPolicy(new RetryOneTime(1))
+            .connectionStateErrorPolicy(new StandardConnectionStateErrorPolicy())
+            .build();
+
+        client.getConnectionStateListenable().addListener((client1, newState) -> {
+            if ( newState == ConnectionState.CONNECTED )
+            {
+                events.add(new TestEvent(id, TestEventType.GAINED_CONNECTION));
+            }
+        });
+
+        client.start();
+
+        return client;
+    }
+
+    private static LeaderLatch createAndStartLeaderLatch(CuratorFramework client, String latchPath, String id, Collection<TestEvent> events) throws Exception
+    {
+        final LeaderLatch latch = new LeaderLatch(client, latchPath, id);
+        latch.addListener(new LeaderLatchListener() {
+            @Override
+            public void isLeader() {
+                events.add(new TestEvent(latch.getId(), TestEventType.GAINED_LEADERSHIP));
+            }
+
+            @Override
+            public void notLeader() {
+                events.add(new TestEvent(latch.getId(), TestEventType.LOST_LEADERSHIP));
+            }
+        });
+        latch.start();
+
+        return latch;
+    }
+
+    private enum TestEventType
+    {
+        GAINED_LEADERSHIP,
+        LOST_LEADERSHIP,
+        GAINED_CONNECTION;
+    }
+
+    private static class TestEvent {
+        private final String id;
+        private final TestEventType eventType;
+
+        public TestEvent(String id, TestEventType eventType)
+        {
+            this.id = id;
+            this.eventType = eventType;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            TestEvent testEvent = (TestEvent) o;
+            return Objects.equals(id, testEvent.id) && eventType == testEvent.eventType;
+        }
+    }
+
+    @Test
+    public void testLeadershipElectionWhenNodeDisappearsAfterChildrenAreRetrieved() throws Exception
+    {
+        final String latchPath = "/foo/bar";
+        final Timing2 timing = new Timing2();
+        final Duration pollInterval = Duration.ofMillis(100);
+        try (CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1)))
+        {
+            client.start();
+            LeaderLatch latchInitialLeader = new LeaderLatch(client, latchPath, "initial-leader");
+            LeaderLatch latchCandidate0 = new LeaderLatch(client, latchPath, "candidate-0");
+            LeaderLatch latchCandidate1 = new LeaderLatch(client, latchPath, "candidate-1");
+
+            try
+            {
+                latchInitialLeader.start();
+
+                // we want to make sure that the leader gets leadership before other instances are going to join the party
+                waitForALeader(Collections.singletonList(latchInitialLeader), new Timing());
+                // candidate #0 will wait for the leader to go away - this should happen after the child nodes are retrieved by candidate #0
+                latchCandidate0.debugCheckLeaderShipLatch = new CountDownLatch(1);
+                latchCandidate0.start();
+
+                final int expectedChildrenAfterCandidate0Joins = 2;
+                Awaitility.await("There should be " + expectedChildrenAfterCandidate0Joins + " child nodes created after candidate #0 joins the leader election.")
+                        .pollInterval(pollInterval)
+                        .pollInSameThread()
+                        .until(() -> client.getChildren().forPath(latchPath).size() == expectedChildrenAfterCandidate0Joins);
+                // no extra CountDownLatch needs to be set here because candidate #1 will rely on candidate #0
+                latchCandidate1.start();
+
+                final int expectedChildrenAfterCandidate1Joins = 3;
+                Awaitility.await("There should be " + expectedChildrenAfterCandidate1Joins + " child nodes created after candidate #1 joins the leader election.")
+                        .pollInterval(pollInterval)
+                        .pollInSameThread()
+                        .until(() -> client.getChildren().forPath(latchPath).size() == expectedChildrenAfterCandidate1Joins);
+
+                // triggers the removal of the corresponding child node after candidate #0 retrieved the children
+                latchInitialLeader.close();
+
+                latchCandidate0.debugCheckLeaderShipLatch.countDown();
+
+                waitForALeader(Arrays.asList(latchCandidate0, latchCandidate1), new Timing());
+
+                assertTrue(latchCandidate0.hasLeadership() ^ latchCandidate1.hasLeadership());
+            }
+            finally
+            {
+                for (LeaderLatch latchToClose : Arrays.asList(latchInitialLeader, latchCandidate0, latchCandidate1))
+                {
+                    latchToClose.closeOnDemand();
+                }
+            }
+        }
+    }
+
+    @Test
     public void testSessionErrorPolicy() throws Exception
     {
         Timing timing = new Timing();
@@ -248,7 +457,8 @@ public class TestLeaderLatch extends BaseClassForTests
                 client.getConnectionStateListenable().addListener(stateListener);
                 client.start();
 
-                latch = new LeaderLatch(client, "/test");
+                final String latchPatch = "/test";
+                latch = new LeaderLatch(client, latchPatch);
                 LeaderLatchListener listener = new LeaderLatchListener()
                 {
                     @Override
@@ -267,6 +477,7 @@ public class TestLeaderLatch extends BaseClassForTests
                 latch.start();
                 assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.CONNECTED.name());
                 assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), "true");
+                final List<String> beforeResetChildren = client.getChildren().forPath(latchPatch);
                 server.stop();
                 if ( isSessionIteration )
                 {
@@ -284,6 +495,8 @@ public class TestLeaderLatch extends BaseClassForTests
                     server.restart();
                     assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.RECONNECTED.name());
                     assertEquals(states.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS), "true");
+                    final List<String> afterResetChildren = client.getChildren().forPath(latchPatch);
+                    assertEquals(beforeResetChildren, afterResetChildren);
                 }
             }
             finally

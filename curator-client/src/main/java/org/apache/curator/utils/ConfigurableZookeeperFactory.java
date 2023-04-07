@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,29 +16,24 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+package org.apache.curator.utils;
 
-import org.apache.curator.test.compatibility.CuratorTestBase;
-import org.apache.curator.utils.Compatibility;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.admin.ZooKeeperAdmin;
+import org.apache.zookeeper.client.ZKClientConfig;
 
-public class TestIs36 extends CuratorTestBase
+/**
+ * Configurable ZookeeperFactory, by using org.apache.zookeeper.client.ZKClientConfig.
+ *
+ */
+public class ConfigurableZookeeperFactory extends DefaultZookeeperFactory
 {
-    @Test
-    @Tag(zk36Group)
-    public void testIsZk36()
+	
+    public ZooKeeper newZooKeeper(String connectString, int sessionTimeout, Watcher watcher, 
+		boolean canBeReadOnly, ZKClientConfig zkClientConfig) throws Exception
     {
-        assertTrue(Compatibility.hasGetReachableOrOneMethod());
-        assertTrue(Compatibility.hasAddrField());
-        assertTrue(Compatibility.hasPersistentWatchers());
-    }
-
-    @Override
-    protected void createServer()
-    {
-        // NOP
+		return new ZooKeeperAdmin(connectString, sessionTimeout, watcher, canBeReadOnly, zkClientConfig);
     }
 }

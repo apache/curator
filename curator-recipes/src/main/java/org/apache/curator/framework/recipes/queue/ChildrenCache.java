@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.queue;
 
 import com.google.common.collect.ImmutableList;
@@ -25,6 +26,9 @@ import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorWatcher;
+import org.apache.curator.framework.state.ConnectionState;
+import org.apache.curator.framework.state.ConnectionStateListener;
+import org.apache.curator.utils.PathUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import java.io.Closeable;
@@ -33,7 +37,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.curator.utils.PathUtils;
 
 class ChildrenCache implements Closeable
 {
@@ -49,7 +52,7 @@ class ChildrenCache implements Closeable
         {
             if ( !isClosed.get() )
             {
-                sync(true);
+                sync();
             }
         }
     };
@@ -62,6 +65,19 @@ class ChildrenCache implements Closeable
             if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
             {
                 setNewChildren(event.getChildren());
+            }
+        }
+    };
+
+    private final ConnectionStateListener connectionStateListener = (__, newState) -> {
+        if ((newState == ConnectionState.CONNECTED) || (newState == ConnectionState.RECONNECTED)) {
+            try
+            {
+                sync();
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException(e);
             }
         }
     };
@@ -86,13 +102,15 @@ class ChildrenCache implements Closeable
 
     void start() throws Exception
     {
-        sync(true);
+        client.getConnectionStateListenable().addListener(connectionStateListener);
+        sync();
     }
 
     @Override
     public void close() throws IOException
     {
         client.removeWatchers();
+        client.getConnectionStateListenable().removeListener(connectionStateListener);
         isClosed.set(true);
         notifyFromCallback();
     }
@@ -137,16 +155,9 @@ class ChildrenCache implements Closeable
         notifyAll();
     }
 
-    private synchronized void sync(boolean watched) throws Exception
+    private synchronized void sync() throws Exception
     {
-        if ( watched )
-        {
-            client.getChildren().usingWatcher(watcher).inBackground(callback).forPath(path);
-        }
-        else
-        {
-            client.getChildren().inBackground(callback).forPath(path);
-        }
+        client.getChildren().usingWatcher(watcher).inBackground(callback).forPath(path);
     }
 
     private synchronized void setNewChildren(List<String> newChildren)

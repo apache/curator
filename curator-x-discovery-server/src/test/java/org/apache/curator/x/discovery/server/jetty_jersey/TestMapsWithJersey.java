@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.discovery.server.jetty_jersey;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,12 +41,12 @@ import org.apache.curator.x.discovery.server.entity.ServiceInstances;
 import org.apache.curator.x.discovery.server.entity.ServiceNames;
 import org.apache.curator.x.discovery.server.mocks.MockServiceDiscovery;
 import org.apache.curator.x.discovery.strategies.RandomStrategy;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mortbay.jetty.Server;
-import org.mortbay.jetty.servlet.Context;
-import org.mortbay.jetty.servlet.ServletHolder;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.MediaType;
 import java.util.Map;
@@ -90,12 +91,16 @@ public class TestMapsWithJersey
                 return singletons;
             }
         };
-        ServletContainer        container = new ServletContainer(application);
+        ServletContainer container = new ServletContainer(application);
 
         port = InstanceSpec.getRandomPort();
         server = new Server(port);
-        Context root = new Context(server, "/", Context.SESSIONS);
-        root.addServlet(new ServletHolder(container), "/*");
+        ServletContextHandler root = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        root.setContextPath("/");
+        final ServletHolder servletHolder = new ServletHolder(container);
+        root.addServlet(servletHolder, "/*");
+        servletHolder.setInitOrder(1);
+        server.setHandler(root);
         server.start();
     }
     

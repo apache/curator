@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,17 +16,20 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.x.async.AsyncCuratorFramework;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 public class TestCompatibility extends CuratorTestBase
 {
     @Test
+    @Tag(zk35TestCompatibilityGroup)
     public void testPersistentWatchesNotAvailable()
     {
         assertThrows(IllegalStateException.class, ()-> {
@@ -38,6 +41,7 @@ public class TestCompatibility extends CuratorTestBase
     }
 
     @Test
+    @Tag(zk35TestCompatibilityGroup)
     public void testPersistentWatchesNotAvailableAsync()
     {
         assertThrows(IllegalStateException.class, ()->{

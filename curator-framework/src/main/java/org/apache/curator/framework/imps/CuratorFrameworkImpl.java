@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -19,9 +19,25 @@
 
 package org.apache.curator.framework.imps;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.DelayQueue;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.apache.curator.CuratorConnectionLossException;
 import org.apache.curator.CuratorZookeeperClient;
 import org.apache.curator.RetryLoop;
@@ -30,7 +46,25 @@ import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.WatcherRemoveCuratorFramework;
-import org.apache.curator.framework.api.*;
+import org.apache.curator.framework.api.ACLProvider;
+import org.apache.curator.framework.api.CompressionProvider;
+import org.apache.curator.framework.api.CreateBuilder;
+import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.framework.api.CuratorEventType;
+import org.apache.curator.framework.api.CuratorListener;
+import org.apache.curator.framework.api.DeleteBuilder;
+import org.apache.curator.framework.api.ExistsBuilder;
+import org.apache.curator.framework.api.GetACLBuilder;
+import org.apache.curator.framework.api.GetChildrenBuilder;
+import org.apache.curator.framework.api.GetConfigBuilder;
+import org.apache.curator.framework.api.GetDataBuilder;
+import org.apache.curator.framework.api.ReconfigBuilder;
+import org.apache.curator.framework.api.RemoveWatchesBuilder;
+import org.apache.curator.framework.api.SetACLBuilder;
+import org.apache.curator.framework.api.SetDataBuilder;
+import org.apache.curator.framework.api.SyncBuilder;
+import org.apache.curator.framework.api.UnhandledErrorListener;
+import org.apache.curator.framework.api.WatchesBuilder;
 import org.apache.curator.framework.api.transaction.CuratorMultiTransaction;
 import org.apache.curator.framework.api.transaction.CuratorTransaction;
 import org.apache.curator.framework.api.transaction.TransactionOp;
@@ -51,17 +85,14 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.client.ZKClientConfig;
 import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
 public class CuratorFrameworkImpl implements CuratorFramework
 {
@@ -108,7 +139,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
     public CuratorFrameworkImpl(CuratorFrameworkFactory.Builder builder)
     {
-        ZookeeperFactory localZookeeperFactory = makeZookeeperFactory(builder.getZookeeperFactory());
+        ZookeeperFactory localZookeeperFactory = makeZookeeperFactory(builder.getZookeeperFactory(), builder.getZkClientConfig());
         this.client = new CuratorZookeeperClient
             (
                 localZookeeperFactory,
@@ -200,23 +231,26 @@ public class CuratorFrameworkImpl implements CuratorFramework
         return (ensembleTracker != null) ? ensembleTracker.getCurrentConfig() : null;
     }
 
-    private ZookeeperFactory makeZookeeperFactory(final ZookeeperFactory actualZookeeperFactory)
+    private ZookeeperFactory makeZookeeperFactory(final ZookeeperFactory actualZookeeperFactory, ZKClientConfig zkClientConfig)
     {
-        return new ZookeeperFactory()
+    	return new ZookeeperFactory()
         {
             @Override
             public ZooKeeper newZooKeeper(String connectString, int sessionTimeout, Watcher watcher, boolean canBeReadOnly) throws Exception
             {
-                ZooKeeper zooKeeper = actualZookeeperFactory.newZooKeeper(connectString, sessionTimeout, watcher, canBeReadOnly);
-                for ( AuthInfo auth : authInfos )
-                {
-                    zooKeeper.addAuthInfo(auth.getScheme(), auth.getAuth());
-                }
-
+                ZooKeeper zooKeeper = actualZookeeperFactory.newZooKeeper(connectString, sessionTimeout, watcher, canBeReadOnly, zkClientConfig);
+                addAuthInfos(zooKeeper);
                 return zooKeeper;
             }
         };
     }
+    
+    private void addAuthInfos(ZooKeeper zooKeeper) {
+		for ( AuthInfo auth: authInfos)
+		{
+		    zooKeeper.addAuthInfo(auth.getScheme(), auth.getAuth());
+		}
+	}
 
     private ThreadFactory getThreadFactory(CuratorFrameworkFactory.Builder builder)
     {
@@ -972,43 +1006,35 @@ public class CuratorFrameworkImpl implements CuratorFramework
             if ( !operationAndData.isConnectionRequired() || client.isConnected() )
             {
                 operationAndData.callPerformBackgroundOperation();
+                return;
+            }
+
+            client.getZooKeeper();  // important - allow connection resets, timeouts, etc. to occur
+            if ( operationAndData.getElapsedTimeMs() < client.getConnectionTimeoutMs() )
+            {
+                sleepAndQueueOperation(operationAndData);
+                return;
+            }
+
+            /*
+             * Fix edge case reported as CURATOR-52. Connection timeout is detected when the initial (or previously failed) connection
+             * cannot be re-established. This needs to be run through the retry policy and callbacks need to get invoked, etc.
+             */
+            WatchedEvent watchedEvent = new WatchedEvent(Watcher.Event.EventType.None, Watcher.Event.KeeperState.Disconnected, null);
+            CuratorEvent event = new CuratorEventImpl(this, CuratorEventType.WATCHED, KeeperException.Code.CONNECTIONLOSS.intValue(), null, null, operationAndData.getContext(), null, null, null, watchedEvent, null, null);
+            if ( checkBackgroundRetry(operationAndData, event) )
+            {
+                queueOperation(operationAndData);
             }
             else
             {
-                client.getZooKeeper();  // important - allow connection resets, timeouts, etc. to occur
-                if ( operationAndData.getElapsedTimeMs() >= client.getConnectionTimeoutMs() )
-                {
-                    throw new CuratorConnectionLossException();
-                }
-                sleepAndQueueOperation(operationAndData);
+                logError("Background retry gave up", new CuratorConnectionLossException());
             }
         }
         catch ( Throwable e )
         {
             ThreadUtils.checkInterrupted(e);
-
-            /**
-             * Fix edge case reported as CURATOR-52. ConnectionState.checkTimeouts() throws KeeperException.ConnectionLossException
-             * when the initial (or previously failed) connection cannot be re-established. This needs to be run through the retry policy
-             * and callbacks need to get invoked, etc.
-             */
-            if ( e instanceof CuratorConnectionLossException )
-            {
-                WatchedEvent watchedEvent = new WatchedEvent(Watcher.Event.EventType.None, Watcher.Event.KeeperState.Disconnected, null);
-                CuratorEvent event = new CuratorEventImpl(this, CuratorEventType.WATCHED, KeeperException.Code.CONNECTIONLOSS.intValue(), null, null, operationAndData.getContext(), null, null, null, watchedEvent, null, null);
-                if ( checkBackgroundRetry(operationAndData, event) )
-                {
-                    queueOperation(operationAndData);
-                }
-                else
-                {
-                    logError("Background retry gave up", e);
-                }
-            }
-            else
-            {
-                handleBackgroundOperationException(operationAndData, e);
-            }
+            handleBackgroundOperationException(operationAndData, e);
         }
     }
 
@@ -1061,4 +1087,5 @@ public class CuratorFrameworkImpl implements CuratorFramework
             }
         });
     }
+	
 }

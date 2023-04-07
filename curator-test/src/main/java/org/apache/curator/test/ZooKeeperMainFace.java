@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,16 +16,16 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.test;
 
-import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 import java.io.Closeable;
 
-public interface ZooKeeperMainFace extends Closeable
+interface ZooKeeperMainFace extends Closeable
 {
-    void runFromConfig(QuorumPeerConfig config) throws Exception;
-
-    void blockUntilStarted();
+    void start(QuorumPeerConfigBuilder configBuilder);
 
     void kill();
+
+    int getClientPort() throws Exception;
 }

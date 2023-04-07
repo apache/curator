@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -17,7 +17,6 @@
  * under the License.
  */
 
-
 package org.apache.curator.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,6 +34,8 @@ public class TestTestingServer {
 
    @Test
    public void setCustomTickTimeTest() throws Exception {
+      TestingZooKeeperServer.hasZooKeeperServerEmbedded = false;
+
       final int defaultZkTickTime = ZooKeeperServer.DEFAULT_TICK_TIME;
       final int customTickMs;
       if (defaultZkTickTime > 0) {

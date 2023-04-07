@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -101,7 +101,7 @@ public class TestingServer implements Closeable
      */
     public TestingServer(int port, File tempDirectory, boolean start) throws Exception
     {
-        this(new InstanceSpec(tempDirectory, port, -1, -1, true, -1), start);
+        this(new InstanceSpec(tempDirectory, Math.max(0, port), -1, -1, true, -1), start);
     }
 
     /**
@@ -123,13 +123,18 @@ public class TestingServer implements Closeable
     }
 
     /**
-     * Return the port being used
+     * Return the port being used or will be used.
      *
      * @return port
+     * @throws IllegalStateException if server is configured to bind to port 0 but not started
      */
     public int getPort()
     {
-        return spec.getPort();
+        int port = spec.getPort();
+        if (port > 0) {
+            return port;
+        }
+        return testingZooKeeperServer.getLocalPort();
     }
 
     /**
@@ -186,9 +191,9 @@ public class TestingServer implements Closeable
      * Returns the connection string to use
      *
      * @return connection string
+     * @throws IllegalStateException if server is configured to bind to port 0 but not started
      */
-    public String getConnectString()
-    {
-        return spec.getConnectString();
+    public String getConnectString() {
+        return spec.getHostname() + ":" + getPort();
     }
 }

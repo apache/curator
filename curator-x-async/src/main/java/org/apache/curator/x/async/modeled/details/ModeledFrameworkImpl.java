@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async.modeled.details;
 
 import com.google.common.base.Preconditions;
@@ -33,6 +34,7 @@ import org.apache.curator.x.async.WatchMode;
 import org.apache.curator.x.async.api.AsyncCuratorFrameworkDsl;
 import org.apache.curator.x.async.api.AsyncPathAndBytesable;
 import org.apache.curator.x.async.api.AsyncPathable;
+import org.apache.curator.x.async.api.AsyncSetDataBuilder;
 import org.apache.curator.x.async.api.AsyncTransactionSetDataBuilder;
 import org.apache.curator.x.async.api.CreateOption;
 import org.apache.curator.x.async.api.WatchableAsyncCuratorFramework;
@@ -205,7 +207,8 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
         try
         {
             byte[] bytes = modelSpec.serializer().serialize(item);
-            AsyncPathAndBytesable<AsyncStage<Stat>> next = isCompressed() ? dslClient.setData().compressedWithVersion(version) : dslClient.setData();
+            AsyncSetDataBuilder dataBuilder = dslClient.setData();
+            AsyncPathAndBytesable<AsyncStage<Stat>> next = isCompressed() ? dataBuilder.compressedWithVersion(version) : dataBuilder.withVersion(version);
             return next.forPath(resolveForSet(item), bytes);
         }
         catch ( Exception e )
@@ -229,7 +232,7 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T>
     @Override
     public AsyncStage<Void> delete(int version)
     {
-        return dslClient.delete().withVersion(version).forPath(modelSpec.path().fullPath());
+        return dslClient.delete().withOptionsAndVersion(modelSpec.deleteOptions(), version).forPath(modelSpec.path().fullPath());
     }
 
     @Override

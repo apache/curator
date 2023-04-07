@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -97,6 +97,34 @@ public class QuorumConfigBuilder implements Closeable
 
     public QuorumPeerConfig buildConfig(int instanceIndex) throws Exception
     {
+        InstanceSpec spec = instanceSpecs.get(instanceIndex);
+        return buildConfig(instanceIndex, spec.getPort());
+    }
+
+    public QuorumPeerConfig buildConfig(int instanceIndex, int instancePort) throws Exception
+    {
+        Properties properties = buildConfigProperties(instanceIndex, instancePort);
+        QuorumPeerConfig config = new QuorumPeerConfig()
+        {
+            {
+                if ( fakeConfigFile != null )
+                {
+                    configFileStr = fakeConfigFile.getPath();
+                }
+            }
+        };
+        config.parseProperties(properties);
+        return config;
+    }
+
+    public Properties buildConfigProperties(int instanceIndex) throws Exception
+    {
+        InstanceSpec spec = instanceSpecs.get(instanceIndex);
+        return buildConfigProperties(instanceIndex, spec.getPort());
+    }
+
+    public Properties buildConfigProperties(int instanceIndex, int instancePort) throws Exception
+    {
         boolean isCluster = (instanceSpecs.size() > 1);
         InstanceSpec spec = instanceSpecs.get(instanceIndex);
 
@@ -106,10 +134,13 @@ public class QuorumConfigBuilder implements Closeable
         }
 
         Properties properties = new Properties();
+        String localSessionsEnabled = System.getProperty("readonlymode.enabled", "false");
+        properties.setProperty("localSessionsEnabled", localSessionsEnabled);
+        properties.setProperty("localSessionsUpgradingEnabled", localSessionsEnabled);
         properties.setProperty("initLimit", "10");
         properties.setProperty("syncLimit", "5");
         properties.setProperty("dataDir", spec.getDataDirectory().getCanonicalPath());
-        properties.setProperty("clientPort", Integer.toString(spec.getPort()));
+        properties.setProperty("clientPort", Integer.toString(instancePort));
         String tickTime = Integer.toString((spec.getTickTime() >= 0) ? spec.getTickTime() : new Timing2().tickTime());
         properties.setProperty("tickTime", tickTime);
         properties.setProperty("minSessionTimeout", tickTime);
@@ -123,26 +154,19 @@ public class QuorumConfigBuilder implements Closeable
         {
             for ( InstanceSpec thisSpec : instanceSpecs )
             {
-                properties.setProperty("server." + thisSpec.getServerId(), String.format("%s:%d:%d;%s:%d", thisSpec.getHostname(), thisSpec.getQuorumPort(), thisSpec.getElectionPort(), thisSpec.getHostname(), thisSpec.getPort()));
+                int clientPort = thisSpec == spec ? instancePort : thisSpec.getPort();
+                properties.setProperty("server." + thisSpec.getServerId(), String.format("%s:%d:%d;%s:%d", thisSpec.getHostname(), thisSpec.getQuorumPort(), thisSpec.getElectionPort(), thisSpec.getHostname(), clientPort));
             }
         }
         Map<String,Object> customProperties = spec.getCustomProperties();
         if (customProperties != null) {
-            for (Map.Entry<String,Object> property : customProperties.entrySet()) {
-                properties.put(property.getKey(), property.getValue());
-            }
+            properties.putAll(customProperties);
         }
 
-        QuorumPeerConfig config = new QuorumPeerConfig()
-        {
-            {
-                if ( fakeConfigFile != null )
-                {
-                    configFileStr = fakeConfigFile.getPath();
-                }
-            }
-        };
-        config.parseProperties(properties);
-        return config;
+        return properties;
+    }
+
+    public QuorumPeerConfigBuilder bindInstance(int instanceIndex, int instancePort) {
+        return new QuorumPeerConfigBuilder(this, instanceIndex, instancePort);
     }
 }

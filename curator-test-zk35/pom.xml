@@ -1,4 +1,6 @@
-<?xml version="1.0" encoding="UTF-8"?><!--
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
     Licensed to the Apache Software Foundation (ASF) under one
     or more contributor license agreements.  See the NOTICE file
     distributed with this work for additional information
@@ -15,12 +17,14 @@
     KIND, either express or implied.  See the License for the
     specific language governing permissions and limitations
     under the License.
-  -->
+
+-->
+
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <groupId>org.apache.curator</groupId>
         <artifactId>apache-curator</artifactId>
-        <version>5.1.1-SNAPSHOT</version>
+        <version>5.5.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -166,6 +170,12 @@
             <artifactId>slf4j-log4j12</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -195,7 +205,7 @@
                         <dependency>org.apache.curator:curator-recipes</dependency>
                     </dependenciesToScan>
                     <groups>zk35TestCompatibility</groups>
-                    <excludedGroups>zk36</excludedGroups>
+                    <excludedGroups>zk36,zk37</excludedGroups>
                 </configuration>
             </plugin>
         </plugins>

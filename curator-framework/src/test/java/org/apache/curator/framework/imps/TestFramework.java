@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.imps;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -25,7 +26,16 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import com.google.common.collect.Lists;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -50,26 +60,24 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.client.ZKClientConfig;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
+import com.google.common.collect.Lists;
 
 @SuppressWarnings("deprecation")
 @Tag(CuratorTestBase.zk35TestCompatibilityGroup)
 public class TestFramework extends BaseClassForTests
 {
+	private final Logger log = LoggerFactory.getLogger(getClass());
+	
     @BeforeEach
     @Override
     public void setup() throws Exception
@@ -1073,7 +1081,41 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
-            CloseableUtils.closeQuietly(client);
+        	CloseableUtils.closeQuietly(client);
+        }
+    }
+    
+    @Test
+    public void testConfigurableZookeeper() throws Exception
+    {
+    	CuratorFramework client = null;
+        try
+        {
+        	ZKClientConfig zkClientConfig = new ZKClientConfig();
+    		String zookeeperRequestTimeout = "30000";
+    		zkClientConfig.setProperty(ZKClientConfig.ZOOKEEPER_REQUEST_TIMEOUT, zookeeperRequestTimeout);
+    		client = CuratorFrameworkFactory.newClient(server.getConnectString(), 30000, 30000, new RetryOneTime(1), zkClientConfig);
+            client.start();
+        	
+            byte[] writtenBytes = {1, 2, 3};
+            client.create().forPath("/test", writtenBytes);
+
+            byte[] readBytes = client.getData().forPath("/test");
+            assertArrayEquals(writtenBytes, readBytes);
+            assertEquals(zookeeperRequestTimeout, client.getZookeeperClient().getZooKeeper().getClientConfig().getProperty(ZKClientConfig.ZOOKEEPER_REQUEST_TIMEOUT));
+
+        } catch (NoSuchMethodError e) {
+            log.debug("NoSuchMethodError: ", e);
+            log.info("Got NoSuchMethodError, meaning probably this cannot be used with ZooKeeper version < 3.6.1");
+		}
+        finally
+        {
+        	try {
+				CloseableUtils.closeQuietly(client);
+			} catch (NoSuchMethodError e) {
+				log.debug("close: NoSuchMethodError: ", e);
+				log.info("close: Got NoSuchMethodError, meaning probably this cannot be used with ZooKeeper version < 3.6.1");
+			}
         }
     }
 

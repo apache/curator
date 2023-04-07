@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -27,6 +27,7 @@ import org.apache.zookeeper.server.ByteBufferInputStream;
 import org.apache.zookeeper.server.NIOServerCnxnFactory;
 import org.apache.zookeeper.server.Request;
 import org.apache.zookeeper.server.ZooKeeperServer;
+import org.apache.zookeeper.server.ZooKeeperServerShutdownHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
@@ -76,10 +77,6 @@ public class ChaosMonkeyCnxnFactory extends NIOServerCnxnFactory
             {
                 ((TestingZooKeeperMain.TestZooKeeperServer)zks).noteStartup();
             }
-            else
-            {
-                throw new RuntimeException("Unknown ZooKeeperServer: " + zks.getClass());
-            }
         }
 
         @Override
@@ -122,6 +119,11 @@ public class ChaosMonkeyCnxnFactory extends NIOServerCnxnFactory
                     Compatibility.serverCnxnClose(si.cnxn);
                 }
             }
+        }
+
+        @Override
+        public ZooKeeperServerShutdownHandler getZkShutdownHandler() {
+            return zks.getZkShutdownHandler();
         }
     }
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,12 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.nodes;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -31,6 +34,7 @@ import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.Timing;
 import org.apache.curator.test.compatibility.CuratorTestBase;
+import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.ZKPaths;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -113,6 +117,44 @@ public class TestPersistentTtlNode extends CuratorTestBase
 
                 timing.sleepABit();
                 assertNotNull(client.checkExists().forPath("/test"));
+            }
+        }
+    }
+
+    @Test
+    public void testRecreationOfParentNodeWithParentCreationOff() throws Exception
+    {
+        final byte[] TEST_DATA = "hey".getBytes();
+        Timing2 timing = new Timing2();
+        String containerPath = ZKPaths.makePath("test", "one", "two");
+        String childPath = ZKPaths.makePath("test", "one", "two", PersistentTtlNode.DEFAULT_CHILD_NODE_NAME);
+
+        try (CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1)))
+        {
+            client.start();
+            client.create().creatingParentsIfNeeded().forPath("/test/one");
+
+            try (PersistentTtlNode node = new PersistentTtlNode(client, containerPath, ttlMs, TEST_DATA, false))
+            {
+                node.start();
+                assertTrue(node.waitForInitialCreate(timing.milliseconds(), TimeUnit.MILLISECONDS));
+
+                Thread.sleep(ttlMs + (ttlMs / 2));
+                assertNotNull(client.checkExists().forPath(containerPath));
+                assertNotNull(client.checkExists().forPath(childPath));
+
+
+                client.delete().deletingChildrenIfNeeded().forPath("/test/one");
+                timing.sleepABit();
+
+                // The underlying persistent node should not be able to recreate itself as the lazy parent creation is disabled
+                assertNull(client.checkExists().forPath(containerPath));
+                assertNull(client.checkExists().forPath(childPath));
+
+                assertThrows(IllegalStateException.class, () -> node.setData(new byte[0]));
+
+                // The underlying persistent node data should still be the initial one
+                assertArrayEquals(TEST_DATA, node.getData());
             }
         }
     }

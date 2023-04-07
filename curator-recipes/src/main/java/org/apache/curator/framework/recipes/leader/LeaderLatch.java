@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -70,6 +70,7 @@ public class LeaderLatch implements Closeable
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
     private final AtomicBoolean hasLeadership = new AtomicBoolean(false);
     private final AtomicReference<String> ourPath = new AtomicReference<String>();
+    private final AtomicReference<String> lastPathIsLeader = new AtomicReference<String>();
     private final StandardListenerManager<LeaderLatchListener> listeners = StandardListenerManager.standard();
     private final CloseMode closeMode;
     private final AtomicReference<Future<?>> startTask = new AtomicReference<Future<?>>();
@@ -189,6 +190,12 @@ public class LeaderLatch implements Closeable
         close(closeMode);
     }
 
+    @VisibleForTesting
+    void closeOnDemand() throws IOException
+    {
+        internalClose(closeMode, false);
+    }
+
     /**
      * Remove this instance from the leadership election. If this instance is the leader, leadership
      * is released. IMPORTANT: the only way to release leadership is by calling close(). All LeaderLatch
@@ -197,9 +204,25 @@ public class LeaderLatch implements Closeable
      * @param closeMode allows the default close mode to be overridden at the time the latch is closed.
      * @throws IOException errors
      */
-    public synchronized void close(CloseMode closeMode) throws IOException
+    public void close(CloseMode closeMode) throws IOException
     {
-        Preconditions.checkState(state.compareAndSet(State.STARTED, State.CLOSED), "Already closed or has not been started");
+        internalClose(closeMode, true);
+    }
+
+    private synchronized void internalClose(CloseMode closeMode, boolean failOnClosed) throws IOException
+    {
+        if (!state.compareAndSet(State.STARTED, State.CLOSED))
+        {
+            if (failOnClosed)
+            {
+                throw new IllegalStateException("Already closed or has not been started");
+            }
+            else
+            {
+                return;
+            }
+        }
+
         Preconditions.checkNotNull(closeMode, "closeMode cannot be null");
 
         cancelStartTask();
@@ -486,6 +509,11 @@ public class LeaderLatch implements Closeable
      * returned is not guaranteed to be valid at any point in the future as internal
      * state changes might require the instance to delete and create a new path.
      *
+     * However, the existence of <code>ourPath</code> doesn't mean that this instance
+     * holds leadership.
+     *
+     * @see #getLastPathIsLeader
+     *
      * @return lock node path or <code>null</code>
      */
     public String getOurPath()
@@ -493,13 +521,36 @@ public class LeaderLatch implements Closeable
         return ourPath.get();
     }
 
+    /**
+     * Return last of this instance's lock node path that was leader ever.
+     * IMPORTANT: this instance owns the path returned. This method is meant for reference only.
+     * Also, it is possible for <code>null</code> to be returned (for this instance never becomes
+     * a leader). The path, if any, returned is not guaranteed to be valid at any point in the future
+     * as internal state changes might require the instance to delete the path.
+     *
+     * The existence of <code>lastPathIsLeader</code> means that this instance holds leadership.
+     *
+     * @return last lock node path that was leader ever or <code>null</code>
+     */
+    public String getLastPathIsLeader()
+    {
+        return lastPathIsLeader.get();
+    }
+
     @VisibleForTesting
     volatile CountDownLatch debugResetWaitLatch = null;
+
+    @VisibleForTesting
+    volatile CountDownLatch debugResetWaitBeforeNodeDeleteLatch = null;
 
     @VisibleForTesting
     void reset() throws Exception
     {
         setLeadership(false);
+        if ( debugResetWaitBeforeNodeDeleteLatch != null )
+        {
+            debugResetWaitBeforeNodeDeleteLatch.await();
+        }
         setNode(null);
 
         BackgroundCallback callback = new BackgroundCallback()
@@ -564,6 +615,9 @@ public class LeaderLatch implements Closeable
         final String localOurPath = ourPath.get();
         List<String> sortedChildren = LockInternals.getSortedChildren(LOCK_NAME, sorter, children);
         int ourIndex = (localOurPath != null) ? sortedChildren.indexOf(ZKPaths.getNodeFromPath(localOurPath)) : -1;
+
+        log.debug("checkLeadership with id: {}, ourPath: {}, children: {}", id, localOurPath, sortedChildren);
+
         if ( ourIndex < 0 )
         {
             log.error("Can't find our node. Resetting. Index: " + ourIndex);
@@ -571,17 +625,19 @@ public class LeaderLatch implements Closeable
         }
         else if ( ourIndex == 0 )
         {
+            lastPathIsLeader.set(localOurPath);
             setLeadership(true);
         }
         else
         {
+            setLeadership(false);
             String watchPath = sortedChildren.get(ourIndex - 1);
             Watcher watcher = new Watcher()
             {
                 @Override
                 public void process(WatchedEvent event)
                 {
-                    if ( (state.get() == State.STARTED) && (event.getType() == Event.EventType.NodeDeleted) && (localOurPath != null) )
+                    if ( state.get() == State.STARTED && event.getType() == Event.EventType.NodeDeleted )
                     {
                         try
                         {
@@ -603,8 +659,8 @@ public class LeaderLatch implements Closeable
                 {
                     if ( event.getResultCode() == KeeperException.Code.NONODE.intValue() )
                     {
-                        // previous node is gone - reset
-                        reset();
+                        // previous node is gone - retry getChildren
+                        getChildren();
                     }
                 }
             };
@@ -646,7 +702,7 @@ public class LeaderLatch implements Closeable
                 {
                     if ( client.getConnectionStateErrorPolicy().isErrorState(ConnectionState.SUSPENDED) || !hasLeadership.get() )
                     {
-                        reset();
+                        getChildren();
                     }
                 }
                 catch ( Exception e )
@@ -678,7 +734,6 @@ public class LeaderLatch implements Closeable
     private synchronized void setLeadership(boolean newValue)
     {
         boolean oldValue = hasLeadership.getAndSet(newValue);
-
         if ( oldValue && !newValue )
         { // Lost leadership, was true, now false
             listeners.forEach(LeaderLatchListener::notLeader);
@@ -694,6 +749,7 @@ public class LeaderLatch implements Closeable
     private void setNode(String newValue) throws Exception
     {
         String oldPath = ourPath.getAndSet(newValue);
+        log.debug("setNode with id: {}, oldPath: {}, newValue: {}", id, oldPath, newValue);
         if ( oldPath != null )
         {
             client.delete().guaranteed().inBackground().forPath(oldPath);

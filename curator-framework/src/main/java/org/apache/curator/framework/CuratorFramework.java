@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -290,7 +290,7 @@ public interface CuratorFramework extends Closeable
 
     /**
      * Block until a connection to ZooKeeper is available or the maxWaitTime has been exceeded
-     * @param maxWaitTime The maximum wait time. Specify a value &lt;= 0 to wait indefinitely
+     * @param maxWaitTime The maximum wait time. Specify a value &lt;= 0 to return immediately
      * @param units The time units for the maximum wait time.
      * @return True if connection has been established, false otherwise.
      * @throws InterruptedException If interrupted while waiting

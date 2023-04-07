@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.locks;
 
 import com.google.common.base.Predicate;
@@ -55,8 +56,8 @@ import java.util.List;
  */
 public class InterProcessReadWriteLock
 {
-    private final InterProcessMutex readMutex;
-    private final InterProcessMutex writeMutex;
+    private final ReadLock readMutex;
+    private final WriteLock writeMutex;
 
     // must be the same length. LockInternals depends on it
     private static final String READ_LOCK_NAME  = "__READ__";
@@ -82,32 +83,98 @@ public class InterProcessReadWriteLock
         {
             super(client, path, lockName, maxLeases, driver);
             this.lockName = lockName;
-            this.lockData = lockData;
+            this.lockData = (lockData == null) ? null : Arrays.copyOf(lockData, lockData.length);
         }
 
         @Override
-        public Collection<String> getParticipantNodes() throws Exception
+        final public Collection<String> getParticipantNodes() throws Exception
         {
-            Collection<String>  nodes = super.getParticipantNodes();
-            Iterable<String>    filtered = Iterables.filter
-            (
-                nodes,
-                new Predicate<String>()
-                {
-                    @Override
-                    public boolean apply(String node)
-                    {
-                        return node.contains(lockName);
-                    }
+            return ImmutableList.copyOf(Iterables.filter(super.getParticipantNodes(), new Predicate<String>() {
+                @Override
+                public boolean apply(String node) {
+                    return node.contains(lockName);
                 }
-            );
-            return ImmutableList.copyOf(filtered);
+            }));
         }
 
         @Override
-        protected byte[] getLockNodeBytes()
+        final protected byte[] getLockNodeBytes()
         {
             return lockData;
+        }
+
+        @Override
+        protected String getLockPath()
+        {
+            return super.getLockPath();
+        }
+    }
+
+    public static class WriteLock extends InternalInterProcessMutex
+    {
+        public WriteLock(CuratorFramework client, String basePath, byte[] lockData)
+        {
+            super(client, basePath, WRITE_LOCK_NAME, lockData, 1, new SortingLockInternalsDriver());
+        }
+
+        @Override
+        public String getLockPath()
+        {
+            return super.getLockPath();
+        }
+    }
+
+    public static class ReadLock extends InternalInterProcessMutex {
+        public ReadLock(CuratorFramework client, String basePath, byte[] lockData, WriteLock writeLock)
+        {
+            super(client, basePath, READ_LOCK_NAME, lockData, Integer.MAX_VALUE, new SortingLockInternalsDriver() {
+                @Override
+                protected String getSortingSequence() {
+                    String writePath = writeLock.getLockPath();
+                    if (writePath != null) {
+                        return fixForSorting(writePath, WRITE_LOCK_NAME);
+                    }
+                    return null;
+                }
+
+                @Override
+                public PredicateResults getsTheLock(
+                    CuratorFramework client,
+                    List<String> children,
+                    String sequenceNodeName,
+                    int maxLeases
+                ) throws Exception {
+                    if (writeLock.isOwnedByCurrentThread()) {
+                        return new PredicateResults(null, true);
+                    }
+
+                    int index = 0;
+                    int firstWriteIndex = Integer.MAX_VALUE;
+                    int ourIndex = -1;
+                    for (String node : children) {
+                        if (node.contains(WRITE_LOCK_NAME)) {
+                            firstWriteIndex = Math.min(index, firstWriteIndex);
+                        } else if (node.startsWith(sequenceNodeName)) {
+                            ourIndex = index;
+                            break;
+                        }
+
+                        ++index;
+                    }
+
+                    validateOurIndex(sequenceNodeName, ourIndex);
+
+                    boolean getsTheLock = (ourIndex < firstWriteIndex);
+                    String pathToWatch = getsTheLock ? null : children.get(firstWriteIndex);
+                    return new PredicateResults(pathToWatch, getsTheLock);
+                }
+            });
+        }
+
+        @Override
+        public String getLockPath()
+        {
+            return super.getLockPath();
         }
     }
 
@@ -127,41 +194,14 @@ public class InterProcessReadWriteLock
     */
     public InterProcessReadWriteLock(CuratorFramework client, String basePath, byte[] lockData)
     {
-        lockData = (lockData == null) ? null : Arrays.copyOf(lockData, lockData.length);
+        this.writeMutex = new WriteLock(client, basePath, lockData);
+        this.readMutex = new ReadLock(client, basePath, lockData, writeMutex);
+    }
 
-        writeMutex = new InternalInterProcessMutex
-        (
-            client,
-            basePath,
-            WRITE_LOCK_NAME,
-            lockData,
-            1,
-            new SortingLockInternalsDriver()
-            {
-                @Override
-                public PredicateResults getsTheLock(CuratorFramework client, List<String> children, String sequenceNodeName, int maxLeases) throws Exception
-                {
-                    return super.getsTheLock(client, children, sequenceNodeName, maxLeases);
-                }
-            }
-        );
-
-        readMutex = new InternalInterProcessMutex
-        (
-            client,
-            basePath,
-            READ_LOCK_NAME,
-            lockData,
-            Integer.MAX_VALUE,
-            new SortingLockInternalsDriver()
-            {
-                @Override
-                public PredicateResults getsTheLock(CuratorFramework client, List<String> children, String sequenceNodeName, int maxLeases) throws Exception
-                {
-                    return readLockPredicate(children, sequenceNodeName);
-                }
-            }
-        );
+    protected InterProcessReadWriteLock(WriteLock writeLock, ReadLock readLock)
+    {
+        this.writeMutex = writeLock;
+        this.readMutex = readLock;
     }
 
     /**
@@ -169,7 +209,7 @@ public class InterProcessReadWriteLock
      *
      * @return read lock
      */
-    public InterProcessMutex     readLock()
+    public ReadLock readLock()
     {
         return readMutex;
     }
@@ -179,40 +219,8 @@ public class InterProcessReadWriteLock
      *
      * @return write lock
      */
-    public InterProcessMutex     writeLock()
+    public WriteLock writeLock()
     {
         return writeMutex;
-    }
-
-    private PredicateResults readLockPredicate(List<String> children, String sequenceNodeName) throws Exception
-    {
-        if ( writeMutex.isOwnedByCurrentThread() )
-        {
-            return new PredicateResults(null, true);
-        }
-
-        int         index = 0;
-        int         firstWriteIndex = Integer.MAX_VALUE;
-        int         ourIndex = -1;
-        for ( String node : children )
-        {
-            if ( node.contains(WRITE_LOCK_NAME) )
-            {
-                firstWriteIndex = Math.min(index, firstWriteIndex);
-            }
-            else if ( node.startsWith(sequenceNodeName) )
-            {
-                ourIndex = index;
-                break;
-            }
-
-            ++index;
-        }
-
-        StandardLockInternalsDriver.validateOurIndex(sequenceNodeName, ourIndex);
-
-        boolean     getsTheLock = (ourIndex < firstWriteIndex);
-        String      pathToWatch = getsTheLock ? null : children.get(firstWriteIndex);
-        return new PredicateResults(pathToWatch, getsTheLock);
     }
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -21,6 +21,8 @@ package org.apache.curator.utils;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
+import java.util.Collections;
+import java.util.List;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
@@ -28,8 +30,6 @@ import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.ACL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.Collections;
-import java.util.List;
 
 public class ZKPaths
 {
@@ -228,7 +228,7 @@ public class ZKPaths
     /**
      * Extracts the ten-digit suffix from a sequential znode path. Does not currently perform validation on the
      * provided path; it will just return a string comprising the last ten characters.
-     * 
+     *
      * @param path the path of a sequential znodes
      * @return the sequential suffix
      */
@@ -350,7 +350,7 @@ public class ZKPaths
                     }
                     zookeeper.create(subPath, new byte[0], acl, getCreateMode(asContainers));
                 }
-                catch ( KeeperException.NodeExistsException e )
+                catch (KeeperException.NodeExistsException ignore)
                 {
                     // ignore... someone else has created it since we checked
                 }

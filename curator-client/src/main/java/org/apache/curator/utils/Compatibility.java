@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -88,7 +88,7 @@ public class Compatibility
         return (addrField != null);
     }
 
-    public static String getHostAddress(QuorumPeer.QuorumServer server)
+    public static String getHostString(QuorumPeer.QuorumServer server)
     {
         InetSocketAddress address = null;
         if ( getReachableOrOneMethod != null )
@@ -113,7 +113,7 @@ public class Compatibility
                 log.error("Could not call addrField.get({})", server, e);
             }
         }
-        return (address != null) ? address.getAddress().getHostAddress() : "unknown";
+        return address != null ? address.getHostString() : "unknown";
     }
 
     public static boolean hasPersistentWatchers()

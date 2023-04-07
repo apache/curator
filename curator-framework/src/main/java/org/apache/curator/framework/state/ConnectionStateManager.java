@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -76,6 +76,8 @@ public class ConnectionStateManager implements Closeable
     private ConnectionState currentConnectionState;
 
     private volatile long startOfSuspendedEpoch = 0;
+
+    private volatile long lastExpiredInstanceIndex = -1;
 
     private enum State
     {
@@ -318,7 +320,13 @@ public class ConnectionStateManager implements Closeable
                 log.warn(String.format("Session timeout has elapsed while SUSPENDED. Injecting a session expiration. Elapsed ms: %d. Adjusted session timeout ms: %d", elapsedMs, useSessionTimeoutMs));
                 try
                 {
-                    client.getZookeeperClient().getZooKeeper().getTestable().injectSessionExpiration();
+                    if (lastExpiredInstanceIndex == client.getZookeeperClient().getInstanceIndex()) {
+                        // last expiration didn't work for this instance, so event thread is dead and a reset is needed. CURATOR-561
+                        client.getZookeeperClient().reset();
+                    } else {
+                        lastExpiredInstanceIndex = client.getZookeeperClient().getInstanceIndex();
+                        client.getZookeeperClient().getZooKeeper().getTestable().injectSessionExpiration();
+                    }
                 }
                 catch ( Exception e )
                 {
