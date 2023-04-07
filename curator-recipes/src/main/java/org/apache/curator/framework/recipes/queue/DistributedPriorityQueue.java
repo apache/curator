@@ -25,22 +25,27 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.listen.Listenable;
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 /**
- * <p>An implementation of the Distributed Priority Queue ZK recipe.</p>
- * <p>Internally, this uses a {@link DistributedQueue}. The only difference is that you specify a
- * priority when putting into the queue.</p>
- * <p>IMPORTANT NOTE: The priority queue will perform far worse than a standard queue. Every time an
- * item is added to/removed from the queue, every watcher must re-get all the nodes</p>
+ * <p>
+ *     A variation of the DistributedPriorityQueue that uses time as the priority. When items
+ *     are added to the queue, a delay value is given. The item will not be sent to a consumer
+ *     until the time elapses.
+ * </p>
  */
-public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T>
+public class DistributedDelayQueue<T> implements Closeable, QueueBase<T>
 {
     private final DistributedQueue<T>      queue;
 
-    DistributedPriorityQueue
+    private static final char              SEPARATOR = '|';
+
+    DistributedDelayQueue
         (
             CuratorFramework client,
             QueueConsumer<T> consumer,
@@ -71,7 +76,39 @@ public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T>
             maxItems,
             putInBackground,
             finalFlushMs
-        );
+        )
+        {
+            @Override
+            protected long getDelay(String itemNode)
+            {
+                return getDelay(itemNode, System.currentTimeMillis());
+            }
+            
+            private long getDelay(String itemNode, long sortTime)
+            {               
+                long epoch = getEpoch(itemNode);
+                return epoch - sortTime;
+            }
+
+            @Override
+            protected void sortChildren(List<String> children)
+            {
+                final long sortTime = System.currentTimeMillis();
+                Collections.sort
+                (
+                    children,
+                    new Comparator<String>()
+                    {
+                        @Override
+                        public int compare(String o1, String o2)
+                        {
+                            long        diff = getDelay(o1, sortTime) - getDelay(o2, sortTime);
+                            return (diff < 0) ? -1 : ((diff > 0) ? 1 : 0);
+                        }
+                    }
+                );
+            }
+        };
     }
 
     /**
@@ -98,31 +135,32 @@ public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T>
      * block until there is available space in the queue.
      *
      * @param item item to add
-     * @param priority item's priority - lower numbers come out of the queue first
+     * @param delayUntilEpoch future epoch (milliseconds) when this item will be available to consumers
      * @throws Exception connection issues
      */
-    public void     put(T item, int priority) throws Exception
+    public void     put(T item, long delayUntilEpoch) throws Exception
     {
-        put(item, priority, 0, null);
+        put(item, delayUntilEpoch, 0, null);
     }
 
     /**
-     * Same as {@link #put(Object, int)} but allows a maximum wait time if an upper bound was set
+     * Same as {@link #put(Object, long)} but allows a maximum wait time if an upper bound was set
      * via {@link QueueBuilder#maxItems}.
      *
      * @param item item to add
-     * @param priority item's priority - lower numbers come out of the queue first
+     * @param delayUntilEpoch future epoch (milliseconds) when this item will be available to consumers
      * @param maxWait maximum wait
      * @param unit wait unit
      * @return true if items was added, false if timed out
      * @throws Exception
      */
-    public boolean     put(T item, int priority, int maxWait, TimeUnit unit) throws Exception
+    public boolean      put(T item, long delayUntilEpoch, int maxWait, TimeUnit unit) throws Exception
     {
+        Preconditions.checkArgument(delayUntilEpoch > 0, "delayUntilEpoch cannot be negative");
+
         queue.checkState();
 
-        String      priorityHex = priorityToString(priority);
-        return queue.internalPut(item, null, queue.makeItemPath() + priorityHex, maxWait, unit);
+        return queue.internalPut(item, null, queue.makeItemPath() + epochToString(delayUntilEpoch), maxWait, unit);
     }
 
     /**
@@ -132,31 +170,32 @@ public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T>
      * block until there is available space in the queue.
      *
      * @param items items to add
-     * @param priority item priority - lower numbers come out of the queue first
+     * @param delayUntilEpoch future epoch (milliseconds) when this item will be available to consumers
      * @throws Exception connection issues
      */
-    public void     putMulti(MultiItem<T> items, int priority) throws Exception
+    public void     putMulti(MultiItem<T> items, long delayUntilEpoch) throws Exception
     {
-        putMulti(items, priority, 0, null);
+        putMulti(items, delayUntilEpoch, 0, null);
     }
 
     /**
-     * Same as {@link #putMulti(MultiItem, int)} but allows a maximum wait time if an upper bound was set
+     * Same as {@link #putMulti(MultiItem, long)} but allows a maximum wait time if an upper bound was set
      * via {@link QueueBuilder#maxItems}.
      *
      * @param items items to add
-     * @param priority item priority - lower numbers come out of the queue first
+     * @param delayUntilEpoch future epoch (milliseconds) when this item will be available to consumers
      * @param maxWait maximum wait
      * @param unit wait unit
      * @return true if items was added, false if timed out
      * @throws Exception
      */
-    public boolean      putMulti(MultiItem<T> items, int priority, int maxWait, TimeUnit unit) throws Exception
+    public boolean      putMulti(MultiItem<T> items, long delayUntilEpoch, int maxWait, TimeUnit unit) throws Exception
     {
+        Preconditions.checkArgument(delayUntilEpoch > 0, "delayUntilEpoch cannot be negative");
+
         queue.checkState();
 
-        String      priorityHex = priorityToString(priority);
-        return queue.internalPut(null, items, queue.makeItemPath() + priorityHex, maxWait, unit);
+        return queue.internalPut(null, items, queue.makeItemPath() + epochToString(delayUntilEpoch), maxWait, unit);
     }
 
     @Override
@@ -195,17 +234,27 @@ public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T>
     }
 
     @VisibleForTesting
-    ChildrenCache getCache()
+    static String epochToString(long epoch)
     {
-        return queue.getCache();
+        return SEPARATOR + String.format("%08X", epoch) + SEPARATOR;
     }
 
-    @VisibleForTesting
-    static String priorityToString(int priority)
+    private static long getEpoch(String itemNode)
     {
-        // the padded hex val of the number prefixed with a 0 for negative numbers
-        // and a 1 for positive (so that it sorts correctly)
-        long        l = (long)priority & 0xFFFFFFFFL;
-        return String.format("%s%08X", (priority >= 0) ? "1" : "0", l);
+        int     index2 = itemNode.lastIndexOf(SEPARATOR);
+        int     index1 = (index2 > 0) ? itemNode.lastIndexOf(SEPARATOR, index2 - 1) : -1;
+        if ( (index1 > 0) && (index2 > (index1 + 1)) )
+        {
+            try
+            {
+                String  epochStr = itemNode.substring(index1 + 1, index2);
+                return Long.parseLong(epochStr, 16);
+            }
+            catch ( NumberFormatException ignore )
+            {
+                // ignore
+            }
+        }
+        return 0;
     }
 }
