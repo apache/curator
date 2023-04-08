@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.google.common.collect.Sets;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.test.Timing;
@@ -31,6 +32,7 @@ import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.x.async.modeled.cached.CachedModeledFramework;
 import org.apache.curator.x.async.modeled.cached.ModeledCacheListener;
 import org.apache.curator.x.async.modeled.models.TestModel;
+import org.apache.zookeeper.data.Stat;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -42,6 +44,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -178,6 +181,72 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase
             assertEquals(optZNode.orElseThrow(() -> new AssertionError("node is missing")).model(), model);
             optZNode = client.cache().currentData(modelSpec.path().child("m"));
             assertEquals(optZNode.orElseThrow(() -> new AssertionError("node is missing")).model(), model);
+        }
+    }
+
+    // Verify the CachedModeledFramework does not attempt to deserialize empty ZNodes on deletion.
+    // See: CURATOR-609
+    @Test
+    public void testEmptyNodeDeserialization()
+    {
+        // The sub-path is the ZNode that will be removed that does not contain a model. This model with no data
+        // should not result in attempt to deserialize.
+        final String subPath = modelSpec.path().toString() + "/sub";
+
+        final String firstModelPath = subPath + "/first";
+        final String secondModelPath = subPath + "/second";
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        final AtomicBoolean caughtException = new AtomicBoolean(false);
+
+        // Create a custom listener to signal the end of the test and ensure no exceptions are thrown.
+        final ModeledCacheListener<TestModel> listener = new ModeledCacheListener<TestModel>() {
+            @Override
+            public void accept(Type t, ZPath p, Stat s, TestModel m)
+            {
+                if (t == ModeledCacheListener.Type.NODE_ADDED && p.toString().equals(secondModelPath)) {
+                    latch.countDown();
+                }
+            }
+
+            public void handleException(Exception e) {
+                System.err.printf("Caught unexpected exception %s%n", e);
+                caughtException.set(true);
+            }
+        };
+
+        // Create a cache client which watches the parent path.
+        try (CachedModeledFramework<TestModel> cacheClient = ModeledFramework.wrap(async, modelSpec).cached())
+        {
+            cacheClient.listenable().addListener(listener);
+
+            final JacksonModelSerializer<TestModel> serializer = JacksonModelSerializer.build(TestModel.class);
+
+            ModelSpec<TestModel> firstModelSpec = ModelSpec.builder(ZPath.parse(firstModelPath), serializer).build();
+            ModeledFramework<TestModel> firstModelClient = ModeledFramework.wrap(async, firstModelSpec);
+
+            ModelSpec<TestModel> secondModelSpec = ModelSpec.builder(ZPath.parse(secondModelPath), serializer).build();
+            ModeledFramework<TestModel> secondModelClient = ModeledFramework.wrap(async, secondModelSpec);
+
+            final TestModel model = new TestModel("a", "b", "c", 20, BigInteger.ONE);
+
+            cacheClient.start();
+
+            // Creating the first model creates the parent path structure.
+            complete(firstModelClient.set(model));
+
+            // Delete the first model, then delete the sub-path. As the sub-path is an empty ZNode, this should not
+            // throw an exception.
+            complete(firstModelClient.delete());
+            complete(firstModelClient.unwrap().delete().forPath(subPath));
+
+            // Finally, create a second model purely to signal the end of the test.
+            complete(secondModelClient.set(model));
+
+            assertTrue(timing.awaitLatch(latch));
+
+            assertFalse(caughtException.get(), "Exception should not have been thrown");
         }
     }
 
