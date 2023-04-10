@@ -44,6 +44,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -216,13 +217,19 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase
 
         final CountDownLatch latch = new CountDownLatch(1);
 
-        final AtomicReference<Exception> caughtException = new AtomicReference<>(null);
+        final AtomicBoolean modelWasNull = new AtomicBoolean(false);
+        final AtomicReference<Exception> caughtHandleException = new AtomicReference<>(null);
 
         // Create a custom listener to signal the end of the test and ensure that nothing is thrown.
         final ModeledCacheListener<T> listener = new ModeledCacheListener<T>() {
             @Override
             public void accept(Type t, ZPath p, Stat s, T m)
             {
+                // We don't expect the handler to be called with a null model.
+                if (m == null) {
+                    modelWasNull.set(true);
+                }
+
                 if (t == ModeledCacheListener.Type.NODE_ADDED && p.toString().equals(signalModelPath)) {
                     latch.countDown();
                 }
@@ -230,7 +237,7 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase
 
             public void handleException(Exception e)
             {
-                caughtException.set(e);
+                caughtHandleException.set(e);
             }
         };
 
@@ -262,7 +269,8 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase
 
             assertTrue(timing.awaitLatch(latch));
 
-            assertNull(caughtException.get(), "Exception should not have been handled by listener");
+            assertFalse(modelWasNull.get(), "Listener should never be called with a null model");
+            assertNull(caughtHandleException.get(), "Exception should not have been handled by listener");
         }
     }
 
