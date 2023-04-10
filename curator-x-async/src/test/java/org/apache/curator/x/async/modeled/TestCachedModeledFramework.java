@@ -44,7 +44,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -184,69 +184,85 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase
         }
     }
 
-    // Verify the CachedModeledFramework does not attempt to deserialize empty ZNodes on deletion.
+    // Verify the CachedModeledFramework does not attempt to deserialize empty ZNodes on deletion using the Jackson
+    // model serializer.
     // See: CURATOR-609
     @Test
-    public void testEmptyNodeDeserialization()
+    public void testEmptyNodeJacksonDeserialization()
     {
-        // The sub-path is the ZNode that will be removed that does not contain a model. This model with no data
-        // should not result in attempt to deserialize.
-        final String subPath = modelSpec.path().toString() + "/sub";
+        final TestModel model = new TestModel("a", "b", "c", 20, BigInteger.ONE);
+        verifyEmptyNodeDeserialization(model, modelSpec);
+    }
 
-        final String firstModelPath = subPath + "/first";
-        final String secondModelPath = subPath + "/second";
+    // Verify the CachedModeledFramework does not attempt to deserialize empty ZNodes on deletion using the raw
+    // model serializer.
+    // See: CURATOR-609
+    @Test
+    public void testEmptyNodeRawDeserialization()
+    {
+        final byte[] byteModel = {0x01, 0x02, 0x03};
+        final ModelSpec<byte[]> byteModelSpec = ModelSpec.builder(path, ModelSerializer.raw).build();
+        verifyEmptyNodeDeserialization(byteModel, byteModelSpec);
+    }
 
-        CountDownLatch latch = new CountDownLatch(1);
+    private <T> void verifyEmptyNodeDeserialization(T model, ModelSpec<T> parentModelSpec)
+    {
+        // The sub-path is the ZNode that will be removed that does not contain any model data. Their should be no
+        // attempt to deserialize this empty ZNode.
+        final String subPath = parentModelSpec.path().toString() + "/sub";
 
-        final AtomicBoolean caughtException = new AtomicBoolean(false);
+        final String testModelPath = subPath + "/test";
+        final String signalModelPath = subPath + "/signal";
 
-        // Create a custom listener to signal the end of the test and ensure no exceptions are thrown.
-        final ModeledCacheListener<TestModel> listener = new ModeledCacheListener<TestModel>() {
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        final AtomicReference<Exception> caughtException = new AtomicReference<>(null);
+
+        // Create a custom listener to signal the end of the test and ensure that nothing is thrown.
+        final ModeledCacheListener<T> listener = new ModeledCacheListener<T>() {
             @Override
-            public void accept(Type t, ZPath p, Stat s, TestModel m)
+            public void accept(Type t, ZPath p, Stat s, T m)
             {
-                if (t == ModeledCacheListener.Type.NODE_ADDED && p.toString().equals(secondModelPath)) {
+                if (t == ModeledCacheListener.Type.NODE_ADDED && p.toString().equals(signalModelPath)) {
                     latch.countDown();
                 }
             }
 
-            public void handleException(Exception e) {
-                System.err.printf("Caught unexpected exception %s%n", e);
-                caughtException.set(true);
+            public void handleException(Exception e)
+            {
+                caughtException.set(e);
             }
         };
 
-        // Create a cache client which watches the parent path.
-        try (CachedModeledFramework<TestModel> cacheClient = ModeledFramework.wrap(async, modelSpec).cached())
+        final ModelSerializer<T> serializer = parentModelSpec.serializer();
+
+        // Create a cache client to watch the parent path.
+        try (CachedModeledFramework<T> cacheClient = ModeledFramework.wrap(async, parentModelSpec).cached())
         {
             cacheClient.listenable().addListener(listener);
 
-            final JacksonModelSerializer<TestModel> serializer = JacksonModelSerializer.build(TestModel.class);
+            ModelSpec<T> testModelSpec = ModelSpec.builder(ZPath.parse(testModelPath), serializer).build();
+            ModeledFramework<T> testModelClient = ModeledFramework.wrap(async, testModelSpec);
 
-            ModelSpec<TestModel> firstModelSpec = ModelSpec.builder(ZPath.parse(firstModelPath), serializer).build();
-            ModeledFramework<TestModel> firstModelClient = ModeledFramework.wrap(async, firstModelSpec);
-
-            ModelSpec<TestModel> secondModelSpec = ModelSpec.builder(ZPath.parse(secondModelPath), serializer).build();
-            ModeledFramework<TestModel> secondModelClient = ModeledFramework.wrap(async, secondModelSpec);
-
-            final TestModel model = new TestModel("a", "b", "c", 20, BigInteger.ONE);
+            ModelSpec<T> signalModelSpec = ModelSpec.builder(ZPath.parse(signalModelPath), serializer).build();
+            ModeledFramework<T> signalModelClient = ModeledFramework.wrap(async, signalModelSpec);
 
             cacheClient.start();
 
-            // Creating the first model creates the parent path structure.
-            complete(firstModelClient.set(model));
+            // Create the test model (with sub-path), creating the initial parent path structure.
+            complete(testModelClient.set(model));
 
-            // Delete the first model, then delete the sub-path. As the sub-path is an empty ZNode, this should not
-            // throw an exception.
-            complete(firstModelClient.delete());
-            complete(firstModelClient.unwrap().delete().forPath(subPath));
+            // Delete the test model, then delete the sub-path. As the sub-path ZNode is empty, we expect that this
+            // should not throw an exception.
+            complete(testModelClient.delete());
+            complete(testModelClient.unwrap().delete().forPath(subPath));
 
-            // Finally, create a second model purely to signal the end of the test.
-            complete(secondModelClient.set(model));
+            // Finally, create the signal model purely to signal the end of the test.
+            complete(signalModelClient.set(model));
 
             assertTrue(timing.awaitLatch(latch));
 
-            assertFalse(caughtException.get(), "Exception should not have been thrown");
+            assertNull(caughtException.get(), "Exception should not have been handled by listener");
         }
     }
 

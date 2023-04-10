@@ -35,7 +35,9 @@ public class TestModeledFrameworkBase extends CompletableBaseClassForTests
     protected static final ZPath path = ZPath.parse("/test/path");
     protected CuratorFramework rawClient;
     protected ModelSpec<TestModel> modelSpec;
+    protected JacksonModelSerializer<TestModel> serializer;
     protected ModelSpec<TestNewerModel> newModelSpec;
+    protected JacksonModelSerializer<TestNewerModel> newSerializer;
     protected AsyncCuratorFramework async;
 
     @BeforeEach
@@ -48,8 +50,8 @@ public class TestModeledFrameworkBase extends CompletableBaseClassForTests
         rawClient.start();
         async = AsyncCuratorFramework.wrap(rawClient);
 
-        JacksonModelSerializer<TestModel> serializer = JacksonModelSerializer.build(TestModel.class);
-        JacksonModelSerializer<TestNewerModel> newSerializer = JacksonModelSerializer.build(TestNewerModel.class);
+        serializer = JacksonModelSerializer.build(TestModel.class);
+        newSerializer = JacksonModelSerializer.build(TestNewerModel.class);
 
         modelSpec = ModelSpec.builder(path, serializer).build();
         newModelSpec = ModelSpec.builder(path, newSerializer).build();
