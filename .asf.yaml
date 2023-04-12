@@ -33,12 +33,7 @@ github:
     merge:   false
     rebase:  true
   protected_branches:
-    master:
-      required_status_checks:
-        strict: false
-        contexts:
-          - Required
-      required_signatures: false
+    master: {}
 
 notifications:
   commits:      commits@curator.apache.org
