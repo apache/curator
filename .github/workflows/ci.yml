@@ -18,9 +18,9 @@
 name: CI
 on:
   push:
+    branches: [master]
   pull_request:
-    branches:
-      - master
+    branches: [master]
 
 env:
   MAVEN_OPTS: -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.count=3
@@ -39,6 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     strategy:
+      fail-fast: false
       matrix:
         java: [8, 11]
     steps:
