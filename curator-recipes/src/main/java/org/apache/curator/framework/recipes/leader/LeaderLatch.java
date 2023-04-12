@@ -55,7 +55,7 @@ import org.apache.curator.utils.PathUtils;
 
 /**
  * <p>
- * Abstraction to select a "leader" amongst multiple contenders in a group of JMVs connected to
+ * Abstraction to select a "leader" amongst multiple contenders in a group of JVMs connected to
  * a Zookeeper cluster. If a group of N thread/processes contend for leadership one will
  * randomly be assigned leader until it releases leadership at which time another one from the
  * group will randomly be chosen
