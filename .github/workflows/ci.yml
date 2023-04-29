@@ -42,19 +42,10 @@ jobs:
       fail-fast: false
       matrix:
         java: [8, 11]
+    env:
+      GRADLE_ENTERPRISE_ACCESS_KEY: ${{ secrets.GE_ACCESS_TOKEN }}
     steps:
       - uses: actions/checkout@v3
-
-      - name: Configure Gradle Enterprise integration
-        run: |
-          if [[ -n "${{ secrets.GE_ACCESS_TOKEN }}" ]]; then
-            echo "Configuring Gradle Enterprise for build"
-            cp .mvn/ge-extensions.xml .mvn/extensions.xml
-            echo "GRADLE_ENTERPRISE_ACCESS_KEY=${{ secrets.GE_ACCESS_TOKEN }}" >> $GITHUB_ENV
-            echo "GRADLE_ENTERPRISE_ACCESS_KEY has been configured"
-          else
-            echo "GRADLE_ENTERPRISE_ACCESS_KEY is not configured."
-          fi
 
       - name: Cache Local Maven Repository
         uses: actions/cache@v3

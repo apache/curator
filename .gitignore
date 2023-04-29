@@ -67,4 +67,3 @@ atlassian-ide-plugin.xml
 # Gradle Enterprise
 test-reports/
 .mvn/.gradle-enterprise/
-.mvn/extensions.xml
