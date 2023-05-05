@@ -17,14 +17,6 @@
  * under the License.
  */
 
-// Add Maven command line arguments
-def mavenCommand = ''
-
-if (System.env.MAVEN_CMD_LINE_ARGS) {
-    mavenCommand = "mvn ${System.env.MAVEN_CMD_LINE_ARGS}".toString()
-    buildScan.value('Maven command line', mavenCommand)
-}
-
 if (System.env.GITHUB_ACTIONS) {
     if (session.goals.size() == 1 && session.goals[0] == 'initialize') {
         // omit publishing build scan when the only goal is "initialize"
@@ -39,7 +31,7 @@ if (System.env.GITHUB_ACTIONS) {
         buildScan.link('GitHub Commit', "https://github.com/" + System.env.GITHUB_REPOSITORY + "/commits/" + System.env.GITHUB_SHA)
         buildScan.buildScanPublished {  publishedBuildScan ->
             new File(System.env.GITHUB_STEP_SUMMARY).withWriterAppend { out ->
-                out.println("\n[Gradle build scan for '${mavenCommand}' in ${jobName}](${publishedBuildScan.buildScanUri})\n")
+                out.println("\n[Gradle build scan for ${jobName}](${publishedBuildScan.buildScanUri})\n")
             }
         }
     }
