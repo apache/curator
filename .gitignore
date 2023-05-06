@@ -63,3 +63,7 @@ atlassian-ide-plugin.xml
 
 # NetBeans specific files/directories
 .nbattrs
+
+# Gradle Enterprise
+test-reports/
+.mvn/.gradle-enterprise/
