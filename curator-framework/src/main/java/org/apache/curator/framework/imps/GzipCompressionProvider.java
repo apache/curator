@@ -46,6 +46,19 @@ public class GzipCompressionProvider implements CompressionProvider
     /** GZIP header magic number. */
     private static final int GZIP_MAGIC = 0x8b1f;
 
+    // The value of the OS bit has changed in JDK 16;
+    // see https://bugs.openjdk.org/browse/JDK-8244706 for details.
+    private static final byte OS_BIT;
+    static {
+        final String version = System.getProperty("java.specification.version");
+        if (version.contains(".")) {
+            // before or equal to 1.8
+            OS_BIT = 0;
+        } else {
+            OS_BIT = (Float.parseFloat(version) >= 16 ? (byte) -1 : 0);
+        }
+    }
+
     /** See {@code java.util.zip.GZIPOutputStream.writeHeader()} */
     private static final byte[] GZIP_HEADER = new byte[] {
             (byte) GZIP_MAGIC,        // Magic number (byte 0)
@@ -57,7 +70,7 @@ public class GzipCompressionProvider implements CompressionProvider
             0,                        // Modification time MTIME (byte 2)
             0,                        // Modification time MTIME (byte 3)
             0,                        // Extra flags (XFLG)
-            0                         // Operating system (OS)
+            OS_BIT                    // Operating system (OS)
     };
 
     /** GZip flags, {@link #GZIP_HEADER}'s 4th byte */
@@ -85,7 +98,7 @@ public class GzipCompressionProvider implements CompressionProvider
 
     /** The value verified in GzipCompressionProviderTest.testEmpty() */
     private static final byte[] COMPRESSED_EMPTY_BYTES = new byte[] {
-            31, -117, 8, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            31, -117, 8, 0, 0, 0, 0, 0, 0, OS_BIT, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0
     };
 
     private static Deflater acquireDeflater()
