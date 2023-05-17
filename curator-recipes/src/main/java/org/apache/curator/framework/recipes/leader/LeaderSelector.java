@@ -245,15 +245,7 @@ public class LeaderSelector implements Closeable
                 @Override
                 public Void call() throws Exception
                 {
-                    try
-                    {
-                        taskStarted();
-                        doWorkLoop();
-                    }
-                    finally
-                    {
-                        taskDone();
-                    }
+                    doWorkLoop();
                     return null;
                 }
             });
@@ -377,12 +369,24 @@ public class LeaderSelector implements Closeable
         ourThread = Thread.currentThread();
     }
 
-    private synchronized void taskDone() {
+    private synchronized boolean taskDone() {
         ourTask = null;
         ourThread = null;
+        boolean leadership = hasLeadership;
+        if (leadership) {
+            // This is the very last step in election task, there is no synchronization
+            // point after this method. Safety:
+            // * Next task will not run into work body before this method return, so no
+            //   interference on hasLeadership.
+            // * mutex is bound to current thread(e.g. not JVM), so leadership flag reset
+            //   and leadership release, which is a time-consuming task, are not necessary
+            //   to be atomic.
+            hasLeadership = false;
+        }
         if (autoRequeue.get()) {
             internalRequeue();
         }
+        return leadership;
     }
 
     /**
@@ -433,6 +437,7 @@ public class LeaderSelector implements Closeable
     @VisibleForTesting
     void doWork() throws Exception
     {
+        taskStarted();
         hasLeadership = false;
         try
         {
@@ -468,10 +473,9 @@ public class LeaderSelector implements Closeable
         }
         finally
         {
-            if ( hasLeadership )
+            if ( taskDone() )
             {
-                hasLeadership = false;
-                boolean wasInterrupted = Thread.interrupted();  // clear any interrupted tatus so that mutex.release() works immediately
+                boolean wasInterrupted = Thread.interrupted();  // clear any interrupted status so that mutex.release() works immediately
                 try
                 {
                     mutex.release();
