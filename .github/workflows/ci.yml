@@ -34,6 +34,21 @@ jobs:
       - name: Check license header
         run: docker run --rm -v $(pwd):/github/workspace -u $(id -u):$(id -g) ghcr.io/korandoru/hawkeye-native:v1 check
 
+      - name: Cache Local Maven Repository
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: 17
+          distribution: 'temurin'
+      - name: Check code style
+        run: ./mvnw spotless:check
+
   unittest:
     name: Unit tests
     runs-on: ubuntu-latest
