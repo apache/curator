@@ -51,7 +51,6 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -61,7 +60,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -71,7 +70,6 @@ public class TestReconfiguration extends CuratorTestBase
 {
     private final Timing2 timing = new Timing2();
     private TestingCluster cluster;
-    private CountDownLatch ensembleLatch;
     private EnsembleProvider ensembleProvider;
 
     private static final String superUserPasswordDigest = "curator-test:zghsj3JfJqK7DbWf0RQ1BgbJH9w=";  // ran from DigestAuthenticationProvider.generateDigest(superUserPassword);
@@ -444,8 +442,9 @@ public class TestReconfiguration extends CuratorTestBase
     {
         // Use a long chroot path to circumvent ZOOKEEPER-4565 and ZOOKEEPER-4601
         String chroot = "/pretty-long-chroot";
+        CountDownLatch ensembleLatch = new CountDownLatch(1);
 
-        try (CuratorFramework client = newClient(cluster.getConnectString() + chroot)) {
+        try (CuratorFramework client = newClient(cluster.getConnectString() + chroot, ensembleLatch)) {
             client.start();
             client.create().forPath("/", "deadbeef".getBytes());
 
@@ -480,7 +479,7 @@ public class TestReconfiguration extends CuratorTestBase
             client.getZookeeperClient().reset();
             client.sync().forPath("/");
             byte[] data = client.getData().forPath("/");
-            assertArrayEquals("deadbeef".getBytes(), data, () -> "expected \"deedbeef\", got data: " + Arrays.toString(data));
+            assertThat(data).asString().isEqualTo("deadbeef");
         }
     }
 
@@ -603,10 +602,19 @@ public class TestReconfiguration extends CuratorTestBase
     	return newClient(connectionString, true);
     }
 
-    private CuratorFramework newClient(String connectionString, boolean withEnsembleProvider)
+    private CuratorFramework newClient(String connectionString, boolean withEnsembleTracker)
+    {
+        return newClient(connectionString, withEnsembleTracker, null);
+    }
+
+    private CuratorFramework newClient(String connectionString, CountDownLatch ensembleLatch)
+    {
+        return newClient(connectionString, ensembleLatch != null, ensembleLatch);
+    }
+
+    private CuratorFramework newClient(String connectionString, boolean withEnsembleTracker, CountDownLatch ensembleLatch)
     {
         final AtomicReference<String> connectString = new AtomicReference<>(connectionString);
-        ensembleLatch = new CountDownLatch(1);
         ensembleProvider = new EnsembleProvider()
         {
             @Override
@@ -636,13 +644,15 @@ public class TestReconfiguration extends CuratorTestBase
             {
                 if (!connectionString.equals(getConnectionString())) {
                     connectString.set(connectionString);
-                    ensembleLatch.countDown();
+                    if (ensembleLatch != null) {
+                        ensembleLatch.countDown();
+                    }
                 }
             }
         };
         return CuratorFrameworkFactory.builder()
             .ensembleProvider(ensembleProvider)
-            .ensembleTracker(withEnsembleProvider)
+            .ensembleTracker(withEnsembleTracker)
             .sessionTimeoutMs(timing.session())
             .connectionTimeoutMs(timing.connection())
             .authorization("digest", superUserPassword.getBytes())
