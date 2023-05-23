@@ -372,15 +372,16 @@ public class LeaderSelector implements Closeable
     private synchronized boolean taskDone() {
         ourTask = null;
         ourThread = null;
+        // We are about to complete the very last steps in election task, there is
+        // no synchronization point after this method. Safety:
+        // * Next task will not run into election body before this method return, so no
+        //   interference on hasLeadership.
+        // * mutex is bound to current thread(e.g. not JVM), so leadership flag reset
+        //   and leadership release, which is a time-consuming task, are not necessary
+        //   to be atomic. Also, it is safe to run mutex.release() in parallel with
+        //   mutex.acquire() from next election task.
         boolean leadership = hasLeadership;
         if (leadership) {
-            // This is the very last step in election task, there is no synchronization
-            // point after this method. Safety:
-            // * Next task will not run into work body before this method return, so no
-            //   interference on hasLeadership.
-            // * mutex is bound to current thread(e.g. not JVM), so leadership flag reset
-            //   and leadership release, which is a time-consuming task, are not necessary
-            //   to be atomic.
             hasLeadership = false;
         }
         if (autoRequeue.get()) {
