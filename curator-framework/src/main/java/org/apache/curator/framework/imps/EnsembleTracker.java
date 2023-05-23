@@ -209,10 +209,17 @@ public class EnsembleTracker implements Closeable, CuratorWatcher
         if (!properties.isEmpty())
         {
             QuorumMaj newConfig = new QuorumMaj(properties);
-            String connectionString = configToConnectionString(newConfig);
-            if (connectionString.trim().length() > 0)
+            String connectionString = configToConnectionString(newConfig).trim();
+            if (!connectionString.isEmpty())
             {
                 currentConfig.set(newConfig);
+                String oldConnectionString = ensembleProvider.getConnectionString();
+                int i = oldConnectionString.indexOf('/');
+                if (i >= 0)
+                {
+                    String chroot = oldConnectionString.substring(i);
+                    connectionString += chroot;
+                }
                 ensembleProvider.setConnectionString(connectionString);
             }
             else
