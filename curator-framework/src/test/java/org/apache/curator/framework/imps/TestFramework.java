@@ -19,6 +19,7 @@
 
 package org.apache.curator.framework.imps;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -32,10 +33,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.curator.RetryPolicy;
+import org.apache.curator.RetrySleeper;
 import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -941,6 +945,58 @@ public class TestFramework extends BaseClassForTests
         }
         finally
         {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    private static class AlwaysRetry implements RetryPolicy {
+        private final int retryIntervalMs;
+
+        public AlwaysRetry(int retryIntervalMs) {
+            this.retryIntervalMs = retryIntervalMs;
+        }
+
+        @Override
+        public boolean allowRetry(Throwable exception) {
+            return true;
+        }
+
+        @Override
+        public boolean allowRetry(int retryCount, long elapsedTimeMs, RetrySleeper retrySleeper) {
+            try {
+                retrySleeper.sleepFor(retryIntervalMs, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+            }
+            return true;
+        }
+    }
+
+    @Test
+    public void testBackgroundClosing() throws Exception
+    {
+        AlwaysRetry alwaysRetry = new AlwaysRetry(2);
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), alwaysRetry);
+        client.start();
+        try {
+            // given: error background request with always-retry policy
+            CompletableFuture<CuratorEvent> future = new CompletableFuture<>();
+            client.delete().inBackground((ignored, event) -> future.complete(event)).forPath("/test");
+
+            // These chaos steps create chances to run into concurrent contentions.
+            // They could fail this test given enough runs if there are bugs.
+            Thread.sleep(20);
+            restartServer();
+            Thread.sleep(5);
+
+            // when: close client while operation is queuing, retrying or awaking from sleep
+            client.close();
+
+            // then: get closing event with session expired error
+            CuratorEvent event = future.get(10, TimeUnit.SECONDS);
+            assertThat(event.getResultCode()).isEqualTo(KeeperException.Code.SESSIONEXPIRED.intValue());
+            assertThat(event.getType()).isSameAs(CuratorEventType.CLOSING);
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
