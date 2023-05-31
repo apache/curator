@@ -242,12 +242,7 @@ public class LeaderSelector implements Closeable {
             ourTask = executorService.submit(new Callable<Void>() {
                 @Override
                 public Void call() throws Exception {
-                    try {
-                        taskStarted();
-                        doWorkLoop();
-                    } finally {
-                        taskDone();
-                    }
+                    doWorkLoop();
                     return null;
                 }
             });
@@ -361,12 +356,25 @@ public class LeaderSelector implements Closeable {
         ourThread = Thread.currentThread();
     }
 
-    private synchronized void taskDone() {
+    private synchronized boolean taskDone() {
         ourTask = null;
         ourThread = null;
+        // We are about to complete the very last steps in election task, there is
+        // no synchronization point after this method. Safety:
+        // * Next task will not run into election body before this method return, so no
+        //   interference on hasLeadership.
+        // * mutex is bound to current thread(e.g. not JVM), so leadership flag reset
+        //   and leadership release, which is a time-consuming task, are not necessary
+        //   to be atomic. Also, it is safe to run mutex.release() in parallel with
+        //   mutex.acquire() from next election task.
+        boolean leadership = hasLeadership;
+        if (leadership) {
+            hasLeadership = false;
+        }
         if (autoRequeue.get()) {
             internalRequeue();
         }
+        return leadership;
     }
 
     /**
@@ -412,6 +420,7 @@ public class LeaderSelector implements Closeable {
      */
     @VisibleForTesting
     void doWork() throws Exception {
+        taskStarted();
         hasLeadership = false;
         try {
             mutex.acquire();
@@ -435,10 +444,9 @@ public class LeaderSelector implements Closeable {
             Thread.currentThread().interrupt();
             throw e;
         } finally {
-            if (hasLeadership) {
-                hasLeadership = false;
+            if (taskDone()) {
                 boolean wasInterrupted =
-                        Thread.interrupted(); // clear any interrupted tatus so that mutex.release() works immediately
+                        Thread.interrupted(); // clear any interrupted status so that mutex.release() works immediately
                 try {
                     mutex.release();
                 } catch (Exception e) {
