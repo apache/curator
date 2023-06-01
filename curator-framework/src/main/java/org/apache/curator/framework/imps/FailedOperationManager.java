@@ -19,53 +19,42 @@
 
 package org.apache.curator.framework.imps;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.ThreadUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.annotations.VisibleForTesting;
-
-abstract class FailedOperationManager<T>
-{
+abstract class FailedOperationManager<T> {
     private final Logger log = LoggerFactory.getLogger(getClass());
     protected final CuratorFramework client;
-    
+
     @VisibleForTesting
     volatile FailedOperationManagerListener<T> debugListener = null;
-    
-    interface FailedOperationManagerListener<T>
-    {
-       public void pathAddedForGuaranteedOperation(T detail);
+
+    interface FailedOperationManagerListener<T> {
+        public void pathAddedForGuaranteedOperation(T detail);
     }
 
-    FailedOperationManager(CuratorFramework client)
-    {
+    FailedOperationManager(CuratorFramework client) {
         this.client = client;
     }
 
-    void addFailedOperation(T details)
-    {
-        if ( debugListener != null )
-        {
+    void addFailedOperation(T details) {
+        if (debugListener != null) {
             debugListener.pathAddedForGuaranteedOperation(details);
         }
-        
-        
-        if ( client.getState() == CuratorFrameworkState.STARTED )
-        {
+
+        if (client.getState() == CuratorFrameworkState.STARTED) {
             log.debug("Details being added to guaranteed operation set: " + details);
-            try
-            {
+            try {
                 executeGuaranteedOperationInBackground(details);
-            }
-            catch ( Exception e )
-            {
+            } catch (Exception e) {
                 ThreadUtils.checkInterrupted(e);
                 addFailedOperation(details);
             }
         }
     }
-    
+
     protected abstract void executeGuaranteedOperationInBackground(T details) throws Exception;
 }

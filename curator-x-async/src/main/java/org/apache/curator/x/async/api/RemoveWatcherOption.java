@@ -22,8 +22,7 @@ package org.apache.curator.x.async.api;
 /**
  * Options to use when removing watchers
  */
-public enum RemoveWatcherOption
-{
+public enum RemoveWatcherOption {
     /**
      * Solves edge cases where an operation may succeed on the server but connection failure occurs before a
      * response can be successfully returned to the client.

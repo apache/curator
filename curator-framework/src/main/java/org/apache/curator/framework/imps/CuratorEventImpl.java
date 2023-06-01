@@ -20,17 +20,16 @@
 package org.apache.curator.framework.imps;
 
 import com.google.common.collect.ImmutableList;
+import java.util.Arrays;
+import java.util.List;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
-import java.util.Arrays;
-import java.util.List;
 
-class CuratorEventImpl implements CuratorEvent
-{
+class CuratorEventImpl implements CuratorEvent {
     private final CuratorEventType type;
     private final int resultCode;
     private final String path;
@@ -44,91 +43,89 @@ class CuratorEventImpl implements CuratorEvent
     private final List<CuratorTransactionResult> opResults;
 
     @Override
-    public CuratorEventType getType()
-    {
+    public CuratorEventType getType() {
         return type;
     }
 
     @Override
-    public int getResultCode()
-    {
+    public int getResultCode() {
         return resultCode;
     }
 
     @Override
-    public String getPath()
-    {
+    public String getPath() {
         return path;
     }
 
     @Override
-    public Object getContext()
-    {
+    public Object getContext() {
         return context;
     }
 
     @Override
-    public Stat getStat()
-    {
+    public Stat getStat() {
         return stat;
     }
 
     @Override
-    public byte[] getData()
-    {
+    public byte[] getData() {
         return data;
     }
 
     @Override
-    public String getName()
-    {
+    public String getName() {
         return name;
     }
 
     @Override
-    public List<String> getChildren()
-    {
+    public List<String> getChildren() {
         return children;
     }
 
     @Override
-    public WatchedEvent getWatchedEvent()
-    {
+    public WatchedEvent getWatchedEvent() {
         return watchedEvent;
     }
 
     @Override
-    public List<ACL> getACLList()
-    {
+    public List<ACL> getACLList() {
         return aclList;
     }
 
     @Override
-    public List<CuratorTransactionResult> getOpResults()
-    {
+    public List<CuratorTransactionResult> getOpResults() {
         return opResults;
     }
 
     @Override
-    public String toString()
-    {
-        return "CuratorEventImpl{" +
-            "type=" + type +
-            ", resultCode=" + resultCode +
-            ", path='" + path + '\'' +
-            ", name='" + name + '\'' +
-            ", children=" + children +
-            ", context=" + context +
-            ", stat=" + stat +
-            ", data=" + Arrays.toString(data) +
-            ", watchedEvent=" + watchedEvent +
-            ", aclList=" + aclList +
-            ", opResults=" + opResults +
-            '}';
+    public String toString() {
+        return "CuratorEventImpl{" + "type="
+                + type + ", resultCode="
+                + resultCode + ", path='"
+                + path + '\'' + ", name='"
+                + name + '\'' + ", children="
+                + children + ", context="
+                + context + ", stat="
+                + stat + ", data="
+                + Arrays.toString(data) + ", watchedEvent="
+                + watchedEvent + ", aclList="
+                + aclList + ", opResults="
+                + opResults + '}';
     }
 
-    CuratorEventImpl(CuratorFrameworkImpl client, CuratorEventType type, int resultCode, String path, String name, Object context, Stat stat, byte[] data, List<String> children, WatchedEvent watchedEvent, List<ACL> aclList, List<CuratorTransactionResult> opResults)
-    {
+    CuratorEventImpl(
+            CuratorFrameworkImpl client,
+            CuratorEventType type,
+            int resultCode,
+            String path,
+            String name,
+            Object context,
+            Stat stat,
+            byte[] data,
+            List<String> children,
+            WatchedEvent watchedEvent,
+            List<ACL> aclList,
+            List<CuratorTransactionResult> opResults) {
         this.type = type;
         this.resultCode = resultCode;
         this.opResults = (opResults != null) ? ImmutableList.copyOf(opResults) : null;

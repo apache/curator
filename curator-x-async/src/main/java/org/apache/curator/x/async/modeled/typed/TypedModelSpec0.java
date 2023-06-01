@@ -26,8 +26,7 @@ import org.apache.curator.x.async.modeled.ModelSpecBuilder;
  * Same as {@link TypedModelSpec}, but with 0 parameters
  */
 @FunctionalInterface
-public interface TypedModelSpec0<M>
-{
+public interface TypedModelSpec0<M> {
     ModelSpec<M> resolved();
 
     /**
@@ -39,8 +38,7 @@ public interface TypedModelSpec0<M>
      * @param path typed path
      * @return new TypedModelSpec
      */
-    static <M> TypedModelSpec0<M> from(ModelSpecBuilder<M> builder, TypedZPath0 path)
-    {
+    static <M> TypedModelSpec0<M> from(ModelSpecBuilder<M> builder, TypedZPath0 path) {
         return () -> builder.withPath(path.resolved()).build();
     }
 
@@ -54,8 +52,7 @@ public interface TypedModelSpec0<M>
      * @param pathWithIds typed path
      * @return new TypedModelSpec
      */
-    static <M> TypedModelSpec0<M> from(ModelSpecBuilder<M> builder, String pathWithIds)
-    {
+    static <M> TypedModelSpec0<M> from(ModelSpecBuilder<M> builder, String pathWithIds) {
         TypedZPath0 zPath = TypedZPath0.from(pathWithIds);
         return () -> builder.withPath(zPath.resolved()).build();
     }

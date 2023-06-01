@@ -24,8 +24,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Abstraction for retry policies to sleep
  */
-public interface RetrySleeper
-{
+public interface RetrySleeper {
     /**
      * Sleep for the given time
      *
@@ -33,5 +32,5 @@ public interface RetrySleeper
      * @param unit time unit
      * @throws InterruptedException if the sleep is interrupted
      */
-    public void     sleepFor(long time, TimeUnit unit) throws InterruptedException;
+    public void sleepFor(long time, TimeUnit unit) throws InterruptedException;
 }

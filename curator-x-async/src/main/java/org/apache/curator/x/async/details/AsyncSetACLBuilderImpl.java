@@ -19,6 +19,9 @@
 
 package org.apache.curator.x.async.details;
 
+import static org.apache.curator.x.async.details.BackgroundProcs.safeCall;
+import static org.apache.curator.x.async.details.BackgroundProcs.statProc;
+import java.util.List;
 import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.framework.imps.SetACLBuilderImpl;
 import org.apache.curator.x.async.AsyncStage;
@@ -26,42 +29,33 @@ import org.apache.curator.x.async.api.AsyncPathable;
 import org.apache.curator.x.async.api.AsyncSetACLBuilder;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
-import java.util.List;
 
-import static org.apache.curator.x.async.details.BackgroundProcs.safeCall;
-import static org.apache.curator.x.async.details.BackgroundProcs.statProc;
-
-class AsyncSetACLBuilderImpl implements AsyncSetACLBuilder, AsyncPathable<AsyncStage<Stat>>
-{
+class AsyncSetACLBuilderImpl implements AsyncSetACLBuilder, AsyncPathable<AsyncStage<Stat>> {
     private final CuratorFrameworkImpl client;
     private final Filters filters;
     private int version = -1;
     private List<ACL> aclList = null;
 
-    AsyncSetACLBuilderImpl(CuratorFrameworkImpl client, Filters filters)
-    {
+    AsyncSetACLBuilderImpl(CuratorFrameworkImpl client, Filters filters) {
         this.client = client;
         this.filters = filters;
     }
 
     @Override
-    public AsyncPathable<AsyncStage<Stat>> withACL(List<ACL> aclList)
-    {
+    public AsyncPathable<AsyncStage<Stat>> withACL(List<ACL> aclList) {
         this.aclList = aclList;
         return this;
     }
 
     @Override
-    public AsyncPathable<AsyncStage<Stat>> withACL(List<ACL> aclList, int version)
-    {
+    public AsyncPathable<AsyncStage<Stat>> withACL(List<ACL> aclList, int version) {
         this.aclList = aclList;
         this.version = version;
         return this;
     }
 
     @Override
-    public AsyncStage<Stat> forPath(String path)
-    {
+    public AsyncStage<Stat> forPath(String path) {
         BuilderCommon<Stat> common = new BuilderCommon<>(filters, statProc);
         SetACLBuilderImpl builder = new SetACLBuilderImpl(client, common.backgrounding, aclList, version);
         return safeCall(common.internalCallback, () -> builder.forPath(path));

@@ -45,8 +45,7 @@ package org.apache.curator.framework.recipes.cache;
  *     false from acceptChild("/root/n1-c").
  * </p>
  */
-public interface TreeCacheSelector
-{
+public interface TreeCacheSelector {
     /**
      * Return true if children of this path should be cached.
      * i.e. if false is returned, this node is not queried to

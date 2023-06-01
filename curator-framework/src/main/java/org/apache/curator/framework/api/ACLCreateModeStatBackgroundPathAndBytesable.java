@@ -19,8 +19,5 @@
 
 package org.apache.curator.framework.api;
 
-public interface ACLCreateModeStatBackgroundPathAndBytesable<T> extends
-    ACLCreateModeBackgroundPathAndBytesable<T>,
-    Statable<ACLCreateModeBackgroundPathAndBytesable<T>>
-{
-}
+public interface ACLCreateModeStatBackgroundPathAndBytesable<T>
+        extends ACLCreateModeBackgroundPathAndBytesable<T>, Statable<ACLCreateModeBackgroundPathAndBytesable<T>> {}

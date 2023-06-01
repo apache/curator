@@ -19,20 +19,16 @@
 
 package org.apache.curator.x.discovery.details;
 
-class Latch
-{
-    private volatile boolean        laden = false;
+class Latch {
+    private volatile boolean laden = false;
 
-    synchronized void        set()
-    {
+    synchronized void set() {
         laden = true;
         notifyAll();
     }
 
-    synchronized void       await() throws InterruptedException
-    {
-        while ( !laden )
-        {
+    synchronized void await() throws InterruptedException {
+        while (!laden) {
             wait();
         }
         laden = false;

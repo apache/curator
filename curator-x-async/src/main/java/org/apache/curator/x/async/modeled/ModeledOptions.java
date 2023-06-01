@@ -19,8 +19,7 @@
 
 package org.apache.curator.x.async.modeled;
 
-public enum ModeledOptions
-{
+public enum ModeledOptions {
     /**
      * Causes {@link ModeledFramework#children()} and {@link ModeledFramework#childrenAsZNodes()}
      * to ignore {@link org.apache.zookeeper.KeeperException.NoNodeException} and merely return

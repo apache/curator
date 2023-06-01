@@ -19,9 +19,9 @@
 
 package org.apache.curator.framework;
 
+import java.io.Closeable;
 import org.apache.curator.framework.api.TempGetDataBuilder;
 import org.apache.curator.framework.api.transaction.CuratorTransaction;
-import java.io.Closeable;
 
 /**
  * <p>
@@ -35,12 +35,11 @@ import java.io.Closeable;
  *     <a href="http://whilefalse.blogspot.com/2012/12/building-global-highly-available.html">http://whilefalse.blogspot.com/2012/12/building-global-highly-available.html</a>
  * </p>
  */
-public interface CuratorTempFramework extends Closeable
-{
+public interface CuratorTempFramework extends Closeable {
     /**
      * Stop the client
      */
-    public void     close();
+    public void close();
 
     /**
      * Start a transaction builder

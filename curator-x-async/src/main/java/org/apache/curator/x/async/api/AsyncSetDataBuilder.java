@@ -25,8 +25,7 @@ import org.apache.zookeeper.data.Stat;
 /**
  * Builder for setting ZNode data
  */
-public interface AsyncSetDataBuilder extends AsyncPathAndBytesable<AsyncStage<Stat>>
-{
+public interface AsyncSetDataBuilder extends AsyncPathAndBytesable<AsyncStage<Stat>> {
     /**
      * Cause the data to be compressed using the configured compression provider
      *

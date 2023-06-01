@@ -23,10 +23,8 @@ import org.apache.curator.framework.api.WatchableBase;
 import org.apache.curator.x.async.AsyncStage;
 import org.apache.zookeeper.AddWatchMode;
 
-public interface AsyncWatchBuilder extends
-    WatchableBase<AsyncPathable<AsyncStage<Void>>>,
-    AsyncPathable<AsyncStage<Void>>
-{
+public interface AsyncWatchBuilder
+        extends WatchableBase<AsyncPathable<AsyncStage<Void>>>, AsyncPathable<AsyncStage<Void>> {
     /**
      * The mode to use. By default, {@link org.apache.zookeeper.AddWatchMode#PERSISTENT_RECURSIVE} is used
      *

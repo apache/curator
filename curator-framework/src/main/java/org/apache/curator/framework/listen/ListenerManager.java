@@ -21,8 +21,7 @@ package org.apache.curator.framework.listen;
 
 import java.util.function.Consumer;
 
-public interface ListenerManager<K, V> extends Listenable<K>
-{
+public interface ListenerManager<K, V> extends Listenable<K> {
     /**
      * Remove all listeners
      */
@@ -43,8 +42,7 @@ public interface ListenerManager<K, V> extends Listenable<K>
      */
     void forEach(Consumer<V> function);
 
-    default boolean isEmpty()
-    {
+    default boolean isEmpty() {
         return size() == 0;
     }
 }

@@ -19,7 +19,7 @@
 
 package org.apache.curator.framework.api;
 
-public interface AsyncReconfigurable  {
+public interface AsyncReconfigurable {
 
     /**
      * Sets the configuration version to use.

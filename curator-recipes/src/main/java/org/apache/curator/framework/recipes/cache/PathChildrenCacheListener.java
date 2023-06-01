@@ -24,8 +24,7 @@ import org.apache.curator.framework.CuratorFramework;
 /**
  * Listener for PathChildrenCache changes
  */
-public interface PathChildrenCacheListener
-{
+public interface PathChildrenCacheListener {
     /**
      * Called when a change has occurred
      *
@@ -33,5 +32,5 @@ public interface PathChildrenCacheListener
      * @param event describes the change
      * @throws Exception errors
      */
-    public void     childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception;
+    public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception;
 }

@@ -19,13 +19,10 @@
 
 package org.apache.curator.framework;
 
-import org.apache.zookeeper.Watcher;
-
 /**
  * A CuratorFramework facade that tracks watchers created and allows a one-shot removal of all watchers
  */
-public interface WatcherRemoveCuratorFramework extends CuratorFramework
-{
+public interface WatcherRemoveCuratorFramework extends CuratorFramework {
     /**
      * Remove all outstanding watchers that have been set
      */

@@ -19,16 +19,15 @@
 
 package org.apache.curator.test;
 
+import java.io.IOException;
+import java.net.BindException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.io.IOException;
-import java.net.BindException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-public class BaseClassForTests
-{
+public class BaseClassForTests {
     protected volatile TestingServer server;
 
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -38,60 +37,51 @@ public class BaseClassForTests
     private static final String INTERNAL_PROPERTY_REMOVE_WATCHERS_IN_FOREGROUND;
     private static final String INTERNAL_PROPERTY_VALIDATE_NAMESPACE_WATCHER_MAP_EMPTY;
 
-    static
-    {
+    static {
         String logConnectionIssues = null;
-        try
-        {
+        try {
             // use reflection to avoid adding a circular dependency in the pom
             Class<?> debugUtilsClazz = Class.forName("org.apache.curator.utils.DebugUtils");
-            logConnectionIssues = (String)debugUtilsClazz.getField("PROPERTY_DONT_LOG_CONNECTION_ISSUES").get(null);
-        }
-        catch ( Exception e )
-        {
+            logConnectionIssues = (String) debugUtilsClazz
+                    .getField("PROPERTY_DONT_LOG_CONNECTION_ISSUES")
+                    .get(null);
+        } catch (Exception e) {
             e.printStackTrace();
         }
         INTERNAL_PROPERTY_DONT_LOG_CONNECTION_ISSUES = logConnectionIssues;
         String s = null;
-        try
-        {
+        try {
             // use reflection to avoid adding a circular dependency in the pom
-            s = (String)Class.forName("org.apache.curator.utils.DebugUtils").getField("PROPERTY_REMOVE_WATCHERS_IN_FOREGROUND").get(null);
-        }
-        catch ( Exception e )
-        {
+            s = (String) Class.forName("org.apache.curator.utils.DebugUtils")
+                    .getField("PROPERTY_REMOVE_WATCHERS_IN_FOREGROUND")
+                    .get(null);
+        } catch (Exception e) {
             e.printStackTrace();
         }
         INTERNAL_PROPERTY_REMOVE_WATCHERS_IN_FOREGROUND = s;
         s = null;
-        try
-        {
+        try {
             // use reflection to avoid adding a circular dependency in the pom
-            s = (String)Class.forName("org.apache.curator.utils.DebugUtils").getField("PROPERTY_VALIDATE_NAMESPACE_WATCHER_MAP_EMPTY").get(null);
-        }
-        catch ( Exception e )
-        {
+            s = (String) Class.forName("org.apache.curator.utils.DebugUtils")
+                    .getField("PROPERTY_VALIDATE_NAMESPACE_WATCHER_MAP_EMPTY")
+                    .get(null);
+        } catch (Exception e) {
             e.printStackTrace();
         }
         INTERNAL_PROPERTY_VALIDATE_NAMESPACE_WATCHER_MAP_EMPTY = s;
     }
 
     @BeforeEach
-    public void setup() throws Exception
-    {
-        if ( INTERNAL_PROPERTY_DONT_LOG_CONNECTION_ISSUES != null )
-        {
+    public void setup() throws Exception {
+        if (INTERNAL_PROPERTY_DONT_LOG_CONNECTION_ISSUES != null) {
             System.setProperty(INTERNAL_PROPERTY_DONT_LOG_CONNECTION_ISSUES, "true");
         }
         System.setProperty(INTERNAL_PROPERTY_REMOVE_WATCHERS_IN_FOREGROUND, "true");
         System.setProperty(INTERNAL_PROPERTY_VALIDATE_NAMESPACE_WATCHER_MAP_EMPTY, "true");
 
-        try
-        {
+        try {
             createServer();
-        }
-        catch ( FailedServerStartException ignore )
-        {
+        } catch (FailedServerStartException ignore) {
             log.warn("Failed to start server - retrying 1 more time");
             // server creation failed - we've sometime seen this with re-used addresses, etc. - retry one more time
             closeServer();
@@ -99,23 +89,16 @@ public class BaseClassForTests
         }
     }
 
-    public TestingCluster createAndStartCluster(int qty) throws Exception
-    {
+    public TestingCluster createAndStartCluster(int qty) throws Exception {
         TestingCluster cluster = new TestingCluster(qty);
-        try
-        {
+        try {
             cluster.start();
-        }
-        catch ( FailedServerStartException e )
-        {
+        } catch (FailedServerStartException e) {
             log.warn("Failed to start cluster - retrying 1 more time");
             // cluster creation failed - we've sometime seen this with re-used addresses, etc. - retry one more time
-            try
-            {
+            try {
                 cluster.close();
-            }
-            catch ( Exception ex )
-            {
+            } catch (Exception ex) {
                 // ignore
             }
             cluster = new TestingCluster(qty);
@@ -124,16 +107,11 @@ public class BaseClassForTests
         return cluster;
     }
 
-    protected void createServer() throws Exception
-    {
-        while ( server == null )
-        {
-            try
-            {
+    protected void createServer() throws Exception {
+        while (server == null) {
+            try {
                 server = new TestingServer();
-            }
-            catch ( BindException e )
-            {
+            } catch (BindException e) {
                 server = null;
                 throw new FailedServerStartException("Getting bind exception - retrying to allocate server");
             }
@@ -141,27 +119,19 @@ public class BaseClassForTests
     }
 
     @AfterEach
-    public void teardown() throws Exception
-    {
+    public void teardown() throws Exception {
         System.clearProperty(INTERNAL_PROPERTY_VALIDATE_NAMESPACE_WATCHER_MAP_EMPTY);
         System.clearProperty(INTERNAL_PROPERTY_REMOVE_WATCHERS_IN_FOREGROUND);
         closeServer();
     }
 
-    private void closeServer()
-    {
-        if ( server != null )
-        {
-            try
-            {
+    private void closeServer() {
+        if (server != null) {
+            try {
                 server.close();
-            }
-            catch ( IOException e )
-            {
+            } catch (IOException e) {
                 e.printStackTrace();
-            }
-            finally
-            {
+            } finally {
                 server = null;
             }
         }

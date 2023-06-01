@@ -23,6 +23,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.google.common.collect.Lists;
 import com.google.common.io.ByteSource;
 import com.google.common.io.CharStreams;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLConnection;
+import javax.ws.rs.core.MediaType;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.discovery.ServiceType;
@@ -37,36 +47,24 @@ import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import javax.ws.rs.core.MediaType;
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLConnection;
 
 @SuppressWarnings("unchecked")
-public class TestStringsWithRestEasy
-{
+public class TestStringsWithRestEasy {
     private static final String HOST = "127.0.0.1";
     private Server server;
     private int port;
 
     @BeforeEach
-    public void         setup() throws Exception
-    {
+    public void setup() throws Exception {
         RestEasyApplication.singletonsRef.set(new RestEasySingletons());
 
         ResteasyProviderFactory.setInstance(new ResteasyProviderFactory());
 
-        HttpServletDispatcher   dispatcher = new HttpServletDispatcher();
+        HttpServletDispatcher dispatcher = new HttpServletDispatcher();
 
         port = InstanceSpec.getRandomPort();
         server = new Server(port);
-        
+
         ServletContextHandler root = new ServletContextHandler(ServletContextHandler.SESSIONS);
         root.setContextPath("/");
         root.setServer(server);
@@ -80,78 +78,85 @@ public class TestStringsWithRestEasy
     }
 
     @AfterEach
-    public void         teardown() throws Exception
-    {
+    public void teardown() throws Exception {
         server.stop();
         server.join();
     }
 
     @Test
-    public void     testRegisterService() throws Exception
-    {
-        RestEasySingletons  restEasySingletons = RestEasyApplication.singletonsRef.get();
+    public void testRegisterService() throws Exception {
+        RestEasySingletons restEasySingletons = RestEasyApplication.singletonsRef.get();
 
         ServiceInstance<String> service = ServiceInstance.<String>builder()
-            .name("test")
-            .payload("From Test")
-            .serviceType(ServiceType.STATIC)
-            .build();
+                .name("test")
+                .payload("From Test")
+                .serviceType(ServiceType.STATIC)
+                .build();
 
-        ByteArrayOutputStream           out = new ByteArrayOutputStream();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
         restEasySingletons.serviceInstanceMarshallerSingleton.writeTo(service, null, null, null, null, null, out);
 
         getJson("http://" + HOST + ":" + port + "/v1/service/test/" + service.getId(), new String(out.toByteArray()));
 
         String json = getJson("http://" + HOST + ":" + port + "/v1/service", null);
-        ServiceNames names = restEasySingletons.serviceNamesMarshallerSingleton.readFrom(ServiceNames.class, null, null, MediaType.APPLICATION_JSON_TYPE, null, new ByteArrayInputStream(json.getBytes()));
+        ServiceNames names = restEasySingletons.serviceNamesMarshallerSingleton.readFrom(
+                ServiceNames.class,
+                null,
+                null,
+                MediaType.APPLICATION_JSON_TYPE,
+                null,
+                new ByteArrayInputStream(json.getBytes()));
         assertEquals(names.getNames(), Lists.newArrayList("test"));
 
         json = getJson("http://" + HOST + ":" + port + "/v1/service/test", null);
-        ServiceInstances<String> instances = restEasySingletons.serviceInstancesMarshallerSingleton.readFrom(null, null, null, null, null, new ByteArrayInputStream(json.getBytes()));
+        ServiceInstances<String> instances = restEasySingletons.serviceInstancesMarshallerSingleton.readFrom(
+                null, null, null, null, null, new ByteArrayInputStream(json.getBytes()));
         assertEquals(instances.getServices().size(), 1);
         assertEquals(instances.getServices().get(0), service);
 
         // Retrieve single instance
         json = getJson("http://" + HOST + ":" + port + "/v1/service/test/" + service.getId(), null);
-        ServiceInstance<String> instance = restEasySingletons.serviceInstanceMarshallerSingleton.readFrom(null, null, null, null, null, new ByteArrayInputStream(json.getBytes()));
+        ServiceInstance<String> instance = restEasySingletons.serviceInstanceMarshallerSingleton.readFrom(
+                null, null, null, null, null, new ByteArrayInputStream(json.getBytes()));
         assertEquals(instance, service);
-
     }
 
     @Test
-    public void     testEmptyServiceNames() throws Exception
-    {
-        String          json = getJson("http://" + HOST + ":" + port + "/v1/service", null);
-        ServiceNames    names = RestEasyApplication.singletonsRef.get().serviceNamesMarshallerSingleton.readFrom(ServiceNames.class, null, null, MediaType.APPLICATION_JSON_TYPE, null, new ByteArrayInputStream(json.getBytes()));
+    public void testEmptyServiceNames() throws Exception {
+        String json = getJson("http://" + HOST + ":" + port + "/v1/service", null);
+        ServiceNames names = RestEasyApplication.singletonsRef
+                .get()
+                .serviceNamesMarshallerSingleton
+                .readFrom(
+                        ServiceNames.class,
+                        null,
+                        null,
+                        MediaType.APPLICATION_JSON_TYPE,
+                        null,
+                        new ByteArrayInputStream(json.getBytes()));
 
         assertEquals(names.getNames(), Lists.<String>newArrayList());
     }
 
-    private String getJson(String urlStr, String body) throws IOException
-    {
-        URL                 url = new URL(urlStr);
-        URLConnection       urlConnection = url.openConnection();
+    private String getJson(String urlStr, String body) throws IOException {
+        URL url = new URL(urlStr);
+        URLConnection urlConnection = url.openConnection();
         urlConnection.addRequestProperty("Accept", "application/json");
-        if ( body != null )
-        {
-            ((HttpURLConnection)urlConnection).setRequestMethod("PUT");
+        if (body != null) {
+            ((HttpURLConnection) urlConnection).setRequestMethod("PUT");
 
             urlConnection.addRequestProperty("Content-Type", "application/json");
             urlConnection.addRequestProperty("Content-Length", Integer.toString(body.length()));
             urlConnection.setDoOutput(true);
 
-            OutputStream        out = urlConnection.getOutputStream();
+            OutputStream out = urlConnection.getOutputStream();
             ByteSource.wrap(body.getBytes()).copyTo(out);
         }
         BufferedReader in = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
-        try
-        {
+        try {
             return CharStreams.toString(in);
-        }
-        finally
-        {
+        } finally {
             in.close();
         }
     }
-
 }

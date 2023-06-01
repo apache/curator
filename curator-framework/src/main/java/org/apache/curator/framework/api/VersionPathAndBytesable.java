@@ -19,8 +19,4 @@
 
 package org.apache.curator.framework.api;
 
-public interface VersionPathAndBytesable<T> extends
-        Versionable<PathAndBytesable<T>>,
-        PathAndBytesable<T>
-{
-}
+public interface VersionPathAndBytesable<T> extends Versionable<PathAndBytesable<T>>, PathAndBytesable<T> {}

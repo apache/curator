@@ -19,9 +19,7 @@
 
 package org.apache.curator.framework.api;
 
-public interface ReconfigBuilderMain extends
-    Joinable<LeaveStatConfigEnsembleable>,
-    Leaveable<JoinStatConfigEnsembleable>,
-    Membersable<StatConfigureEnsembleable>
-{
-}
+public interface ReconfigBuilderMain
+        extends Joinable<LeaveStatConfigEnsembleable>,
+                Leaveable<JoinStatConfigEnsembleable>,
+                Membersable<StatConfigureEnsembleable> {}

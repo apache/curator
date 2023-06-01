@@ -24,51 +24,43 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
-class StandardCuratorCacheStorage implements CuratorCacheStorage
-{
+class StandardCuratorCacheStorage implements CuratorCacheStorage {
     private final Map<String, ChildData> dataMap;
     private final boolean cacheBytes;
 
-    StandardCuratorCacheStorage(boolean cacheBytes)
-    {
+    StandardCuratorCacheStorage(boolean cacheBytes) {
         this.dataMap = new ConcurrentHashMap<>();
         this.cacheBytes = cacheBytes;
     }
 
     @Override
-    public Optional<ChildData> put(ChildData data)
-    {
+    public Optional<ChildData> put(ChildData data) {
         ChildData localData = cacheBytes ? data : new ChildData(data.getPath(), data.getStat(), null);
         return Optional.ofNullable(dataMap.put(data.getPath(), localData));
     }
 
     @Override
-    public Optional<ChildData> remove(String path)
-    {
+    public Optional<ChildData> remove(String path) {
         return Optional.ofNullable(dataMap.remove(path));
     }
 
     @Override
-    public Optional<ChildData> get(String path)
-    {
+    public Optional<ChildData> get(String path) {
         return Optional.ofNullable(dataMap.get(path));
     }
 
     @Override
-    public int size()
-    {
+    public int size() {
         return dataMap.size();
     }
 
     @Override
-    public Stream<ChildData> stream()
-    {
+    public Stream<ChildData> stream() {
         return dataMap.values().stream();
     }
 
     @Override
-    public void clear()
-    {
+    public void clear() {
         dataMap.clear();
     }
 }

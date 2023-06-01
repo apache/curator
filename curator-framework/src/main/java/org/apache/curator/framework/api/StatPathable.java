@@ -19,8 +19,4 @@
 
 package org.apache.curator.framework.api;
 
-public interface StatPathable<T> extends
-    Pathable<T>,
-    Statable<Pathable<T>>
-{
-}
+public interface StatPathable<T> extends Pathable<T>, Statable<Pathable<T>> {}

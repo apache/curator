@@ -21,8 +21,7 @@ package org.apache.curator.framework.state;
 
 import org.apache.curator.framework.CuratorFramework;
 
-public interface ConnectionStateListener
-{
+public interface ConnectionStateListener {
     /**
      * Called when there is a state change in the connection
      *
@@ -39,8 +38,7 @@ public interface ConnectionStateListener
      *
      * @return true/false
      */
-    default boolean doNotProxy()
-    {
+    default boolean doNotProxy() {
         return false;
     }
 }

@@ -30,18 +30,17 @@ import java.util.UUID;
 /**
  * POJO that represents a service instance
  */
-public class ServiceInstance<T>
-{
-    private final String        name;
-    private final String        id;
-    private final String        address;
-    private final Integer       port;
-    private final Integer       sslPort;
-    private final T             payload;
-    private final long          registrationTimeUTC;
-    private final ServiceType   serviceType;
-    private final UriSpec       uriSpec;
-    private final boolean       enabled;
+public class ServiceInstance<T> {
+    private final String name;
+    private final String id;
+    private final String address;
+    private final Integer port;
+    private final Integer sslPort;
+    private final T payload;
+    private final long registrationTimeUTC;
+    private final ServiceType serviceType;
+    private final UriSpec uriSpec;
+    private final boolean enabled;
 
     /**
      * Return a new builder. The {@link #address} is set to the ip of the first
@@ -50,16 +49,14 @@ public class ServiceInstance<T>
      * @return builder
      * @throws Exception errors getting the local IP
      */
-    public static<T> ServiceInstanceBuilder<T>builder() throws Exception
-    {
-        String                  address = null;
+    public static <T> ServiceInstanceBuilder<T> builder() throws Exception {
+        String address = null;
         Collection<InetAddress> ips = ServiceInstanceBuilder.getAllLocalIPs();
-        if ( ips.size() > 0 )
-        {
-            address = ips.iterator().next().getHostAddress();   // default to the first address
+        if (ips.size() > 0) {
+            address = ips.iterator().next().getHostAddress(); // default to the first address
         }
 
-        String                  id = UUID.randomUUID().toString();
+        String id = UUID.randomUUID().toString();
 
         return new ServiceInstanceBuilder<T>().address(address).id(id).registrationTimeUTC(System.currentTimeMillis());
     }
@@ -75,8 +72,16 @@ public class ServiceInstance<T>
      * @param serviceType type of the service
      * @param uriSpec the uri spec or null
      */
-    public ServiceInstance(String name, String id, String address, Integer port, Integer sslPort, T payload, long registrationTimeUTC, ServiceType serviceType, UriSpec uriSpec)
-    {
+    public ServiceInstance(
+            String name,
+            String id,
+            String address,
+            Integer port,
+            Integer sslPort,
+            T payload,
+            long registrationTimeUTC,
+            ServiceType serviceType,
+            UriSpec uriSpec) {
         this(name, id, address, port, sslPort, payload, registrationTimeUTC, serviceType, uriSpec, true);
     }
 
@@ -98,8 +103,17 @@ public class ServiceInstance<T>
      * @param uriSpec the uri spec or null
      * @param enabled true if the instance should be considered enabled
      */
-    public ServiceInstance(String name, String id, String address, Integer port, Integer sslPort, T payload, long registrationTimeUTC, ServiceType serviceType, UriSpec uriSpec, boolean enabled)
-    {
+    public ServiceInstance(
+            String name,
+            String id,
+            String address,
+            Integer port,
+            Integer sslPort,
+            T payload,
+            long registrationTimeUTC,
+            ServiceType serviceType,
+            UriSpec uriSpec,
+            boolean enabled) {
         name = Preconditions.checkNotNull(name, "name cannot be null");
         id = Preconditions.checkNotNull(id, "id cannot be null");
 
@@ -118,54 +132,44 @@ public class ServiceInstance<T>
     /**
      * Inits to default values. Only exists for deserialization
      */
-    ServiceInstance()
-    {
+    ServiceInstance() {
         this("", "", null, null, null, null, 0, ServiceType.DYNAMIC, null, true);
     }
 
-    public String getName()
-    {
+    public String getName() {
         return name;
     }
 
-    public String getId()
-    {
+    public String getId() {
         return id;
     }
 
-    public String getAddress()
-    {
+    public String getAddress() {
         return address;
     }
 
-    public Integer getPort()
-    {
+    public Integer getPort() {
         return port;
     }
 
-    public Integer getSslPort()
-    {
+    public Integer getSslPort() {
         return sslPort;
     }
 
-    @JsonTypeInfo(use= JsonTypeInfo.Id.CLASS, defaultImpl=Object.class)
-    public T getPayload()
-    {
+    @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, defaultImpl = Object.class)
+    public T getPayload() {
         return payload;
     }
 
-    public long getRegistrationTimeUTC()
-    {
+    public long getRegistrationTimeUTC() {
         return registrationTimeUTC;
     }
 
-    public ServiceType getServiceType()
-    {
+    public ServiceType getServiceType() {
         return serviceType;
     }
 
-    public UriSpec getUriSpec()
-    {
+    public UriSpec getUriSpec() {
         return uriSpec;
     }
 
@@ -178,74 +182,58 @@ public class ServiceInstance<T>
      *
      * @return true/false
      */
-    public boolean isEnabled()
-    {
+    public boolean isEnabled() {
         return enabled;
     }
 
-    public String buildUriSpec()
-    {
+    public String buildUriSpec() {
         return buildUriSpec(Maps.<String, Object>newHashMap());
     }
 
-    public String buildUriSpec(Map<String, Object> variables)
-    {
+    public String buildUriSpec(Map<String, Object> variables) {
         return (uriSpec != null) ? uriSpec.build(this, variables) : "";
     }
 
     @SuppressWarnings("RedundantIfStatement")
     @Override
-    public boolean equals(Object o)
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
-        ServiceInstance that = (ServiceInstance)o;
+        ServiceInstance that = (ServiceInstance) o;
 
-        if ( registrationTimeUTC != that.registrationTimeUTC )
-        {
+        if (registrationTimeUTC != that.registrationTimeUTC) {
             return false;
         }
-        if ( address != null ? !address.equals(that.address) : that.address != null )
-        {
+        if (address != null ? !address.equals(that.address) : that.address != null) {
             return false;
         }
-        if ( id != null ? !id.equals(that.id) : that.id != null )
-        {
+        if (id != null ? !id.equals(that.id) : that.id != null) {
             return false;
         }
-        if ( name != null ? !name.equals(that.name) : that.name != null )
-        {
+        if (name != null ? !name.equals(that.name) : that.name != null) {
             return false;
         }
-        if ( payload != null ? !payload.equals(that.payload) : that.payload != null )
-        {
+        if (payload != null ? !payload.equals(that.payload) : that.payload != null) {
             return false;
         }
-        if ( port != null ? !port.equals(that.port) : that.port != null )
-        {
+        if (port != null ? !port.equals(that.port) : that.port != null) {
             return false;
         }
-        if ( serviceType != that.serviceType )
-        {
+        if (serviceType != that.serviceType) {
             return false;
         }
-        if ( sslPort != null ? !sslPort.equals(that.sslPort) : that.sslPort != null )
-        {
+        if (sslPort != null ? !sslPort.equals(that.sslPort) : that.sslPort != null) {
             return false;
         }
-        if ( uriSpec != null ? !uriSpec.equals(that.uriSpec) : that.uriSpec != null )
-        {
+        if (uriSpec != null ? !uriSpec.equals(that.uriSpec) : that.uriSpec != null) {
             return false;
         }
-        if ( enabled != that.enabled )
-        {
+        if (enabled != that.enabled) {
             return false;
         }
 
@@ -253,15 +241,14 @@ public class ServiceInstance<T>
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         int result = name != null ? name.hashCode() : 0;
         result = 31 * result + (id != null ? id.hashCode() : 0);
         result = 31 * result + (address != null ? address.hashCode() : 0);
         result = 31 * result + (port != null ? port.hashCode() : 0);
         result = 31 * result + (sslPort != null ? sslPort.hashCode() : 0);
         result = 31 * result + (payload != null ? payload.hashCode() : 0);
-        result = 31 * result + (int)(registrationTimeUTC ^ (registrationTimeUTC >>> 32));
+        result = 31 * result + (int) (registrationTimeUTC ^ (registrationTimeUTC >>> 32));
         result = 31 * result + (serviceType != null ? serviceType.hashCode() : 0);
         result = 31 * result + (uriSpec != null ? uriSpec.hashCode() : 0);
         result = 31 * result + (enabled ? 1 : 0);
@@ -269,19 +256,17 @@ public class ServiceInstance<T>
     }
 
     @Override
-    public String toString()
-    {
-        return "ServiceInstance{" +
-            "name='" + name + '\'' +
-            ", id='" + id + '\'' +
-            ", address='" + address + '\'' +
-            ", port=" + port +
-            ", sslPort=" + sslPort +
-            ", payload=" + payload +
-            ", registrationTimeUTC=" + registrationTimeUTC +
-            ", serviceType=" + serviceType +
-            ", uriSpec=" + uriSpec +
-            ", enabled=" + enabled +
-            '}';
+    public String toString() {
+        return "ServiceInstance{" + "name='"
+                + name + '\'' + ", id='"
+                + id + '\'' + ", address='"
+                + address + '\'' + ", port="
+                + port + ", sslPort="
+                + sslPort + ", payload="
+                + payload + ", registrationTimeUTC="
+                + registrationTimeUTC + ", serviceType="
+                + serviceType + ", uriSpec="
+                + uriSpec + ", enabled="
+                + enabled + '}';
     }
 }

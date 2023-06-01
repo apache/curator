@@ -19,8 +19,7 @@
 
 package org.apache.curator.framework.api.transaction;
 
-public interface CuratorTransactionBridge
-{
+public interface CuratorTransactionBridge {
     /**
      * Syntactic sugar to make the fluent interface more readable
      *

@@ -21,13 +21,13 @@ package org.apache.curator.framework.recipes.locks;
 
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.MoreExecutors;
-import org.apache.curator.framework.CuratorFramework;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.PathUtils;
 
 /**
@@ -35,21 +35,18 @@ import org.apache.curator.utils.PathUtils;
  * use the same lock path will achieve an inter-process critical section. Further, this mutex is
  * "fair" - each user will get the mutex in the order requested (from ZK's point of view)
  */
-public class InterProcessMutex implements InterProcessLock, Revocable<InterProcessMutex>
-{
+public class InterProcessMutex implements InterProcessLock, Revocable<InterProcessMutex> {
     private final LockInternals internals;
     private final String basePath;
 
     private final ConcurrentMap<Thread, LockData> threadData = Maps.newConcurrentMap();
 
-    private static class LockData
-    {
+    private static class LockData {
         final Thread owningThread;
         final String lockPath;
         final AtomicInteger lockCount = new AtomicInteger(1);
 
-        private LockData(Thread owningThread, String lockPath)
-        {
+        private LockData(Thread owningThread, String lockPath) {
             this.owningThread = owningThread;
             this.lockPath = lockPath;
         }
@@ -61,8 +58,7 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
      * @param client client
      * @param path   the path to lock
      */
-    public InterProcessMutex(CuratorFramework client, String path)
-    {
+    public InterProcessMutex(CuratorFramework client, String path) {
         this(client, path, new StandardLockInternalsDriver());
     }
 
@@ -71,8 +67,7 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
      * @param path   the path to lock
      * @param driver lock driver
      */
-    public InterProcessMutex(CuratorFramework client, String path, LockInternalsDriver driver)
-    {
+    public InterProcessMutex(CuratorFramework client, String path, LockInternalsDriver driver) {
         this(client, path, LOCK_NAME, 1, driver);
     }
 
@@ -84,10 +79,8 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
      * @throws Exception ZK errors, connection interruptions
      */
     @Override
-    public void acquire() throws Exception
-    {
-        if ( !internalLock(-1, null) )
-        {
+    public void acquire() throws Exception {
+        if (!internalLock(-1, null)) {
             throw new IOException("Lost connection while trying to acquire lock: " + basePath);
         }
     }
@@ -103,8 +96,7 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
      * @throws Exception ZK errors, connection interruptions
      */
     @Override
-    public boolean acquire(long time, TimeUnit unit) throws Exception
-    {
+    public boolean acquire(long time, TimeUnit unit) throws Exception {
         return internalLock(time, unit);
     }
 
@@ -114,8 +106,7 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
      * @return true/false
      */
     @Override
-    public boolean isAcquiredInThisProcess()
-    {
+    public boolean isAcquiredInThisProcess() {
         return (threadData.size() > 0);
     }
 
@@ -126,35 +117,28 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
      * @throws Exception ZK errors, interruptions, current thread does not own the lock
      */
     @Override
-    public void release() throws Exception
-    {
+    public void release() throws Exception {
         /*
-            Note on concurrency: a given lockData instance
-            can be only acted on by a single thread so locking isn't necessary
-         */
+           Note on concurrency: a given lockData instance
+           can be only acted on by a single thread so locking isn't necessary
+        */
 
         Thread currentThread = Thread.currentThread();
         LockData lockData = threadData.get(currentThread);
-        if ( lockData == null )
-        {
+        if (lockData == null) {
             throw new IllegalMonitorStateException("You do not own the lock: " + basePath);
         }
 
         int newLockCount = lockData.lockCount.decrementAndGet();
-        if ( newLockCount > 0 )
-        {
+        if (newLockCount > 0) {
             return;
         }
-        if ( newLockCount < 0 )
-        {
+        if (newLockCount < 0) {
             throw new IllegalMonitorStateException("Lock count has gone negative for lock: " + basePath);
         }
-        try
-        {
+        try {
             internals.releaseLock(lockData.lockPath);
-        }
-        finally
-        {
+        } finally {
             threadData.remove(currentThread);
         }
     }
@@ -165,60 +149,52 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
      * @return list of nodes
      * @throws Exception ZK errors, interruptions, etc.
      */
-    public Collection<String> getParticipantNodes() throws Exception
-    {
-        return LockInternals.getParticipantNodes(internals.getClient(), basePath, internals.getLockName(), internals.getDriver());
+    public Collection<String> getParticipantNodes() throws Exception {
+        return LockInternals.getParticipantNodes(
+                internals.getClient(), basePath, internals.getLockName(), internals.getDriver());
     }
 
     @Override
-    public void makeRevocable(RevocationListener<InterProcessMutex> listener)
-    {
+    public void makeRevocable(RevocationListener<InterProcessMutex> listener) {
         makeRevocable(listener, MoreExecutors.directExecutor());
     }
 
     @Override
-    public void makeRevocable(final RevocationListener<InterProcessMutex> listener, Executor executor)
-    {
-        internals.makeRevocable(new RevocationSpec(executor, new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    listener.revocationRequested(InterProcessMutex.this);
-                }
-            }));
+    public void makeRevocable(final RevocationListener<InterProcessMutex> listener, Executor executor) {
+        internals.makeRevocable(new RevocationSpec(executor, new Runnable() {
+            @Override
+            public void run() {
+                listener.revocationRequested(InterProcessMutex.this);
+            }
+        }));
     }
 
-    InterProcessMutex(CuratorFramework client, String path, String lockName, int maxLeases, LockInternalsDriver driver)
-    {
+    InterProcessMutex(
+            CuratorFramework client, String path, String lockName, int maxLeases, LockInternalsDriver driver) {
         basePath = PathUtils.validatePath(path);
         internals = new LockInternals(client, driver, path, lockName, maxLeases);
     }
 
     /**
      * Returns true if the mutex is acquired by the calling thread
-     * 
+     *
      * @return true/false
      */
-    public boolean isOwnedByCurrentThread()
-    {
+    public boolean isOwnedByCurrentThread() {
         LockData lockData = threadData.get(Thread.currentThread());
         return (lockData != null) && (lockData.lockCount.get() > 0);
     }
 
-    protected byte[] getLockNodeBytes()
-    {
+    protected byte[] getLockNodeBytes() {
         return null;
     }
 
-    protected String getLockPath()
-    {
+    protected String getLockPath() {
         LockData lockData = threadData.get(Thread.currentThread());
         return lockData != null ? lockData.lockPath : null;
     }
 
-    private boolean internalLock(long time, TimeUnit unit) throws Exception
-    {
+    private boolean internalLock(long time, TimeUnit unit) throws Exception {
         /*
            Note on concurrency: a given lockData instance
            can be only acted on by a single thread so locking isn't necessary
@@ -227,16 +203,14 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
         Thread currentThread = Thread.currentThread();
 
         LockData lockData = threadData.get(currentThread);
-        if ( lockData != null )
-        {
+        if (lockData != null) {
             // re-entering
             lockData.lockCount.incrementAndGet();
             return true;
         }
 
         String lockPath = internals.attemptLock(time, unit, getLockNodeBytes());
-        if ( lockPath != null )
-        {
+        if (lockPath != null) {
             LockData newLockData = new LockData(currentThread, lockPath);
             threadData.put(currentThread, newLockData);
             return true;

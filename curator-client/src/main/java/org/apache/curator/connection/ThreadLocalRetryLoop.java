@@ -19,11 +19,11 @@
 
 package org.apache.curator.connection;
 
+import java.util.Objects;
+import java.util.function.Supplier;
 import org.apache.curator.RetryLoop;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.Objects;
-import java.util.function.Supplier;
 
 /**
  * <p>
@@ -62,61 +62,48 @@ import java.util.function.Supplier;
  * </pre></code>
  * </p>
  */
-public class ThreadLocalRetryLoop
-{
+public class ThreadLocalRetryLoop {
     private static final Logger log = LoggerFactory.getLogger(ThreadLocalRetryLoop.class);
     private static final ThreadLocal<Entry> threadLocal = new ThreadLocal<>();
 
-    private static class Entry
-    {
+    private static class Entry {
         private final RetryLoop retryLoop;
         private int counter;
 
-        Entry(RetryLoop retryLoop)
-        {
+        Entry(RetryLoop retryLoop) {
             this.retryLoop = retryLoop;
         }
     }
 
-    private static class WrappedRetryLoop extends RetryLoop
-    {
+    private static class WrappedRetryLoop extends RetryLoop {
         private final RetryLoop retryLoop;
         private Exception takenException;
 
-        public WrappedRetryLoop(RetryLoop retryLoop)
-        {
+        public WrappedRetryLoop(RetryLoop retryLoop) {
             this.retryLoop = retryLoop;
         }
 
         @Override
-        public boolean shouldContinue()
-        {
+        public boolean shouldContinue() {
             return retryLoop.shouldContinue() && (takenException == null);
         }
 
         @Override
-        public void markComplete()
-        {
+        public void markComplete() {
             retryLoop.markComplete();
         }
 
         @Override
-        public void takeException(Exception exception) throws Exception
-        {
-            if ( takenException != null )
-            {
-                if ( exception.getClass() != takenException.getClass() )
-                {
+        public void takeException(Exception exception) throws Exception {
+            if (takenException != null) {
+                if (exception.getClass() != takenException.getClass()) {
                     log.error("Multiple exceptions in retry loop", exception);
                 }
                 throw takenException;
             }
-            try
-            {
+            try {
                 retryLoop.takeException(exception);
-            }
-            catch ( Exception e )
-            {
+            } catch (Exception e) {
                 takenException = e;
                 throw e;
             }
@@ -130,11 +117,9 @@ public class ThreadLocalRetryLoop
      * @param newRetryLoopSupplier supply a new retry loop when needed. Normally you should use {@link org.apache.curator.CuratorZookeeperClient#newRetryLoop()}
      * @return retry loop to use
      */
-    public RetryLoop getRetryLoop(Supplier<RetryLoop> newRetryLoopSupplier)
-    {
+    public RetryLoop getRetryLoop(Supplier<RetryLoop> newRetryLoopSupplier) {
         Entry entry = threadLocal.get();
-        if ( entry == null )
-        {
+        if (entry == null) {
             entry = new Entry(new WrappedRetryLoop(newRetryLoopSupplier.get()));
             threadLocal.set(entry);
         }
@@ -146,11 +131,9 @@ public class ThreadLocalRetryLoop
      * Must be called to release the retry loop. See {@link RetryLoop#callWithRetry(org.apache.curator.CuratorZookeeperClient, java.util.concurrent.Callable)}
      * for an example usage.
      */
-    public void release()
-    {
+    public void release() {
         Entry entry = Objects.requireNonNull(threadLocal.get(), "No retry loop was set - unbalanced call to release()");
-        if ( --entry.counter <= 0 )
-        {
+        if (--entry.counter <= 0) {
             threadLocal.remove();
         }
     }

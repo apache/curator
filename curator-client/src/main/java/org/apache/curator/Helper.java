@@ -21,38 +21,31 @@ package org.apache.curator;
 
 import org.apache.zookeeper.ZooKeeper;
 
-class Helper
-{
+class Helper {
     private final Data data;
 
-    static class Data
-    {
+    static class Data {
         volatile ZooKeeper zooKeeperHandle = null;
         volatile String connectionString = null;
     }
 
-    Helper(Data data)
-    {
+    Helper(Data data) {
         this.data = data;
     }
 
-    ZooKeeper getZooKeeper() throws Exception
-    {
+    ZooKeeper getZooKeeper() throws Exception {
         return data.zooKeeperHandle;
     }
 
-    String getConnectionString()
-    {
+    String getConnectionString() {
         return data.connectionString;
     }
 
-    int getNegotiatedSessionTimeoutMs()
-    {
+    int getNegotiatedSessionTimeoutMs() {
         return (data.zooKeeperHandle != null) ? data.zooKeeperHandle.getSessionTimeout() : 0;
     }
 
-    void resetConnectionString(String connectionString)
-    {
+    void resetConnectionString(String connectionString) {
         data.connectionString = connectionString;
     }
 }

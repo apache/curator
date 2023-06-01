@@ -20,7 +20,7 @@
 package org.apache.curator.framework.imps;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
+import java.util.concurrent.CountDownLatch;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
@@ -32,22 +32,23 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.CountDownLatch;
-
-public class TestAddWatch extends CuratorTestBase
-{
+public class TestAddWatch extends CuratorTestBase {
     @Test
-    public void testPersistentRecursiveWatch() throws Exception
-    {
-        try ( CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)) )
-        {
+    public void testPersistentRecursiveWatch() throws Exception {
+        try (CuratorFramework client =
+                CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1))) {
             client.start();
             client.blockUntilConnected();
 
             CountDownLatch latch = new CountDownLatch(5);
             Watcher watcher = event -> latch.countDown();
             AsyncCuratorFramework async = AsyncCuratorFramework.wrap(client);
-            async.addWatch().withMode(AddWatchMode.PERSISTENT_RECURSIVE).usingWatcher(watcher).forPath("/test").toCompletableFuture().get();
+            async.addWatch()
+                    .withMode(AddWatchMode.PERSISTENT_RECURSIVE)
+                    .usingWatcher(watcher)
+                    .forPath("/test")
+                    .toCompletableFuture()
+                    .get();
 
             client.create().forPath("/test");
             client.create().forPath("/test/a");
@@ -60,9 +61,8 @@ public class TestAddWatch extends CuratorTestBase
     }
 
     @Test
-    public void testPersistentRecursiveDefaultWatch() throws Exception
-    {
-        CountDownLatch latch = new CountDownLatch(6);   // 5 creates plus the initial sync
+    public void testPersistentRecursiveDefaultWatch() throws Exception {
+        CountDownLatch latch = new CountDownLatch(6); // 5 creates plus the initial sync
         ZookeeperFactory zookeeperFactory = (connectString, sessionTimeout, watcher, canBeReadOnly) -> {
             Watcher actualWatcher = event -> {
                 watcher.process(event);
@@ -70,8 +70,11 @@ public class TestAddWatch extends CuratorTestBase
             };
             return new ZooKeeper(connectString, sessionTimeout, actualWatcher);
         };
-        try (CuratorFramework client = CuratorFrameworkFactory.builder().connectString(server.getConnectString()).retryPolicy(new RetryOneTime(1)).zookeeperFactory(zookeeperFactory).build() )
-        {
+        try (CuratorFramework client = CuratorFrameworkFactory.builder()
+                .connectString(server.getConnectString())
+                .retryPolicy(new RetryOneTime(1))
+                .zookeeperFactory(zookeeperFactory)
+                .build()) {
             client.start();
             client.blockUntilConnected();
 

@@ -19,60 +19,49 @@
 
 package org.apache.curator.x.discovery.strategies;
 
-import org.apache.curator.x.discovery.ProviderStrategy;
-import org.apache.curator.x.discovery.ServiceInstance;
-import org.apache.curator.x.discovery.details.InstanceProvider;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.curator.x.discovery.ProviderStrategy;
+import org.apache.curator.x.discovery.ServiceInstance;
+import org.apache.curator.x.discovery.details.InstanceProvider;
 
 /**
  * This strategy uses a master strategy to pick the initial instance. Once picked,
  * that instance is always returned. If, however, the currently selected instance
  * is no longer in the list, the master strategy is used to pick a new instance.
  */
-public class StickyStrategy<T> implements ProviderStrategy<T>
-{
-    private final ProviderStrategy<T>                   masterStrategy;
-    private final AtomicReference<ServiceInstance<T>>   ourInstance = new AtomicReference<ServiceInstance<T>>(null);
-    private final AtomicInteger                         instanceNumber = new AtomicInteger(-1);
+public class StickyStrategy<T> implements ProviderStrategy<T> {
+    private final ProviderStrategy<T> masterStrategy;
+    private final AtomicReference<ServiceInstance<T>> ourInstance = new AtomicReference<ServiceInstance<T>>(null);
+    private final AtomicInteger instanceNumber = new AtomicInteger(-1);
 
     /**
      * @param masterStrategy the strategy to use for picking the sticky instance
      */
-    public StickyStrategy(ProviderStrategy<T> masterStrategy)
-    {
+    public StickyStrategy(ProviderStrategy<T> masterStrategy) {
         this.masterStrategy = masterStrategy;
     }
 
     @Override
-    public ServiceInstance<T> getInstance(InstanceProvider<T> instanceProvider) throws Exception
-    {
-        final List<ServiceInstance<T>>    instances = instanceProvider.getInstances();
+    public ServiceInstance<T> getInstance(InstanceProvider<T> instanceProvider) throws Exception {
+        final List<ServiceInstance<T>> instances = instanceProvider.getInstances();
 
         {
-            ServiceInstance<T>                localOurInstance = ourInstance.get();
-            if ( !instances.contains(localOurInstance) )
-            {
+            ServiceInstance<T> localOurInstance = ourInstance.get();
+            if (!instances.contains(localOurInstance)) {
                 ourInstance.compareAndSet(localOurInstance, null);
             }
         }
-        
-        if ( ourInstance.get() == null )
-        {
-            ServiceInstance<T> instance = masterStrategy.getInstance
-            (
-                new InstanceProvider<T>()
-                {
-                    @Override
-                    public List<ServiceInstance<T>> getInstances() throws Exception
-                    {
-                       return instances;
-                    }
+
+        if (ourInstance.get() == null) {
+            ServiceInstance<T> instance = masterStrategy.getInstance(new InstanceProvider<T>() {
+                @Override
+                public List<ServiceInstance<T>> getInstances() throws Exception {
+                    return instances;
                 }
-            );
-            if ( ourInstance.compareAndSet(null, instance) )
-            {
+            });
+            if (ourInstance.compareAndSet(null, instance)) {
                 instanceNumber.incrementAndGet();
             }
         }
@@ -86,8 +75,7 @@ public class StickyStrategy<T> implements ProviderStrategy<T>
      *
      * @return instance number
      */
-    public int getInstanceNumber()
-    {
+    public int getInstanceNumber() {
         return instanceNumber.get();
     }
 }

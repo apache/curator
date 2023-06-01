@@ -22,17 +22,14 @@ package org.apache.curator.framework.recipes.cache;
 /**
  * Default TreeCache selector - returns true for all methods
  */
-public class DefaultTreeCacheSelector implements TreeCacheSelector
-{
+public class DefaultTreeCacheSelector implements TreeCacheSelector {
     @Override
-    public boolean traverseChildren(String fullPath)
-    {
+    public boolean traverseChildren(String fullPath) {
         return true;
     }
 
     @Override
-    public boolean acceptChild(String fullPath)
-    {
+    public boolean acceptChild(String fullPath) {
         return true;
     }
 }

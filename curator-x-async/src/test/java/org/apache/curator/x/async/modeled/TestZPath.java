@@ -29,11 +29,9 @@ import org.apache.curator.utils.ZKPaths;
 import org.apache.curator.x.async.modeled.details.ZPathImpl;
 import org.junit.jupiter.api.Test;
 
-public class TestZPath
-{
+public class TestZPath {
     @Test
-    public void testRoot()
-    {
+    public void testRoot() {
         assertEquals(ZPath.root.nodeName(), ZKPaths.PATH_SEPARATOR);
         assertEquals(ZPath.root, ZPathImpl.root);
         assertTrue(ZPath.root.isRoot());
@@ -42,8 +40,7 @@ public class TestZPath
     }
 
     @Test
-    public void testBasic()
-    {
+    public void testBasic() {
         ZPath path = ZPath.root.child("one").child("two");
         assertFalse(path.isRoot());
         assertEquals(path, ZPath.root.child("one").child("two"));
@@ -51,8 +48,8 @@ public class TestZPath
         assertEquals(path.nodeName(), "two");
         assertEquals(path.fullPath(), "/one/two");
         assertEquals(path.parent().fullPath(), "/one");
-        assertEquals(path.fullPath(), "/one/two");       // call twice to test the internal cache
-        assertEquals(path.parent().fullPath(), "/one");  // call twice to test the internal cache
+        assertEquals(path.fullPath(), "/one/two"); // call twice to test the internal cache
+        assertEquals(path.parent().fullPath(), "/one"); // call twice to test the internal cache
 
         assertTrue(path.startsWith(ZPath.root.child("one")));
         assertFalse(path.startsWith(ZPath.root.child("two")));
@@ -69,33 +66,31 @@ public class TestZPath
     }
 
     @Test
-    public void testParsing()
-    {
+    public void testParsing() {
         assertEquals(ZPath.parse("/"), ZPath.root);
-        assertEquals(ZPath.parse("/one/two/three"), ZPath.root.child("one").child("two").child("three"));
+        assertEquals(
+                ZPath.parse("/one/two/three"),
+                ZPath.root.child("one").child("two").child("three"));
         assertEquals(ZPath.parse("/one/two/three"), ZPath.from("one", "two", "three"));
         assertEquals(ZPath.parseWithIds("/one/{id}/two/{id}"), ZPath.from("one", parameter(), "two", parameter()));
     }
 
     @Test
-    public void testUnresolvedPath()
-    {
-        assertThrows(IllegalStateException.class, ()->{
+    public void testUnresolvedPath() {
+        assertThrows(IllegalStateException.class, () -> {
             ZPath path = ZPath.from("one", parameter(), "two");
             path.fullPath();
         });
     }
 
     @Test
-    public void testResolvedPath()
-    {
+    public void testResolvedPath() {
         ZPath path = ZPath.from("one", parameter(), "two", parameter());
         assertEquals(path.resolved("a", "b"), ZPath.from("one", "a", "two", "b"));
     }
 
     @Test
-    public void testSchema()
-    {
+    public void testSchema() {
         ZPath path = ZPath.from("one", parameter(), "two", parameter());
         assertEquals(path.toSchemaPathPattern().toString(), "/one/.*/two/.*");
         path = ZPath.parse("/one/two/three");
@@ -107,16 +102,14 @@ public class TestZPath
     }
 
     @Test
-    public void testCustomIds()
-    {
+    public void testCustomIds() {
         assertEquals(ZPath.parseWithIds("/a/{a}/bee/{bee}/c/{c}").toString(), "/a/{a}/bee/{bee}/c/{c}");
         assertEquals(ZPath.from("a", parameter(), "b", parameter()).toString(), "/a/{id}/b/{id}");
         assertEquals(ZPath.from("a", parameter("foo"), "b", parameter("bar")).toString(), "/a/{foo}/b/{bar}");
     }
 
     @Test
-    public void testPartialResolution()
-    {
+    public void testPartialResolution() {
         ZPath path = ZPath.parseWithIds("/one/{1}/two/{2}");
         assertFalse(path.parent().isResolved());
         assertFalse(path.parent().parent().isResolved());

@@ -24,8 +24,7 @@ import org.apache.curator.framework.api.transaction.CuratorOp;
 /**
  * @see AsyncTransactionOp#check()
  */
-public interface AsyncTransactionCheckBuilder extends AsyncPathable<CuratorOp>
-{
+public interface AsyncTransactionCheckBuilder extends AsyncPathable<CuratorOp> {
     /**
      * Use the given version (the default is -1)
      *

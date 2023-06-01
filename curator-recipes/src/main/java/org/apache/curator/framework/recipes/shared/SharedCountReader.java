@@ -24,14 +24,13 @@ import org.apache.curator.framework.listen.Listenable;
 /**
  * Abstracts a shared integer and allows listening for changes to its value
  */
-public interface SharedCountReader extends Listenable<SharedCountListener>
-{
+public interface SharedCountReader extends Listenable<SharedCountListener> {
     /**
      * Return the current value of the count
      *
      * @return count
      */
-    public int      getCount();
+    public int getCount();
 
     /**
      * Return the current count and version

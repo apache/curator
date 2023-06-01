@@ -24,14 +24,13 @@ import org.apache.curator.framework.listen.Listenable;
 /**
  * Abstracts a shared value and allows listening for changes to the value
  */
-public interface SharedValueReader
-{
+public interface SharedValueReader {
     /**
      * Return the current value of the count
      *
      * @return count
      */
-    public byte[]   getValue();
+    public byte[] getValue();
 
     /**
      * Return the current version and value

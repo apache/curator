@@ -24,24 +24,21 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Sets;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.retry.RetryOneTime;
-import org.apache.curator.test.compatibility.CuratorTestBase;
-import org.junit.jupiter.api.Test;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.retry.RetryOneTime;
+import org.apache.curator.test.compatibility.CuratorTestBase;
+import org.junit.jupiter.api.Test;
 
-public class TestTreeCacheIteratorAndSize extends CuratorTestBase
-{
+public class TestTreeCacheIteratorAndSize extends CuratorTestBase {
     @Test
-    public void testBasic() throws Exception
-    {
+    public void testBasic() throws Exception {
         final String[] nodes = {
             "/base/test",
             "/base/test/3",
@@ -60,17 +57,15 @@ public class TestTreeCacheIteratorAndSize extends CuratorTestBase
             "/base/test/3/3/3"
         };
 
-        try ( CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)) )
-        {
+        try (CuratorFramework client =
+                CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1))) {
             client.start();
 
             String basePath = "/base/test";
-            try (TreeCache treeCache = new TreeCache(client, basePath) )
-            {
+            try (TreeCache treeCache = new TreeCache(client, basePath)) {
                 treeCache.start();
 
-                for ( String node : nodes )
-                {
+                for (String node : nodes) {
                     client.create().creatingParentsIfNeeded().forPath(node, node.getBytes());
                 }
 
@@ -78,15 +73,13 @@ public class TestTreeCacheIteratorAndSize extends CuratorTestBase
 
                 Iterator<ChildData> iterator = treeCache.iterator();
                 Map<String, byte[]> iteratorValues = new HashMap<>();
-                while ( iterator.hasNext() )
-                {
+                while (iterator.hasNext()) {
                     ChildData next = iterator.next();
                     iteratorValues.put(next.getPath(), next.getData());
                 }
 
                 assertEquals(iteratorValues.size(), nodes.length);
-                for ( String node : nodes )
-                {
+                for (String node : nodes) {
                     assertArrayEquals(iteratorValues.get(node), node.getBytes());
                 }
 
@@ -96,35 +89,33 @@ public class TestTreeCacheIteratorAndSize extends CuratorTestBase
     }
 
     @Test
-    public void testIteratorWithRandomGraph() throws Exception
-    {
+    public void testIteratorWithRandomGraph() throws Exception {
         Map<String, String> pathAndData = new HashMap<>();
         ThreadLocalRandom random = ThreadLocalRandom.current();
         int nodeQty = random.nextInt(100, 200);
         int maxPerRow = random.nextInt(1, 10);
         int maxDepth = random.nextInt(3, 5);
-        try ( CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)) )
-        {
+        try (CuratorFramework client =
+                CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1))) {
             client.start();
 
             String basePath = "/base/test";
-            try (TreeCache treeCache = new TreeCache(client, basePath) )
-            {
+            try (TreeCache treeCache = new TreeCache(client, basePath)) {
                 treeCache.start();
 
                 client.create().creatingParentsIfNeeded().forPath(basePath, "0".getBytes());
                 pathAndData.put(basePath, "0");
 
-                while ( nodeQty-- > 0 )
-                {
+                while (nodeQty-- > 0) {
                     int thisDepth = random.nextInt(1, maxDepth + 1);
                     StringBuilder path = new StringBuilder(basePath);
-                    for ( int i = 0; i < thisDepth; ++i )
-                    {
+                    for (int i = 0; i < thisDepth; ++i) {
                         path.append("/").append(random.nextInt(maxPerRow));
                         long value = random.nextLong();
                         pathAndData.put(path.toString(), Long.toString(value));
-                        client.create().orSetData().forPath(path.toString(), Long.toString(value).getBytes());
+                        client.create()
+                                .orSetData()
+                                .forPath(path.toString(), Long.toString(value).getBytes());
                     }
                 }
 
@@ -134,8 +125,7 @@ public class TestTreeCacheIteratorAndSize extends CuratorTestBase
 
                 // at this point we have a cached graph of random nodes with random values
                 Iterator<ChildData> iterator = treeCache.iterator();
-                while ( iterator.hasNext() )
-                {
+                while (iterator.hasNext()) {
                     ChildData next = iterator.next();
                     assertTrue(pathAndData.containsKey(next.getPath()));
                     assertArrayEquals(pathAndData.get(next.getPath()).getBytes(), next.getData());
@@ -148,14 +138,12 @@ public class TestTreeCacheIteratorAndSize extends CuratorTestBase
     }
 
     @Test
-    public void testEmptyTree() throws Exception
-    {
-        try (CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)))
-        {
+    public void testEmptyTree() throws Exception {
+        try (CuratorFramework client =
+                CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1))) {
             client.start();
 
-            try (TreeCache treeCache = new TreeCache(client, "/base/test"))
-            {
+            try (TreeCache treeCache = new TreeCache(client, "/base/test")) {
                 treeCache.start();
 
                 Iterator<ChildData> iterator = treeCache.iterator();
@@ -166,14 +154,12 @@ public class TestTreeCacheIteratorAndSize extends CuratorTestBase
     }
 
     @Test
-    public void testWithDeletedNodes() throws Exception
-    {
-        try (CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)))
-        {
+    public void testWithDeletedNodes() throws Exception {
+        try (CuratorFramework client =
+                CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1))) {
             client.start();
 
-            try (TreeCache treeCache = new TreeCache(client, "/foo"))
-            {
+            try (TreeCache treeCache = new TreeCache(client, "/foo")) {
                 treeCache.start();
 
                 client.create().forPath("/foo");
@@ -192,13 +178,14 @@ public class TestTreeCacheIteratorAndSize extends CuratorTestBase
 
                 Iterator<ChildData> iterator = treeCache.iterator();
                 Set<String> paths = new HashSet<>();
-                while ( iterator.hasNext() )
-                {
+                while (iterator.hasNext()) {
                     ChildData next = iterator.next();
                     paths.add(next.getPath());
                 }
 
-                assertEquals(paths, Sets.newHashSet("/foo", "/foo/a1", "/foo/a2", "/foo/a2/a2.1", "/foo/a3", "/foo/a3/a3.2"));
+                assertEquals(
+                        paths,
+                        Sets.newHashSet("/foo", "/foo/a1", "/foo/a2", "/foo/a2/a2.1", "/foo/a3", "/foo/a3/a3.2"));
                 assertEquals(treeCache.size(), 6);
             }
         }

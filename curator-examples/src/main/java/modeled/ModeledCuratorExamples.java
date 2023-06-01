@@ -19,21 +19,20 @@
 
 package modeled;
 
+import java.util.function.Consumer;
 import org.apache.curator.x.async.AsyncCuratorFramework;
 import org.apache.curator.x.async.modeled.JacksonModelSerializer;
 import org.apache.curator.x.async.modeled.ModelSpec;
 import org.apache.curator.x.async.modeled.ModeledFramework;
 import org.apache.curator.x.async.modeled.ZPath;
-import java.util.function.Consumer;
 
-public class ModeledCuratorExamples
-{
-    public static ModeledFramework<PersonModel> wrap(AsyncCuratorFramework client)
-    {
+public class ModeledCuratorExamples {
+    public static ModeledFramework<PersonModel> wrap(AsyncCuratorFramework client) {
         JacksonModelSerializer<PersonModel> serializer = JacksonModelSerializer.build(PersonModel.class);
 
         // build a model specification - you can pre-build all the model specifications for your app at startup
-        ModelSpec<PersonModel> modelSpec = ModelSpec.builder(ZPath.parse("/example/path"), serializer).build();
+        ModelSpec<PersonModel> modelSpec =
+                ModelSpec.builder(ZPath.parse("/example/path"), serializer).build();
 
         // wrap a CuratorFramework instance so that it can be used "modeled".
         // do this once and re-use the returned ModeledFramework instance.
@@ -41,8 +40,7 @@ public class ModeledCuratorExamples
         return ModeledFramework.wrap(client, modelSpec);
     }
 
-    public static void createOrUpdate(ModeledFramework<PersonModel> modeled, PersonModel model)
-    {
+    public static void createOrUpdate(ModeledFramework<PersonModel> modeled, PersonModel model) {
         // change the affected path to be modeled's base path plus id: i.e. "/example/path/{id}"
         ModeledFramework<PersonModel> atId = modeled.child(model.getId().getId());
 
@@ -51,16 +49,12 @@ public class ModeledCuratorExamples
         atId.set(model); // note - this is async
     }
 
-    public static void readPerson(ModeledFramework<PersonModel> modeled, String id, Consumer<PersonModel> receiver)
-    {
+    public static void readPerson(ModeledFramework<PersonModel> modeled, String id, Consumer<PersonModel> receiver) {
         // read the person with the given ID and asynchronously call the receiver after it is read
         modeled.child(id).read().whenComplete((person, exception) -> {
-            if ( exception != null )
-            {
-                exception.printStackTrace();    // handle the error
-            }
-            else
-            {
+            if (exception != null) {
+                exception.printStackTrace(); // handle the error
+            } else {
                 receiver.accept(person);
             }
         });

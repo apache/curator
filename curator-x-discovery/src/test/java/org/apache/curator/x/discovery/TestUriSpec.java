@@ -21,22 +21,20 @@ package org.apache.curator.x.discovery;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.google.common.collect.Maps;
-import org.junit.jupiter.api.Test;
 import java.util.Iterator;
 import java.util.Map;
+import org.junit.jupiter.api.Test;
 
-public class TestUriSpec
-{
+public class TestUriSpec {
     @Test
-    public void     testScheme()
-    {
-        UriSpec                             spec = new UriSpec("{scheme}://foo.com");
+    public void testScheme() {
+        UriSpec spec = new UriSpec("{scheme}://foo.com");
 
-        ServiceInstanceBuilder<Void>        builder = new ServiceInstanceBuilder<Void>();
+        ServiceInstanceBuilder<Void> builder = new ServiceInstanceBuilder<Void>();
         builder.id("x");
         builder.name("foo");
         builder.port(5);
-        ServiceInstance<Void>               instance = builder.build();
+        ServiceInstance<Void> instance = builder.build();
         assertEquals(spec.build(instance), "http://foo.com");
 
         builder.sslPort(5);
@@ -45,9 +43,8 @@ public class TestUriSpec
     }
 
     @Test
-    public void     testFromInstance()
-    {
-        ServiceInstanceBuilder<Void>        builder = new ServiceInstanceBuilder<Void>();
+    public void testFromInstance() {
+        ServiceInstanceBuilder<Void> builder = new ServiceInstanceBuilder<Void>();
         builder.address("1.2.3.4");
         builder.name("foo");
         builder.id("bar");
@@ -55,20 +52,20 @@ public class TestUriSpec
         builder.sslPort(6);
         builder.registrationTimeUTC(789);
         builder.serviceType(ServiceType.PERMANENT);
-        ServiceInstance<Void>               instance = builder.build();
+        ServiceInstance<Void> instance = builder.build();
 
-        UriSpec                             spec = new UriSpec("{scheme}://{address}:{port}:{ssl-port}/{name}/{id}/{registration-time-utc}/{service-type}");
+        UriSpec spec = new UriSpec(
+                "{scheme}://{address}:{port}:{ssl-port}/{name}/{id}/{registration-time-utc}/{service-type}");
 
-        Map<String, Object>     m = Maps.newHashMap();
+        Map<String, Object> m = Maps.newHashMap();
         m.put("scheme", "test");
         assertEquals(spec.build(instance, m), "test://1.2.3.4:5:6/foo/bar/789/permanent");
     }
 
     @Test
-    public void     testEscapes()
-    {
-        UriSpec                 spec = new UriSpec("{one}two-three-{[}four{]}-five{six}");
-        Iterator<UriSpec.Part>  iterator = spec.iterator();
+    public void testEscapes() {
+        UriSpec spec = new UriSpec("{one}two-three-{[}four{]}-five{six}");
+        Iterator<UriSpec.Part> iterator = spec.iterator();
         checkPart(iterator.next(), "one", true);
         checkPart(iterator.next(), "two-three-", false);
         checkPart(iterator.next(), "[", true);
@@ -77,17 +74,16 @@ public class TestUriSpec
         checkPart(iterator.next(), "-five", false);
         checkPart(iterator.next(), "six", true);
 
-        Map<String, Object>     m = Maps.newHashMap();
+        Map<String, Object> m = Maps.newHashMap();
         m.put("one", 1);
         m.put("six", 6);
         assertEquals(spec.build(m), "1two-three-{four}-five6");
     }
 
     @Test
-    public void     testBasic()
-    {
-        UriSpec                 spec = new UriSpec("{one}{two}three-four-five{six}seven{eight}");
-        Iterator<UriSpec.Part>  iterator = spec.iterator();
+    public void testBasic() {
+        UriSpec spec = new UriSpec("{one}{two}three-four-five{six}seven{eight}");
+        Iterator<UriSpec.Part> iterator = spec.iterator();
         checkPart(iterator.next(), "one", true);
         checkPart(iterator.next(), "two", true);
         checkPart(iterator.next(), "three-four-five", false);
@@ -96,8 +92,7 @@ public class TestUriSpec
         checkPart(iterator.next(), "eight", true);
     }
 
-    private void    checkPart(UriSpec.Part p, String value, boolean isVariable)
-    {
+    private void checkPart(UriSpec.Part p, String value, boolean isVariable) {
         assertEquals(p.getValue(), value);
         assertEquals(p.isVariable(), isVariable);
     }

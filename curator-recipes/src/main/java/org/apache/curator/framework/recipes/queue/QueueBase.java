@@ -19,18 +19,17 @@
 
 package org.apache.curator.framework.recipes.queue;
 
-import org.apache.curator.framework.listen.Listenable;
 import java.io.Closeable;
 import java.util.concurrent.TimeUnit;
+import org.apache.curator.framework.listen.Listenable;
 
-public interface QueueBase<T> extends Closeable
-{
+public interface QueueBase<T> extends Closeable {
     /**
      * Start the queue. No other methods work until this is called
      *
      * @throws Exception startup errors
      */
-    void     start() throws Exception;
+    void start() throws Exception;
 
     /**
      * Return the manager for put listeners
@@ -45,7 +44,7 @@ public interface QueueBase<T> extends Closeable
      *
      * @param newErrorMode the new error mode (the default is {@link ErrorMode#REQUEUE}
      */
-    void     setErrorMode(ErrorMode newErrorMode);
+    void setErrorMode(ErrorMode newErrorMode);
 
     /**
      * Wait until any pending puts are committed

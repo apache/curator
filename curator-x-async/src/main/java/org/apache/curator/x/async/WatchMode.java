@@ -19,8 +19,7 @@
 
 package org.apache.curator.x.async;
 
-public enum WatchMode
-{
+public enum WatchMode {
     /**
      * The {@link java.util.concurrent.CompletionStage}&lt;org.apache.zookeeper.WatchedEvent&gt; will only
      * complete on successful trigger. i.e. connection issues are ignored

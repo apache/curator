@@ -19,7 +19,6 @@
 
 package org.apache.curator.framework.recipes.locks;
 
-public interface LockInternalsSorter
-{
-    public String           fixForSorting(String str, String lockName);
+public interface LockInternalsSorter {
+    public String fixForSorting(String str, String lockName);
 }

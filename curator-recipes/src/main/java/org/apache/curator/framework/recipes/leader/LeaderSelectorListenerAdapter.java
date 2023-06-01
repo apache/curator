@@ -26,13 +26,10 @@ import org.apache.curator.framework.state.ConnectionState;
  * An implementation of {@link LeaderSelectorListener} that adds the recommended handling
  * for connection state problems
  */
-public abstract class LeaderSelectorListenerAdapter implements LeaderSelectorListener
-{
+public abstract class LeaderSelectorListenerAdapter implements LeaderSelectorListener {
     @Override
-    public void stateChanged(CuratorFramework client, ConnectionState newState)
-    {
-        if ( client.getConnectionStateErrorPolicy().isErrorState(newState) )
-        {
+    public void stateChanged(CuratorFramework client, ConnectionState newState) {
+        if (client.getConnectionStateErrorPolicy().isErrorState(newState)) {
             throw new CancelLeadershipException();
         }
     }

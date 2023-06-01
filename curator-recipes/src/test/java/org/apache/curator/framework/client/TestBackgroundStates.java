@@ -22,6 +22,10 @@ package org.apache.curator.framework.client;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Queues;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode;
@@ -34,44 +38,34 @@ import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-
 // NOTE: these tests are in Framework as they use the PersistentEphemeralNode recipe
 
-public class TestBackgroundStates extends BaseClassForTests
-{
+public class TestBackgroundStates extends BaseClassForTests {
     @Test
-    public void testListenersReconnectedIsOK() throws Exception
-    {
+    public void testListenersReconnectedIsOK() throws Exception {
         server.close();
 
         Timing timing = new Timing();
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        CuratorFramework client = CuratorFrameworkFactory.newClient(
+                server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         PersistentEphemeralNode node = null;
-        try
-        {
+        try {
             client.start();
-            node = new PersistentEphemeralNode(client, PersistentEphemeralNode.Mode.EPHEMERAL, "/abc/node", "hello".getBytes());
+            node = new PersistentEphemeralNode(
+                    client, PersistentEphemeralNode.Mode.EPHEMERAL, "/abc/node", "hello".getBytes());
             node.start();
 
             final CountDownLatch connectedLatch = new CountDownLatch(1);
             final CountDownLatch reconnectedLatch = new CountDownLatch(1);
             final AtomicReference<ConnectionState> lastState = new AtomicReference<ConnectionState>();
-            ConnectionStateListener listener = new ConnectionStateListener()
-            {
+            ConnectionStateListener listener = new ConnectionStateListener() {
                 @Override
-                public void stateChanged(CuratorFramework client, ConnectionState newState)
-                {
+                public void stateChanged(CuratorFramework client, ConnectionState newState) {
                     lastState.set(newState);
-                    if ( newState == ConnectionState.CONNECTED )
-                    {
+                    if (newState == ConnectionState.CONNECTED) {
                         connectedLatch.countDown();
                     }
-                    if ( newState == ConnectionState.RECONNECTED )
-                    {
+                    if (newState == ConnectionState.RECONNECTED) {
                         reconnectedLatch.countDown();
                     }
                 }
@@ -87,31 +81,29 @@ public class TestBackgroundStates extends BaseClassForTests
             assertTrue(timing.awaitLatch(reconnectedLatch));
             timing.sleepABit();
             assertEquals(lastState.get(), ConnectionState.RECONNECTED);
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
             CloseableUtils.closeQuietly(node);
         }
     }
 
     @Test
-    public void testConnectionStateListener() throws Exception
-    {
+    public void testConnectionStateListener() throws Exception {
         server.close();
 
         Timing timing = new Timing();
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(timing.milliseconds()));
-        try
-        {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(
+                server.getConnectString(),
+                timing.session(),
+                timing.connection(),
+                new RetryOneTime(timing.milliseconds()));
+        try {
             client.start();
 
             final BlockingQueue<ConnectionState> stateVector = Queues.newLinkedBlockingQueue(1);
-            ConnectionStateListener listener = new ConnectionStateListener()
-            {
+            ConnectionStateListener listener = new ConnectionStateListener() {
                 @Override
-                public void stateChanged(CuratorFramework client, ConnectionState newState)
-                {
+                public void stateChanged(CuratorFramework client, ConnectionState newState) {
                     stateVector.offer(newState);
                 }
             };
@@ -120,20 +112,21 @@ public class TestBackgroundStates extends BaseClassForTests
 
             client.getConnectionStateListenable().addListener(listener);
             server = new TestingServer(server.getPort());
-            assertEquals(stateVector.poll(waitingTiming.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.CONNECTED);
+            assertEquals(
+                    stateVector.poll(waitingTiming.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.CONNECTED);
             server.stop();
-            assertEquals(stateVector.poll(waitingTiming.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.SUSPENDED);
+            assertEquals(
+                    stateVector.poll(waitingTiming.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.SUSPENDED);
             assertEquals(stateVector.poll(waitingTiming.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.LOST);
             server.restart();
-            assertEquals(stateVector.poll(waitingTiming.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.RECONNECTED);
+            assertEquals(
+                    stateVector.poll(waitingTiming.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.RECONNECTED);
             server.close();
-            assertEquals(stateVector.poll(waitingTiming.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.SUSPENDED);
+            assertEquals(
+                    stateVector.poll(waitingTiming.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.SUSPENDED);
             assertEquals(stateVector.poll(waitingTiming.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.LOST);
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
-
 }

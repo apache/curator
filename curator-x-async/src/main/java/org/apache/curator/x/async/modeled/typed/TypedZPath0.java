@@ -25,8 +25,7 @@ import org.apache.curator.x.async.modeled.ZPath;
  * Same as {@link TypedZPath}, but with 0 parameters.
  */
 @FunctionalInterface
-public interface TypedZPath0
-{
+public interface TypedZPath0 {
     ZPath resolved();
 
     /**
@@ -35,8 +34,7 @@ public interface TypedZPath0
      * @param pathWithIds path to pass to {@link org.apache.curator.x.async.modeled.ZPath#parseWithIds}
      * @return TypedZPath
      */
-    static TypedZPath0 from(String pathWithIds)
-    {
+    static TypedZPath0 from(String pathWithIds) {
         return from(ZPath.parseWithIds(pathWithIds));
     }
 
@@ -46,8 +44,7 @@ public interface TypedZPath0
      * @param path path to use
      * @return TypedZPath
      */
-    static TypedZPath0 from(ZPath path)
-    {
+    static TypedZPath0 from(ZPath path) {
         return path::resolved;
     }
 }

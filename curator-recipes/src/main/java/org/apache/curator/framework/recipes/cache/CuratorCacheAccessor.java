@@ -19,16 +19,15 @@
 
 package org.apache.curator.framework.recipes.cache;
 
-import org.apache.curator.utils.ZKPaths;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+import org.apache.curator.utils.ZKPaths;
 
 /**
  * Methods to access the underlying storage
  */
-public interface CuratorCacheAccessor
-{
+public interface CuratorCacheAccessor {
     /**
      * Return an entry from storage
      *
@@ -65,8 +64,7 @@ public interface CuratorCacheAccessor
      * @param parentPath the parent path to filter on
      * @return filtered stream
      */
-    static Predicate<ChildData> parentPathFilter(String parentPath)
-    {
+    static Predicate<ChildData> parentPathFilter(String parentPath) {
         return d -> {
             ZKPaths.PathAndNode pathAndNode = ZKPaths.getPathAndNode(d.getPath());
             return pathAndNode.getPath().equals(parentPath);

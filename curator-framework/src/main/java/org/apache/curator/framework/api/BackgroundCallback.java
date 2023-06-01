@@ -24,8 +24,7 @@ import org.apache.curator.framework.CuratorFramework;
 /**
  * Functor for an async background operation
  */
-public interface BackgroundCallback
-{
+public interface BackgroundCallback {
     /**
      * Called when the async background operation completes
      *

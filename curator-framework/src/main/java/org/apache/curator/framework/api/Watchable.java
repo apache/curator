@@ -19,8 +19,7 @@
 
 package org.apache.curator.framework.api;
 
-public interface Watchable<T> extends WatchableBase<T>
-{
+public interface Watchable<T> extends WatchableBase<T> {
     /**
      * Have the operation set a watch
      *

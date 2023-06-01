@@ -28,12 +28,15 @@ import org.apache.zookeeper.client.ZKClientConfig;
  * Configurable ZookeeperFactory, by using org.apache.zookeeper.client.ZKClientConfig.
  *
  */
-public class ConfigurableZookeeperFactory extends DefaultZookeeperFactory
-{
-	
-    public ZooKeeper newZooKeeper(String connectString, int sessionTimeout, Watcher watcher, 
-		boolean canBeReadOnly, ZKClientConfig zkClientConfig) throws Exception
-    {
-		return new ZooKeeperAdmin(connectString, sessionTimeout, watcher, canBeReadOnly, zkClientConfig);
+public class ConfigurableZookeeperFactory extends DefaultZookeeperFactory {
+
+    public ZooKeeper newZooKeeper(
+            String connectString,
+            int sessionTimeout,
+            Watcher watcher,
+            boolean canBeReadOnly,
+            ZKClientConfig zkClientConfig)
+            throws Exception {
+        return new ZooKeeperAdmin(connectString, sessionTimeout, watcher, canBeReadOnly, zkClientConfig);
     }
 }

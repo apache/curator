@@ -19,11 +19,10 @@
 
 package org.apache.curator.framework.schema;
 
-import org.apache.zookeeper.data.ACL;
 import java.util.List;
+import org.apache.zookeeper.data.ACL;
 
-public interface SchemaValidator
-{
+public interface SchemaValidator {
     /**
      * @param schema the schema being validated
      * @param path the path being operated on

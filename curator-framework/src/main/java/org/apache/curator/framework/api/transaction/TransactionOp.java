@@ -25,8 +25,7 @@ import org.apache.curator.framework.CuratorFramework;
  * Builds operations that can be committed as a transaction
  * via {@link CuratorFramework#transaction()}
  */
-public interface TransactionOp
-{
+public interface TransactionOp {
     /**
      * Start a create builder in the transaction
      *

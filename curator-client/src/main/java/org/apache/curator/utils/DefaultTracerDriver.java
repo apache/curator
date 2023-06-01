@@ -19,32 +19,27 @@
 
 package org.apache.curator.utils;
 
+import java.util.concurrent.TimeUnit;
 import org.apache.curator.drivers.TracerDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Default tracer driver
  */
-public class DefaultTracerDriver implements TracerDriver
-{
+public class DefaultTracerDriver implements TracerDriver {
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     @Override
-    public void addTrace(String name, long time, TimeUnit unit)
-    {
-        if ( log.isTraceEnabled() )
-        {
+    public void addTrace(String name, long time, TimeUnit unit) {
+        if (log.isTraceEnabled()) {
             log.trace("Trace: " + name + " - " + TimeUnit.MILLISECONDS.convert(time, unit) + " ms");
         }
     }
 
     @Override
-    public void addCount(String name, int increment)
-    {
-        if ( log.isTraceEnabled() )
-        {
+    public void addCount(String name, int increment) {
+        if (log.isTraceEnabled()) {
             log.trace("Counter " + name + ": " + increment);
         }
     }

@@ -25,8 +25,7 @@ import org.apache.curator.x.async.modeled.ZPath;
  * Same as {@link org.apache.curator.x.async.modeled.typed.TypedZPath}, but with 10 parameters
  */
 @FunctionalInterface
-public interface TypedZPath10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>
-{
+public interface TypedZPath10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> {
     ZPath resolved(T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9, T10 p10);
 
     /**
@@ -35,8 +34,8 @@ public interface TypedZPath10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>
      * @param pathWithIds path to pass to {@link org.apache.curator.x.async.modeled.ZPath#parseWithIds}
      * @return TypedZPath
      */
-    static <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> TypedZPath10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> from(String pathWithIds)
-    {
+    static <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> TypedZPath10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> from(
+            String pathWithIds) {
         return from(ZPath.parseWithIds(pathWithIds));
     }
 
@@ -46,8 +45,8 @@ public interface TypedZPath10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>
      * @param path path to use
      * @return TypedZPath
      */
-    static <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> TypedZPath10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> from(ZPath path)
-    {
+    static <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> TypedZPath10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> from(
+            ZPath path) {
         return (p1, p2, p3, p4, p5, p6, p7, p8, p9, p10) -> path.resolved(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10);
     }
 }

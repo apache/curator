@@ -22,8 +22,7 @@ package org.apache.curator.x.async.api;
 /**
  * Terminal operation for various builders
  */
-public interface AsyncPathAndBytesable<T> extends AsyncPathable<T>
-{
+public interface AsyncPathAndBytesable<T> extends AsyncPathable<T> {
     /**
      * Commit the currently building operation using the given path and data
      * and invoke ZooKeeper

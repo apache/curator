@@ -24,8 +24,7 @@ import org.apache.curator.framework.api.transaction.CuratorOp;
 /**
  * Zookeeper framework-style client
  */
-public interface AsyncCuratorFrameworkDsl extends WatchableAsyncCuratorFramework
-{
+public interface AsyncCuratorFrameworkDsl extends WatchableAsyncCuratorFramework {
     /**
      * <p>
      * Returns a facade that adds watching to any of the subsequently created builders. i.e. all

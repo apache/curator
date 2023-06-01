@@ -28,8 +28,7 @@ import org.apache.curator.x.async.modeled.ModeledFrameworkBuilder;
  * Same as {@link org.apache.curator.x.async.modeled.typed.TypedModeledFramework}, but with 7 parameters
  */
 @FunctionalInterface
-public interface TypedModeledFramework7<M, P1, P2, P3, P4, P5, P6, P7>
-{
+public interface TypedModeledFramework7<M, P1, P2, P3, P4, P5, P6, P7> {
     ModeledFramework<M> resolved(AsyncCuratorFramework client, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6, P7 p7);
 
     /**
@@ -41,9 +40,12 @@ public interface TypedModeledFramework7<M, P1, P2, P3, P4, P5, P6, P7>
      * @param modelSpec TypedModelSpec
      * @return new TypedModeledFramework
      */
-    static <M, P1, P2, P3, P4, P5, P6, P7> TypedModeledFramework7<M, P1, P2, P3, P4, P5, P6, P7> from(ModeledFrameworkBuilder<M> frameworkBuilder, TypedModelSpec7<M, P1, P2, P3, P4, P5, P6, P7> modelSpec)
-    {
-        return (client, p1, p2, p3, p4, p5, p6, p7) -> frameworkBuilder.withClient(client).withModelSpec(modelSpec.resolved(p1, p2, p3, p4, p5, p6, p7)).build();
+    static <M, P1, P2, P3, P4, P5, P6, P7> TypedModeledFramework7<M, P1, P2, P3, P4, P5, P6, P7> from(
+            ModeledFrameworkBuilder<M> frameworkBuilder, TypedModelSpec7<M, P1, P2, P3, P4, P5, P6, P7> modelSpec) {
+        return (client, p1, p2, p3, p4, p5, p6, p7) -> frameworkBuilder
+                .withClient(client)
+                .withModelSpec(modelSpec.resolved(p1, p2, p3, p4, p5, p6, p7))
+                .build();
     }
 
     /**
@@ -56,9 +58,13 @@ public interface TypedModeledFramework7<M, P1, P2, P3, P4, P5, P6, P7>
      * @param pathWithIds path with {XXXX} parameters
      * @return new TypedModeledFramework
      */
-    static <M, P1, P2, P3, P4, P5, P6, P7> TypedModeledFramework7<M, P1, P2, P3, P4, P5, P6, P7> from(ModeledFrameworkBuilder<M> frameworkBuilder, ModelSpecBuilder<M> modelSpecBuilder, String pathWithIds)
-    {
-        TypedModelSpec7<M, P1, P2, P3, P4, P5, P6, P7> typedModelSpec = TypedModelSpec7.from(modelSpecBuilder, pathWithIds);
-        return (client, p1, p2, p3, p4, p5, p6, p7) -> frameworkBuilder.withClient(client).withModelSpec(typedModelSpec.resolved(p1, p2, p3, p4, p5, p6, p7)).build();
+    static <M, P1, P2, P3, P4, P5, P6, P7> TypedModeledFramework7<M, P1, P2, P3, P4, P5, P6, P7> from(
+            ModeledFrameworkBuilder<M> frameworkBuilder, ModelSpecBuilder<M> modelSpecBuilder, String pathWithIds) {
+        TypedModelSpec7<M, P1, P2, P3, P4, P5, P6, P7> typedModelSpec =
+                TypedModelSpec7.from(modelSpecBuilder, pathWithIds);
+        return (client, p1, p2, p3, p4, p5, p6, p7) -> frameworkBuilder
+                .withClient(client)
+                .withModelSpec(typedModelSpec.resolved(p1, p2, p3, p4, p5, p6, p7))
+                .build();
     }
 }

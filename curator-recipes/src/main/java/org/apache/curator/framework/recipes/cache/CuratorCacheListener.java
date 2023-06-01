@@ -25,13 +25,11 @@ package org.apache.curator.framework.recipes.cache;
  * are wrapped in {@link org.apache.curator.framework.CuratorFramework#runSafe(Runnable)} when called.
  */
 @FunctionalInterface
-public interface CuratorCacheListener
-{
+public interface CuratorCacheListener {
     /**
      * An enumerated type that describes a change
      */
-    enum Type
-    {
+    enum Type {
         /**
          * A new node was added to the cache
          */
@@ -61,8 +59,7 @@ public interface CuratorCacheListener
      * When the cache is started, the initial nodes are tracked and when they are finished loading
      * into the cache this method is called.
      */
-    default void initialized()
-    {
+    default void initialized() {
         // NOP
     }
 
@@ -71,8 +68,7 @@ public interface CuratorCacheListener
      *
      * @return builder
      */
-    static CuratorCacheListenerBuilder builder()
-    {
+    static CuratorCacheListenerBuilder builder() {
         return new CuratorCacheListenerBuilderImpl();
     }
 }

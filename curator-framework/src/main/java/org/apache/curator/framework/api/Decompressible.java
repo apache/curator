@@ -19,12 +19,11 @@
 
 package org.apache.curator.framework.api;
 
-public interface Decompressible<T>
-{
+public interface Decompressible<T> {
     /**
      * Cause the data to be de-compressed using the configured compression provider
      *
      * @return this
      */
-    public T        decompressed();
+    public T decompressed();
 }

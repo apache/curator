@@ -29,7 +29,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CountDownLatch;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.transaction.CuratorOp;
@@ -42,76 +45,74 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.CountDownLatch;
-
-public class TestBasicOperations extends CompletableBaseClassForTests
-{
+public class TestBasicOperations extends CompletableBaseClassForTests {
     private AsyncCuratorFramework client;
 
     @BeforeEach
     @Override
-    public void setup() throws Exception
-    {
+    public void setup() throws Exception {
         super.setup();
 
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(timing.forSleepingABit().milliseconds()));
+        CuratorFramework client = CuratorFrameworkFactory.newClient(
+                server.getConnectString(),
+                new RetryOneTime(timing.forSleepingABit().milliseconds()));
         client.start();
         this.client = AsyncCuratorFramework.wrap(client);
     }
 
     @AfterEach
     @Override
-    public void teardown() throws Exception
-    {
+    public void teardown() throws Exception {
         CloseableUtils.closeQuietly(client.unwrap());
 
         super.teardown();
     }
 
     @Test
-    public void testCreateTransactionWithMode() throws Exception
-    {
+    public void testCreateTransactionWithMode() throws Exception {
         complete(AsyncWrappers.asyncEnsureContainers(client, "/test"));
 
-        CuratorOp op1 = client.transactionOp().create().withMode(PERSISTENT_SEQUENTIAL).forPath("/test/node-");
-        CuratorOp op2 = client.transactionOp().create().withMode(PERSISTENT_SEQUENTIAL).forPath("/test/node-");
+        CuratorOp op1 =
+                client.transactionOp().create().withMode(PERSISTENT_SEQUENTIAL).forPath("/test/node-");
+        CuratorOp op2 =
+                client.transactionOp().create().withMode(PERSISTENT_SEQUENTIAL).forPath("/test/node-");
         complete(client.transaction().forOperations(Arrays.asList(op1, op2)));
 
         assertEquals(client.unwrap().getChildren().forPath("/test").size(), 2);
     }
 
     @Test
-    public void testCrud()
-    {
+    public void testCrud() {
         AsyncStage<String> createStage = client.create().forPath("/test", "one".getBytes());
         complete(createStage, (path, e) -> assertEquals(path, "/test"));
 
         AsyncStage<byte[]> getStage = client.getData().forPath("/test");
         complete(getStage, (data, e) -> assertArrayEquals(data, "one".getBytes()));
 
-        CompletionStage<byte[]> combinedStage = client.setData().forPath("/test", "new".getBytes()).thenCompose(
-            __ -> client.getData().forPath("/test"));
+        CompletionStage<byte[]> combinedStage = client.setData()
+                .forPath("/test", "new".getBytes())
+                .thenCompose(__ -> client.getData().forPath("/test"));
         complete(combinedStage, (data, e) -> assertArrayEquals(data, "new".getBytes()));
 
-        CompletionStage<Void> combinedDelete = client.create().withMode(EPHEMERAL_SEQUENTIAL).forPath("/deleteme").thenCompose(
-            path -> client.delete().forPath(path));
+        CompletionStage<Void> combinedDelete = client.create()
+                .withMode(EPHEMERAL_SEQUENTIAL)
+                .forPath("/deleteme")
+                .thenCompose(path -> client.delete().forPath(path));
         complete(combinedDelete, (v, e) -> assertNull(e));
 
-        CompletionStage<byte[]> setDataIfStage = client.create().withOptions(of(compress, setDataIfExists)).forPath("/test", "last".getBytes())
-            .thenCompose(__ -> client.getData().decompressed().forPath("/test"));
+        CompletionStage<byte[]> setDataIfStage = client.create()
+                .withOptions(of(compress, setDataIfExists))
+                .forPath("/test", "last".getBytes())
+                .thenCompose(__ -> client.getData().decompressed().forPath("/test"));
         complete(setDataIfStage, (data, e) -> assertArrayEquals(data, "last".getBytes()));
     }
 
     @Test
-    public void testException()
-    {
+    public void testException() {
         CountDownLatch latch = new CountDownLatch(1);
         client.getData().forPath("/woop").exceptionally(e -> {
             assertTrue(e instanceof KeeperException);
-            assertEquals(((KeeperException)e).code(), KeeperException.Code.NONODE);
+            assertEquals(((KeeperException) e).code(), KeeperException.Code.NONODE);
             latch.countDown();
             return null;
         });
@@ -119,8 +120,7 @@ public class TestBasicOperations extends CompletableBaseClassForTests
     }
 
     @Test
-    public void testWatching()
-    {
+    public void testWatching() {
         CountDownLatch latch = new CountDownLatch(1);
         client.watched().checkExists().forPath("/test").event().whenComplete((event, exception) -> {
             assertNull(exception);
@@ -132,16 +132,12 @@ public class TestBasicOperations extends CompletableBaseClassForTests
     }
 
     @Test
-    public void testWatchingWithServerLoss() throws Exception
-    {
+    public void testWatchingWithServerLoss() throws Exception {
         AsyncStage<Stat> stage = client.watched().checkExists().forPath("/test");
         stage.thenRun(() -> {
-            try
-            {
+            try {
                 server.stop();
-            }
-            catch ( IOException e )
-            {
+            } catch (IOException e) {
                 // ignore
             }
         });
@@ -149,8 +145,8 @@ public class TestBasicOperations extends CompletableBaseClassForTests
         CountDownLatch latch = new CountDownLatch(1);
         complete(stage.event(), (v, e) -> {
             assertTrue(e instanceof AsyncEventException);
-            assertEquals(((AsyncEventException)e).getKeeperState(), Watcher.Event.KeeperState.Disconnected);
-            ((AsyncEventException)e).reset().thenRun(latch::countDown);
+            assertEquals(((AsyncEventException) e).getKeeperState(), Watcher.Event.KeeperState.Disconnected);
+            ((AsyncEventException) e).reset().thenRun(latch::countDown);
         });
 
         server.restart();
@@ -159,9 +155,9 @@ public class TestBasicOperations extends CompletableBaseClassForTests
     }
 
     @Test
-    public void testResultWrapper() throws Exception
-    {
-        CompletionStage<AsyncResult<String>> resultStage = AsyncResult.of(client.create().forPath("/first"));
+    public void testResultWrapper() throws Exception {
+        CompletionStage<AsyncResult<String>> resultStage =
+                AsyncResult.of(client.create().forPath("/first"));
         complete(resultStage, (v, e) -> {
             assertNull(e);
             assertEquals(v.getRawValue(), "/first");
@@ -197,8 +193,7 @@ public class TestBasicOperations extends CompletableBaseClassForTests
     }
 
     @Test
-    public void testGetDataWithStat()
-    {
+    public void testGetDataWithStat() {
         complete(client.create().forPath("/test", "hey".getBytes()));
 
         Stat stat = new Stat();

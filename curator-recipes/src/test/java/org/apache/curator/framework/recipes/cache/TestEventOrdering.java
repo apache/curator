@@ -23,15 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.retry.RetryOneTime;
-import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.test.compatibility.Timing2;
-import org.apache.curator.utils.CloseableUtils;
-import org.apache.zookeeper.KeeperException;
-import org.junit.jupiter.api.Test;
-
 import java.io.Closeable;
 import java.util.List;
 import java.util.Random;
@@ -41,76 +32,72 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.retry.RetryOneTime;
+import org.apache.curator.test.BaseClassForTests;
+import org.apache.curator.test.compatibility.Timing2;
+import org.apache.curator.utils.CloseableUtils;
+import org.apache.zookeeper.KeeperException;
+import org.junit.jupiter.api.Test;
 
-public abstract class TestEventOrdering<T extends Closeable> extends BaseClassForTests
-{
+public abstract class TestEventOrdering<T extends Closeable> extends BaseClassForTests {
     private final Timing2 timing = new Timing2();
     private final long start = System.currentTimeMillis();
     private static final int THREAD_QTY = 100;
     private static final int ITERATIONS = 100;
     private static final int NODE_QTY = 10;
 
-    public enum EventType
-    {
+    public enum EventType {
         ADDED,
         DELETED
     }
 
-    public static class Event
-    {
+    public static class Event {
         public final EventType eventType;
         public final String path;
         public final long time = System.currentTimeMillis();
 
-        public Event(EventType eventType, String path)
-        {
+        public Event(EventType eventType, String path) {
             this.eventType = eventType;
             this.path = path;
         }
     }
 
     @Test
-    public void testEventOrdering() throws Exception
-    {
+    public void testEventOrdering() throws Exception {
         ExecutorService executorService = Executors.newFixedThreadPool(THREAD_QTY);
         BlockingQueue<Event> events = Queues.newLinkedBlockingQueue();
-        final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        final CuratorFramework client = CuratorFrameworkFactory.newClient(
+                server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         T cache = null;
-        try
-        {
+        try {
             client.start();
             client.create().forPath("/root");
             cache = newCache(client, "/root", events);
 
             final Random random = new Random();
-            final Callable<Void> task = new Callable<Void>()
-            {
+            final Callable<Void> task = new Callable<Void>() {
                 @Override
-                public Void call() throws Exception
-                {
-                    for ( int i = 0; i < ITERATIONS; ++i )
-                    {
+                public Void call() throws Exception {
+                    for (int i = 0; i < ITERATIONS; ++i) {
                         String node = "/root/" + random.nextInt(NODE_QTY);
-                        try
-                        {
-                            switch ( random.nextInt(3) )
-                            {
-                            default:
-                            case 0:
-                                client.create().forPath(node);
-                                break;
+                        try {
+                            switch (random.nextInt(3)) {
+                                default:
+                                case 0:
+                                    client.create().forPath(node);
+                                    break;
 
-                            case 1:
-                                client.setData().forPath(node, "new".getBytes());
-                                break;
+                                case 1:
+                                    client.setData().forPath(node, "new".getBytes());
+                                    break;
 
-                            case 2:
-                                client.delete().forPath(node);
-                                break;
+                                case 2:
+                                    client.delete().forPath(node);
+                                    break;
                             }
-                        }
-                        catch ( KeeperException ignore )
-                        {
+                        } catch (KeeperException ignore) {
                             // ignore
                         }
                     }
@@ -119,19 +106,13 @@ public abstract class TestEventOrdering<T extends Closeable> extends BaseClassFo
             };
 
             final CountDownLatch latch = new CountDownLatch(THREAD_QTY);
-            for ( int i = 0; i < THREAD_QTY; ++i )
-            {
-                Callable<Void> wrapped = new Callable<Void>()
-                {
+            for (int i = 0; i < THREAD_QTY; ++i) {
+                Callable<Void> wrapped = new Callable<Void>() {
                     @Override
-                    public Void call() throws Exception
-                    {
-                        try
-                        {
+                    public Void call() throws Exception {
+                        try {
                             return task.call();
-                        }
-                        finally
-                        {
+                        } finally {
                             latch.countDown();
                         }
                     }
@@ -144,17 +125,17 @@ public abstract class TestEventOrdering<T extends Closeable> extends BaseClassFo
 
             List<Event> localEvents = Lists.newArrayList();
             int eventSuggestedQty = 0;
-            while ( events.size() > 0 )
-            {
+            while (events.size() > 0) {
                 Event event = timing.takeFromQueue(events);
                 localEvents.add(event);
                 eventSuggestedQty += (event.eventType == EventType.ADDED) ? 1 : -1;
             }
             int actualQty = getActualQty(cache);
-            assertEquals(actualQty, eventSuggestedQty, String.format("actual %s expected %s:\n %s", actualQty, eventSuggestedQty, asString(localEvents)));
-        }
-        finally
-        {
+            assertEquals(
+                    actualQty,
+                    eventSuggestedQty,
+                    String.format("actual %s expected %s:\n %s", actualQty, eventSuggestedQty, asString(localEvents)));
+        } finally {
             executorService.shutdownNow();
             //noinspection ThrowFromFinallyBlock
             executorService.awaitTermination(timing.milliseconds(), TimeUnit.MILLISECONDS);
@@ -167,14 +148,18 @@ public abstract class TestEventOrdering<T extends Closeable> extends BaseClassFo
 
     protected abstract T newCache(CuratorFramework client, String path, BlockingQueue<Event> events) throws Exception;
 
-    private String asString(List<Event> events)
-    {
+    private String asString(List<Event> events) {
         int qty = 0;
         StringBuilder str = new StringBuilder();
-        for ( Event event : events )
-        {
+        for (Event event : events) {
             qty += (event.eventType == EventType.ADDED) ? 1 : -1;
-            str.append(event.eventType).append(" ").append(event.path).append(" @ ").append(event.time - start).append(' ').append(qty);
+            str.append(event.eventType)
+                    .append(" ")
+                    .append(event.path)
+                    .append(" @ ")
+                    .append(event.time - start)
+                    .append(' ')
+                    .append(qty);
             str.append("\n");
         }
         return str.toString();

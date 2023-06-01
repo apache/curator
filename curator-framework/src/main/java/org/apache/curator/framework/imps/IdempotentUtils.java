@@ -22,16 +22,14 @@ package org.apache.curator.framework.imps;
 import java.util.Arrays;
 
 /*
- * Utilties Class for idempotent operations. 
+ * Utilties Class for idempotent operations.
  */
-class IdempotentUtils
-{
+class IdempotentUtils {
 
     /**
-     * Returns whether the version and data currently in the node match what would be expected in the idempotent retry case. 
+     * Returns whether the version and data currently in the node match what would be expected in the idempotent retry case.
      */
-    static boolean matches(int expectedVersion, byte[] expectedData, int actualVersion, byte[] actualData)
-    {
+    static boolean matches(int expectedVersion, byte[] expectedData, int actualVersion, byte[] actualData) {
         return expectedVersion == actualVersion && Arrays.equals(expectedData, actualData);
     }
 }

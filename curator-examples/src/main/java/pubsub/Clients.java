@@ -19,6 +19,7 @@
 
 package pubsub;
 
+import java.util.concurrent.TimeUnit;
 import org.apache.curator.x.async.modeled.JacksonModelSerializer;
 import org.apache.curator.x.async.modeled.ModelSpec;
 import org.apache.curator.x.async.modeled.ModelSpecBuilder;
@@ -32,46 +33,37 @@ import pubsub.models.Group;
 import pubsub.models.Instance;
 import pubsub.models.InstanceType;
 import pubsub.models.Priority;
-import java.util.concurrent.TimeUnit;
 
-public class Clients
-{
+public class Clients {
     /**
      * A client template for LocationAvailable instances
      */
-    public static final TypedModeledFramework2<LocationAvailable, Group, Priority> locationAvailableClient = TypedModeledFramework2.from(
-        ModeledFramework.builder(),
-        builder(LocationAvailable.class),
-        "/root/pubsub/messages/locations/{group}/{priority}/{id}"
-    );
+    public static final TypedModeledFramework2<LocationAvailable, Group, Priority> locationAvailableClient =
+            TypedModeledFramework2.from(
+                    ModeledFramework.builder(),
+                    builder(LocationAvailable.class),
+                    "/root/pubsub/messages/locations/{group}/{priority}/{id}");
 
     /**
      * A client template for UserCreated instances
      */
-    public static final TypedModeledFramework2<UserCreated, Group, Priority> userCreatedClient = TypedModeledFramework2.from(
-        ModeledFramework.builder(),
-        builder(UserCreated.class),
-        "/root/pubsub/messages/users/{group}/{priority}/{id}"
-    );
+    public static final TypedModeledFramework2<UserCreated, Group, Priority> userCreatedClient =
+            TypedModeledFramework2.from(
+                    ModeledFramework.builder(),
+                    builder(UserCreated.class),
+                    "/root/pubsub/messages/users/{group}/{priority}/{id}");
 
     /**
      * A client template for Instance instances
      */
     public static final TypedModeledFramework<Instance, InstanceType> instanceClient = TypedModeledFramework.from(
-        ModeledFramework.builder(),
-        builder(Instance.class),
-        "/root/pubsub/instances/{instance-type}/{id}"
-    );
+            ModeledFramework.builder(), builder(Instance.class), "/root/pubsub/instances/{instance-type}/{id}");
 
-    private static <T> ModelSpecBuilder<T> builder(Class<T> clazz)
-    {
+    private static <T> ModelSpecBuilder<T> builder(Class<T> clazz) {
         return ModelSpec.builder(JacksonModelSerializer.build(clazz))
-            .withTtl(TimeUnit.MINUTES.toMillis(10)) // for our pub-sub example, messages are valid for 10 minutes
-            .withCreateMode(CreateMode.PERSISTENT_WITH_TTL)
-            ;
+                .withTtl(TimeUnit.MINUTES.toMillis(10)) // for our pub-sub example, messages are valid for 10 minutes
+                .withCreateMode(CreateMode.PERSISTENT_WITH_TTL);
     }
 
-    private Clients()
-    {
-    }
+    private Clients() {}
 }

@@ -19,10 +19,8 @@
 
 package org.apache.curator.framework.api;
 
-public interface ProtectACLCreateModePathAndBytesable<T> extends
-    ACLBackgroundPathAndBytesable<T>,
-    CreateModable<ACLBackgroundPathAndBytesable<T>>
-{
+public interface ProtectACLCreateModePathAndBytesable<T>
+        extends ACLBackgroundPathAndBytesable<T>, CreateModable<ACLBackgroundPathAndBytesable<T>> {
     /**
      * <p>
      *     Hat-tip to https://github.com/sbridges for pointing this out
@@ -51,5 +49,5 @@ public interface ProtectACLCreateModePathAndBytesable<T> extends
      *
      * @return this
      */
-    public ACLCreateModeBackgroundPathAndBytesable<String>    withProtection();
+    public ACLCreateModeBackgroundPathAndBytesable<String> withProtection();
 }

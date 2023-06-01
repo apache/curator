@@ -22,137 +22,153 @@ package org.apache.curator.framework.imps;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-
-import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
+import org.apache.curator.test.BaseClassForTests;
+import org.apache.curator.utils.CloseableUtils;
 import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("deprecation")
-public class TestCompressionInTransactionOld extends BaseClassForTests
-{
+public class TestCompressionInTransactionOld extends BaseClassForTests {
     @Test
-    public void testSetData() throws Exception
-    {
+    public void testSetData() throws Exception {
         final String path = "/a";
-        final byte[]            data = "here's a string".getBytes();
+        final byte[] data = "here's a string".getBytes();
 
-        CuratorFramework        client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try {
             client.start();
 
-            //Create uncompressed data in a transaction
+            // Create uncompressed data in a transaction
             client.inTransaction().create().forPath(path, data).and().commit();
             assertArrayEquals(data, client.getData().forPath(path));
 
-            //Create compressed data in transaction
-            client.inTransaction().setData().compressed().forPath(path, data).and().commit();
+            // Create compressed data in transaction
+            client.inTransaction()
+                    .setData()
+                    .compressed()
+                    .forPath(path, data)
+                    .and()
+                    .commit();
             assertArrayEquals(data, client.getData().decompressed().forPath(path));
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
-    
+
     @Test
-    public void testSetCompressedAndUncompressed() throws Exception
-    {
+    public void testSetCompressedAndUncompressed() throws Exception {
         final String path1 = "/a";
         final String path2 = "/b";
-        
-        final byte[]            data1 = "here's a string".getBytes();
-        final byte[]            data2 = "here's another string".getBytes();
 
-        CuratorFramework        client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+        final byte[] data1 = "here's a string".getBytes();
+        final byte[] data2 = "here's another string".getBytes();
+
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try {
             client.start();
 
-            //Create the nodes
-            client.inTransaction().create().compressed().forPath(path1).and().
-            create().forPath(path2).and().commit();
+            // Create the nodes
+            client.inTransaction()
+                    .create()
+                    .compressed()
+                    .forPath(path1)
+                    .and()
+                    .create()
+                    .forPath(path2)
+                    .and()
+                    .commit();
 
-            //Check they exist
+            // Check they exist
             assertNotNull(client.checkExists().forPath(path1));
             assertNotNull(client.checkExists().forPath(path2));
-            
-            //Set the nodes, path1 compressed, path2 uncompressed.
-            client.inTransaction().setData().compressed().forPath(path1, data1).and().
-            setData().forPath(path2, data2).and().commit();
-            
+
+            // Set the nodes, path1 compressed, path2 uncompressed.
+            client.inTransaction()
+                    .setData()
+                    .compressed()
+                    .forPath(path1, data1)
+                    .and()
+                    .setData()
+                    .forPath(path2, data2)
+                    .and()
+                    .commit();
+
             assertNotEquals(data1, client.getData().forPath(path1));
             assertArrayEquals(data1, client.getData().decompressed().forPath(path1));
-      
+
             assertArrayEquals(data2, client.getData().forPath(path2));
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
-    }    
-    
+    }
+
     @Test
-    public void testSimple() throws Exception
-    {
+    public void testSimple() throws Exception {
         final String path1 = "/a";
         final String path2 = "/a/b";
-        
-        final byte[]            data1 = "here's a string".getBytes();
-        final byte[]            data2 = "here's another string".getBytes();
 
-        CuratorFramework        client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+        final byte[] data1 = "here's a string".getBytes();
+        final byte[] data2 = "here's another string".getBytes();
+
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try {
             client.start();
 
-            client.inTransaction().create().compressed().forPath(path1, data1).and().
-            create().compressed().forPath(path2, data2).and().commit();
+            client.inTransaction()
+                    .create()
+                    .compressed()
+                    .forPath(path1, data1)
+                    .and()
+                    .create()
+                    .compressed()
+                    .forPath(path2, data2)
+                    .and()
+                    .commit();
 
             assertNotEquals(data1, client.getData().forPath(path1));
             assertArrayEquals(data1, client.getData().decompressed().forPath(path1));
-            
+
             assertNotEquals(data2, client.getData().forPath(path2));
             assertArrayEquals(data2, client.getData().decompressed().forPath(path2));
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
-    }    
-    
+    }
+
     /**
      * Test the case where both uncompressed and compressed data is generated in
      * the same transaction
      * @throws Exception
      */
     @Test
-    public void testCreateCompressedAndUncompressed() throws Exception
-    {
+    public void testCreateCompressedAndUncompressed() throws Exception {
         final String path1 = "/a";
         final String path2 = "/b";
-        
-        final byte[]            data1 = "here's a string".getBytes();
-        final byte[]            data2 = "here's another string".getBytes();
 
-        CuratorFramework        client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+        final byte[] data1 = "here's a string".getBytes();
+        final byte[] data2 = "here's another string".getBytes();
+
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try {
             client.start();
 
-            client.inTransaction().create().compressed().forPath(path1, data1).and().
-            create().forPath(path2, data2).and().commit();
+            client.inTransaction()
+                    .create()
+                    .compressed()
+                    .forPath(path1, data1)
+                    .and()
+                    .create()
+                    .forPath(path2, data2)
+                    .and()
+                    .commit();
 
             assertNotEquals(data1, client.getData().forPath(path1));
             assertArrayEquals(data1, client.getData().decompressed().forPath(path1));
-      
+
             assertArrayEquals(data2, client.getData().forPath(path2));
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
