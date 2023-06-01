@@ -448,8 +448,9 @@ public class CuratorFrameworkImpl implements CuratorFramework
             {
                 ensembleTracker.close();
             }
-            backgroundOperations.forEach(this::closeOperation);
-            backgroundOperations.clear();
+            Collection<OperationAndData<?>> droppedOperations = new ArrayList<>(backgroundOperations.size());
+            backgroundOperations.drainTo(droppedOperations);
+            droppedOperations.forEach(this::closeOperation);
             listeners.clear();
             unhandledErrorListeners.clear();
             connectionStateManager.close();
@@ -998,7 +999,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
                     {
                         log.debug("Retrying operation");
                     }
-                    backgroundOperations.offer(operationAndData);
+                    queueOperation(operationAndData);
                     break;
                 }
                 else
