@@ -60,6 +60,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -437,6 +438,52 @@ public class TestReconfiguration extends CuratorTestBase
     }
 
     @Test
+    public void testRemoveWithChroot() throws Exception
+    {
+        // Use a long chroot path to circumvent ZOOKEEPER-4565 and ZOOKEEPER-4601
+        String chroot = "/pretty-long-chroot";
+        CountDownLatch ensembleLatch = new CountDownLatch(1);
+
+        try (CuratorFramework client = newClient(cluster.getConnectString() + chroot, ensembleLatch)) {
+            client.start();
+            client.create().forPath("/", "deadbeef".getBytes());
+
+            QuorumVerifier oldConfig = toQuorumVerifier(client.getConfig().forEnsemble());
+            assertConfig(oldConfig, cluster.getInstances());
+
+            CountDownLatch latch = setChangeWaiter(client);
+
+            Collection<InstanceSpec> oldInstances = cluster.getInstances();
+            InstanceSpec us = cluster.findConnectionInstance(client.getZookeeperClient().getZooKeeper());
+            InstanceSpec removeSpec = oldInstances.iterator().next();
+            if ( us.equals(removeSpec) ) {
+                Iterator<InstanceSpec> iterator = oldInstances.iterator();
+                iterator.next();
+                removeSpec = iterator.next();
+            }
+
+            client.reconfig().leaving(Integer.toString(removeSpec.getServerId())).fromConfig(oldConfig.getVersion()).forEnsemble();
+
+            assertTrue(timing.awaitLatch(latch));
+
+            byte[] newConfigData = client.getConfig().forEnsemble();
+            QuorumVerifier newConfig = toQuorumVerifier(newConfigData);
+            List<InstanceSpec> newInstances = Lists.newArrayList(cluster.getInstances());
+            newInstances.remove(removeSpec);
+            assertConfig(newConfig, newInstances);
+
+            assertTrue(timing.awaitLatch(ensembleLatch));
+            String connectString = EnsembleTracker.configToConnectionString(newConfig) + chroot;
+            assertEquals(connectString, ensembleProvider.getConnectionString());
+
+            client.getZookeeperClient().reset();
+            client.sync().forPath("/");
+            byte[] data = client.getData().forPath("/");
+            assertThat(data).asString().isEqualTo("deadbeef");
+        }
+    }
+
+    @Test
     public void testConfigToConnectionStringIPv4Normal() throws Exception
     {
         String config = "server.1=10.1.2.3:2888:3888:participant;10.2.3.4:2181";
@@ -555,7 +602,17 @@ public class TestReconfiguration extends CuratorTestBase
     	return newClient(connectionString, true);
     }
 
-    private CuratorFramework newClient(String connectionString, boolean withEnsembleProvider)
+    private CuratorFramework newClient(String connectionString, boolean withEnsembleTracker)
+    {
+        return newClient(connectionString, withEnsembleTracker, null);
+    }
+
+    private CuratorFramework newClient(String connectionString, CountDownLatch ensembleLatch)
+    {
+        return newClient(connectionString, ensembleLatch != null, ensembleLatch);
+    }
+
+    private CuratorFramework newClient(String connectionString, boolean withEnsembleTracker, CountDownLatch ensembleLatch)
     {
         final AtomicReference<String> connectString = new AtomicReference<>(connectionString);
         ensembleProvider = new EnsembleProvider()
@@ -585,12 +642,17 @@ public class TestReconfiguration extends CuratorTestBase
             @Override
             public void setConnectionString(String connectionString)
             {
-                connectString.set(connectionString);
+                if (!connectionString.equals(getConnectionString())) {
+                    connectString.set(connectionString);
+                    if (ensembleLatch != null) {
+                        ensembleLatch.countDown();
+                    }
+                }
             }
         };
         return CuratorFrameworkFactory.builder()
             .ensembleProvider(ensembleProvider)
-            .ensembleTracker(withEnsembleProvider)
+            .ensembleTracker(withEnsembleTracker)
             .sessionTimeoutMs(timing.session())
             .connectionTimeoutMs(timing.connection())
             .authorization("digest", superUserPassword.getBytes())
