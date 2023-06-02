@@ -21,16 +21,15 @@ package org.apache.curator.ensemble.fixed;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import org.apache.curator.ensemble.EnsembleProvider;
-import org.apache.zookeeper.ZooKeeper;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.curator.ensemble.EnsembleProvider;
+import org.apache.zookeeper.ZooKeeper;
 
 /**
  * Standard ensemble provider that wraps a fixed connection string
  */
-public class FixedEnsembleProvider implements EnsembleProvider
-{
+public class FixedEnsembleProvider implements EnsembleProvider {
     private final AtomicReference<String> connectionString = new AtomicReference<>();
     private final boolean updateServerListEnabled;
 
@@ -39,8 +38,7 @@ public class FixedEnsembleProvider implements EnsembleProvider
      *
      * @param connectionString connection string
      */
-    public FixedEnsembleProvider(String connectionString)
-    {
+    public FixedEnsembleProvider(String connectionString) {
         this(connectionString, true);
     }
 
@@ -50,40 +48,35 @@ public class FixedEnsembleProvider implements EnsembleProvider
      * @param connectionString connection string
      * @param updateServerListEnabled if true, allow Curator to call {@link ZooKeeper#updateServerList(String)}
      */
-    public FixedEnsembleProvider(String connectionString, boolean updateServerListEnabled)
-    {
+    public FixedEnsembleProvider(String connectionString, boolean updateServerListEnabled) {
         this.updateServerListEnabled = updateServerListEnabled;
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(connectionString), "connectionString cannot be null or empty");
+        Preconditions.checkArgument(
+                !Strings.isNullOrEmpty(connectionString), "connectionString cannot be null or empty");
         this.connectionString.set(connectionString);
     }
 
     @Override
-    public void start() throws Exception
-    {
+    public void start() throws Exception {
         // NOP
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         // NOP
     }
 
     @Override
-    public void setConnectionString(String connectionString)
-    {
+    public void setConnectionString(String connectionString) {
         this.connectionString.set(connectionString);
     }
 
     @Override
-    public String getConnectionString()
-    {
+    public String getConnectionString() {
         return connectionString.get();
     }
 
     @Override
-    public boolean updateServerListEnabled()
-    {
+    public boolean updateServerListEnabled() {
         return updateServerListEnabled;
     }
 }

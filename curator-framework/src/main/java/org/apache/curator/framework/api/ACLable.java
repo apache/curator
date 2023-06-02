@@ -19,12 +19,11 @@
 
 package org.apache.curator.framework.api;
 
+import java.util.List;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
-import java.util.List;
 
-public interface ACLable<T>
-{
+public interface ACLable<T> {
     /**
      * Set an ACL list (default is {@link ZooDefs.Ids#OPEN_ACL_UNSAFE})
      *

@@ -19,27 +19,18 @@
 
 package org.apache.curator.framework.recipes.cache;
 
-import org.apache.curator.framework.recipes.cache.ChildData;
-import org.apache.curator.framework.recipes.cache.NodeCacheListener;
-
-class NodeCacheListenerWrapper implements CuratorCacheListener
-{
+class NodeCacheListenerWrapper implements CuratorCacheListener {
     private final NodeCacheListener listener;
 
-    NodeCacheListenerWrapper(NodeCacheListener listener)
-    {
+    NodeCacheListenerWrapper(NodeCacheListener listener) {
         this.listener = listener;
     }
 
     @Override
-    public void event(Type type, ChildData oldData, ChildData data)
-    {
-        try
-        {
+    public void event(Type type, ChildData oldData, ChildData data) {
+        try {
             listener.nodeChanged();
-        }
-        catch ( Exception e )
-        {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }

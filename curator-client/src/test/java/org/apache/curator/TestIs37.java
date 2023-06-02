@@ -19,15 +19,13 @@
 
 package org.apache.curator;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import org.apache.curator.test.compatibility.CuratorTestBase;
-import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.proto.WhoAmIResponse;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class TestIs37 extends CuratorTestBase
-{
+public class TestIs37 extends CuratorTestBase {
     /**
      * Ensure that ZooKeeper is 3.7 or above.
      *
@@ -42,8 +40,7 @@ public class TestIs37 extends CuratorTestBase
     }
 
     @Override
-    protected void createServer()
-    {
+    protected void createServer() {
         // NOP
     }
 }

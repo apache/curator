@@ -22,19 +22,16 @@ package org.apache.curator.x.async.details;
 import org.apache.curator.framework.imps.Backgrounding;
 import org.apache.curator.x.async.WatchMode;
 
-class BuilderCommon<T>
-{
+class BuilderCommon<T> {
     final InternalCallback<T> internalCallback;
     final Backgrounding backgrounding;
     final InternalWatcher watcher;
 
-    BuilderCommon(Filters filters, BackgroundProc<T> proc)
-    {
-        this(filters,null, proc);
+    BuilderCommon(Filters filters, BackgroundProc<T> proc) {
+        this(filters, null, proc);
     }
 
-    BuilderCommon(Filters filters, WatchMode watchMode, BackgroundProc<T> proc)
-    {
+    BuilderCommon(Filters filters, WatchMode watchMode, BackgroundProc<T> proc) {
         watcher = (watchMode != null) ? new InternalWatcher(watchMode, filters.getWatcherFilter()) : null;
         internalCallback = new InternalCallback<>(proc, watcher, filters.getResultFilter());
         backgrounding = new Backgrounding(internalCallback, filters.getListener());

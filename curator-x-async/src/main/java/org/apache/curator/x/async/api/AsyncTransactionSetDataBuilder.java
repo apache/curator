@@ -24,8 +24,7 @@ import org.apache.curator.framework.api.transaction.CuratorOp;
 /**
  * @see AsyncTransactionOp#setData()
  */
-public interface AsyncTransactionSetDataBuilder extends AsyncPathAndBytesable<CuratorOp>
-{
+public interface AsyncTransactionSetDataBuilder extends AsyncPathAndBytesable<CuratorOp> {
     /**
      * Changes the version number used. By default, -1 is used
      *

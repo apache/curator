@@ -21,9 +21,7 @@ package org.apache.curator.framework.api;
 
 import org.apache.zookeeper.CreateMode;
 
-public interface ExistsBuilder extends
-    ExistsBuilderMain
-{
+public interface ExistsBuilder extends ExistsBuilderMain {
     /**
      * Causes any parent nodes to get created if they haven't already been
      *

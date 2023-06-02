@@ -24,31 +24,24 @@ import org.apache.zookeeper.KeeperException;
 /**
  * {@link RetryPolicy} implementation that failed on session expired.
  */
-public class SessionFailedRetryPolicy implements RetryPolicy
-{
+public class SessionFailedRetryPolicy implements RetryPolicy {
 
     private final RetryPolicy delegatePolicy;
 
-    public SessionFailedRetryPolicy(RetryPolicy delegatePolicy)
-    {
+    public SessionFailedRetryPolicy(RetryPolicy delegatePolicy) {
         this.delegatePolicy = delegatePolicy;
     }
 
     @Override
-    public boolean allowRetry(int retryCount, long elapsedTimeMs, RetrySleeper sleeper)
-    {
+    public boolean allowRetry(int retryCount, long elapsedTimeMs, RetrySleeper sleeper) {
         return delegatePolicy.allowRetry(retryCount, elapsedTimeMs, sleeper);
     }
 
     @Override
-    public boolean allowRetry(Throwable exception)
-    {
-        if ( exception instanceof KeeperException.SessionExpiredException )
-        {
+    public boolean allowRetry(Throwable exception) {
+        if (exception instanceof KeeperException.SessionExpiredException) {
             return false;
-        }
-        else
-        {
+        } else {
             return delegatePolicy.allowRetry(exception);
         }
     }

@@ -22,8 +22,10 @@ package org.apache.curator.framework.state;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import com.google.common.collect.Queues;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
@@ -36,10 +38,6 @@ import org.apache.zookeeper.Watcher;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
 public class TestConnectionStateManager extends BaseClassForTests {
 
     @Test
@@ -47,31 +45,27 @@ public class TestConnectionStateManager extends BaseClassForTests {
     public void testSessionConnectionStateErrorPolicyWithExpirationPercent30() throws Exception {
         Timing2 timing = new Timing2();
         CuratorFramework client = CuratorFrameworkFactory.builder()
-            .connectString(server.getConnectString())
-            .connectionTimeoutMs(1000)
-            .sessionTimeoutMs(timing.session())
-            .retryPolicy(new RetryOneTime(1))
-            .connectionStateErrorPolicy(new SessionConnectionStateErrorPolicy())
-            .simulatedSessionExpirationPercent(30)
-            .build();
+                .connectString(server.getConnectString())
+                .connectionTimeoutMs(1000)
+                .sessionTimeoutMs(timing.session())
+                .retryPolicy(new RetryOneTime(1))
+                .connectionStateErrorPolicy(new SessionConnectionStateErrorPolicy())
+                .simulatedSessionExpirationPercent(30)
+                .build();
 
         // we should get LOST around 30% of a session plus a little "slop" for processing, etc.
-        final int lostStateExpectedMs = (timing.session() / 3) + timing.forSleepingABit().milliseconds();
-        try
-        {
+        final int lostStateExpectedMs =
+                (timing.session() / 3) + timing.forSleepingABit().milliseconds();
+        try {
             CountDownLatch connectedLatch = new CountDownLatch(1);
             CountDownLatch lostLatch = new CountDownLatch(1);
-            ConnectionStateListener stateListener = new ConnectionStateListener()
-            {
+            ConnectionStateListener stateListener = new ConnectionStateListener() {
                 @Override
-                public void stateChanged(CuratorFramework client, ConnectionState newState)
-                {
-                    if ( newState == ConnectionState.CONNECTED )
-                    {
+                public void stateChanged(CuratorFramework client, ConnectionState newState) {
+                    if (newState == ConnectionState.CONNECTED) {
                         connectedLatch.countDown();
                     }
-                    if ( newState == ConnectionState.LOST )
-                    {
+                    if (newState == ConnectionState.LOST) {
                         lostLatch.countDown();
                     }
                 }
@@ -85,8 +79,7 @@ public class TestConnectionStateManager extends BaseClassForTests {
             server.close();
 
             assertTrue(lostLatch.await(lostStateExpectedMs, TimeUnit.MILLISECONDS));
-        }
-        finally {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
@@ -109,19 +102,25 @@ public class TestConnectionStateManager extends BaseClassForTests {
         try {
             ConnectionState polled = queue.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             assertEquals(polled, ConnectionState.CONNECTED);
-            client.getZookeeperClient().getZooKeeper().getTestable().queueEvent(new WatchedEvent(
-                    Watcher.Event.EventType.None, Watcher.Event.KeeperState.Disconnected, null));
+            client.getZookeeperClient()
+                    .getZooKeeper()
+                    .getTestable()
+                    .queueEvent(new WatchedEvent(
+                            Watcher.Event.EventType.None, Watcher.Event.KeeperState.Disconnected, null));
             polled = queue.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             assertEquals(polled, ConnectionState.SUSPENDED);
             assertThrows(RuntimeException.class, () -> client.getZookeeperClient()
-                    .getZooKeeper().getTestable().queueEvent(new WatchedEvent(
-                    Watcher.Event.EventType.None, Watcher.Event.KeeperState.Expired, null) {
-                @Override
-                public String getPath() {
-                    // exception will cause ZooKeeper to update current state but fail to notify watchers
-                    throw new RuntimeException("Path doesn't exist!");
-                }
-            }));
+                    .getZooKeeper()
+                    .getTestable()
+                    .queueEvent(
+                            new WatchedEvent(Watcher.Event.EventType.None, Watcher.Event.KeeperState.Expired, null) {
+                                @Override
+                                public String getPath() {
+                                    // exception will cause ZooKeeper to update current state but fail to notify
+                                    // watchers
+                                    throw new RuntimeException("Path doesn't exist!");
+                                }
+                            }));
             polled = queue.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             assertEquals(polled, ConnectionState.LOST);
             polled = queue.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS);

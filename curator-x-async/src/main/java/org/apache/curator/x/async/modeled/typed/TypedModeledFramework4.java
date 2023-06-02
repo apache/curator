@@ -28,8 +28,7 @@ import org.apache.curator.x.async.modeled.ModeledFrameworkBuilder;
  * Same as {@link org.apache.curator.x.async.modeled.typed.TypedModeledFramework}, but with 4 parameters
  */
 @FunctionalInterface
-public interface TypedModeledFramework4<M, P1, P2, P3, P4>
-{
+public interface TypedModeledFramework4<M, P1, P2, P3, P4> {
     ModeledFramework<M> resolved(AsyncCuratorFramework client, P1 p1, P2 p2, P3 p3, P4 p4);
 
     /**
@@ -41,9 +40,12 @@ public interface TypedModeledFramework4<M, P1, P2, P3, P4>
      * @param modelSpec TypedModelSpec
      * @return new TypedModeledFramework
      */
-    static <M, P1, P2, P3, P4> TypedModeledFramework4<M, P1, P2, P3, P4> from(ModeledFrameworkBuilder<M> frameworkBuilder, TypedModelSpec4<M, P1, P2, P3, P4> modelSpec)
-    {
-        return (client, p1, p2, p3, p4) -> frameworkBuilder.withClient(client).withModelSpec(modelSpec.resolved(p1, p2, p3, p4)).build();
+    static <M, P1, P2, P3, P4> TypedModeledFramework4<M, P1, P2, P3, P4> from(
+            ModeledFrameworkBuilder<M> frameworkBuilder, TypedModelSpec4<M, P1, P2, P3, P4> modelSpec) {
+        return (client, p1, p2, p3, p4) -> frameworkBuilder
+                .withClient(client)
+                .withModelSpec(modelSpec.resolved(p1, p2, p3, p4))
+                .build();
     }
 
     /**
@@ -56,9 +58,12 @@ public interface TypedModeledFramework4<M, P1, P2, P3, P4>
      * @param pathWithIds path with {XXXX} parameters
      * @return new TypedModeledFramework
      */
-    static <M, P1, P2, P3, P4> TypedModeledFramework4<M, P1, P2, P3, P4> from(ModeledFrameworkBuilder<M> frameworkBuilder, ModelSpecBuilder<M> modelSpecBuilder, String pathWithIds)
-    {
+    static <M, P1, P2, P3, P4> TypedModeledFramework4<M, P1, P2, P3, P4> from(
+            ModeledFrameworkBuilder<M> frameworkBuilder, ModelSpecBuilder<M> modelSpecBuilder, String pathWithIds) {
         TypedModelSpec4<M, P1, P2, P3, P4> typedModelSpec = TypedModelSpec4.from(modelSpecBuilder, pathWithIds);
-        return (client, p1, p2, p3, p4) -> frameworkBuilder.withClient(client).withModelSpec(typedModelSpec.resolved(p1, p2, p3, p4)).build();
+        return (client, p1, p2, p3, p4) -> frameworkBuilder
+                .withClient(client)
+                .withModelSpec(typedModelSpec.resolved(p1, p2, p3, p4))
+                .build();
     }
 }

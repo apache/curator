@@ -20,41 +20,35 @@
 package org.apache.curator.framework.imps;
 
 import com.google.common.base.Preconditions;
+import java.security.MessageDigest;
 import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.framework.api.transaction.TypeAndPath;
 import org.apache.zookeeper.Op;
-import java.security.MessageDigest;
 
-public class ExtractingCuratorOp implements CuratorOp
-{
+public class ExtractingCuratorOp implements CuratorOp {
     private final CuratorMultiTransactionRecord record = new CuratorMultiTransactionRecord();
 
-    CuratorMultiTransactionRecord getRecord()
-    {
+    CuratorMultiTransactionRecord getRecord() {
         return record;
     }
 
     @Override
-    public TypeAndPath getTypeAndPath()
-    {
+    public TypeAndPath getTypeAndPath() {
         validate();
         return record.getMetadata(0);
     }
 
     @Override
-    public Op get()
-    {
+    public Op get() {
         validate();
         return record.iterator().next();
     }
 
-    public void addToDigest(MessageDigest digest)
-    {
+    public void addToDigest(MessageDigest digest) {
         record.addToDigest(digest);
     }
 
-    private void validate()
-    {
+    private void validate() {
         Preconditions.checkArgument(record.size() > 0, "No operation has been added");
         Preconditions.checkArgument(record.size() == 1, "Multiple operations added");
     }

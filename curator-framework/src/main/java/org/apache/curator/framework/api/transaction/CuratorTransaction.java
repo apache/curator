@@ -54,8 +54,7 @@ import org.apache.zookeeper.ZooKeeper;
  *
  * @deprecated Use {@link CuratorFramework#transaction()}
  */
-public interface CuratorTransaction
-{
+public interface CuratorTransaction {
     /**
      * Start a create builder in the transaction
      *

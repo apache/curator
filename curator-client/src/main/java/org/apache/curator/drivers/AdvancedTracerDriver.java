@@ -24,14 +24,13 @@ import java.util.concurrent.TimeUnit;
 /**
  *  Expose more metrics for the operations and events
  */
-public abstract class AdvancedTracerDriver implements TracerDriver
-{
+public abstract class AdvancedTracerDriver implements TracerDriver {
     /**
      * Record the given trace event
      *
      * @param trace the metrics of the operation
      */
-    public abstract void     addTrace(OperationTrace trace);
+    public abstract void addTrace(OperationTrace trace);
 
     /**
      * Add to a named counter
@@ -39,13 +38,13 @@ public abstract class AdvancedTracerDriver implements TracerDriver
      * @param name name of the counter
      * @param increment amount to increment
      */
-    public abstract void     addEvent(EventTrace trace);
+    public abstract void addEvent(EventTrace trace);
 
     @Deprecated
     @Override
-    public final void     addTrace(String name, long time, TimeUnit unit) {}
+    public final void addTrace(String name, long time, TimeUnit unit) {}
 
     @Deprecated
     @Override
-    public final void     addCount(String name, int increment) {}
+    public final void addCount(String name, int increment) {}
 }

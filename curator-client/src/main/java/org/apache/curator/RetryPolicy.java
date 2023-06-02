@@ -24,8 +24,7 @@ import org.apache.zookeeper.KeeperException;
 /**
  * Abstracts the policy to use when retrying connections
  */
-public interface RetryPolicy
-{
+public interface RetryPolicy {
     /**
      * Called when an operation has failed for some reason. This method should return
      * true to make another attempt.
@@ -45,15 +44,13 @@ public interface RetryPolicy
      * @param exception the cause that this operation failed
      * @return true/false
      */
-    default boolean allowRetry(Throwable exception)
-    {
-        if ( exception instanceof KeeperException)
-        {
+    default boolean allowRetry(Throwable exception) {
+        if (exception instanceof KeeperException) {
             final int rc = ((KeeperException) exception).code().intValue();
-            return (rc == KeeperException.Code.CONNECTIONLOSS.intValue()) ||
-                    (rc == KeeperException.Code.OPERATIONTIMEOUT.intValue()) ||
-                    (rc == KeeperException.Code.SESSIONMOVED.intValue()) ||
-                    (rc == KeeperException.Code.SESSIONEXPIRED.intValue());
+            return (rc == KeeperException.Code.CONNECTIONLOSS.intValue())
+                    || (rc == KeeperException.Code.OPERATIONTIMEOUT.intValue())
+                    || (rc == KeeperException.Code.SESSIONMOVED.intValue())
+                    || (rc == KeeperException.Code.SESSIONEXPIRED.intValue());
         }
         return false;
     }

@@ -26,8 +26,7 @@ import org.apache.curator.utils.PathUtils;
  * Parameter block for specifying queue safety with either {@link DistributedQueue} or
  * {@link DistributedPriorityQueue}
  */
-public class QueueSafety<T>
-{
+public class QueueSafety<T> {
     private final String lockPath;
     private final QueueConsumer<T> consumer;
     private final BlockingQueue<T> queue;
@@ -36,32 +35,27 @@ public class QueueSafety<T>
      * @param lockPath ZKPath to use for locking purposes
      * @param consumer the message consumer
      */
-    public QueueSafety(String lockPath, QueueConsumer<T> consumer)
-    {
+    public QueueSafety(String lockPath, QueueConsumer<T> consumer) {
         this.lockPath = PathUtils.validatePath(lockPath);
         this.consumer = consumer;
         this.queue = null;
     }
 
-    QueueSafety(String lockPath, BlockingQueue<T> queue)
-    {
+    QueueSafety(String lockPath, BlockingQueue<T> queue) {
         this.lockPath = PathUtils.validatePath(lockPath);
         this.consumer = null;
         this.queue = queue;
     }
 
-    String getLockPath()
-    {
+    String getLockPath() {
         return lockPath;
     }
 
-    QueueConsumer<T> getConsumer()
-    {
+    QueueConsumer<T> getConsumer() {
         return consumer;
     }
 
-    BlockingQueue<T> getQueue()
-    {
+    BlockingQueue<T> getQueue() {
         return queue;
     }
 }

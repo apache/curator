@@ -19,6 +19,9 @@
 
 package org.apache.curator.framework.imps;
 
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executor;
 import org.apache.curator.RetryLoop;
 import org.apache.curator.drivers.OperationTrace;
 import org.apache.curator.framework.api.BackgroundCallback;
@@ -30,143 +33,119 @@ import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Executor;
 
-public class GetACLBuilderImpl implements GetACLBuilder, BackgroundOperation<String>, ErrorListenerPathable<List<ACL>>
-{
+public class GetACLBuilderImpl implements GetACLBuilder, BackgroundOperation<String>, ErrorListenerPathable<List<ACL>> {
     private final CuratorFrameworkImpl client;
 
-    private Backgrounding               backgrounding;
-    private Stat                        responseStat;
+    private Backgrounding backgrounding;
+    private Stat responseStat;
 
-    GetACLBuilderImpl(CuratorFrameworkImpl client)
-    {
+    GetACLBuilderImpl(CuratorFrameworkImpl client) {
         this.client = client;
         backgrounding = new Backgrounding();
         responseStat = new Stat();
     }
 
-    public GetACLBuilderImpl(CuratorFrameworkImpl client, Backgrounding backgrounding, Stat responseStat)
-    {
+    public GetACLBuilderImpl(CuratorFrameworkImpl client, Backgrounding backgrounding, Stat responseStat) {
         this.client = client;
         this.backgrounding = backgrounding;
         this.responseStat = responseStat;
     }
 
     @Override
-    public ErrorListenerPathable<List<ACL>> inBackground(BackgroundCallback callback, Object context)
-    {
+    public ErrorListenerPathable<List<ACL>> inBackground(BackgroundCallback callback, Object context) {
         backgrounding = new Backgrounding(callback, context);
         return this;
     }
 
     @Override
-    public ErrorListenerPathable<List<ACL>> inBackground(BackgroundCallback callback, Object context, Executor executor)
-    {
+    public ErrorListenerPathable<List<ACL>> inBackground(
+            BackgroundCallback callback, Object context, Executor executor) {
         backgrounding = new Backgrounding(client, callback, context, executor);
         return this;
     }
 
     @Override
-    public ErrorListenerPathable<List<ACL>> inBackground()
-    {
+    public ErrorListenerPathable<List<ACL>> inBackground() {
         backgrounding = new Backgrounding(true);
         return this;
     }
 
     @Override
-    public ErrorListenerPathable<List<ACL>> inBackground(Object context)
-    {
+    public ErrorListenerPathable<List<ACL>> inBackground(Object context) {
         backgrounding = new Backgrounding(context);
         return this;
     }
 
     @Override
-    public ErrorListenerPathable<List<ACL>> inBackground(BackgroundCallback callback)
-    {
+    public ErrorListenerPathable<List<ACL>> inBackground(BackgroundCallback callback) {
         backgrounding = new Backgrounding(callback);
         return this;
     }
 
     @Override
-    public ErrorListenerPathable<List<ACL>> inBackground(BackgroundCallback callback, Executor executor)
-    {
+    public ErrorListenerPathable<List<ACL>> inBackground(BackgroundCallback callback, Executor executor) {
         backgrounding = new Backgrounding(client, callback, executor);
         return this;
     }
 
     @Override
-    public Pathable<List<ACL>> withUnhandledErrorListener(UnhandledErrorListener listener)
-    {
+    public Pathable<List<ACL>> withUnhandledErrorListener(UnhandledErrorListener listener) {
         backgrounding = new Backgrounding(backgrounding, listener);
         return this;
     }
 
     @Override
-    public Pathable<List<ACL>> storingStatIn(Stat stat)
-    {
+    public Pathable<List<ACL>> storingStatIn(Stat stat) {
         responseStat = stat;
         return this;
     }
 
     @Override
-    public void performBackgroundOperation(final OperationAndData<String> operationAndData) throws Exception
-    {
-        try
-        {
-            final OperationTrace             trace = client.getZookeeperClient().startAdvancedTracer("GetACLBuilderImpl-Background");
-            AsyncCallback.ACLCallback   callback = new AsyncCallback.ACLCallback()
-            {
+    public void performBackgroundOperation(final OperationAndData<String> operationAndData) throws Exception {
+        try {
+            final OperationTrace trace =
+                    client.getZookeeperClient().startAdvancedTracer("GetACLBuilderImpl-Background");
+            AsyncCallback.ACLCallback callback = new AsyncCallback.ACLCallback() {
                 @Override
-                public void processResult(int rc, String path, Object ctx, List<ACL> acl, Stat stat)
-                {
+                public void processResult(int rc, String path, Object ctx, List<ACL> acl, Stat stat) {
                     trace.setReturnCode(rc).setPath(path).setStat(stat).commit();
-                    CuratorEventImpl event = new CuratorEventImpl(client, CuratorEventType.GET_ACL, rc, path, null, ctx, stat, null, null, null, acl, null);
+                    CuratorEventImpl event = new CuratorEventImpl(
+                            client, CuratorEventType.GET_ACL, rc, path, null, ctx, stat, null, null, null, acl, null);
                     client.processBackgroundOperation(operationAndData, event);
                 }
             };
-            client.getZooKeeper().getACL(operationAndData.getData(), responseStat, callback, backgrounding.getContext());
-        }
-        catch ( Throwable e )
-        {
+            client.getZooKeeper()
+                    .getACL(operationAndData.getData(), responseStat, callback, backgrounding.getContext());
+        } catch (Throwable e) {
             backgrounding.checkError(e, null);
         }
     }
 
     @Override
-    public List<ACL> forPath(String path) throws Exception
-    {
+    public List<ACL> forPath(String path) throws Exception {
         path = client.fixForNamespace(path);
 
-        List<ACL>       result = null;
-        if ( backgrounding.inBackground() )
-        {
-            client.processBackgroundOperation(new OperationAndData<String>(this, path, backgrounding.getCallback(), null, backgrounding.getContext(), null), null);
-        }
-        else
-        {
+        List<ACL> result = null;
+        if (backgrounding.inBackground()) {
+            client.processBackgroundOperation(
+                    new OperationAndData<String>(
+                            this, path, backgrounding.getCallback(), null, backgrounding.getContext(), null),
+                    null);
+        } else {
             result = pathInForeground(path);
         }
         return result;
     }
 
-    private List<ACL> pathInForeground(final String path) throws Exception
-    {
-        OperationTrace    trace = client.getZookeeperClient().startAdvancedTracer("GetACLBuilderImpl-Foreground");
-        List<ACL>    result = RetryLoop.callWithRetry
-        (
-            client.getZookeeperClient(),
-            new Callable<List<ACL>>()
-            {
-                @Override
-                public List<ACL> call() throws Exception
-                {
-                    return client.getZooKeeper().getACL(path, responseStat);
-                }
+    private List<ACL> pathInForeground(final String path) throws Exception {
+        OperationTrace trace = client.getZookeeperClient().startAdvancedTracer("GetACLBuilderImpl-Foreground");
+        List<ACL> result = RetryLoop.callWithRetry(client.getZookeeperClient(), new Callable<List<ACL>>() {
+            @Override
+            public List<ACL> call() throws Exception {
+                return client.getZooKeeper().getACL(path, responseStat);
             }
-        );
+        });
         trace.setPath(path).setStat(responseStat).commit();
         return result;
     }

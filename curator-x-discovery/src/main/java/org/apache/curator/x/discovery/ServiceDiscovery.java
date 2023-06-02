@@ -19,12 +19,11 @@
 
 package org.apache.curator.x.discovery;
 
-import org.apache.curator.x.discovery.strategies.RoundRobinStrategy;
 import java.io.Closeable;
 import java.util.Collection;
+import org.apache.curator.x.discovery.strategies.RoundRobinStrategy;
 
-public interface ServiceDiscovery<T> extends Closeable
-{
+public interface ServiceDiscovery<T> extends Closeable {
     /**
      * The discovery must be started before use
      *
@@ -38,7 +37,7 @@ public interface ServiceDiscovery<T> extends Closeable
      * @param service service to add
      * @throws Exception errors
      */
-    public void     registerService(ServiceInstance<T> service) throws Exception;
+    public void registerService(ServiceInstance<T> service) throws Exception;
 
     /**
      * Update a service
@@ -46,7 +45,7 @@ public interface ServiceDiscovery<T> extends Closeable
      * @param service service to update
      * @throws Exception errors
      */
-    public void     updateService(ServiceInstance<T> service) throws Exception;
+    public void updateService(ServiceInstance<T> service) throws Exception;
 
     /**
      * Unregister/remove a service instance
@@ -54,7 +53,7 @@ public interface ServiceDiscovery<T> extends Closeable
      * @param service the service
      * @throws Exception errors
      */
-    public void     unregisterService(ServiceInstance<T> service) throws Exception;
+    public void unregisterService(ServiceInstance<T> service) throws Exception;
 
     /**
      * Allocate a new service cache builder. The refresh padding is defaulted to 1 second.
@@ -78,7 +77,7 @@ public interface ServiceDiscovery<T> extends Closeable
      * @return list of instances (or an empty list)
      * @throws Exception errors
      */
-    public Collection<ServiceInstance<T>>  queryForInstances(String name) throws Exception;
+    public Collection<ServiceInstance<T>> queryForInstances(String name) throws Exception;
 
     /**
      * Return a service instance POJO

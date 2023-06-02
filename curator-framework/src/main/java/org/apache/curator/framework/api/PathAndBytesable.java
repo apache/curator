@@ -21,8 +21,7 @@ package org.apache.curator.framework.api;
 
 import org.apache.curator.framework.CuratorFrameworkFactory;
 
-public interface PathAndBytesable<T>
-{
+public interface PathAndBytesable<T> {
     /**
      * Commit the currently building operation using the given path and data
      *
@@ -31,7 +30,7 @@ public interface PathAndBytesable<T>
      * @return operation result if any
      * @throws Exception errors
      */
-    public T        forPath(String path, byte[] data) throws Exception;
+    public T forPath(String path, byte[] data) throws Exception;
 
     /**
      * Commit the currently building operation using the given path and the default data
@@ -42,5 +41,5 @@ public interface PathAndBytesable<T>
      * @return operation result if any
      * @throws Exception errors
      */
-    public T        forPath(String path) throws Exception;
+    public T forPath(String path) throws Exception;
 }

@@ -40,8 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * </pre></code>
  * </p>
  */
-public class Locker implements AutoCloseable
-{
+public class Locker implements AutoCloseable {
     private final InterProcessLock lock;
     private final AtomicBoolean acquired = new AtomicBoolean(false);
 
@@ -51,12 +50,10 @@ public class Locker implements AutoCloseable
      * @param unit time unit of timeout
      * @throws Exception Curator errors or {@link TimeoutException} if the lock cannot be acquired within the timeout
      */
-    public Locker(InterProcessLock lock, long timeout, TimeUnit unit) throws Exception
-    {
+    public Locker(InterProcessLock lock, long timeout, TimeUnit unit) throws Exception {
         this.lock = lock;
         acquired.set(acquireLock(lock, timeout, unit));
-        if ( !acquired.get() )
-        {
+        if (!acquired.get()) {
             throw new TimeoutException("Could not acquire lock within timeout of " + unit.toMillis(timeout) + "ms");
         }
     }
@@ -65,8 +62,7 @@ public class Locker implements AutoCloseable
      * @param lock a lock implementation (e.g. {@link InterProcessMutex}, {@link InterProcessSemaphoreV2}, etc.)
      * @throws Exception errors
      */
-    public Locker(InterProcessLock lock) throws Exception
-    {
+    public Locker(InterProcessLock lock) throws Exception {
         this.lock = lock;
         acquireLock(lock);
         acquired.set(true);
@@ -77,26 +73,21 @@ public class Locker implements AutoCloseable
      * Relase the lock if it has been acquired. Can be safely called multiple times.
      * Only the first call will unlock.
      */
-    public void close() throws Exception
-    {
-        if ( acquired.compareAndSet(true, false) )
-        {
+    public void close() throws Exception {
+        if (acquired.compareAndSet(true, false)) {
             releaseLock();
         }
     }
 
-    protected void releaseLock() throws Exception
-    {
+    protected void releaseLock() throws Exception {
         lock.release();
     }
 
-    protected void acquireLock(InterProcessLock lock) throws Exception
-    {
+    protected void acquireLock(InterProcessLock lock) throws Exception {
         lock.acquire();
     }
 
-    protected boolean acquireLock(InterProcessLock lock, long timeout, TimeUnit unit) throws Exception
-    {
+    protected boolean acquireLock(InterProcessLock lock, long timeout, TimeUnit unit) throws Exception {
         return lock.acquire(timeout, unit);
     }
 }

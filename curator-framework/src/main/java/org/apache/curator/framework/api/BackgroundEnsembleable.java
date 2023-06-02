@@ -19,8 +19,4 @@
 
 package org.apache.curator.framework.api;
 
-public interface BackgroundEnsembleable<T> extends
-    Backgroundable<ErrorListenerEnsembleable<T>>,
-    Ensembleable<T>
-{
-}
+public interface BackgroundEnsembleable<T> extends Backgroundable<ErrorListenerEnsembleable<T>>, Ensembleable<T> {}

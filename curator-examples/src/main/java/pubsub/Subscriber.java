@@ -30,12 +30,10 @@ import pubsub.models.InstanceType;
 import pubsub.models.Message;
 import pubsub.models.Priority;
 
-public class Subscriber
-{
+public class Subscriber {
     private final AsyncCuratorFramework client;
 
-    public Subscriber(AsyncCuratorFramework client)
-    {
+    public Subscriber(AsyncCuratorFramework client) {
         this.client = client;
     }
 
@@ -46,8 +44,7 @@ public class Subscriber
      * @param priority priority to listen for
      * @return CachedModeledFramework instance (already started)
      */
-    public CachedModeledFramework<LocationAvailable> startLocationAvailableSubscriber(Group group, Priority priority)
-    {
+    public CachedModeledFramework<LocationAvailable> startLocationAvailableSubscriber(Group group, Priority priority) {
         return startSubscriber(Clients.locationAvailableClient, group, priority);
     }
 
@@ -58,8 +55,7 @@ public class Subscriber
      * @param priority priority to listen for
      * @return CachedModeledFramework instance (already started)
      */
-    public CachedModeledFramework<UserCreated> startUserCreatedSubscriber(Group group, Priority priority)
-    {
+    public CachedModeledFramework<UserCreated> startUserCreatedSubscriber(Group group, Priority priority) {
         return startSubscriber(Clients.userCreatedClient, group, priority);
     }
 
@@ -69,16 +65,17 @@ public class Subscriber
      * @param instanceType type to listen for
      * @return CachedModeledFramework instance (already started)
      */
-    public CachedModeledFramework<Instance> startInstanceSubscriber(InstanceType instanceType)
-    {
-        CachedModeledFramework<Instance> resolved = Clients.instanceClient.resolved(client, instanceType).cached();
+    public CachedModeledFramework<Instance> startInstanceSubscriber(InstanceType instanceType) {
+        CachedModeledFramework<Instance> resolved =
+                Clients.instanceClient.resolved(client, instanceType).cached();
         resolved.start();
         return resolved;
     }
 
-    private <T extends Message> CachedModeledFramework<T> startSubscriber(TypedModeledFramework2<T, Group, Priority> typedClient, Group group, Priority priority)
-    {
-        CachedModeledFramework<T> resolved = typedClient.resolved(client, group, priority).cached();
+    private <T extends Message> CachedModeledFramework<T> startSubscriber(
+            TypedModeledFramework2<T, Group, Priority> typedClient, Group group, Priority priority) {
+        CachedModeledFramework<T> resolved =
+                typedClient.resolved(client, group, priority).cached();
         resolved.start();
         return resolved;
     }

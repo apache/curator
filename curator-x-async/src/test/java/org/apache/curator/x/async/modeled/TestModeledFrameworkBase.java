@@ -30,8 +30,7 @@ import org.apache.curator.x.async.modeled.models.TestNewerModel;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
-public class TestModeledFrameworkBase extends CompletableBaseClassForTests
-{
+public class TestModeledFrameworkBase extends CompletableBaseClassForTests {
     protected static final ZPath path = ZPath.parse("/test/path");
     protected CuratorFramework rawClient;
     protected ModelSpec<TestModel> modelSpec;
@@ -40,11 +39,11 @@ public class TestModeledFrameworkBase extends CompletableBaseClassForTests
 
     @BeforeEach
     @Override
-    public void setup() throws Exception
-    {
+    public void setup() throws Exception {
         super.setup();
 
-        rawClient = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        rawClient = CuratorFrameworkFactory.newClient(
+                server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         rawClient.start();
         async = AsyncCuratorFramework.wrap(rawClient);
 
@@ -57,8 +56,7 @@ public class TestModeledFrameworkBase extends CompletableBaseClassForTests
 
     @AfterEach
     @Override
-    public void teardown() throws Exception
-    {
+    public void teardown() throws Exception {
         CloseableUtils.closeQuietly(rawClient);
         super.teardown();
     }

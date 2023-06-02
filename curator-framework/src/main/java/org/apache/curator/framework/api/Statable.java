@@ -21,8 +21,7 @@ package org.apache.curator.framework.api;
 
 import org.apache.zookeeper.data.Stat;
 
-public interface Statable<T>
-{
+public interface Statable<T> {
     /**
      * Have the operation fill the provided stat object
      *

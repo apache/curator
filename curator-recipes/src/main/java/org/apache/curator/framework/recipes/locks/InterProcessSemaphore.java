@@ -21,19 +21,19 @@ package org.apache.curator.framework.recipes.locks;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import org.apache.curator.utils.CloseableUtils;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.concurrent.TimeUnit;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.shared.SharedCountListener;
 import org.apache.curator.framework.recipes.shared.SharedCountReader;
 import org.apache.curator.framework.state.ConnectionState;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.concurrent.TimeUnit;
 
 /**
  * <p>
@@ -67,20 +67,18 @@ import java.util.concurrent.TimeUnit;
  * @deprecated Use {@link InterProcessSemaphoreV2} instead of this class. It uses a better algorithm.
  */
 @Deprecated
-public class InterProcessSemaphore
-{
-    private final Logger        log = LoggerFactory.getLogger(getClass());
+public class InterProcessSemaphore {
+    private final Logger log = LoggerFactory.getLogger(getClass());
     private final LockInternals internals;
 
-    private static final String     LOCK_NAME = "lock-";
+    private static final String LOCK_NAME = "lock-";
 
     /**
      * @param client the client
      * @param path path for the semaphore
      * @param maxLeases the max number of leases to allow for this instance
      */
-    public InterProcessSemaphore(CuratorFramework client, String path, int maxLeases)
-    {
+    public InterProcessSemaphore(CuratorFramework client, String path, int maxLeases) {
         this(client, path, maxLeases, null);
     }
 
@@ -89,34 +87,30 @@ public class InterProcessSemaphore
      * @param path path for the semaphore
      * @param count the shared count to use for the max leases
      */
-    public InterProcessSemaphore(CuratorFramework client, String path, SharedCountReader count)
-    {
+    public InterProcessSemaphore(CuratorFramework client, String path, SharedCountReader count) {
         this(client, path, 0, count);
     }
 
-    private InterProcessSemaphore(CuratorFramework client, String path, int maxLeases, SharedCountReader count)
-    {
+    private InterProcessSemaphore(CuratorFramework client, String path, int maxLeases, SharedCountReader count) {
         // path verified in LockInternals
-        internals = new LockInternals(client, new StandardLockInternalsDriver(), path, LOCK_NAME, (count != null) ? count.getCount() : maxLeases);
-        if ( count != null )
-        {
-            count.addListener
-            (
-                new SharedCountListener()
-                {
-                    @Override
-                    public void countHasChanged(SharedCountReader sharedCount, int newCount) throws Exception
-                    {
-                        internals.setMaxLeases(newCount);
-                    }
-
-                    @Override
-                    public void stateChanged(CuratorFramework client, ConnectionState newState)
-                    {
-                        // no need to handle this here - clients should set their own connection state listener
-                    }
+        internals = new LockInternals(
+                client,
+                new StandardLockInternalsDriver(),
+                path,
+                LOCK_NAME,
+                (count != null) ? count.getCount() : maxLeases);
+        if (count != null) {
+            count.addListener(new SharedCountListener() {
+                @Override
+                public void countHasChanged(SharedCountReader sharedCount, int newCount) throws Exception {
+                    internals.setMaxLeases(newCount);
                 }
-            );
+
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState) {
+                    // no need to handle this here - clients should set their own connection state listener
+                }
+            });
         }
     }
 
@@ -125,10 +119,8 @@ public class InterProcessSemaphore
      *
      * @param leases leases to close
      */
-    public void     returnAll(Collection<Lease> leases)
-    {
-        for ( Lease l : leases )
-        {
+    public void returnAll(Collection<Lease> leases) {
+        for (Lease l : leases) {
             CloseableUtils.closeQuietly(l);
         }
     }
@@ -138,8 +130,7 @@ public class InterProcessSemaphore
      *
      * @param lease lease to close
      */
-    public void     returnLease(Lease lease)
-    {
+    public void returnLease(Lease lease) {
         CloseableUtils.closeQuietly(lease);
     }
 
@@ -153,9 +144,8 @@ public class InterProcessSemaphore
      * @return the new lease
      * @throws Exception ZK errors, interruptions, etc.
      */
-    public Lease acquire() throws Exception
-    {
-        String      path = internals.attemptLock(-1, null, null);
+    public Lease acquire() throws Exception {
+        String path = internals.attemptLock(-1, null, null);
         return makeLease(path);
     }
 
@@ -171,21 +161,16 @@ public class InterProcessSemaphore
      * @return the new leases
      * @throws Exception ZK errors, interruptions, etc.
      */
-    public Collection<Lease> acquire(int qty) throws Exception
-    {
+    public Collection<Lease> acquire(int qty) throws Exception {
         Preconditions.checkArgument(qty > 0, "qty cannot be 0");
 
-        ImmutableList.Builder<Lease>    builder = ImmutableList.builder();
-        try
-        {
-            while ( qty-- > 0 )
-            {
-                String      path = internals.attemptLock(-1, null, null);
+        ImmutableList.Builder<Lease> builder = ImmutableList.builder();
+        try {
+            while (qty-- > 0) {
+                String path = internals.attemptLock(-1, null, null);
                 builder.add(makeLease(path));
             }
-        }
-        catch ( Exception e )
-        {
+        } catch (Exception e) {
             ThreadUtils.checkInterrupted(e);
             returnAll(builder.build());
             throw e;
@@ -206,9 +191,8 @@ public class InterProcessSemaphore
      * @return the new lease or null if time ran out
      * @throws Exception ZK errors, interruptions, etc.
      */
-    public Lease acquire(long time, TimeUnit unit) throws Exception
-    {
-        String      path = internals.attemptLock(time, unit, null);
+    public Lease acquire(long time, TimeUnit unit) throws Exception {
+        String path = internals.attemptLock(time, unit, null);
         return (path != null) ? makeLease(path) : null;
     }
 
@@ -228,32 +212,26 @@ public class InterProcessSemaphore
      * @return the new leases or null if time ran out
      * @throws Exception ZK errors, interruptions, etc.
      */
-    public Collection<Lease> acquire(int qty, long time, TimeUnit unit) throws Exception
-    {
-        long                startMs = System.currentTimeMillis();
-        long                waitMs = TimeUnit.MILLISECONDS.convert(time, unit);
+    public Collection<Lease> acquire(int qty, long time, TimeUnit unit) throws Exception {
+        long startMs = System.currentTimeMillis();
+        long waitMs = TimeUnit.MILLISECONDS.convert(time, unit);
 
         Preconditions.checkArgument(qty > 0, "qty cannot be 0");
 
-        ImmutableList.Builder<Lease>    builder = ImmutableList.builder();
-        try
-        {
-            while ( qty-- > 0 )
-            {
-                long        elapsedMs = System.currentTimeMillis() - startMs;
-                long        thisWaitMs = waitMs - elapsedMs;
+        ImmutableList.Builder<Lease> builder = ImmutableList.builder();
+        try {
+            while (qty-- > 0) {
+                long elapsedMs = System.currentTimeMillis() - startMs;
+                long thisWaitMs = waitMs - elapsedMs;
 
-                String      path = (thisWaitMs > 0) ? internals.attemptLock(thisWaitMs, TimeUnit.MILLISECONDS, null) : null;
-                if ( path == null )
-                {
+                String path = (thisWaitMs > 0) ? internals.attemptLock(thisWaitMs, TimeUnit.MILLISECONDS, null) : null;
+                if (path == null) {
                     returnAll(builder.build());
                     return null;
                 }
                 builder.add(makeLease(path));
             }
-        }
-        catch ( Exception e )
-        {
+        } catch (Exception e) {
             ThreadUtils.checkInterrupted(e);
             returnAll(builder.build());
             throw e;
@@ -262,31 +240,22 @@ public class InterProcessSemaphore
         return builder.build();
     }
 
-    private Lease makeLease(final String path)
-    {
-        return new Lease()
-        {
+    private Lease makeLease(final String path) {
+        return new Lease() {
             @Override
-            public void close() throws IOException
-            {
-                try
-                {
+            public void close() throws IOException {
+                try {
                     internals.releaseLock(path);
-                }
-                catch ( KeeperException.NoNodeException e )
-                {
+                } catch (KeeperException.NoNodeException e) {
                     log.warn("Lease already released", e);
-                }
-                catch ( Exception e )
-                {
+                } catch (Exception e) {
                     ThreadUtils.checkInterrupted(e);
                     throw new IOException(e);
                 }
             }
 
             @Override
-            public byte[] getData() throws Exception
-            {
+            public byte[] getData() throws Exception {
                 return internals.getClient().getData().forPath(path);
             }
 

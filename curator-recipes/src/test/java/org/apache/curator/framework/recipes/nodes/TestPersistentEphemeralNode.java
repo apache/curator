@@ -29,6 +29,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.ACLProvider;
@@ -53,19 +62,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings("deprecation")
-public class TestPersistentEphemeralNode extends BaseClassForTests
-{
+public class TestPersistentEphemeralNode extends BaseClassForTests {
     private static final Logger log = LoggerFactory.getLogger(TestPersistentEphemeralNode.class);
     private static final String DIR = "/test";
     private static final String PATH = ZKPaths.makePath(DIR, "/foo");
@@ -77,53 +76,43 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
 
     @AfterEach
     @Override
-    public void teardown() throws Exception
-    {
-        try
-        {
-            for ( PersistentEphemeralNode node : createdNodes )
-            {
+    public void teardown() throws Exception {
+        try {
+            for (PersistentEphemeralNode node : createdNodes) {
                 CloseableUtils.closeQuietly(node);
             }
 
-            for ( CuratorFramework curator : curatorInstances )
-            {
+            for (CuratorFramework curator : curatorInstances) {
                 TestCleanState.closeAndTestClean(curator);
             }
-        }
-        finally
-        {
+        } finally {
             super.teardown();
         }
     }
 
     @Test
-    public void testListenersReconnectedIsFast() throws Exception
-    {
+    public void testListenersReconnectedIsFast() throws Exception {
         server.stop();
 
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
-        try
-        {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(
+                server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        try {
             client.start();
-            try ( PersistentEphemeralNode node = new PersistentEphemeralNode(client, PersistentEphemeralNode.Mode.EPHEMERAL, "/abc/node", "hello".getBytes()) )
-            {
-                node.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
+            try (PersistentEphemeralNode node = new PersistentEphemeralNode(
+                    client, PersistentEphemeralNode.Mode.EPHEMERAL, "/abc/node", "hello".getBytes())) {
+                node.debugWaitMsForBackgroundBeforeClose.set(
+                        timing.forSleepingABit().milliseconds());
                 node.start();
 
                 final CountDownLatch connectedLatch = new CountDownLatch(1);
                 final CountDownLatch reconnectedLatch = new CountDownLatch(1);
-                ConnectionStateListener listener = new ConnectionStateListener()
-                {
+                ConnectionStateListener listener = new ConnectionStateListener() {
                     @Override
-                    public void stateChanged(CuratorFramework client, ConnectionState newState)
-                    {
-                        if ( newState == ConnectionState.CONNECTED )
-                        {
+                    public void stateChanged(CuratorFramework client, ConnectionState newState) {
+                        if (newState == ConnectionState.CONNECTED) {
                             connectedLatch.countDown();
                         }
-                        if ( newState == ConnectionState.RECONNECTED )
-                        {
+                        if (newState == ConnectionState.RECONNECTED) {
                             reconnectedLatch.countDown();
                         }
                     }
@@ -140,35 +129,31 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
                 timing.sleepABit();
                 assertTrue(timing.awaitLatch(reconnectedLatch));
             }
-        }
-        finally
-        {
+        } finally {
             TestCleanState.closeAndTestClean(client);
         }
     }
 
     @Test
-    public void testNoServerAtStart() throws Exception
-    {
+    public void testNoServerAtStart() throws Exception {
         server.stop();
 
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        CuratorFramework client = CuratorFrameworkFactory.newClient(
+                server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         PersistentEphemeralNode node = null;
-        try
-        {
+        try {
             client.start();
-            node = new PersistentEphemeralNode(client, PersistentEphemeralNode.Mode.EPHEMERAL, "/abc/node", "hello".getBytes());
-            node.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
+            node = new PersistentEphemeralNode(
+                    client, PersistentEphemeralNode.Mode.EPHEMERAL, "/abc/node", "hello".getBytes());
+            node.debugWaitMsForBackgroundBeforeClose.set(
+                    timing.forSleepingABit().milliseconds());
             node.start();
 
             final CountDownLatch connectedLatch = new CountDownLatch(1);
-            ConnectionStateListener listener = new ConnectionStateListener()
-            {
+            ConnectionStateListener listener = new ConnectionStateListener() {
                 @Override
-                public void stateChanged(CuratorFramework client, ConnectionState newState)
-                {
-                    if ( newState == ConnectionState.CONNECTED )
-                    {
+                public void stateChanged(CuratorFramework client, ConnectionState newState) {
+                    if (newState == ConnectionState.CONNECTED) {
                         connectedLatch.countDown();
                     }
                 }
@@ -184,81 +169,71 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             timing.sleepABit();
 
             assertTrue(node.waitForInitialCreate(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS));
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(node);
             TestCleanState.closeAndTestClean(client);
         }
     }
 
     @Test
-    public void testNullCurator()
-    {
-        assertThrows(NullPointerException.class, ()-> {
+    public void testNullCurator() {
+        assertThrows(NullPointerException.class, () -> {
             new PersistentEphemeralNode(null, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
         });
     }
 
     @Test
-    public void testNullPath()
-    {
-        assertThrows(IllegalArgumentException.class, ()-> {
+    public void testNullPath() {
+        assertThrows(IllegalArgumentException.class, () -> {
             CuratorFramework curator = newCurator();
             new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, null, new byte[0]);
         });
     }
 
     @Test
-    public void testNullData()
-    {
-        assertThrows(NullPointerException.class, ()-> {
+    public void testNullData() {
+        assertThrows(NullPointerException.class, () -> {
             CuratorFramework curator = newCurator();
             new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, null);
         });
     }
 
     @Test
-    public void testNullMode()
-    {
-        assertThrows(NullPointerException.class, ()->{
+    public void testNullMode() {
+        assertThrows(NullPointerException.class, () -> {
             CuratorFramework curator = newCurator();
             new PersistentEphemeralNode(curator, null, PATH, new byte[0]);
-            });
+        });
     }
 
     @Test
-    public void testSettingDataSequential() throws Exception
-    {
+    public void testSettingDataSequential() throws Exception {
         setDataTest(PersistentEphemeralNode.Mode.EPHEMERAL_SEQUENTIAL);
     }
 
     @Test
-    public void testSettingData() throws Exception
-    {
+    public void testSettingData() throws Exception {
         setDataTest(PersistentEphemeralNode.Mode.EPHEMERAL);
     }
 
-    protected void setDataTest(PersistentEphemeralNode.Mode mode) throws Exception
-    {
+    protected void setDataTest(PersistentEphemeralNode.Mode mode) throws Exception {
         PersistentEphemeralNode node = null;
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
-        try
-        {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(
+                server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        try {
             client.start();
             node = new PersistentEphemeralNode(client, mode, PATH, "a".getBytes());
-            node.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
+            node.debugWaitMsForBackgroundBeforeClose.set(
+                    timing.forSleepingABit().milliseconds());
             node.start();
             assertTrue(node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS));
 
             assertArrayEquals(client.getData().forPath(node.getActualPath()), "a".getBytes());
 
             final Semaphore semaphore = new Semaphore(0);
-            Watcher watcher = new Watcher()
-            {
+            Watcher watcher = new Watcher() {
                 @Override
-                public void process(WatchedEvent arg0)
-                {
+                public void process(WatchedEvent arg0) {
                     semaphore.release();
                 }
             };
@@ -273,31 +248,26 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             assertArrayEquals(client.getData().usingWatcher(watcher).forPath(node.getActualPath()), "c".getBytes());
             node.close();
             assertTrue(timing.acquireSemaphore(semaphore));
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(node);
             TestCleanState.closeAndTestClean(client);
         }
     }
 
     @Test
-    public void testDeletesNodeWhenClosed() throws Exception
-    {
+    public void testDeletesNodeWhenClosed() throws Exception {
         CuratorFramework curator = newCurator();
 
-        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
+        PersistentEphemeralNode node =
+                new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
         node.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
         node.start();
         String path = null;
-        try
-        {
+        try {
             node.waitForInitialCreate(5, TimeUnit.SECONDS);
             path = node.getActualPath();
             assertNodeExists(curator, path);
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(node);
         }
 
@@ -305,11 +275,11 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
     }
 
     @Test
-    public void testClosingMultipleTimes() throws Exception
-    {
+    public void testClosingMultipleTimes() throws Exception {
         CuratorFramework curator = newCurator();
 
-        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
+        PersistentEphemeralNode node =
+                new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
         node.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
         node.start();
         node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
@@ -323,15 +293,14 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
     }
 
     @Test
-    public void testDeletesNodeWhenSessionDisconnects() throws Exception
-    {
+    public void testDeletesNodeWhenSessionDisconnects() throws Exception {
         CuratorFramework curator = newCurator();
         CuratorFramework observer = newCurator();
 
-        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
+        PersistentEphemeralNode node =
+                new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
         node.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
-        try
-        {
+        try {
             node.start();
             node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             assertNodeExists(observer, node.getActualPath());
@@ -346,23 +315,20 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             // Make sure the node got deleted
             assertTrue(deletedTrigger.firedWithin(timing.forSessionSleep().seconds(), TimeUnit.SECONDS));
             node.debugCreateNodeLatch.countDown();
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(node);
         }
     }
 
     @Test
-    public void testRecreatesNodeWhenSessionReconnects() throws Exception
-    {
+    public void testRecreatesNodeWhenSessionReconnects() throws Exception {
         CuratorFramework curator = newCurator();
         CuratorFramework observer = newCurator();
 
-        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
+        PersistentEphemeralNode node =
+                new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
         node.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
-        try
-        {
+        try {
             node.start();
             node.waitForInitialCreate(5, TimeUnit.SECONDS);
             assertNodeExists(observer, node.getActualPath());
@@ -380,32 +346,29 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             // Check for it to be recreated...
             Trigger createdTrigger = Trigger.created();
             Stat stat = observer.checkExists().usingWatcher(createdTrigger).forPath(node.getActualPath());
-            assertTrue(stat != null || createdTrigger.firedWithin(timing.forWaiting().seconds(), TimeUnit.SECONDS));
-        }
-        finally
-        {
+            assertTrue(stat != null
+                    || createdTrigger.firedWithin(timing.forWaiting().seconds(), TimeUnit.SECONDS));
+        } finally {
             CloseableUtils.closeQuietly(node);
         }
     }
 
     @Test
-    public void testRecreatesNodeWhenSessionReconnectsMultipleTimes() throws Exception
-    {
+    public void testRecreatesNodeWhenSessionReconnectsMultipleTimes() throws Exception {
         CuratorFramework curator = newCurator();
         CuratorFramework observer = newCurator();
 
-        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
+        PersistentEphemeralNode node =
+                new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
         node.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
-        try
-        {
+        try {
             node.start();
             node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             String path = node.getActualPath();
             assertNodeExists(observer, path);
 
             // We should be able to disconnect multiple times and each time the node should be recreated.
-            for ( int i = 0; i < 5; i++ )
-            {
+            for (int i = 0; i < 5; i++) {
                 Trigger deletionTrigger = Trigger.deletedOrSetData();
                 Stat stat = observer.checkExists().usingWatcher(deletionTrigger).forPath(path);
                 assertNotNull(stat, "node should exist: " + path);
@@ -415,38 +378,41 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
                 curator.getZookeeperClient().getZooKeeper().getTestable().injectSessionExpiration();
 
                 // Make sure the node ended up getting deleted...
-                assertTrue(deletionTrigger.firedWithin(timing.multiple(1.5).forSessionSleep().seconds(), TimeUnit.SECONDS));
+                assertTrue(deletionTrigger.firedWithin(
+                        timing.multiple(1.5).forSessionSleep().seconds(), TimeUnit.SECONDS));
                 node.debugCreateNodeLatch.countDown();
 
                 // Now put a watch in the background looking to see if it gets created...
                 Trigger creationTrigger = Trigger.created();
                 stat = observer.checkExists().usingWatcher(creationTrigger).forPath(path);
-                assertTrue(stat != null || creationTrigger.firedWithin(timing.forWaiting().seconds(), TimeUnit.SECONDS));
+                assertTrue(stat != null
+                        || creationTrigger.firedWithin(timing.forWaiting().seconds(), TimeUnit.SECONDS));
             }
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(node);
         }
     }
 
     @Test
-    public void testRecreatesNodeWhenEphemeralOwnerSessionExpires() throws Exception
-    {
+    public void testRecreatesNodeWhenEphemeralOwnerSessionExpires() throws Exception {
         CuratorFramework curator = newCurator();
         CuratorFramework nodeCreator = newCurator();
         CuratorFramework observer = newCurator();
 
-        nodeCreator.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath(PATH, new byte[0]);
+        nodeCreator
+                .create()
+                .creatingParentsIfNeeded()
+                .withMode(CreateMode.EPHEMERAL)
+                .forPath(PATH, new byte[0]);
 
         Trigger dataChangedTrigger = Trigger.dataChanged();
         observer.getData().usingWatcher(dataChangedTrigger).forPath(PATH);
 
-        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
+        PersistentEphemeralNode node =
+                new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
         node.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
         node.start();
-        try
-        {
+        try {
             node.waitForInitialCreate(5, TimeUnit.SECONDS);
             assertNodeExists(observer, node.getActualPath());
 
@@ -463,23 +429,21 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             // Check for it to be recreated...
             Trigger createdTrigger = Trigger.created();
             Stat stat = observer.checkExists().usingWatcher(createdTrigger).forPath(node.getActualPath());
-            assertTrue(stat != null || createdTrigger.firedWithin(timing.forWaiting().seconds(), TimeUnit.SECONDS));
-        }
-        finally
-        {
+            assertTrue(stat != null
+                    || createdTrigger.firedWithin(timing.forWaiting().seconds(), TimeUnit.SECONDS));
+        } finally {
             node.close();
         }
     }
 
     @Test
-    public void testRecreatesNodeWhenItGetsDeleted() throws Exception
-    {
+    public void testRecreatesNodeWhenItGetsDeleted() throws Exception {
         CuratorFramework curator = newCurator();
 
-        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
+        PersistentEphemeralNode node =
+                new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
         node.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
-        try
-        {
+        try {
             node.start();
             node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             String originalNode = node.getActualPath();
@@ -492,59 +456,54 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             // node that gets created is going to be exactly the same as the original.
             Trigger createdWatchTrigger = Trigger.created();
             Stat stat = curator.checkExists().usingWatcher(createdWatchTrigger).forPath(originalNode);
-            assertTrue(stat != null || createdWatchTrigger.firedWithin(timing.forWaiting().seconds(), TimeUnit.SECONDS));
-        }
-        finally
-        {
+            assertTrue(stat != null
+                    || createdWatchTrigger.firedWithin(timing.forWaiting().seconds(), TimeUnit.SECONDS));
+        } finally {
             CloseableUtils.closeQuietly(node);
         }
     }
 
     @Test
-    public void testNodesCreateUniquePaths() throws Exception
-    {
+    public void testNodesCreateUniquePaths() throws Exception {
         CuratorFramework curator = newCurator();
 
-        try ( PersistentEphemeralNode node1 = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL_SEQUENTIAL, PATH, new byte[0]) )
-        {
-            node1.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
+        try (PersistentEphemeralNode node1 = new PersistentEphemeralNode(
+                curator, PersistentEphemeralNode.Mode.EPHEMERAL_SEQUENTIAL, PATH, new byte[0])) {
+            node1.debugWaitMsForBackgroundBeforeClose.set(
+                    timing.forSleepingABit().milliseconds());
             node1.start();
             node1.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             String path1 = node1.getActualPath();
 
-            PersistentEphemeralNode node2 = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL_SEQUENTIAL, PATH, new byte[0]);
-            node2.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
+            PersistentEphemeralNode node2 = new PersistentEphemeralNode(
+                    curator, PersistentEphemeralNode.Mode.EPHEMERAL_SEQUENTIAL, PATH, new byte[0]);
+            node2.debugWaitMsForBackgroundBeforeClose.set(
+                    timing.forSleepingABit().milliseconds());
             node2.start();
-            try
-            {
+            try {
                 node2.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
                 String path2 = node2.getActualPath();
 
                 assertFalse(path1.equals(path2));
-            }
-            finally
-            {
+            } finally {
                 node2.close();
             }
         }
     }
 
     @Test
-    public void testData() throws Exception
-    {
+    public void testData() throws Exception {
         CuratorFramework curator = newCurator();
         byte[] data = "Hello World".getBytes();
 
-        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, data);
+        PersistentEphemeralNode node =
+                new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, data);
         node.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
-        try
-        {
+        try {
             node.start();
             node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             assertTrue(Arrays.equals(curator.getData().forPath(node.getActualPath()), data));
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(node);
         }
     }
@@ -555,39 +514,39 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
      * @throws Exception
      */
     @Test
-    public void testSetDataWhenNodeExists() throws Exception
-    {
+    public void testSetDataWhenNodeExists() throws Exception {
         CuratorFramework curator = newCurator();
-        curator.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath(PATH, "InitialData".getBytes());
+        curator.create()
+                .creatingParentsIfNeeded()
+                .withMode(CreateMode.EPHEMERAL)
+                .forPath(PATH, "InitialData".getBytes());
 
         byte[] data = "Hello World".getBytes();
 
-        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, data);
+        PersistentEphemeralNode node =
+                new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, data);
         node.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
-        try
-        {
+        try {
             node.start();
             node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             assertTrue(Arrays.equals(curator.getData().forPath(node.getActualPath()), data));
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(node);
         }
     }
 
     @Test
-    public void testSetDataWhenDisconnected() throws Exception
-    {
+    public void testSetDataWhenDisconnected() throws Exception {
         CuratorFramework curator = newCurator();
 
         byte[] initialData = "Hello World".getBytes();
         byte[] updatedData = "Updated".getBytes();
 
-        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, initialData);
-        try
-        {
-            node.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
+        PersistentEphemeralNode node =
+                new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, initialData);
+        try {
+            node.debugWaitMsForBackgroundBeforeClose.set(
+                    timing.forSleepingABit().milliseconds());
             node.start();
             node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             assertTrue(Arrays.equals(curator.getData().forPath(node.getActualPath()), initialData));
@@ -596,16 +555,13 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
 
             final CountDownLatch dataUpdateLatch = new CountDownLatch(1);
 
-            Watcher watcher = new Watcher()
-            {
-				@Override
-				public void process(WatchedEvent event)
-				{
-					if ( event.getType() == EventType.NodeDataChanged )
-					{
-						dataUpdateLatch.countDown();
-					}
-				}
+            Watcher watcher = new Watcher() {
+                @Override
+                public void process(WatchedEvent event) {
+                    if (event.getType() == EventType.NodeDataChanged) {
+                        dataUpdateLatch.countDown();
+                    }
+                }
             };
 
             curator.getData().usingWatcher(watcher).inBackground().forPath(node.getActualPath());
@@ -616,25 +572,23 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             assertTrue(timing.awaitLatch(dataUpdateLatch));
 
             assertTrue(Arrays.equals(curator.getData().forPath(node.getActualPath()), updatedData));
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(node);
         }
     }
 
     @Test
-    public void testSetUpdatedDataWhenReconnected() throws Exception
-    {
+    public void testSetUpdatedDataWhenReconnected() throws Exception {
         CuratorFramework curator = newCurator();
 
         byte[] initialData = "Hello World".getBytes();
         byte[] updatedData = "Updated".getBytes();
 
-        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, initialData);
-        try
-        {
-            node.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
+        PersistentEphemeralNode node =
+                new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, initialData);
+        try {
+            node.debugWaitMsForBackgroundBeforeClose.set(
+                    timing.forSleepingABit().milliseconds());
             node.start();
             node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             assertTrue(Arrays.equals(curator.getData().forPath(node.getActualPath()), initialData));
@@ -645,20 +599,20 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             server.restart();
 
             final CountDownLatch dataUpdateLatch = new CountDownLatch(1);
-            curator.getData().inBackground(new BackgroundCallback() {
+            curator.getData()
+                    .inBackground(new BackgroundCallback() {
 
-                @Override
-                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
-                    dataUpdateLatch.countDown();
-                }
-            }).forPath(node.getActualPath());
+                        @Override
+                        public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
+                            dataUpdateLatch.countDown();
+                        }
+                    })
+                    .forPath(node.getActualPath());
 
             assertTrue(timing.awaitLatch(dataUpdateLatch));
 
             assertTrue(Arrays.equals(curator.getData().forPath(node.getActualPath()), updatedData));
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(node);
         }
     }
@@ -670,15 +624,14 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
      * @throws Exception
      */
     @Test
-    public void testProtected() throws Exception
-    {
+    public void testProtected() throws Exception {
         CuratorFramework curator = newCurator();
 
-        PersistentEphemeralNode node = new PersistentEphemeralNode(curator, PersistentEphemeralNode.Mode.PROTECTED_EPHEMERAL, PATH,
-                                                                   new byte[0]);
-        try
-        {
-            node.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
+        PersistentEphemeralNode node = new PersistentEphemeralNode(
+                curator, PersistentEphemeralNode.Mode.PROTECTED_EPHEMERAL, PATH, new byte[0]);
+        try {
+            node.debugWaitMsForBackgroundBeforeClose.set(
+                    timing.forSleepingABit().milliseconds());
             node.start();
             node.waitForInitialCreate(timing.forWaiting().seconds(), TimeUnit.SECONDS);
             assertNodeExists(curator, node.getActualPath());
@@ -689,26 +642,22 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
 
             assertNodeExists(curator, node.getActualPath());
 
-            //There should only be a single child, the persisted ephemeral node
+            // There should only be a single child, the persisted ephemeral node
             List<String> children = curator.getChildren().forPath(DIR);
             assertFalse(children == null);
             assertEquals(children.size(), 1);
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(node);
         }
     }
 
     @Test
-    public void testNoCreatePermission() throws Exception
-    {
+    public void testNoCreatePermission() throws Exception {
         CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
-        CuratorFramework client = builder
-            .connectString(server.getConnectString())
-            .authorization("digest", "me1:pass1".getBytes())
-            .retryPolicy(new RetryOneTime(1))
-            .build();
+        CuratorFramework client = builder.connectString(server.getConnectString())
+                .authorization("digest", "me1:pass1".getBytes())
+                .retryPolicy(new RetryOneTime(1))
+                .build();
 
         PersistentEphemeralNode node = null;
         try {
@@ -719,13 +668,13 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
             client.create().withACL(aclList).forPath(DIR, new byte[0]);
             client.close();
 
-        	//New client without authentication
-        	client = newCurator();
+            // New client without authentication
+            client = newCurator();
 
-        	node = new PersistentEphemeralNode(client, PersistentEphemeralNode.Mode.EPHEMERAL, PATH,
-                                                                   new byte[0]);
-            node.debugWaitMsForBackgroundBeforeClose.set(timing.forSleepingABit().milliseconds());
-        	node.start();
+            node = new PersistentEphemeralNode(client, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
+            node.debugWaitMsForBackgroundBeforeClose.set(
+                    timing.forSleepingABit().milliseconds());
+            node.start();
 
             node.waitForInitialCreate(timing.seconds(), TimeUnit.SECONDS);
             assertNodeDoesNotExist(client, PATH);
@@ -737,11 +686,12 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
     }
 
     @Test
-    public void testNoWritePermission() throws Exception
-    {
+    public void testNoWritePermission() throws Exception {
         final ACLProvider aclProvider = new ACLProvider() {
-            final ACL acl = new ACL(ZooDefs.Perms.READ | ZooDefs.Perms.CREATE | ZooDefs.Perms.DELETE, ZooDefs.Ids.ANYONE_ID_UNSAFE);
+            final ACL acl = new ACL(
+                    ZooDefs.Perms.READ | ZooDefs.Perms.CREATE | ZooDefs.Perms.DELETE, ZooDefs.Ids.ANYONE_ID_UNSAFE);
             final List<ACL> aclList = Collections.singletonList(acl);
+
             @Override
             public List<ACL> getDefaultAcl() {
                 return aclList;
@@ -754,8 +704,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         };
 
         CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
-        CuratorFramework client = builder
-                .connectString(server.getConnectString())
+        CuratorFramework client = builder.connectString(server.getConnectString())
                 .aclProvider(aclProvider)
                 .retryPolicy(new RetryOneTime(1))
                 .build();
@@ -764,8 +713,7 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         try {
             client.start();
 
-            node = new PersistentEphemeralNode(client, PersistentEphemeralNode.Mode.EPHEMERAL, PATH,
-                    new byte[0]);
+            node = new PersistentEphemeralNode(client, PersistentEphemeralNode.Mode.EPHEMERAL, PATH, new byte[0]);
             node.start();
 
             assertTrue(node.waitForInitialCreate(timing.seconds(), TimeUnit.SECONDS), "Node not created");
@@ -784,33 +732,29 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         }
     }
 
-    private void assertNodeExists(CuratorFramework curator, String path) throws Exception
-    {
+    private void assertNodeExists(CuratorFramework curator, String path) throws Exception {
         assertNotNull(path);
         assertTrue(curator.checkExists().forPath(path) != null);
     }
 
-    private void assertNodeDoesNotExist(CuratorFramework curator, String path) throws Exception
-    {
+    private void assertNodeDoesNotExist(CuratorFramework curator, String path) throws Exception {
         assertTrue(curator.checkExists().forPath(path) == null);
     }
 
-    private CuratorFramework newCurator() throws IOException
-    {
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+    private CuratorFramework newCurator() throws IOException {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(
+                server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
 
         curatorInstances.add(client);
         return client;
     }
 
-    private static final class Trigger implements Watcher
-    {
+    private static final class Trigger implements Watcher {
         private final Set<EventType> types;
         private final CountDownLatch latch;
 
-        public Trigger(Event.EventType... types)
-        {
+        public Trigger(Event.EventType... types) {
             assertNotNull(types);
 
             this.types = ImmutableSet.copyOf(types);
@@ -818,43 +762,32 @@ public class TestPersistentEphemeralNode extends BaseClassForTests
         }
 
         @Override
-        public void process(WatchedEvent event)
-        {
-            if ( types.contains(event.getType()) )
-            {
+        public void process(WatchedEvent event) {
+            if (types.contains(event.getType())) {
                 latch.countDown();
-            }
-            else if ( event.getType() != EventType.None )
-            {
+            } else if (event.getType() != EventType.None) {
                 log.warn("Unexpected watcher event: " + event);
             }
         }
 
-        public boolean firedWithin(long duration, TimeUnit unit)
-        {
-            try
-            {
+        public boolean firedWithin(long duration, TimeUnit unit) {
+            try {
                 return latch.await(duration, unit);
-            }
-            catch ( InterruptedException e )
-            {
+            } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw Throwables.propagate(e);
             }
         }
 
-        private static Trigger created()
-        {
+        private static Trigger created() {
             return new Trigger(Event.EventType.NodeCreated);
         }
 
-        private static Trigger deletedOrSetData()
-        {
+        private static Trigger deletedOrSetData() {
             return new Trigger(Event.EventType.NodeDeleted, EventType.NodeDataChanged);
         }
 
-        private static Trigger dataChanged()
-        {
+        private static Trigger dataChanged() {
             return new Trigger(EventType.NodeDataChanged);
         }
     }

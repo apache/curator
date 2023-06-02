@@ -23,8 +23,12 @@ import static org.apache.zookeeper.ZooDefs.Ids.ANYONE_ID_UNSAFE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.ACLProvider;
@@ -42,92 +46,75 @@ import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.junit.jupiter.api.Test;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+public class TestCreate extends BaseClassForTests {
+    private static final List<ACL> READ_CREATE =
+            Collections.singletonList(new ACL(ZooDefs.Perms.CREATE | ZooDefs.Perms.READ, ANYONE_ID_UNSAFE));
+    private static final List<ACL> READ_CREATE_WRITE = Collections.singletonList(
+            new ACL(ZooDefs.Perms.CREATE | ZooDefs.Perms.READ | ZooDefs.Perms.WRITE, ANYONE_ID_UNSAFE));
 
-public class TestCreate extends BaseClassForTests
-{
-    private static final List<ACL> READ_CREATE = Collections.singletonList(new ACL(ZooDefs.Perms.CREATE | ZooDefs.Perms.READ, ANYONE_ID_UNSAFE));
-    private static final List<ACL> READ_CREATE_WRITE = Collections.singletonList(new ACL(ZooDefs.Perms.CREATE | ZooDefs.Perms.READ | ZooDefs.Perms.WRITE, ANYONE_ID_UNSAFE));
-
-    private static ACLProvider testACLProvider = new ACLProvider()
-    {
+    private static ACLProvider testACLProvider = new ACLProvider() {
         @Override
-        public List<ACL> getDefaultAcl()
-        {
+        public List<ACL> getDefaultAcl() {
             return ZooDefs.Ids.OPEN_ACL_UNSAFE;
         }
 
         @Override
-        public List<ACL> getAclForPath(String path)
-        {
-            switch ( path )
-            {
-            case "/bar":
-                return READ_CREATE;
-            case "/bar/foo":
-                return READ_CREATE_WRITE;
+        public List<ACL> getAclForPath(String path) {
+            switch (path) {
+                case "/bar":
+                    return READ_CREATE;
+                case "/bar/foo":
+                    return READ_CREATE_WRITE;
             }
             return null;
         }
     };
 
-    private CuratorFramework createClient(ACLProvider aclProvider)
-    {
-        return CuratorFrameworkFactory.builder().
-            aclProvider(aclProvider).
-            connectString(server.getConnectString()).
-            retryPolicy(new RetryOneTime(1)).
-            build();
+    private CuratorFramework createClient(ACLProvider aclProvider) {
+        return CuratorFrameworkFactory.builder()
+                .aclProvider(aclProvider)
+                .connectString(server.getConnectString())
+                .retryPolicy(new RetryOneTime(1))
+                .build();
     }
 
     /**
      * Tests that the ACL list provided to the create builder is used for creating the parents.
      */
     @Test
-    public void testCreateWithParentsWithAcl() throws Exception
-    {
+    public void testCreateWithParentsWithAcl() throws Exception {
         CuratorFramework client = createClient(new DefaultACLProvider());
-        try
-        {
+        try {
             client.start();
 
             String path = "/bar/foo";
-            List<ACL> acl = Collections.singletonList(new ACL(ZooDefs.Perms.CREATE | ZooDefs.Perms.READ, ANYONE_ID_UNSAFE));
+            List<ACL> acl =
+                    Collections.singletonList(new ACL(ZooDefs.Perms.CREATE | ZooDefs.Perms.READ, ANYONE_ID_UNSAFE));
             client.create().creatingParentsIfNeeded().withACL(acl).forPath(path);
             List<ACL> actual_bar_foo = client.getACL().forPath(path);
             assertEquals(actual_bar_foo, acl);
             List<ACL> actual_bar = client.getACL().forPath("/bar");
             assertEquals(actual_bar, ZooDefs.Ids.OPEN_ACL_UNSAFE);
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
 
     @Test
-    public void testCreateWithParentsWithAclApplyToParents() throws Exception
-    {
+    public void testCreateWithParentsWithAclApplyToParents() throws Exception {
         CuratorFramework client = createClient(new DefaultACLProvider());
-        try
-        {
+        try {
             client.start();
 
             String path = "/bar/foo";
-            List<ACL> acl = Collections.singletonList(new ACL(ZooDefs.Perms.CREATE | ZooDefs.Perms.READ, ANYONE_ID_UNSAFE));
+            List<ACL> acl =
+                    Collections.singletonList(new ACL(ZooDefs.Perms.CREATE | ZooDefs.Perms.READ, ANYONE_ID_UNSAFE));
             client.create().creatingParentsIfNeeded().withACL(acl, true).forPath(path);
             List<ACL> actual_bar_foo = client.getACL().forPath(path);
             assertEquals(actual_bar_foo, acl);
             List<ACL> actual_bar = client.getACL().forPath("/bar");
             assertEquals(actual_bar, acl);
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
@@ -136,63 +123,61 @@ public class TestCreate extends BaseClassForTests
      * Tests that the ACL list provided to the create builder is used for creating the parents.
      */
     @Test
-    public void testCreateWithParentsWithAclInBackground() throws Exception
-    {
+    public void testCreateWithParentsWithAclInBackground() throws Exception {
         CuratorFramework client = createClient(new DefaultACLProvider());
-        try
-        {
+        try {
             client.start();
             final CountDownLatch latch = new CountDownLatch(1);
             String path = "/bar/foo";
-            List<ACL> acl = Collections.singletonList(new ACL(ZooDefs.Perms.CREATE | ZooDefs.Perms.READ, ANYONE_ID_UNSAFE));
-            BackgroundCallback callback = new BackgroundCallback()
-            {
+            List<ACL> acl =
+                    Collections.singletonList(new ACL(ZooDefs.Perms.CREATE | ZooDefs.Perms.READ, ANYONE_ID_UNSAFE));
+            BackgroundCallback callback = new BackgroundCallback() {
                 @Override
-                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
-                {
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
                     latch.countDown();
                 }
             };
-            client.create().creatingParentsIfNeeded().withACL(acl).inBackground(callback).forPath(path);
+            client.create()
+                    .creatingParentsIfNeeded()
+                    .withACL(acl)
+                    .inBackground(callback)
+                    .forPath(path);
             assertTrue(latch.await(2000, TimeUnit.MILLISECONDS), "Callback not invoked");
             List<ACL> actual_bar_foo = client.getACL().forPath(path);
             assertEquals(actual_bar_foo, acl);
             List<ACL> actual_bar = client.getACL().forPath("/bar");
             assertEquals(actual_bar, ZooDefs.Ids.OPEN_ACL_UNSAFE);
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
 
     @Test
-    public void testCreateWithParentsWithAclApplyToParentsInBackground() throws Exception
-    {
+    public void testCreateWithParentsWithAclApplyToParentsInBackground() throws Exception {
         CuratorFramework client = createClient(new DefaultACLProvider());
-        try
-        {
+        try {
             client.start();
             final CountDownLatch latch = new CountDownLatch(1);
             String path = "/bar/foo";
-            List<ACL> acl = Collections.singletonList(new ACL(ZooDefs.Perms.CREATE | ZooDefs.Perms.READ, ANYONE_ID_UNSAFE));
-            BackgroundCallback callback = new BackgroundCallback()
-            {
+            List<ACL> acl =
+                    Collections.singletonList(new ACL(ZooDefs.Perms.CREATE | ZooDefs.Perms.READ, ANYONE_ID_UNSAFE));
+            BackgroundCallback callback = new BackgroundCallback() {
                 @Override
-                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
-                {
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
                     latch.countDown();
                 }
             };
-            client.create().creatingParentsIfNeeded().withACL(acl, true).inBackground(callback).forPath(path);
+            client.create()
+                    .creatingParentsIfNeeded()
+                    .withACL(acl, true)
+                    .inBackground(callback)
+                    .forPath(path);
             assertTrue(latch.await(2000, TimeUnit.MILLISECONDS), "Callback not invoked");
             List<ACL> actual_bar_foo = client.getACL().forPath(path);
             assertEquals(actual_bar_foo, acl);
             List<ACL> actual_bar = client.getACL().forPath("/bar");
             assertEquals(actual_bar, acl);
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
@@ -201,11 +186,9 @@ public class TestCreate extends BaseClassForTests
      * Tests that if no ACL list provided to the create builder, then the ACL list is created based on the client's ACLProvider.
      */
     @Test
-    public void testCreateWithParentsWithoutAcl() throws Exception
-    {
+    public void testCreateWithParentsWithoutAcl() throws Exception {
         CuratorFramework client = createClient(testACLProvider);
-        try
-        {
+        try {
             client.start();
 
             String path = "/bar/foo/boo";
@@ -216,9 +199,7 @@ public class TestCreate extends BaseClassForTests
             assertEquals(actual_bar_foo, READ_CREATE_WRITE);
             List<ACL> actual_bar = client.getACL().forPath("/bar");
             assertEquals(actual_bar, READ_CREATE);
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
@@ -227,19 +208,15 @@ public class TestCreate extends BaseClassForTests
      * Tests that if no ACL list provided to the create builder, then the ACL list is created based on the client's ACLProvider.
      */
     @Test
-    public void testCreateWithParentsWithoutAclInBackground() throws Exception
-    {
+    public void testCreateWithParentsWithoutAclInBackground() throws Exception {
         CuratorFramework client = createClient(testACLProvider);
-        try
-        {
+        try {
             client.start();
 
             final CountDownLatch latch = new CountDownLatch(1);
-            BackgroundCallback callback = new BackgroundCallback()
-            {
+            BackgroundCallback callback = new BackgroundCallback() {
                 @Override
-                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
-                {
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
                     latch.countDown();
                 }
             };
@@ -253,41 +230,38 @@ public class TestCreate extends BaseClassForTests
             assertEquals(actual_bar_foo, READ_CREATE_WRITE);
             List<ACL> actual_bar = client.getACL().forPath("/bar");
             assertEquals(actual_bar, READ_CREATE);
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
 
-    private void check(CuratorFramework client, CreateBuilderMain builder, String path, byte[] data, boolean expectedSuccess) throws Exception
-    {
-        int expectedCode = (expectedSuccess) ? KeeperException.Code.OK.intValue() : KeeperException.Code.NODEEXISTS.intValue();
-        try
-        {
+    private void check(
+            CuratorFramework client, CreateBuilderMain builder, String path, byte[] data, boolean expectedSuccess)
+            throws Exception {
+        int expectedCode =
+                (expectedSuccess) ? KeeperException.Code.OK.intValue() : KeeperException.Code.NODEEXISTS.intValue();
+        try {
             builder.forPath(path, data);
             assertEquals(expectedCode, KeeperException.Code.OK.intValue());
             Stat stat = new Stat();
             byte[] actualData = client.getData().storingStatIn(stat).forPath(path);
             assertTrue(IdempotentUtils.matches(0, data, stat.getVersion(), actualData));
-        }
-        catch (KeeperException e)
-        {
+        } catch (KeeperException e) {
             assertEquals(expectedCode, e.getCode());
         }
     }
 
-    private void checkBackground(CuratorFramework client, CreateBuilderMain builder, String path, byte[] data, boolean expectedSuccess) throws Exception
-    {
-        int expectedCode = (expectedSuccess) ? KeeperException.Code.OK.intValue() : KeeperException.Code.NODEEXISTS.intValue();
+    private void checkBackground(
+            CuratorFramework client, CreateBuilderMain builder, String path, byte[] data, boolean expectedSuccess)
+            throws Exception {
+        int expectedCode =
+                (expectedSuccess) ? KeeperException.Code.OK.intValue() : KeeperException.Code.NODEEXISTS.intValue();
         AtomicInteger actualCode = new AtomicInteger(-1);
         CountDownLatch latch = new CountDownLatch(1);
 
-        BackgroundCallback callback = new BackgroundCallback()
-        {
+        BackgroundCallback callback = new BackgroundCallback() {
             @Override
-            public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
-            {
+            public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
                 actualCode.set(event.getResultCode());
                 latch.countDown();
             }
@@ -298,29 +272,25 @@ public class TestCreate extends BaseClassForTests
         assertTrue(latch.await(5000, TimeUnit.MILLISECONDS), "Callback not invoked");
         assertEquals(expectedCode, actualCode.get());
 
-        if (expectedCode == KeeperException.Code.OK.intValue())
-        {
+        if (expectedCode == KeeperException.Code.OK.intValue()) {
             Stat stat = new Stat();
             byte[] actualData = client.getData().storingStatIn(stat).forPath(path);
             assertTrue(IdempotentUtils.matches(0, data, stat.getVersion(), actualData));
         }
     }
 
-    private CreateBuilderMain clBefore(CreateBuilderMain builder)
-    {
-        ((CreateBuilderImpl)builder).failBeforeNextCreateForTesting = true;
+    private CreateBuilderMain clBefore(CreateBuilderMain builder) {
+        ((CreateBuilderImpl) builder).failBeforeNextCreateForTesting = true;
         return builder;
     }
 
-    private CreateBuilderMain clAfter(CreateBuilderMain builder)
-    {
-        ((CreateBuilderImpl)builder).failNextCreateForTesting = true;
+    private CreateBuilderMain clAfter(CreateBuilderMain builder) {
+        ((CreateBuilderImpl) builder).failNextCreateForTesting = true;
         return builder;
     }
 
-    private CreateBuilderMain clCheck(CreateBuilderMain builder)
-    {
-        ((CreateBuilderImpl)builder).failNextIdempotentCheckForTesting = true;
+    private CreateBuilderMain clCheck(CreateBuilderMain builder) {
+        ((CreateBuilderImpl) builder).failNextIdempotentCheckForTesting = true;
         return builder;
     }
 
@@ -328,11 +298,9 @@ public class TestCreate extends BaseClassForTests
      * Tests that NodeExists on failNextCreate doesn't hang in background
      */
     @Test
-    public void testBackgroundFaultInjectionHang() throws Exception
-    {
+    public void testBackgroundFaultInjectionHang() throws Exception {
         CuratorFramework client = createClient(new DefaultACLProvider());
-        try
-        {
+        try {
             client.start();
 
             Stat stat = new Stat();
@@ -344,9 +312,7 @@ public class TestCreate extends BaseClassForTests
             check(client, create, path, data, true);
 
             checkBackground(client, clAfter(client.create()), path, data, false);
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
@@ -355,11 +321,9 @@ public class TestCreate extends BaseClassForTests
      * Tests all cases of idempotent create
      */
     @Test
-    public void testIdempotentCreate() throws Exception
-    {
+    public void testIdempotentCreate() throws Exception {
         CuratorFramework client = createClient(new DefaultACLProvider());
-        try
-        {
+        try {
             client.start();
 
             Stat stat = new Stat();
@@ -393,9 +357,7 @@ public class TestCreate extends BaseClassForTests
 
             check(client, client.create().idempotent(), path, data2, false);
             checkBackground(client, client.create().idempotent(), pathBack, data2, false);
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
@@ -404,8 +366,7 @@ public class TestCreate extends BaseClassForTests
     @Test
     public void testIdempotentCreateConnectionLoss() throws Exception {
         CuratorFramework client = createClient(new DefaultACLProvider());
-        try
-        {
+        try {
             client.start();
             String path1 = "/idpcreate1";
             String path2 = "/idpcreate2";
@@ -418,48 +379,44 @@ public class TestCreate extends BaseClassForTests
 
             // Test that idempotent create succeeds with connection loss before or after first create
             check(client, clBefore(client.create().idempotent()), path1, data, true);
-            checkBackground(client, clBefore(client.create().idempotent()), path1+"back", data, true);
+            checkBackground(client, clBefore(client.create().idempotent()), path1 + "back", data, true);
             check(client, clAfter(client.create().idempotent()), path2, data, true);
-            checkBackground(client, clAfter(client.create().idempotent()), path2+"back", data, true);
+            checkBackground(client, clAfter(client.create().idempotent()), path2 + "back", data, true);
 
             // Test that repeating same operation succeeds, even with connection loss before/after/check
             check(client, clBefore(client.create().idempotent()), path1, data, true);
-            checkBackground(client, clBefore(client.create().idempotent()), path1+"back", data, true);
+            checkBackground(client, clBefore(client.create().idempotent()), path1 + "back", data, true);
             check(client, clAfter(client.create().idempotent()), path2, data, true);
-            checkBackground(client, clAfter(client.create().idempotent()), path2+"back", data, true);
+            checkBackground(client, clAfter(client.create().idempotent()), path2 + "back", data, true);
             check(client, clCheck(client.create().idempotent()), path2, data, true);
-            checkBackground(client, clCheck(client.create().idempotent()), path2+"back", data, true);
+            checkBackground(client, clCheck(client.create().idempotent()), path2 + "back", data, true);
 
             // test that idempotent correctly fails, even after connection loss,
             // by repeating earlier operations with different data
             check(client, clBefore(client.create().idempotent()), path1, data2, false);
-            checkBackground(client, clBefore(client.create().idempotent()), path1+"back", data2, false);
+            checkBackground(client, clBefore(client.create().idempotent()), path1 + "back", data2, false);
             check(client, clAfter(client.create().idempotent()), path2, data2, false);
-            checkBackground(client, clAfter(client.create().idempotent()), path2+"back", data2, false);
+            checkBackground(client, clAfter(client.create().idempotent()), path2 + "back", data2, false);
             check(client, clCheck(client.create().idempotent()), path2, data2, false);
-            checkBackground(client, clCheck(client.create().idempotent()), path2+"back", data2, false);
+            checkBackground(client, clCheck(client.create().idempotent()), path2 + "back", data2, false);
 
             // Test that non-idempotent succeeds with CL before create, but fails with connection loss after
             check(client, clBefore(client.create()), path3, data, true);
-            checkBackground(client, clBefore(client.create()), path3+"back", data, true);
+            checkBackground(client, clBefore(client.create()), path3 + "back", data, true);
             check(client, clAfter(client.create()), path4, data, false);
-            checkBackground(client, clAfter(client.create()), path4+"back", data, false);
+            checkBackground(client, clAfter(client.create()), path4 + "back", data, false);
 
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
 
     @Test
-    public void testCreateProtectedUtils() throws Exception
-    {
-        try (CuratorFramework client = CuratorFrameworkFactory.builder().
-            connectString(server.getConnectString()).
-            retryPolicy(new RetryOneTime(1)).
-            build())
-        {
+    public void testCreateProtectedUtils() throws Exception {
+        try (CuratorFramework client = CuratorFrameworkFactory.builder()
+                .connectString(server.getConnectString())
+                .retryPolicy(new RetryOneTime(1))
+                .build()) {
             client.start();
             client.blockUntilConnected();
             client.create().forPath("/parent");
@@ -470,7 +427,9 @@ public class TestCreate extends BaseClassForTests
             final String testZNodeName = children.get(0);
             assertEquals(testZNodeName.length(), ProtectedUtils.PROTECTED_PREFIX_WITH_UUID_LENGTH + "test".length());
             assertTrue(testZNodeName.startsWith(ProtectedUtils.PROTECTED_PREFIX));
-            assertEquals(testZNodeName.charAt(ProtectedUtils.PROTECTED_PREFIX_WITH_UUID_LENGTH - 1), ProtectedUtils.PROTECTED_SEPARATOR);
+            assertEquals(
+                    testZNodeName.charAt(ProtectedUtils.PROTECTED_PREFIX_WITH_UUID_LENGTH - 1),
+                    ProtectedUtils.PROTECTED_SEPARATOR);
             assertTrue(ProtectedUtils.isProtectedZNode(testZNodeName));
             assertEquals(ProtectedUtils.normalize(testZNodeName), "test");
             assertFalse(ProtectedUtils.isProtectedZNode("parent"));
@@ -479,8 +438,7 @@ public class TestCreate extends BaseClassForTests
     }
 
     @Test
-    public void testProtectedUtils() throws Exception
-    {
+    public void testProtectedUtils() throws Exception {
         String name = "_c_53345f98-9423-4e0c-a7b5-9f819e3ec2e1-yo";
         assertTrue(ProtectedUtils.isProtectedZNode(name));
         assertEquals(ProtectedUtils.normalize(name), "yo");
@@ -501,7 +459,9 @@ public class TestCreate extends BaseClassForTests
         assertEquals(name, ProtectedUtils.toProtectedZNode("yo", "53345f98-9423-4e0c-a7b5-9f819e3ec2e1"));
         assertEquals("yo", ProtectedUtils.toProtectedZNode("yo", null));
         String path = ZKPaths.makePath("hola", "yo");
-        assertEquals(ProtectedUtils.toProtectedZNodePath(path, "53345f98-9423-4e0c-a7b5-9f819e3ec2e1"), ZKPaths.makePath("hola", name));
+        assertEquals(
+                ProtectedUtils.toProtectedZNodePath(path, "53345f98-9423-4e0c-a7b5-9f819e3ec2e1"),
+                ZKPaths.makePath("hola", name));
         assertEquals(ProtectedUtils.toProtectedZNodePath(path, null), path);
         path = ZKPaths.makePath("hola", name);
         assertEquals(ProtectedUtils.normalizePath(path), "/hola/yo");

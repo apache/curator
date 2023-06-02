@@ -19,24 +19,20 @@
 
 package org.apache.curator.framework.api.transaction;
 
-public class TypeAndPath
-{
+public class TypeAndPath {
     private final OperationType type;
     private final String forPath;
 
-    public TypeAndPath(OperationType type, String forPath)
-    {
+    public TypeAndPath(OperationType type, String forPath) {
         this.type = type;
         this.forPath = forPath;
     }
 
-    public OperationType getType()
-    {
+    public OperationType getType() {
         return type;
     }
 
-    public String getForPath()
-    {
+    public String getForPath() {
         return forPath;
     }
 }

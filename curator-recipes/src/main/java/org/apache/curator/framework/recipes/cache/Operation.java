@@ -19,7 +19,6 @@
 
 package org.apache.curator.framework.recipes.cache;
 
-interface Operation
-{
-    public void     invoke() throws Exception;
+interface Operation {
+    public void invoke() throws Exception;
 }

@@ -19,11 +19,14 @@
 
 package org.apache.curator.framework.recipes.cache;
 
+import static org.apache.curator.framework.recipes.cache.CuratorCacheListener.builder;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
+import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
+import java.util.function.Supplier;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.imps.TestCleanState;
@@ -34,23 +37,13 @@ import org.apache.curator.utils.CloseableUtils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import java.util.Optional;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Semaphore;
-import java.util.function.Supplier;
-
-import static org.apache.curator.framework.recipes.cache.CuratorCacheListener.builder;
-
 @Tag(CuratorTestBase.zk36Group)
-public class TestWrappedNodeCache extends CuratorTestBase
-{
+public class TestWrappedNodeCache extends CuratorTestBase {
     @Test
-    public void testDeleteThenCreate() throws Exception
-    {
+    public void testDeleteThenCreate() throws Exception {
         CuratorCache cache = null;
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+        try {
             client.start();
             client.create().creatingParentsIfNeeded().forPath("/test/foo", "one".getBytes());
 
@@ -74,34 +67,30 @@ public class TestWrappedNodeCache extends CuratorTestBase
 
             assertTrue(rootData.get().isPresent());
             assertArrayEquals(rootData.get().get().getData(), "two".getBytes());
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(cache);
             TestCleanState.closeAndTestClean(client);
         }
     }
 
     @Test
-    public void testKilledSession() throws Exception
-    {
+    public void testKilledSession() throws Exception {
         CuratorCache cache = null;
         CuratorFramework client = null;
-        try
-        {
-            client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        try {
+            client = CuratorFrameworkFactory.newClient(
+                    server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
             client.start();
             client.create().creatingParentsIfNeeded().forPath("/test/node", "start".getBytes());
 
             CountDownLatch lostLatch = new CountDownLatch(1);
             client.getConnectionStateListenable().addListener((__, newState) -> {
-                if ( newState == ConnectionState.LOST )
-                {
+                if (newState == ConnectionState.LOST) {
                     lostLatch.countDown();
                 }
             });
 
-            cache = CuratorCache.build(client,"/test/node");
+            cache = CuratorCache.build(client, "/test/node");
 
             Semaphore latch = new Semaphore(0);
             NodeCacheListener listener = latch::release;
@@ -122,9 +111,7 @@ public class TestWrappedNodeCache extends CuratorTestBase
             assertTrue(timing.acquireSemaphore(latch));
             assertTrue(rootData.get().isPresent());
             assertArrayEquals(rootData.get().get().getData(), "new data".getBytes());
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(cache);
             TestCleanState.closeAndTestClean(client);
         }
@@ -132,12 +119,11 @@ public class TestWrappedNodeCache extends CuratorTestBase
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void testBasics() throws Exception
-    {
+    public void testBasics() throws Exception {
         CuratorCache cache = null;
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
-        try
-        {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(
+                server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        try {
             client.start();
             client.create().forPath("/test");
 
@@ -163,16 +149,13 @@ public class TestWrappedNodeCache extends CuratorTestBase
             client.delete().forPath("/test/node");
             assertTrue(timing.acquireSemaphore(semaphore));
             assertNull(rootData.get().orElse(null));
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(cache);
             TestCleanState.closeAndTestClean(client);
         }
     }
 
-    private Supplier<Optional<ChildData>> getRootDataProc(CuratorCache cache, String rootPath)
-    {
+    private Supplier<Optional<ChildData>> getRootDataProc(CuratorCache cache, String rootPath) {
         return () -> cache.get(rootPath);
     }
 }

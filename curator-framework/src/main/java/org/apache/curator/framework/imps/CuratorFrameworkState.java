@@ -24,8 +24,7 @@ import org.apache.curator.framework.CuratorFramework;
 /**
  * @see CuratorFramework#getState()
  */
-public enum CuratorFrameworkState
-{
+public enum CuratorFrameworkState {
     /**
      * {@link CuratorFramework#start()} has not yet been called
      */

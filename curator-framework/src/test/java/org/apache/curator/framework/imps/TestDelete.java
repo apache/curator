@@ -20,12 +20,15 @@
 package org.apache.curator.framework.imps;
 
 import static org.apache.zookeeper.KeeperException.Code.*;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.BackgroundCallback;
@@ -33,7 +36,6 @@ import org.apache.curator.framework.api.BackgroundPathable;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.CuratorListener;
-import org.apache.curator.framework.api.DeleteBuilder;
 import org.apache.curator.framework.api.DeleteBuilderMain;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
@@ -41,34 +43,25 @@ import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.KeeperException;
 import org.junit.jupiter.api.Test;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicInteger;
 
-public class TestDelete extends BaseClassForTests
-{
+public class TestDelete extends BaseClassForTests {
 
     private static byte[] createData = new byte[] {5, 6, 7, 8};
 
-    private CuratorFramework createClient()
-    {
-        return CuratorFrameworkFactory.builder().
-            connectString(server.getConnectString()).
-            retryPolicy(new RetryOneTime(1)).
-            build();
+    private CuratorFramework createClient() {
+        return CuratorFrameworkFactory.builder()
+                .connectString(server.getConnectString())
+                .retryPolicy(new RetryOneTime(1))
+                .build();
     }
 
     /**
      * Tests normal delete operations
      */
     @Test
-    public void testNormal() throws Exception
-    {
+    public void testNormal() throws Exception {
         CuratorFramework client = createClient();
-        try
-        {
+        try {
             client.start();
 
             String path = "/test";
@@ -83,14 +76,12 @@ public class TestDelete extends BaseClassForTests
             client.create().forPath(path, createData);
             // test fails with wrong verion
             check(client, client.delete().withVersion(1), path, BADVERSION.intValue());
- 
+
             // test succeeds with correct version
             check(client, client.delete().withVersion(0), path, OK.intValue());
 
             client.create().forPath(path, createData);
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
@@ -99,48 +90,41 @@ public class TestDelete extends BaseClassForTests
      * Tests background versions of delete
      */
     @Test
-    public void testBackground() throws Exception
-    {
+    public void testBackground() throws Exception {
         CuratorFramework client = createClient();
-        try
-        {
+        try {
             client.start();
 
             String path = "/test";
 
             // test delete with no node fails
             checkBackground(client, client.delete(), path, NONODE.intValue());
-            
-            client.create().forPath(path, createData); 
+
+            client.create().forPath(path, createData);
             // test delete with no version succeeds
             checkBackground(client, client.delete(), path, OK.intValue());
-            
+
             client.create().forPath(path, createData);
             // test fails with wrong verion
             checkBackground(client, client.delete().withVersion(1), path, BADVERSION.intValue());
-            
+
             // test succeeds with correct version
             checkBackground(client, client.delete().withVersion(0), path, OK.intValue());
 
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
 
-
     // TODO jslocum refactor these into common idempotent test utils?
-    private void checkBackground(CuratorFramework client, BackgroundPathable<Void> builder, String path, int expectedCode) throws Exception
-    {
+    private void checkBackground(
+            CuratorFramework client, BackgroundPathable<Void> builder, String path, int expectedCode) throws Exception {
         AtomicInteger actualCode = new AtomicInteger(-1);
         CountDownLatch latch = new CountDownLatch(1);
 
-        BackgroundCallback callback = new BackgroundCallback()
-        {
+        BackgroundCallback callback = new BackgroundCallback() {
             @Override
-            public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
-            {
+            public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
                 actualCode.set(event.getResultCode());
                 latch.countDown();
             }
@@ -151,22 +135,18 @@ public class TestDelete extends BaseClassForTests
         assertTrue(latch.await(5000, TimeUnit.MILLISECONDS), "Callback not invoked");
         assertEquals(expectedCode, actualCode.get());
 
-        if ( expectedCode == OK.intValue() )
-        {
+        if (expectedCode == OK.intValue()) {
             assertNull(client.checkExists().forPath(path));
         }
     }
 
-    private void check(CuratorFramework client, BackgroundPathable<Void> builder, String path, int expectedCode) throws Exception
-    {
-        try
-        {
+    private void check(CuratorFramework client, BackgroundPathable<Void> builder, String path, int expectedCode)
+            throws Exception {
+        try {
             builder.forPath(path);
             assertEquals(expectedCode, OK.intValue());
             assertNull(client.checkExists().forPath(path));
-        }
-        catch (KeeperException e)
-        {
+        } catch (KeeperException e) {
             assertEquals(expectedCode, e.getCode());
         }
     }
@@ -175,11 +155,9 @@ public class TestDelete extends BaseClassForTests
      * Tests all cases of idempotent delete
      */
     @Test
-    public void testIdempotentDelete() throws Exception
-    {
+    public void testIdempotentDelete() throws Exception {
         CuratorFramework client = createClient();
-        try
-        {
+        try {
             client.start();
 
             String path = "/idpset";
@@ -216,22 +194,18 @@ public class TestDelete extends BaseClassForTests
             // check that idempotent delete fails with wrong version
             check(client, client.delete().idempotent().withVersion(0), path, BADVERSION.intValue());
             checkBackground(client, client.delete().idempotent().withVersion(0), pathBack, BADVERSION.intValue());
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
 
-    private DeleteBuilderMain clBefore(DeleteBuilderMain builder)
-    {
-        ((DeleteBuilderImpl)builder).failBeforeNextDeleteForTesting = true;
+    private DeleteBuilderMain clBefore(DeleteBuilderMain builder) {
+        ((DeleteBuilderImpl) builder).failBeforeNextDeleteForTesting = true;
         return builder;
     }
 
-    private DeleteBuilderMain clAfter(DeleteBuilderMain builder)
-    {
-        ((DeleteBuilderImpl)builder).failNextDeleteForTesting = true;
+    private DeleteBuilderMain clAfter(DeleteBuilderMain builder) {
+        ((DeleteBuilderImpl) builder).failNextDeleteForTesting = true;
         return builder;
     }
 
@@ -239,15 +213,15 @@ public class TestDelete extends BaseClassForTests
     @Test
     public void testIdempotentDeleteConnectionLoss() throws Exception {
         CuratorFramework client = createClient();
-        try
-        {
+        try {
             client.start();
             String path = "/delete";
             String pathBack = "/deleteBack";
             String pathNormal = "/deleteNormal";
             String pathNormalBack = "/deleteNormalBack";
 
-            // test that connection loss before or after, version or no version, idempotent delete succeeds if node doesn't exist
+            // test that connection loss before or after, version or no version, idempotent delete succeeds if node
+            // doesn't exist
             check(client, clBefore(client.delete().idempotent()).withVersion(0), path, OK.intValue());
             checkBackground(client, clBefore(client.delete().idempotent()).withVersion(0), pathBack, OK.intValue());
             check(client, clBefore(client.delete().idempotent()), path, OK.intValue());
@@ -283,10 +257,12 @@ public class TestDelete extends BaseClassForTests
             client.create().forPath(path, createData);
             client.create().forPath(pathBack, createData);
             check(client, clBefore(client.delete().idempotent()).withVersion(2), path, BADVERSION.intValue());
-            checkBackground(client, clBefore(client.delete().idempotent()).withVersion(2), pathBack, BADVERSION.intValue());
+            checkBackground(
+                    client, clBefore(client.delete().idempotent()).withVersion(2), pathBack, BADVERSION.intValue());
 
             check(client, clAfter(client.delete().idempotent()).withVersion(2), path, BADVERSION.intValue());
-            checkBackground(client, clAfter(client.delete().idempotent()).withVersion(2), pathBack, BADVERSION.intValue());
+            checkBackground(
+                    client, clAfter(client.delete().idempotent()).withVersion(2), pathBack, BADVERSION.intValue());
 
             // test that non-idempotent delete with or without version succeeds when retrying with connectionloss before
             client.create().forPath(pathNormal, createData);
@@ -308,31 +284,25 @@ public class TestDelete extends BaseClassForTests
             client.create().forPath(pathNormal, createData);
             client.create().forPath(pathNormalBack, createData);
             check(client, clAfter(client.delete()), pathNormal, NONODE.intValue());
-            checkBackground(client, clAfter(client.delete()), pathNormalBack, NONODE.intValue()); 
-  
-        }
-        finally
-        {
+            checkBackground(client, clAfter(client.delete()), pathNormalBack, NONODE.intValue());
+
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
 
     @Test
-    public void testQuietDelete() throws Exception
-    {
+    public void testQuietDelete() throws Exception {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+        try {
             client.start();
 
             client.delete().quietly().forPath("/foo/bar");
 
             final BlockingQueue<Integer> rc = new LinkedBlockingQueue<>();
-            BackgroundCallback backgroundCallback = new BackgroundCallback()
-            {
+            BackgroundCallback backgroundCallback = new BackgroundCallback() {
                 @Override
-                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
-                {
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
                     rc.add(event.getResultCode());
                 }
             };
@@ -341,35 +311,25 @@ public class TestDelete extends BaseClassForTests
             Integer code = rc.poll(new Timing().milliseconds(), TimeUnit.MILLISECONDS);
             assertNotNull(code);
             assertEquals(code.intValue(), OK.intValue());
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
 
     @Test
-    public void testBackgroundDelete() throws Exception
-    {
+    public void testBackgroundDelete() throws Exception {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
         client.start();
-        try
-        {
-            client.getCuratorListenable().addListener
-                (
-                    new CuratorListener()
-                    {
-                        @Override
-                        public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception
-                        {
-                            if ( event.getType() == CuratorEventType.DELETE )
-                            {
-                                assertEquals(event.getPath(), "/head");
-                                ((CountDownLatch)event.getContext()).countDown();
-                            }
-                        }
+        try {
+            client.getCuratorListenable().addListener(new CuratorListener() {
+                @Override
+                public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception {
+                    if (event.getType() == CuratorEventType.DELETE) {
+                        assertEquals(event.getPath(), "/head");
+                        ((CountDownLatch) event.getContext()).countDown();
                     }
-                );
+                }
+            });
 
             client.create().forPath("/head");
             assertNotNull(client.checkExists().forPath("/head"));
@@ -378,35 +338,25 @@ public class TestDelete extends BaseClassForTests
             client.delete().inBackground(latch).forPath("/head");
             assertTrue(latch.await(10, TimeUnit.SECONDS));
             assertNull(client.checkExists().forPath("/head"));
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
 
     @Test
-    public void testBackgroundDeleteWithChildren() throws Exception
-    {
+    public void testBackgroundDeleteWithChildren() throws Exception {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
         client.start();
-        try
-        {
-            client.getCuratorListenable().addListener
-                (
-                    new CuratorListener()
-                    {
-                        @Override
-                        public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception
-                        {
-                            if ( event.getType() == CuratorEventType.DELETE )
-                            {
-                                assertEquals(event.getPath(), "/one/two");
-                                ((CountDownLatch)event.getContext()).countDown();
-                            }
-                        }
+        try {
+            client.getCuratorListenable().addListener(new CuratorListener() {
+                @Override
+                public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception {
+                    if (event.getType() == CuratorEventType.DELETE) {
+                        assertEquals(event.getPath(), "/one/two");
+                        ((CountDownLatch) event.getContext()).countDown();
                     }
-                );
+                }
+            });
 
             client.create().creatingParentsIfNeeded().forPath("/one/two/three/four");
             assertNotNull(client.checkExists().forPath("/one/two/three/four"));
@@ -415,69 +365,58 @@ public class TestDelete extends BaseClassForTests
             client.delete().deletingChildrenIfNeeded().inBackground(latch).forPath("/one/two");
             assertTrue(latch.await(10, TimeUnit.SECONDS));
             assertNull(client.checkExists().forPath("/one/two"));
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
 
     @Test
-    public void testDelete() throws Exception
-    {
+    public void testDelete() throws Exception {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
         client.start();
-        try
-        {
+        try {
             client.create().forPath("/head");
             assertNotNull(client.checkExists().forPath("/head"));
             client.delete().forPath("/head");
             assertNull(client.checkExists().forPath("/head"));
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
 
     @Test
-    public void testDeleteWithChildren() throws Exception
-    {
+    public void testDeleteWithChildren() throws Exception {
         CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
-        CuratorFramework client = builder.connectString(server.getConnectString()).retryPolicy(new RetryOneTime(1)).build();
+        CuratorFramework client = builder.connectString(server.getConnectString())
+                .retryPolicy(new RetryOneTime(1))
+                .build();
         client.start();
-        try
-        {
+        try {
             client.create().creatingParentsIfNeeded().forPath("/one/two/three/four/five/six", "foo".getBytes());
             client.delete().deletingChildrenIfNeeded().forPath("/one/two/three/four/five");
             assertNull(client.checkExists().forPath("/one/two/three/four/five"));
             client.delete().deletingChildrenIfNeeded().forPath("/one/two");
             assertNull(client.checkExists().forPath("/one/two"));
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
 
     @Test
-    public void testDeleteGuaranteedWithChildren() throws Exception
-    {
+    public void testDeleteGuaranteedWithChildren() throws Exception {
         CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
-        CuratorFramework client = builder.connectString(server.getConnectString()).retryPolicy(new RetryOneTime(1)).build();
+        CuratorFramework client = builder.connectString(server.getConnectString())
+                .retryPolicy(new RetryOneTime(1))
+                .build();
         client.start();
-        try
-        {
+        try {
             client.create().creatingParentsIfNeeded().forPath("/one/two/three/four/five/six", "foo".getBytes());
             client.delete().guaranteed().deletingChildrenIfNeeded().forPath("/one/two/three/four/five");
             assertNull(client.checkExists().forPath("/one/two/three/four/five"));
             client.delete().guaranteed().deletingChildrenIfNeeded().forPath("/one/two");
             assertNull(client.checkExists().forPath("/one/two"));
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
-
 }

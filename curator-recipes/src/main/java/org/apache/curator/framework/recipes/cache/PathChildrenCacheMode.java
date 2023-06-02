@@ -19,8 +19,8 @@
 
 package org.apache.curator.framework.recipes.cache;
 
-import org.apache.curator.framework.CuratorFramework;
 import java.util.concurrent.ThreadFactory;
+import org.apache.curator.framework.CuratorFramework;
 
 /**
  * Controls which data is cached
@@ -29,8 +29,7 @@ import java.util.concurrent.ThreadFactory;
  * or {@link PathChildrenCache#PathChildrenCache(CuratorFramework, String, boolean, ThreadFactory)}
  */
 @Deprecated
-public enum PathChildrenCacheMode
-{
+public enum PathChildrenCacheMode {
     /**
      * The cache will hold all the children, the data for each child node
      * and the stat for each child node

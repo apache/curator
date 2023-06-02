@@ -26,8 +26,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Utility to get various testing times
  */
-public class Timing
-{
+public class Timing {
     private final long value;
     private final TimeUnit unit;
     private final int waitingMultiple;
@@ -39,8 +38,7 @@ public class Timing
     /**
      * Use the default base time
      */
-    public Timing()
-    {
+    public Timing() {
         this(Integer.getInteger("timing-multiple", 1), getWaitingMultiple());
     }
 
@@ -49,9 +47,8 @@ public class Timing
      *
      * @param multiple the multiple
      */
-    public Timing(double multiple)
-    {
-        this((long)(DEFAULT_SECONDS * multiple), TimeUnit.SECONDS, getWaitingMultiple());
+    public Timing(double multiple) {
+        this((long) (DEFAULT_SECONDS * multiple), TimeUnit.SECONDS, getWaitingMultiple());
     }
 
     /**
@@ -60,17 +57,15 @@ public class Timing
      * @param multiple the multiple
      * @param waitingMultiple multiple of main timing to use when waiting
      */
-    public Timing(double multiple, int waitingMultiple)
-    {
-        this((long)(DEFAULT_SECONDS * multiple), TimeUnit.SECONDS, waitingMultiple);
+    public Timing(double multiple, int waitingMultiple) {
+        this((long) (DEFAULT_SECONDS * multiple), TimeUnit.SECONDS, waitingMultiple);
     }
 
     /**
      * @param value base time
      * @param unit  base time unit
      */
-    public Timing(long value, TimeUnit unit)
-    {
+    public Timing(long value, TimeUnit unit) {
         this(value, unit, getWaitingMultiple());
     }
 
@@ -79,8 +74,7 @@ public class Timing
      * @param unit  base time unit
      * @param waitingMultiple multiple of main timing to use when waiting
      */
-    public Timing(long value, TimeUnit unit, int waitingMultiple)
-    {
+    public Timing(long value, TimeUnit unit, int waitingMultiple) {
         this.value = value;
         this.unit = unit;
         this.waitingMultiple = waitingMultiple;
@@ -91,9 +85,8 @@ public class Timing
      *
      * @return time ms
      */
-    public int milliseconds()
-    {
-        return (int)TimeUnit.MILLISECONDS.convert(value, unit);
+    public int milliseconds() {
+        return (int) TimeUnit.MILLISECONDS.convert(value, unit);
     }
 
     /**
@@ -101,9 +94,8 @@ public class Timing
      *
      * @return time secs
      */
-    public int seconds()
-    {
-        return (int)value;
+    public int seconds() {
+        return (int) value;
     }
 
     /**
@@ -112,15 +104,11 @@ public class Timing
      * @param latch latch to wait on
      * @return result of {@link CountDownLatch#await(long, TimeUnit)}
      */
-    public boolean awaitLatch(CountDownLatch latch)
-    {
+    public boolean awaitLatch(CountDownLatch latch) {
         Timing m = forWaiting();
-        try
-        {
+        try {
             return latch.await(m.value, m.unit);
-        }
-        catch ( InterruptedException e )
-        {
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
         return false;
@@ -132,15 +120,11 @@ public class Timing
      * @param semaphore the semaphore
      * @return result of {@link Semaphore#tryAcquire()}
      */
-    public boolean acquireSemaphore(Semaphore semaphore)
-    {
+    public boolean acquireSemaphore(Semaphore semaphore) {
         Timing m = forWaiting();
-        try
-        {
+        try {
             return semaphore.tryAcquire(m.value, m.unit);
-        }
-        catch ( InterruptedException e )
-        {
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
         return false;
@@ -153,15 +137,11 @@ public class Timing
      * @param n         number of permits to acquire
      * @return result of {@link Semaphore#tryAcquire(int, long, TimeUnit)}
      */
-    public boolean acquireSemaphore(Semaphore semaphore, int n)
-    {
+    public boolean acquireSemaphore(Semaphore semaphore, int n) {
         Timing m = forWaiting();
-        try
-        {
+        try {
             return semaphore.tryAcquire(n, m.value, m.unit);
-        }
-        catch ( InterruptedException e )
-        {
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
         return false;
@@ -173,9 +153,8 @@ public class Timing
      * @param n the multiple
      * @return this timing times the multiple
      */
-    public Timing multiple(double n)
-    {
-        return new Timing((int)(value * n), unit);
+    public Timing multiple(double n) {
+        return new Timing((int) (value * n), unit);
     }
 
     /**
@@ -184,8 +163,7 @@ public class Timing
      * @return this timing multiplied
      */
     @SuppressWarnings("PointlessArithmeticExpression")
-    public Timing forWaiting()
-    {
+    public Timing forWaiting() {
         return multiple(waitingMultiple);
     }
 
@@ -194,8 +172,7 @@ public class Timing
      *
      * @throws InterruptedException if interrupted
      */
-    public void sleepABit() throws InterruptedException
-    {
+    public void sleepABit() throws InterruptedException {
         unit.sleep(value / 4);
     }
 
@@ -204,8 +181,7 @@ public class Timing
      *
      * @return session timeout
      */
-    public int session()
-    {
+    public int session() {
         return multiple(SESSION_MULTIPLE).milliseconds();
     }
 
@@ -214,13 +190,11 @@ public class Timing
      *
      * @return connection timeout
      */
-    public int connection()
-    {
+    public int connection() {
         return milliseconds();
     }
 
-    private static Integer getWaitingMultiple()
-    {
+    private static Integer getWaitingMultiple() {
         return Integer.getInteger("timing-waiting-multiple", DEFAULT_WAITING_MULTIPLE);
     }
 }

@@ -26,14 +26,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.zookeeper.ZooKeeper;
@@ -43,23 +41,21 @@ import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-public class TestEnsurePath
-{
+public class TestEnsurePath {
     @Test
-    public void    testBasic() throws Exception
-    {
-        ZooKeeper               client = mock(ZooKeeper.class, Mockito.RETURNS_MOCKS);
-        CuratorZookeeperClient  curator = mock(CuratorZookeeperClient.class);
-        RetryPolicy             retryPolicy = new RetryOneTime(1);
-        RetryLoop               retryLoop = new RetryLoopImpl(retryPolicy, null);
+    public void testBasic() throws Exception {
+        ZooKeeper client = mock(ZooKeeper.class, Mockito.RETURNS_MOCKS);
+        CuratorZookeeperClient curator = mock(CuratorZookeeperClient.class);
+        RetryPolicy retryPolicy = new RetryOneTime(1);
+        RetryLoop retryLoop = new RetryLoopImpl(retryPolicy, null);
         when(curator.getZooKeeper()).thenReturn(client);
         when(curator.getRetryPolicy()).thenReturn(retryPolicy);
         when(curator.newRetryLoop()).thenReturn(retryLoop);
 
-        Stat                    fakeStat = mock(Stat.class);
+        Stat fakeStat = mock(Stat.class);
         when(client.exists(Mockito.<String>any(), anyBoolean())).thenReturn(fakeStat);
-        
-        EnsurePath      ensurePath = new EnsurePath("/one/two/three");
+
+        EnsurePath ensurePath = new EnsurePath("/one/two/three");
         ensurePath.ensure(curator);
 
         verify(client, times(3)).exists(Mockito.<String>any(), anyBoolean());
@@ -71,51 +67,39 @@ public class TestEnsurePath
     }
 
     @Test
-    public void    testSimultaneous() throws Exception
-    {
-        ZooKeeper               client = mock(ZooKeeper.class, Mockito.RETURNS_MOCKS);
-        RetryPolicy             retryPolicy = new RetryOneTime(1);
-        RetryLoop               retryLoop = new RetryLoopImpl(retryPolicy, null);
-        final CuratorZookeeperClient  curator = mock(CuratorZookeeperClient.class);
+    public void testSimultaneous() throws Exception {
+        ZooKeeper client = mock(ZooKeeper.class, Mockito.RETURNS_MOCKS);
+        RetryPolicy retryPolicy = new RetryOneTime(1);
+        RetryLoop retryLoop = new RetryLoopImpl(retryPolicy, null);
+        final CuratorZookeeperClient curator = mock(CuratorZookeeperClient.class);
         when(curator.getZooKeeper()).thenReturn(client);
         when(curator.getRetryPolicy()).thenReturn(retryPolicy);
         when(curator.newRetryLoop()).thenReturn(retryLoop);
 
-        final Stat              fakeStat = mock(Stat.class);
-        final CountDownLatch    startedLatch = new CountDownLatch(2);
-        final CountDownLatch    finishedLatch = new CountDownLatch(2);
-        final Semaphore         semaphore = new Semaphore(0);
-        when(client.exists(Mockito.<String>any(), anyBoolean())).thenAnswer
-        (
-            new Answer<Stat>()
-            {
-                @Override
-                public Stat answer(InvocationOnMock invocation) throws Throwable
-                {
-                    semaphore.acquire();
-                    return fakeStat;
-                }
+        final Stat fakeStat = mock(Stat.class);
+        final CountDownLatch startedLatch = new CountDownLatch(2);
+        final CountDownLatch finishedLatch = new CountDownLatch(2);
+        final Semaphore semaphore = new Semaphore(0);
+        when(client.exists(Mockito.<String>any(), anyBoolean())).thenAnswer(new Answer<Stat>() {
+            @Override
+            public Stat answer(InvocationOnMock invocation) throws Throwable {
+                semaphore.acquire();
+                return fakeStat;
             }
-        );
+        });
 
-        final EnsurePath    ensurePath = new EnsurePath("/one/two/three");
-        ExecutorService     service = Executors.newCachedThreadPool();
-        for ( int i = 0; i < 2; ++i )
-        {
-            service.submit
-            (
-                new Callable<Void>()
-                {
-                    @Override
-                    public Void call() throws Exception
-                    {
-                        startedLatch.countDown();
-                        ensurePath.ensure(curator);
-                        finishedLatch.countDown();
-                        return null;
-                    }
+        final EnsurePath ensurePath = new EnsurePath("/one/two/three");
+        ExecutorService service = Executors.newCachedThreadPool();
+        for (int i = 0; i < 2; ++i) {
+            service.submit(new Callable<Void>() {
+                @Override
+                public Void call() throws Exception {
+                    startedLatch.countDown();
+                    ensurePath.ensure(curator);
+                    finishedLatch.countDown();
+                    return null;
                 }
-            );
+            });
         }
 
         assertTrue(startedLatch.await(10, TimeUnit.SECONDS));

@@ -20,30 +20,28 @@
 package org.apache.curator.framework.recipes.queue;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.state.ConnectionState;
-import org.apache.curator.framework.state.ConnectionStateListener;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.state.ConnectionState;
+import org.apache.curator.framework.state.ConnectionStateListener;
 
 /**
  * Utility - a queue consumer that provides behavior similar to a {@link BlockingQueue}
  */
-public class BlockingQueueConsumer<T> implements QueueConsumer<T>
-{
-    private final ConnectionStateListener   connectionStateListener;
-    private final BlockingQueue<T>          items;
+public class BlockingQueueConsumer<T> implements QueueConsumer<T> {
+    private final ConnectionStateListener connectionStateListener;
+    private final BlockingQueue<T> items;
 
     /**
      * Creates with capacity of {@link Integer#MAX_VALUE}
      * @param connectionStateListener listener for connection state changes
      */
-    public BlockingQueueConsumer(ConnectionStateListener connectionStateListener)
-    {
+    public BlockingQueueConsumer(ConnectionStateListener connectionStateListener) {
         this(connectionStateListener, new LinkedBlockingQueue<T>());
     }
 
@@ -51,8 +49,7 @@ public class BlockingQueueConsumer<T> implements QueueConsumer<T>
      * @param capacity max capacity (i.e. puts block if full)
      * @param connectionStateListener listener for connection state changes
      */
-    public BlockingQueueConsumer(ConnectionStateListener connectionStateListener, int capacity)
-    {
+    public BlockingQueueConsumer(ConnectionStateListener connectionStateListener, int capacity) {
         this(connectionStateListener, new ArrayBlockingQueue<T>(capacity));
     }
 
@@ -62,15 +59,13 @@ public class BlockingQueueConsumer<T> implements QueueConsumer<T>
      * @param queue queue to use
      * @param connectionStateListener listener for connection state changes
      */
-    public BlockingQueueConsumer(ConnectionStateListener connectionStateListener, BlockingQueue<T> queue)
-    {
+    public BlockingQueueConsumer(ConnectionStateListener connectionStateListener, BlockingQueue<T> queue) {
         this.connectionStateListener = connectionStateListener;
         this.items = queue;
     }
 
     @Override
-    public void consumeMessage(T message) throws Exception
-    {
+    public void consumeMessage(T message) throws Exception {
         items.add(message);
     }
 
@@ -79,8 +74,7 @@ public class BlockingQueueConsumer<T> implements QueueConsumer<T>
      *
      * @return items (can be empty)
      */
-    public List<T> getItems()
-    {
+    public List<T> getItems() {
         return ImmutableList.copyOf(items);
     }
 
@@ -89,8 +83,7 @@ public class BlockingQueueConsumer<T> implements QueueConsumer<T>
      *
      * @return currently queue item count or 0
      */
-    public int  size()
-    {
+    public int size() {
         return items.size();
     }
 
@@ -100,8 +93,7 @@ public class BlockingQueueConsumer<T> implements QueueConsumer<T>
      * @return the item
      * @throws InterruptedException thread interruption
      */
-    public T take() throws InterruptedException
-    {
+    public T take() throws InterruptedException {
         return items.take();
     }
 
@@ -114,8 +106,7 @@ public class BlockingQueueConsumer<T> implements QueueConsumer<T>
      * @return next item or null
      * @throws InterruptedException thread interruption
      */
-    public T take(int time, TimeUnit unit) throws InterruptedException
-    {
+    public T take(int time, TimeUnit unit) throws InterruptedException {
         return items.poll(time, unit);
     }
 
@@ -142,14 +133,12 @@ public class BlockingQueueConsumer<T> implements QueueConsumer<T>
      *         queue, or some property of an element of this queue prevents
      *         it from being added to the specified collection
      */
-    public int drainTo(Collection<? super T> c)
-    {
+    public int drainTo(Collection<? super T> c) {
         return items.drainTo(c);
     }
 
     @Override
-    public void stateChanged(CuratorFramework client, ConnectionState newState)
-    {
+    public void stateChanged(CuratorFramework client, ConnectionState newState) {
         connectionStateListener.stateChanged(client, newState);
     }
 }

@@ -22,15 +22,12 @@ package org.apache.curator.x.discovery.server.jetty_jersey;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.ext.ContextResolver;
-
 import org.apache.curator.x.discovery.server.rest.DiscoveryContext;
 import org.apache.curator.x.discovery.server.rest.DiscoveryResource;
 
 @Path("/")
-public class ServiceDetailsDiscoveryResource extends DiscoveryResource<ServiceDetails>
-{
-    public ServiceDetailsDiscoveryResource(@Context ContextResolver<DiscoveryContext<ServiceDetails>> resolver)
-    {
+public class ServiceDetailsDiscoveryResource extends DiscoveryResource<ServiceDetails> {
+    public ServiceDetailsDiscoveryResource(@Context ContextResolver<DiscoveryContext<ServiceDetails>> resolver) {
         super(resolver.getContext(DiscoveryContext.class));
     }
 }

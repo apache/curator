@@ -21,8 +21,7 @@ package org.apache.curator.framework.api;
 
 import java.util.List;
 
-public interface Joinable<T>
-{
+public interface Joinable<T> {
     /**
      * Adds one or more servers to joining the ensemble.
      * The expected format is server.[id]=[hostname]:[peer port]:[election port]:[type];[client port]

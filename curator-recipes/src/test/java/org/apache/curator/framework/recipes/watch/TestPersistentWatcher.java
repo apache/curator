@@ -21,7 +21,9 @@ package org.apache.curator.framework.recipes.watch;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
@@ -32,45 +34,33 @@ import org.apache.zookeeper.Watcher;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingQueue;
-
 @Tag(CuratorTestBase.zk36Group)
-public class TestPersistentWatcher extends CuratorTestBase
-{
+public class TestPersistentWatcher extends CuratorTestBase {
     @Test
-    public void testConnectionLostRecursive() throws Exception
-    {
+    public void testConnectionLostRecursive() throws Exception {
         internalTest(true);
     }
 
     @Test
-    public void testConnectionLost() throws Exception
-    {
+    public void testConnectionLost() throws Exception {
         internalTest(false);
     }
 
-    private void internalTest(boolean recursive) throws Exception
-    {
-        try ( CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1)) )
-        {
+    private void internalTest(boolean recursive) throws Exception {
+        try (CuratorFramework client = CuratorFrameworkFactory.newClient(
+                server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1))) {
             CountDownLatch lostLatch = new CountDownLatch(1);
             CountDownLatch reconnectedLatch = new CountDownLatch(1);
             client.start();
             client.getConnectionStateListenable().addListener((__, newState) -> {
-                if ( newState == ConnectionState.LOST )
-                {
+                if (newState == ConnectionState.LOST) {
                     lostLatch.countDown();
-                }
-                else if ( newState == ConnectionState.RECONNECTED )
-                {
+                } else if (newState == ConnectionState.RECONNECTED) {
                     reconnectedLatch.countDown();
                 }
             });
 
-            try ( PersistentWatcher persistentWatcher = new PersistentWatcher(client, "/top/main", recursive) )
-            {
+            try (PersistentWatcher persistentWatcher = new PersistentWatcher(client, "/top/main", recursive)) {
                 persistentWatcher.start();
 
                 BlockingQueue<WatchedEvent> events = new LinkedBlockingQueue<>();
@@ -78,13 +68,10 @@ public class TestPersistentWatcher extends CuratorTestBase
 
                 client.create().creatingParentsIfNeeded().forPath("/top/main/a");
                 assertEquals(timing.takeFromQueue(events).getPath(), "/top/main");
-                if ( recursive )
-                {
+                if (recursive) {
                     assertEquals(timing.takeFromQueue(events).getPath(), "/top/main/a");
-                }
-                else
-                {
-                    assertEquals(timing.takeFromQueue(events).getPath(), "/top/main");   // child added
+                } else {
+                    assertEquals(timing.takeFromQueue(events).getPath(), "/top/main"); // child added
                 }
 
                 server.stop();
@@ -94,11 +81,10 @@ public class TestPersistentWatcher extends CuratorTestBase
                 server.restart();
                 assertTrue(timing.awaitLatch(reconnectedLatch));
 
-                timing.sleepABit();     // time to allow watcher to get reset
+                timing.sleepABit(); // time to allow watcher to get reset
                 events.clear();
 
-                if ( recursive )
-                {
+                if (recursive) {
                     client.setData().forPath("/top/main/a", "foo".getBytes());
                     assertEquals(timing.takeFromQueue(events).getType(), Watcher.Event.EventType.NodeDataChanged);
                 }

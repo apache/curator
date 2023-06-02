@@ -20,100 +20,85 @@
 package org.apache.curator.framework.imps;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import org.apache.curator.utils.CloseableUtils;
-import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.framework.CuratorTempFramework;
-import org.apache.curator.framework.api.TempGetDataBuilder;
-import org.apache.curator.framework.api.transaction.CuratorTransaction;
-import org.apache.curator.utils.ThreadUtils;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.CuratorTempFramework;
+import org.apache.curator.framework.api.TempGetDataBuilder;
+import org.apache.curator.framework.api.transaction.CuratorTransaction;
+import org.apache.curator.utils.CloseableUtils;
+import org.apache.curator.utils.ThreadUtils;
 
-public class CuratorTempFrameworkImpl implements CuratorTempFramework
-{
-    private final CuratorFrameworkFactory.Builder   factory;
-    private final long                              inactiveThresholdMs;
+public class CuratorTempFrameworkImpl implements CuratorTempFramework {
+    private final CuratorFrameworkFactory.Builder factory;
+    private final long inactiveThresholdMs;
 
     // guarded by sync
-    private CuratorFrameworkImpl                    client;
+    private CuratorFrameworkImpl client;
 
     // guarded by sync
-    private ScheduledExecutorService                cleanup;
+    private ScheduledExecutorService cleanup;
 
     // guarded by sync
-    private long                                    lastAccess;
+    private long lastAccess;
 
-    public CuratorTempFrameworkImpl(CuratorFrameworkFactory.Builder factory, long inactiveThresholdMs)
-    {
+    public CuratorTempFrameworkImpl(CuratorFrameworkFactory.Builder factory, long inactiveThresholdMs) {
         this.factory = factory;
         this.inactiveThresholdMs = inactiveThresholdMs;
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         closeClient();
     }
 
     @Override
-    public CuratorTransaction inTransaction() throws Exception
-    {
+    public CuratorTransaction inTransaction() throws Exception {
         openConnectionIfNeeded();
         return new CuratorTransactionImpl(client);
     }
 
     @Override
-    public TempGetDataBuilder getData() throws Exception
-    {
+    public TempGetDataBuilder getData() throws Exception {
         openConnectionIfNeeded();
         return new TempGetDataBuilderImpl(client);
     }
 
     @VisibleForTesting
-    synchronized CuratorFrameworkImpl getClient()
-    {
+    synchronized CuratorFrameworkImpl getClient() {
         return client;
     }
 
     @VisibleForTesting
-    synchronized ScheduledExecutorService getCleanup()
-    {
+    synchronized ScheduledExecutorService getCleanup() {
         return cleanup;
     }
 
     @VisibleForTesting
-    synchronized void updateLastAccess()
-    {
+    synchronized void updateLastAccess() {
         lastAccess = System.currentTimeMillis();
     }
 
-    private synchronized void openConnectionIfNeeded() throws Exception
-    {
-        if ( client == null )
-        {
-            client = (CuratorFrameworkImpl)factory.build(); // cast is safe - we control both sides of this
+    private synchronized void openConnectionIfNeeded() throws Exception {
+        if (client == null) {
+            client = (CuratorFrameworkImpl) factory.build(); // cast is safe - we control both sides of this
             client.start();
         }
 
-        if ( cleanup == null )
-        {
+        if (cleanup == null) {
             ThreadFactory threadFactory = factory.getThreadFactory();
 
-            if (threadFactory == null)
-            {
+            if (threadFactory == null) {
                 threadFactory = ThreadUtils.newGenericThreadFactory("CuratorTempFrameworkImpl");
             }
 
             cleanup = Executors.newScheduledThreadPool(1, threadFactory);
 
-            Runnable        command = new Runnable()
-            {
+            Runnable command = new Runnable() {
                 @Override
-                public void run()
-                {
+                public void run() {
                     checkInactive();
                 }
             };
@@ -123,25 +108,20 @@ public class CuratorTempFrameworkImpl implements CuratorTempFramework
         updateLastAccess();
     }
 
-    private synchronized void checkInactive()
-    {
-        long        elapsed = System.currentTimeMillis() - lastAccess;
-        if ( elapsed >= inactiveThresholdMs )
-        {
+    private synchronized void checkInactive() {
+        long elapsed = System.currentTimeMillis() - lastAccess;
+        if (elapsed >= inactiveThresholdMs) {
             closeClient();
         }
     }
 
-    private synchronized void closeClient()
-    {
-        if ( cleanup != null )
-        {
+    private synchronized void closeClient() {
+        if (cleanup != null) {
             cleanup.shutdownNow();
             cleanup = null;
         }
 
-        if ( client != null )
-        {
+        if (client != null) {
             CloseableUtils.closeQuietly(client);
             client = null;
         }

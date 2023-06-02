@@ -26,8 +26,7 @@ import org.apache.zookeeper.data.Stat;
 /**
  * Holds the result of one transactional operation
  */
-public class CuratorTransactionResult
-{
+public class CuratorTransactionResult {
     private final OperationType type;
     private final String forPath;
     private final String resultPath;
@@ -44,25 +43,20 @@ public class CuratorTransactionResult
      * @param forPath path
      * @return predicate
      */
-    public static Predicate<CuratorTransactionResult> ofTypeAndPath(final OperationType type, final String forPath)
-    {
-        return new Predicate<CuratorTransactionResult>()
-        {
+    public static Predicate<CuratorTransactionResult> ofTypeAndPath(final OperationType type, final String forPath) {
+        return new Predicate<CuratorTransactionResult>() {
             @Override
-            public boolean apply(CuratorTransactionResult result)
-            {
+            public boolean apply(CuratorTransactionResult result) {
                 return (result.getType() == type) && result.getForPath().equals(forPath);
             }
         };
     }
 
-    public CuratorTransactionResult(OperationType type, String forPath, String resultPath, Stat resultStat)
-    {
+    public CuratorTransactionResult(OperationType type, String forPath, String resultPath, Stat resultStat) {
         this(type, forPath, resultPath, resultStat, 0);
     }
 
-    public CuratorTransactionResult(OperationType type, String forPath, String resultPath, Stat resultStat, int error)
-    {
+    public CuratorTransactionResult(OperationType type, String forPath, String resultPath, Stat resultStat, int error) {
         this.forPath = forPath;
         this.resultPath = resultPath;
         this.resultStat = resultStat;
@@ -75,8 +69,7 @@ public class CuratorTransactionResult
      *
      * @return operation type
      */
-    public OperationType getType()
-    {
+    public OperationType getType() {
         return type;
     }
 
@@ -85,8 +78,7 @@ public class CuratorTransactionResult
      *
      * @return operation input path
      */
-    public String getForPath()
-    {
+    public String getForPath() {
         return forPath;
     }
 
@@ -96,8 +88,7 @@ public class CuratorTransactionResult
      *
      * @return generated path or null
      */
-    public String getResultPath()
-    {
+    public String getResultPath() {
         return resultPath;
     }
 
@@ -107,8 +98,7 @@ public class CuratorTransactionResult
      *
      * @return generated stat or null
      */
-    public Stat getResultStat()
-    {
+    public Stat getResultStat() {
         return resultStat;
     }
 
@@ -117,8 +107,7 @@ public class CuratorTransactionResult
      *
      * @return error or 0
      */
-    public int getError()
-    {
+    public int getError() {
         return error;
     }
 }

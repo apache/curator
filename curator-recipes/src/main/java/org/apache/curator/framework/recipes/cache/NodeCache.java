@@ -22,7 +22,11 @@ package org.apache.curator.framework.recipes.cache;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
-
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.concurrent.Exchanger;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
@@ -40,12 +44,6 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.concurrent.Exchanger;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-
 /**
  * <p>A utility that attempts to keep the data from a node locally cached. This class
  * will watch the node, respond to update/create/delete events, pull down the data, etc. You can
@@ -58,8 +56,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * @deprecated replace by {@link org.apache.curator.framework.recipes.cache.CuratorCache}
  */
 @Deprecated
-public class NodeCache implements Closeable
-{
+public class NodeCache implements Closeable {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final WatcherRemoveCuratorFramework client;
     private final String path;
@@ -68,62 +65,45 @@ public class NodeCache implements Closeable
     private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
     private final StandardListenerManager<NodeCacheListener> listeners = StandardListenerManager.standard();
     private final AtomicBoolean isConnected = new AtomicBoolean(true);
-    private ConnectionStateListener connectionStateListener = new ConnectionStateListener()
-    {
+    private ConnectionStateListener connectionStateListener = new ConnectionStateListener() {
         @Override
-        public void stateChanged(CuratorFramework client, ConnectionState newState)
-        {
-            if ( (newState == ConnectionState.CONNECTED) || (newState == ConnectionState.RECONNECTED) )
-            {
-                if ( isConnected.compareAndSet(false, true) )
-                {
-                    try
-                    {
+        public void stateChanged(CuratorFramework client, ConnectionState newState) {
+            if ((newState == ConnectionState.CONNECTED) || (newState == ConnectionState.RECONNECTED)) {
+                if (isConnected.compareAndSet(false, true)) {
+                    try {
                         reset();
-                    }
-                    catch ( Exception e )
-                    {
+                    } catch (Exception e) {
                         ThreadUtils.checkInterrupted(e);
                         log.error("Trying to reset after reconnection", e);
                     }
                 }
-            }
-            else
-            {
+            } else {
                 isConnected.set(false);
             }
         }
     };
 
-    private Watcher watcher = new Watcher()
-    {
+    private Watcher watcher = new Watcher() {
         @Override
-        public void process(WatchedEvent event)
-        {
-            try
-            {
+        public void process(WatchedEvent event) {
+            try {
                 reset();
-            }
-            catch(Exception e)
-            {
+            } catch (Exception e) {
                 ThreadUtils.checkInterrupted(e);
                 handleException(e);
             }
         }
     };
 
-    private enum State
-    {
+    private enum State {
         LATENT,
         STARTED,
         CLOSED
     }
 
-    private final BackgroundCallback backgroundCallback = new BackgroundCallback()
-    {
+    private final BackgroundCallback backgroundCallback = new BackgroundCallback() {
         @Override
-        public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
-        {
+        public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
             processBackgroundResult(event);
         }
     };
@@ -132,8 +112,7 @@ public class NodeCache implements Closeable
      * @param client curator client
      * @param path the full path to the node to cache
      */
-    public NodeCache(CuratorFramework client, String path)
-    {
+    public NodeCache(CuratorFramework client, String path) {
         this(client, path, false);
     }
 
@@ -142,15 +121,13 @@ public class NodeCache implements Closeable
      * @param path the full path to the node to cache
      * @param dataIsCompressed if true, data in the path is compressed
      */
-    public NodeCache(CuratorFramework client, String path, boolean dataIsCompressed)
-    {
+    public NodeCache(CuratorFramework client, String path, boolean dataIsCompressed) {
         this.client = client.newWatcherRemoveCuratorFramework();
         this.path = PathUtils.validatePath(path);
         this.dataIsCompressed = dataIsCompressed;
     }
 
-    public CuratorFramework getClient()
-    {
+    public CuratorFramework getClient() {
         return client;
     }
 
@@ -159,8 +136,7 @@ public class NodeCache implements Closeable
      *
      * @throws Exception errors
      */
-    public void     start() throws Exception
-    {
+    public void start() throws Exception {
         start(false);
     }
 
@@ -171,14 +147,12 @@ public class NodeCache implements Closeable
      *                     returns in order to get an initial view of the node
      * @throws Exception errors
      */
-    public void     start(boolean buildInitial) throws Exception
-    {
+    public void start(boolean buildInitial) throws Exception {
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
 
         client.getConnectionStateListenable().addListener(connectionStateListener);
 
-        if ( buildInitial )
-        {
+        if (buildInitial) {
             client.checkExists().creatingParentContainersIfNeeded().forPath(path);
             internalRebuild();
         }
@@ -186,10 +160,8 @@ public class NodeCache implements Closeable
     }
 
     @Override
-    public void close() throws IOException
-    {
-        if ( state.compareAndSet(State.STARTED, State.CLOSED) )
-        {
+    public void close() throws IOException {
+        if (state.compareAndSet(State.STARTED, State.CLOSED)) {
             client.removeWatchers();
             listeners.clear();
             client.getConnectionStateListenable().removeListener(connectionStateListener);
@@ -200,7 +172,7 @@ public class NodeCache implements Closeable
             // has something to do with Guava's cache and circular references
             connectionStateListener = null;
             watcher = null;
-        }        
+        }
     }
 
     /**
@@ -208,8 +180,7 @@ public class NodeCache implements Closeable
      *
      * @return listenable
      */
-    public Listenable<NodeCacheListener> getListenable()
-    {
+    public Listenable<NodeCacheListener> getListenable() {
         Preconditions.checkState(state.get() != State.CLOSED, "Closed");
 
         return listeners;
@@ -221,8 +192,7 @@ public class NodeCache implements Closeable
      *
      * @throws Exception errors
      */
-    public void     rebuild() throws Exception
-    {
+    public void rebuild() throws Exception {
         Preconditions.checkState(state.get() == State.STARTED, "Not started");
 
         internalRebuild();
@@ -237,8 +207,7 @@ public class NodeCache implements Closeable
      *
      * @return data or null
      */
-    public ChildData getCurrentData()
-    {
+    public ChildData getCurrentData() {
         return data.get();
     }
 
@@ -247,65 +216,60 @@ public class NodeCache implements Closeable
      *
      * @return path
      */
-    public String getPath()
-    {
+    public String getPath() {
         return path;
     }
 
     @VisibleForTesting
     volatile Exchanger<Object> rebuildTestExchanger;
 
-    private void     reset() throws Exception
-    {
-        if ( (state.get() == State.STARTED) && isConnected.get() )
-        {
-            client.checkExists().creatingParentContainersIfNeeded().usingWatcher(watcher).inBackground(backgroundCallback).forPath(path);
+    private void reset() throws Exception {
+        if ((state.get() == State.STARTED) && isConnected.get()) {
+            client.checkExists()
+                    .creatingParentContainersIfNeeded()
+                    .usingWatcher(watcher)
+                    .inBackground(backgroundCallback)
+                    .forPath(path);
         }
     }
 
-    private void     internalRebuild() throws Exception
-    {
-        try
-        {
-            Stat    stat = new Stat();
-            byte[]  bytes = dataIsCompressed ? client.getData().decompressed().storingStatIn(stat).forPath(path) : client.getData().storingStatIn(stat).forPath(path);
+    private void internalRebuild() throws Exception {
+        try {
+            Stat stat = new Stat();
+            byte[] bytes = dataIsCompressed
+                    ? client.getData().decompressed().storingStatIn(stat).forPath(path)
+                    : client.getData().storingStatIn(stat).forPath(path);
             data.set(new ChildData(path, stat, bytes));
-        }
-        catch ( KeeperException.NoNodeException e )
-        {
+        } catch (KeeperException.NoNodeException e) {
             data.set(null);
         }
     }
 
-    private void processBackgroundResult(CuratorEvent event) throws Exception
-    {
-        switch ( event.getType() )
-        {
-            case GET_DATA:
-            {
-                if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
-                {
+    private void processBackgroundResult(CuratorEvent event) throws Exception {
+        switch (event.getType()) {
+            case GET_DATA: {
+                if (event.getResultCode() == KeeperException.Code.OK.intValue()) {
                     ChildData childData = new ChildData(path, event.getStat(), event.getData());
                     setNewData(childData);
                 }
                 break;
             }
 
-            case EXISTS:
-            {
-                if ( event.getResultCode() == KeeperException.Code.NONODE.intValue() )
-                {
+            case EXISTS: {
+                if (event.getResultCode() == KeeperException.Code.NONODE.intValue()) {
                     setNewData(null);
-                }
-                else if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
-                {
-                    if ( dataIsCompressed )
-                    {
-                        client.getData().decompressed().usingWatcher(watcher).inBackground(backgroundCallback).forPath(path);
-                    }
-                    else
-                    {
-                        client.getData().usingWatcher(watcher).inBackground(backgroundCallback).forPath(path);
+                } else if (event.getResultCode() == KeeperException.Code.OK.intValue()) {
+                    if (dataIsCompressed) {
+                        client.getData()
+                                .decompressed()
+                                .usingWatcher(watcher)
+                                .inBackground(backgroundCallback)
+                                .forPath(path);
+                    } else {
+                        client.getData()
+                                .usingWatcher(watcher)
+                                .inBackground(backgroundCallback)
+                                .forPath(path);
                     }
                 }
                 break;
@@ -313,44 +277,34 @@ public class NodeCache implements Closeable
         }
     }
 
-    private void setNewData(ChildData newData) throws InterruptedException
-    {
-        ChildData   previousData = data.getAndSet(newData);
-        if ( !Objects.equal(previousData, newData) )
-        {
+    private void setNewData(ChildData newData) throws InterruptedException {
+        ChildData previousData = data.getAndSet(newData);
+        if (!Objects.equal(previousData, newData)) {
             listeners.forEach(listener -> {
-                try
-                {
+                try {
                     listener.nodeChanged();
-                }
-                catch ( Exception e )
-                {
+                } catch (Exception e) {
                     ThreadUtils.checkInterrupted(e);
                     log.error("Calling listener", e);
                 }
             });
 
-            if ( rebuildTestExchanger != null )
-            {
-                try
-                {
+            if (rebuildTestExchanger != null) {
+                try {
                     rebuildTestExchanger.exchange(new Object());
-                }
-                catch ( InterruptedException e )
-                {
+                } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
             }
         }
     }
-    
+
     /**
      * Default behavior is just to log the exception
      *
      * @param e the exception
      */
-    protected void handleException(Throwable e)
-    {
+    protected void handleException(Throwable e) {
         log.error("", e);
     }
 }

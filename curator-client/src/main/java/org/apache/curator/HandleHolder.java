@@ -25,8 +25,7 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 
-class HandleHolder
-{
+class HandleHolder {
     private final ZookeeperFactory zookeeperFactory;
     private final Watcher watcher;
     private final EnsembleProvider ensembleProvider;
@@ -35,8 +34,12 @@ class HandleHolder
 
     private volatile Helper helper;
 
-    HandleHolder(ZookeeperFactory zookeeperFactory, Watcher watcher, EnsembleProvider ensembleProvider, int sessionTimeout, boolean canBeReadOnly)
-    {
+    HandleHolder(
+            ZookeeperFactory zookeeperFactory,
+            Watcher watcher,
+            EnsembleProvider ensembleProvider,
+            int sessionTimeout,
+            boolean canBeReadOnly) {
         this.zookeeperFactory = zookeeperFactory;
         this.watcher = watcher;
         this.ensembleProvider = ensembleProvider;
@@ -44,61 +47,52 @@ class HandleHolder
         this.canBeReadOnly = canBeReadOnly;
     }
 
-    ZooKeeper getZooKeeper() throws Exception
-    {
+    ZooKeeper getZooKeeper() throws Exception {
         return (helper != null) ? helper.getZooKeeper() : null;
     }
 
-    int getNegotiatedSessionTimeoutMs()
-    {
+    int getNegotiatedSessionTimeoutMs() {
         return (helper != null) ? helper.getNegotiatedSessionTimeoutMs() : 0;
     }
 
-    String  getConnectionString()
-    {
+    String getConnectionString() {
         return (helper != null) ? helper.getConnectionString() : null;
     }
 
-    String getNewConnectionString()
-    {
+    String getNewConnectionString() {
         String helperConnectionString = (helper != null) ? helper.getConnectionString() : null;
         String ensembleProviderConnectionString = ensembleProvider.getConnectionString();
-        return ((helperConnectionString != null) && !ensembleProviderConnectionString.equals(helperConnectionString)) ? ensembleProviderConnectionString : null;
+        return ((helperConnectionString != null) && !ensembleProviderConnectionString.equals(helperConnectionString))
+                ? ensembleProviderConnectionString
+                : null;
     }
 
-    void resetConnectionString(String connectionString)
-    {
-        if ( helper != null )
-        {
+    void resetConnectionString(String connectionString) {
+        if (helper != null) {
             helper.resetConnectionString(connectionString);
         }
     }
 
-    void closeAndClear(int waitForShutdownTimeoutMs) throws Exception
-    {
+    void closeAndClear(int waitForShutdownTimeoutMs) throws Exception {
         internalClose(waitForShutdownTimeoutMs);
         helper = null;
     }
 
-    void closeAndReset() throws Exception
-    {
+    void closeAndReset() throws Exception {
         internalClose(0);
 
-        Helper.Data data = new Helper.Data();   // data shared between initial Helper and the un-synchronized Helper
+        Helper.Data data = new Helper.Data(); // data shared between initial Helper and the un-synchronized Helper
         // first helper is synchronized when getZooKeeper is called. Subsequent calls
         // are not synchronized.
         //noinspection NonAtomicOperationOnVolatileField
-        helper = new Helper(data)
-        {
+        helper = new Helper(data) {
             @Override
-            ZooKeeper getZooKeeper() throws Exception
-            {
-                synchronized(this)
-                {
-                    if ( data.zooKeeperHandle == null )
-                    {
+            ZooKeeper getZooKeeper() throws Exception {
+                synchronized (this) {
+                    if (data.zooKeeperHandle == null) {
                         resetConnectionString(ensembleProvider.getConnectionString());
-                        data.zooKeeperHandle = zookeeperFactory.newZooKeeper(data.connectionString, sessionTimeout, watcher, canBeReadOnly);
+                        data.zooKeeperHandle = zookeeperFactory.newZooKeeper(
+                                data.connectionString, sessionTimeout, watcher, canBeReadOnly);
                     }
 
                     helper = new Helper(data);
@@ -109,33 +103,24 @@ class HandleHolder
         };
     }
 
-    private void internalClose(int waitForShutdownTimeoutMs) throws Exception
-    {
-        try
-        {
+    private void internalClose(int waitForShutdownTimeoutMs) throws Exception {
+        try {
             ZooKeeper zooKeeper = (helper != null) ? helper.getZooKeeper() : null;
-            if ( zooKeeper != null )
-            {
-                Watcher dummyWatcher = new Watcher()
-                {
+            if (zooKeeper != null) {
+                Watcher dummyWatcher = new Watcher() {
                     @Override
-                    public void process(WatchedEvent event)
-                    {
-                    }
+                    public void process(WatchedEvent event) {}
                 };
-                zooKeeper.register(dummyWatcher);   // clear the default watcher so that no new events get processed by mistake
-                if ( waitForShutdownTimeoutMs == 0 )
-                {
-                    zooKeeper.close();  // coming from closeAndReset() which is executed in ZK's event thread. Cannot use zooKeeper.close(n) otherwise we'd get a dead lock
-                }
-                else
-                {
+                zooKeeper.register(
+                        dummyWatcher); // clear the default watcher so that no new events get processed by mistake
+                if (waitForShutdownTimeoutMs == 0) {
+                    zooKeeper.close(); // coming from closeAndReset() which is executed in ZK's event thread. Cannot use
+                    // zooKeeper.close(n) otherwise we'd get a dead lock
+                } else {
                     zooKeeper.close(waitForShutdownTimeoutMs);
                 }
             }
-        }
-        catch ( InterruptedException dummy )
-        {
+        } catch (InterruptedException dummy) {
             Thread.currentThread().interrupt();
         }
     }

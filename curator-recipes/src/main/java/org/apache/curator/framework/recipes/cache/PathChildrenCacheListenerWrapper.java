@@ -22,27 +22,22 @@ package org.apache.curator.framework.recipes.cache;
 import java.util.Objects;
 import org.apache.curator.framework.CuratorFramework;
 
-class PathChildrenCacheListenerWrapper implements CuratorCacheListener
-{
+class PathChildrenCacheListenerWrapper implements CuratorCacheListener {
     private final PathChildrenCacheListener listener;
     private final CuratorFramework client;
     private final String rootPath;
 
-    PathChildrenCacheListenerWrapper(String rootPath, CuratorFramework client, PathChildrenCacheListener listener)
-    {
-        Objects.requireNonNull(rootPath,"rootPath cannot be null");
+    PathChildrenCacheListenerWrapper(String rootPath, CuratorFramework client, PathChildrenCacheListener listener) {
+        Objects.requireNonNull(rootPath, "rootPath cannot be null");
         this.rootPath = rootPath;
         this.listener = listener;
         this.client = client;
     }
 
     @Override
-    public void event(Type type, ChildData oldData, ChildData data)
-    {
-        switch ( type )
-        {
-            case NODE_CREATED:
-            {
+    public void event(Type type, ChildData oldData, ChildData data) {
+        switch (type) {
+            case NODE_CREATED: {
                 if (rootPath.equals(data.getPath())) {
                     return;
                 }
@@ -50,8 +45,7 @@ class PathChildrenCacheListenerWrapper implements CuratorCacheListener
                 break;
             }
 
-            case NODE_CHANGED:
-            {
+            case NODE_CHANGED: {
                 if (rootPath.equals(data.getPath())) {
                     return;
                 }
@@ -59,8 +53,7 @@ class PathChildrenCacheListenerWrapper implements CuratorCacheListener
                 break;
             }
 
-            case NODE_DELETED:
-            {
+            case NODE_DELETED: {
                 if (rootPath.equals(oldData.getPath())) {
                     return;
                 }
@@ -71,20 +64,15 @@ class PathChildrenCacheListenerWrapper implements CuratorCacheListener
     }
 
     @Override
-    public void initialized()
-    {
+    public void initialized() {
         sendEvent(null, PathChildrenCacheEvent.Type.INITIALIZED);
     }
 
-    private void sendEvent(ChildData node, PathChildrenCacheEvent.Type type)
-    {
+    private void sendEvent(ChildData node, PathChildrenCacheEvent.Type type) {
         PathChildrenCacheEvent event = new PathChildrenCacheEvent(type, node);
-        try
-        {
+        try {
             listener.childEvent(client, event);
-        }
-        catch ( Exception e )
-        {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }

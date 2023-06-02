@@ -19,8 +19,4 @@
 
 package org.apache.curator.framework.api;
 
-public interface BackgroundVersionable extends
-    BackgroundPathable<Void>,
-    Versionable<BackgroundPathable<Void>>
-{
-}
+public interface BackgroundVersionable extends BackgroundPathable<Void>, Versionable<BackgroundPathable<Void>> {}

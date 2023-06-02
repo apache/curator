@@ -26,8 +26,7 @@ import org.apache.curator.x.async.modeled.ModelSpecBuilder;
  * Same as {@link org.apache.curator.x.async.modeled.typed.TypedModelSpec}, but with 4 parameters
  */
 @FunctionalInterface
-public interface TypedModelSpec4<M, P1, P2, P3, P4>
-{
+public interface TypedModelSpec4<M, P1, P2, P3, P4> {
     ModelSpec<M> resolved(P1 p1, P2 p2, P3 p3, P4 p4);
 
     /**
@@ -39,9 +38,10 @@ public interface TypedModelSpec4<M, P1, P2, P3, P4>
      * @param path typed path
      * @return new TypedModelSpec
      */
-    static <M, P1, P2, P3, P4> TypedModelSpec4<M, P1, P2, P3, P4> from(ModelSpecBuilder<M> builder, TypedZPath4<P1, P2, P3, P4> path)
-    {
-        return (p1, p2, p3, p4) -> builder.withPath(path.resolved(p1, p2, p3, p4)).build();
+    static <M, P1, P2, P3, P4> TypedModelSpec4<M, P1, P2, P3, P4> from(
+            ModelSpecBuilder<M> builder, TypedZPath4<P1, P2, P3, P4> path) {
+        return (p1, p2, p3, p4) ->
+                builder.withPath(path.resolved(p1, p2, p3, p4)).build();
     }
 
     /**
@@ -54,9 +54,10 @@ public interface TypedModelSpec4<M, P1, P2, P3, P4>
      * @param pathWithIds typed path
      * @return new TypedModelSpec
      */
-    static <M, P1, P2, P3, P4> TypedModelSpec4<M, P1, P2, P3, P4> from(ModelSpecBuilder<M> builder, String pathWithIds)
-    {
+    static <M, P1, P2, P3, P4> TypedModelSpec4<M, P1, P2, P3, P4> from(
+            ModelSpecBuilder<M> builder, String pathWithIds) {
         TypedZPath4<P1, P2, P3, P4> zPath = TypedZPath4.from(pathWithIds);
-        return (p1, p2, p3, p4) -> builder.withPath(zPath.resolved(p1, p2, p3, p4)).build();
+        return (p1, p2, p3, p4) ->
+                builder.withPath(zPath.resolved(p1, p2, p3, p4)).build();
     }
 }

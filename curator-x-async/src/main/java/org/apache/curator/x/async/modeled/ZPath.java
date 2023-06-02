@@ -19,19 +19,17 @@
 
 package org.apache.curator.x.async.modeled;
 
-import org.apache.curator.x.async.modeled.details.ZPathImpl;
+import static org.apache.curator.utils.ZKPaths.PATH_SEPARATOR;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
-
-import static org.apache.curator.utils.ZKPaths.PATH_SEPARATOR;
+import org.apache.curator.x.async.modeled.details.ZPathImpl;
 
 /**
  * Abstracts a ZooKeeper ZNode path
  */
-public interface ZPath extends Resolvable
-{
+public interface ZPath extends Resolvable {
     /**
      * The root path: "/"
      */
@@ -41,8 +39,7 @@ public interface ZPath extends Resolvable
      * Returns the special node name that can be used for replacements at runtime
      * via {@link #resolved(Object...)} when passed via the various <code>from()</code> methods
      */
-    static String parameter()
-    {
+    static String parameter() {
         return parameter("id");
     }
 
@@ -51,8 +48,7 @@ public interface ZPath extends Resolvable
      * has no effect and is only for debugging purposes. When <code>toString()</code> is called
      * on ZPaths, this code shows.
      */
-    static String parameter(String name)
-    {
+    static String parameter(String name) {
         return PATH_SEPARATOR + "{" + name + "}";
     }
 
@@ -66,8 +62,7 @@ public interface ZPath extends Resolvable
      * @return ZPath
      * @throws IllegalArgumentException if the path is invalid
      */
-    static ZPath parse(String fullPath)
-    {
+    static ZPath parse(String fullPath) {
         return ZPathImpl.parse(fullPath, s -> s);
     }
 
@@ -81,8 +76,7 @@ public interface ZPath extends Resolvable
      * @return ZPath
      * @throws IllegalArgumentException if the path is invalid
      */
-    static ZPath parseWithIds(String fullPath)
-    {
+    static ZPath parseWithIds(String fullPath) {
         return ZPathImpl.parse(fullPath, s -> isId(s) ? (PATH_SEPARATOR + s) : s);
     }
 
@@ -92,8 +86,7 @@ public interface ZPath extends Resolvable
      * @param s string to check
      * @return true/false
      */
-    static boolean isId(String s)
-    {
+    static boolean isId(String s) {
         return s.startsWith("{") && s.endsWith("}");
     }
 
@@ -105,8 +98,7 @@ public interface ZPath extends Resolvable
      * @return ZPath
      * @throws IllegalArgumentException if the path is invalid
      */
-    static ZPath parse(String fullPath, UnaryOperator<String> nameFilter)
-    {
+    static ZPath parse(String fullPath, UnaryOperator<String> nameFilter) {
         return ZPathImpl.parse(fullPath, nameFilter);
     }
 
@@ -120,8 +112,7 @@ public interface ZPath extends Resolvable
      * @return ZPath
      * @throws IllegalArgumentException if any of the names is invalid
      */
-    static ZPath from(String... names)
-    {
+    static ZPath from(String... names) {
         return ZPathImpl.from(names);
     }
 
@@ -134,8 +125,7 @@ public interface ZPath extends Resolvable
      * @return ZPath
      * @throws IllegalArgumentException if any of the names is invalid
      */
-    static ZPath from(List<String> names)
-    {
+    static ZPath from(List<String> names) {
         return ZPathImpl.from(names);
     }
 
@@ -151,8 +141,7 @@ public interface ZPath extends Resolvable
      * @return ZPath
      * @throws IllegalArgumentException if any of the names is invalid
      */
-    static ZPath from(ZPath base, String... names)
-    {
+    static ZPath from(ZPath base, String... names) {
         return ZPathImpl.from(base, names);
     }
 
@@ -166,8 +155,7 @@ public interface ZPath extends Resolvable
      * @return ZPath
      * @throws IllegalArgumentException if any of the names is invalid
      */
-    static ZPath from(ZPath base, List<String> names)
-    {
+    static ZPath from(ZPath base, List<String> names) {
         return ZPathImpl.from(base, names);
     }
 
@@ -188,8 +176,7 @@ public interface ZPath extends Resolvable
      * @return new resolved ZPath
      */
     @Override
-    default ZPath resolved(Object... parameters)
-    {
+    default ZPath resolved(Object... parameters) {
         return resolved(Arrays.asList(parameters));
     }
 

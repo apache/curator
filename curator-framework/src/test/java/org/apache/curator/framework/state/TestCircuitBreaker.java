@@ -22,27 +22,24 @@ package org.apache.curator.framework.state;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.apache.curator.RetryPolicy;
-import org.apache.curator.retry.RetryForever;
-import org.apache.curator.retry.RetryNTimes;
-import org.apache.curator.retry.RetryUntilElapsed;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Test;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.curator.RetryPolicy;
+import org.apache.curator.retry.RetryForever;
+import org.apache.curator.retry.RetryNTimes;
+import org.apache.curator.retry.RetryUntilElapsed;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Test;
 
-public class TestCircuitBreaker
-{
-    private static Duration[] lastDelay = new Duration[]{Duration.ZERO};
-    private static ScheduledThreadPoolExecutor service = new ScheduledThreadPoolExecutor(1)
-    {
+public class TestCircuitBreaker {
+    private static Duration[] lastDelay = new Duration[] {Duration.ZERO};
+    private static ScheduledThreadPoolExecutor service = new ScheduledThreadPoolExecutor(1) {
         @Override
-        public ScheduledFuture<?> schedule(Runnable command, long delay, TimeUnit unit)
-        {
+        public ScheduledFuture<?> schedule(Runnable command, long delay, TimeUnit unit) {
             lastDelay[0] = Duration.of(unit.toNanos(delay), ChronoUnit.NANOS);
             command.run();
             return null;
@@ -50,18 +47,17 @@ public class TestCircuitBreaker
     };
 
     @AfterAll
-    public static void tearDown()
-    {
+    public static void tearDown() {
         service.shutdownNow();
     }
 
     @Test
-    public void testBasic()
-    {
+    public void testBasic() {
         final int retryQty = 1;
         final Duration delay = Duration.ofSeconds(10);
 
-        CircuitBreaker circuitBreaker = CircuitBreaker.build(new RetryNTimes(retryQty, (int)delay.toMillis()), service);
+        CircuitBreaker circuitBreaker =
+                CircuitBreaker.build(new RetryNTimes(retryQty, (int) delay.toMillis()), service);
         AtomicInteger counter = new AtomicInteger(0);
 
         assertTrue(circuitBreaker.tryToOpen(counter::incrementAndGet));
@@ -80,8 +76,7 @@ public class TestCircuitBreaker
     }
 
     @Test
-    public void testVariousOpenRetryFails()
-    {
+    public void testVariousOpenRetryFails() {
         CircuitBreaker circuitBreaker = CircuitBreaker.build(new RetryForever(1), service);
         assertFalse(circuitBreaker.tryToRetry(() -> {}));
         assertTrue(circuitBreaker.tryToOpen(() -> {}));
@@ -91,8 +86,7 @@ public class TestCircuitBreaker
     }
 
     @Test
-    public void testWithRetryUntilElapsed()
-    {
+    public void testWithRetryUntilElapsed() {
         RetryPolicy retryPolicy = new RetryUntilElapsed(10000, 10000);
         CircuitBreaker circuitBreaker = CircuitBreaker.build(retryPolicy, service);
         assertTrue(circuitBreaker.tryToOpen(() -> {}));

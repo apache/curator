@@ -19,25 +19,24 @@
 
 package org.apache.curator.framework.recipes.locks;
 
+import java.util.List;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.List;
 
-public class StandardLockInternalsDriver implements LockInternalsDriver
-{
-    static private final Logger log = LoggerFactory.getLogger(StandardLockInternalsDriver.class);
+public class StandardLockInternalsDriver implements LockInternalsDriver {
+    private static final Logger log = LoggerFactory.getLogger(StandardLockInternalsDriver.class);
 
     @Override
-    public PredicateResults getsTheLock(CuratorFramework client, List<String> children, String sequenceNodeName, int maxLeases) throws Exception
-    {
-        int             ourIndex = children.indexOf(sequenceNodeName);
+    public PredicateResults getsTheLock(
+            CuratorFramework client, List<String> children, String sequenceNodeName, int maxLeases) throws Exception {
+        int ourIndex = children.indexOf(sequenceNodeName);
         validateOurIndex(sequenceNodeName, ourIndex);
 
-        boolean         getsTheLock = ourIndex < maxLeases;
-        String          pathToWatch = getsTheLock ? null : children.get(ourIndex - maxLeases);
+        boolean getsTheLock = ourIndex < maxLeases;
+        String pathToWatch = getsTheLock ? null : children.get(ourIndex - maxLeases);
 
         return new PredicateResults(pathToWatch, getsTheLock);
     }
@@ -47,8 +46,7 @@ public class StandardLockInternalsDriver implements LockInternalsDriver
     }
 
     @Override
-    public String createsTheLock(CuratorFramework client, String path, byte[] lockNodeBytes) throws Exception
-    {
+    public String createsTheLock(CuratorFramework client, String path, byte[] lockNodeBytes) throws Exception {
 
         CreateMode createMode = CreateMode.EPHEMERAL_SEQUENTIAL;
         String sequence = getSortingSequence();
@@ -57,39 +55,38 @@ public class StandardLockInternalsDriver implements LockInternalsDriver
             createMode = CreateMode.EPHEMERAL;
         }
         String ourPath;
-        if ( lockNodeBytes != null )
-        {
-            ourPath = client.create().creatingParentContainersIfNeeded().withProtection().withMode(createMode).forPath(path, lockNodeBytes);
-        }
-        else
-        {
-            ourPath = client.create().creatingParentContainersIfNeeded().withProtection().withMode(createMode).forPath(path);
+        if (lockNodeBytes != null) {
+            ourPath = client.create()
+                    .creatingParentContainersIfNeeded()
+                    .withProtection()
+                    .withMode(createMode)
+                    .forPath(path, lockNodeBytes);
+        } else {
+            ourPath = client.create()
+                    .creatingParentContainersIfNeeded()
+                    .withProtection()
+                    .withMode(createMode)
+                    .forPath(path);
         }
         return ourPath;
     }
 
-
     @Override
-    public String fixForSorting(String str, String lockName)
-    {
+    public String fixForSorting(String str, String lockName) {
         return standardFixForSorting(str, lockName);
     }
 
-    public static String standardFixForSorting(String str, String lockName)
-    {
+    public static String standardFixForSorting(String str, String lockName) {
         int index = str.lastIndexOf(lockName);
-        if ( index >= 0 )
-        {
+        if (index >= 0) {
             index += lockName.length();
             return index <= str.length() ? str.substring(index) : "";
         }
         return str;
     }
 
-    static void validateOurIndex(String sequenceNodeName, int ourIndex) throws KeeperException
-    {
-        if ( ourIndex < 0 )
-        {
+    static void validateOurIndex(String sequenceNodeName, int ourIndex) throws KeeperException {
+        if (ourIndex < 0) {
             throw new KeeperException.NoNodeException("Sequential path not found: " + sequenceNodeName);
         }
     }

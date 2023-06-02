@@ -19,20 +19,19 @@
 
 package org.apache.curator.framework.listen;
 
-import org.apache.curator.utils.ThreadUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.apache.curator.utils.ThreadUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Version of ListenerManager that supports mapping/wrapping of listeners
  */
-public class MappingListenerManager<K, V> implements ListenerManager<K, V>
-{
+public class MappingListenerManager<K, V> implements ListenerManager<K, V> {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final Map<K, ListenerEntry<V>> listeners = new ConcurrentHashMap<>();
     private final Function<K, V> mapper;
@@ -43,57 +42,45 @@ public class MappingListenerManager<K, V> implements ListenerManager<K, V>
      * @param mapper listener mapper/wrapper
      * @return new container
      */
-    public static <K, V> ListenerManager<K, V> mapping(Function<K, V> mapper)
-    {
+    public static <K, V> ListenerManager<K, V> mapping(Function<K, V> mapper) {
         return new MappingListenerManager<>(mapper);
     }
 
     @Override
-    public void addListener(K listener)
-    {
+    public void addListener(K listener) {
         addListener(listener, Runnable::run);
     }
 
     @Override
-    public void addListener(K listener, Executor executor)
-    {
+    public void addListener(K listener, Executor executor) {
         V mapped = mapper.apply(listener);
         listeners.put(listener, new ListenerEntry<>(mapped, executor));
     }
 
     @Override
-    public void removeListener(K listener)
-    {
-        if ( listener != null )
-        {
+    public void removeListener(K listener) {
+        if (listener != null) {
             listeners.remove(listener);
         }
     }
 
     @Override
-    public void clear()
-    {
+    public void clear() {
         listeners.clear();
     }
 
     @Override
-    public int size()
-    {
+    public int size() {
         return listeners.size();
     }
 
     @Override
-    public void forEach(Consumer<V> function)
-    {
-        for ( ListenerEntry<V> entry : listeners.values() )
-        {
+    public void forEach(Consumer<V> function) {
+        for (ListenerEntry<V> entry : listeners.values()) {
             entry.executor.execute(() -> {
-                try
-                {
+                try {
                     function.accept(entry.listener);
-                }
-                catch ( Throwable e )
-                {
+                } catch (Throwable e) {
                     ThreadUtils.checkInterrupted(e);
                     log.error(String.format("Listener (%s) threw an exception", entry.listener), e);
                 }
@@ -101,8 +88,7 @@ public class MappingListenerManager<K, V> implements ListenerManager<K, V>
         }
     }
 
-    MappingListenerManager(Function<K, V> mapper)
-    {
+    MappingListenerManager(Function<K, V> mapper) {
         this.mapper = mapper;
     }
 }

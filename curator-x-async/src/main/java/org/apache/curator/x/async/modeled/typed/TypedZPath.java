@@ -59,8 +59,7 @@ import org.apache.curator.x.async.modeled.ZPath;
  * </p>
  */
 @FunctionalInterface
-public interface TypedZPath<T>
-{
+public interface TypedZPath<T> {
     /**
      * Resolve into a ZPath using the given parameter
      *
@@ -75,8 +74,7 @@ public interface TypedZPath<T>
      * @param pathWithIds path to pass to {@link org.apache.curator.x.async.modeled.ZPath#parseWithIds}
      * @return TypedZPath
      */
-    static <T> TypedZPath<T> from(String pathWithIds)
-    {
+    static <T> TypedZPath<T> from(String pathWithIds) {
         return from(ZPath.parseWithIds(pathWithIds));
     }
 
@@ -86,8 +84,7 @@ public interface TypedZPath<T>
      * @param path path to use
      * @return TypedZPath
      */
-    static <T> TypedZPath<T> from(ZPath path)
-    {
+    static <T> TypedZPath<T> from(ZPath path) {
         return path::resolved;
     }
 }

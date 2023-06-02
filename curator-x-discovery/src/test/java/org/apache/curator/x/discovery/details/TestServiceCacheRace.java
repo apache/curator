@@ -21,6 +21,11 @@ package org.apache.curator.x.discovery.details;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
+import java.io.Closeable;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
@@ -37,94 +42,96 @@ import org.apache.curator.x.discovery.ServiceInstance;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
-import java.io.Closeable;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
 
 @Tag(CuratorTestBase.zk35TestCompatibilityGroup)
-public class TestServiceCacheRace extends BaseClassForTests
-{
+public class TestServiceCacheRace extends BaseClassForTests {
     private final Timing timing = new Timing();
 
-    // validates CURATOR-452 which exposed a race in ServiceCacheImpl's start() method caused by an optimization whereby it clears the dataBytes of its internal PathChildrenCache
+    // validates CURATOR-452 which exposed a race in ServiceCacheImpl's start() method caused by an optimization whereby
+    // it clears the dataBytes of its internal PathChildrenCache
     @Test
-    public void testRaceOnInitialLoad() throws Exception
-    {
+    public void testRaceOnInitialLoad() throws Exception {
         List<Closeable> closeables = Lists.newArrayList();
-        try
-        {
+        try {
             CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
             closeables.add(client);
             client.start();
 
-            ServiceDiscovery<String> discovery = ServiceDiscoveryBuilder.builder(String.class).basePath("/discovery").client(client).build();
+            ServiceDiscovery<String> discovery = ServiceDiscoveryBuilder.builder(String.class)
+                    .basePath("/discovery")
+                    .client(client)
+                    .build();
             closeables.add(discovery);
             discovery.start();
 
             CountDownLatch cacheStartLatch = new CountDownLatch(1);
             CountDownLatch cacheWaitLatch = new CountDownLatch(1);
-            final ServiceCache<String> cache = discovery.serviceCacheBuilder().name("test").build();
+            final ServiceCache<String> cache =
+                    discovery.serviceCacheBuilder().name("test").build();
             closeables.add(cache);
-            ((ServiceCacheImpl)cache).debugStartLatch = cacheStartLatch;    // causes ServiceCacheImpl.start to notify just after starting its internal PathChildrenCache
-            ((ServiceCacheImpl)cache).debugStartWaitLatch = cacheWaitLatch; // causes ServiceCacheImpl.start to wait before iterating over its internal PathChildrenCache
+            ((ServiceCacheImpl) cache).debugStartLatch =
+                    cacheStartLatch; // causes ServiceCacheImpl.start to notify just after starting its internal
+            // PathChildrenCache
+            ((ServiceCacheImpl) cache).debugStartWaitLatch =
+                    cacheWaitLatch; // causes ServiceCacheImpl.start to wait before iterating over its internal
+            // PathChildrenCache
 
-            ServiceInstance<String> instance1 = ServiceInstance.<String>builder().payload("test").name("test").port(10064).build();
+            ServiceInstance<String> instance1 = ServiceInstance.<String>builder()
+                    .payload("test")
+                    .name("test")
+                    .port(10064)
+                    .build();
             discovery.registerService(instance1);
 
-            CloseableExecutorService closeableExecutorService = new CloseableExecutorService(Executors.newSingleThreadExecutor());
+            CloseableExecutorService closeableExecutorService =
+                    new CloseableExecutorService(Executors.newSingleThreadExecutor());
             closeables.add(closeableExecutorService);
             final CountDownLatch startCompletedLatch = new CountDownLatch(1);
-            Runnable proc = new Runnable()
-            {
+            Runnable proc = new Runnable() {
                 @Override
-                public void run()
-                {
-                    try
-                    {
+                public void run() {
+                    try {
                         cache.start();
                         startCompletedLatch.countDown();
-                    }
-                    catch ( Exception e )
-                    {
+                    } catch (Exception e) {
                         LoggerFactory.getLogger(getClass()).error("Start failed", e);
                         throw new RuntimeException(e);
                     }
                 }
             };
             closeableExecutorService.submit(proc);
-            assertTrue(timing.awaitLatch(cacheStartLatch));  // wait until ServiceCacheImpl's internal PathChildrenCache is started and primed
+            assertTrue(timing.awaitLatch(
+                    cacheStartLatch)); // wait until ServiceCacheImpl's internal PathChildrenCache is started and primed
 
             final CountDownLatch cacheChangedLatch = new CountDownLatch(1);
-            ServiceCacheListener listener = new ServiceCacheListener()
-            {
+            ServiceCacheListener listener = new ServiceCacheListener() {
                 @Override
-                public void cacheChanged()
-                {
+                public void cacheChanged() {
                     cacheChangedLatch.countDown();
                 }
 
                 @Override
-                public void stateChanged(CuratorFramework client, ConnectionState newState)
-                {
+                public void stateChanged(CuratorFramework client, ConnectionState newState) {
                     // NOP
                 }
             };
             cache.addListener(listener);
-            ServiceInstance<String> instance2 = ServiceInstance.<String>builder().payload("test").name("test").port(10065).build();
-            discovery.registerService(instance2);   // cause ServiceCacheImpl's internal PathChildrenCache listener to get called which will clear the dataBytes
+            ServiceInstance<String> instance2 = ServiceInstance.<String>builder()
+                    .payload("test")
+                    .name("test")
+                    .port(10065)
+                    .build();
+            discovery.registerService(
+                    instance2); // cause ServiceCacheImpl's internal PathChildrenCache listener to get called which will
+            // clear the dataBytes
             assertTrue(timing.awaitLatch(cacheChangedLatch));
 
             cacheWaitLatch.countDown();
 
             assertTrue(timing.awaitLatch(startCompletedLatch));
-        }
-        finally
-        {
+        } finally {
             Collections.reverse(closeables);
-            for ( Closeable c : closeables )
-            {
+            for (Closeable c : closeables) {
                 CloseableUtils.closeQuietly(c);
             }
         }

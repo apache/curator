@@ -20,46 +20,43 @@
 package org.apache.curator.framework.recipes.atomic;
 
 import com.google.common.base.Preconditions;
+import java.util.concurrent.TimeUnit;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.retry.RetryNTimes;
-import java.util.concurrent.TimeUnit;
 import org.apache.curator.utils.PathUtils;
 
 /**
  * Abstraction of arguments for mutex promotion. Use {@link #builder()} to create.
  */
-public class PromotedToLock
-{
-    private final String        path;
-    private final long          maxLockTime;
-    private final TimeUnit      maxLockTimeUnit;
-    private final RetryPolicy   retryPolicy;
+public class PromotedToLock {
+    private final String path;
+    private final long maxLockTime;
+    private final TimeUnit maxLockTimeUnit;
+    private final RetryPolicy retryPolicy;
 
     /**
      * Allocate a new builder
      *
      * @return new builder
      */
-    public static Builder   builder()
-    {
+    public static Builder builder() {
         return new Builder();
     }
 
-    public static class Builder
-    {
-        private PromotedToLock      instance = new PromotedToLock(null, -1, null, new RetryNTimes(0, 0));
+    public static class Builder {
+        private PromotedToLock instance = new PromotedToLock(null, -1, null, new RetryNTimes(0, 0));
 
         /**
          * Build the argument block
          *
          * @return new block
          */
-        public PromotedToLock       build()
-        {
+        public PromotedToLock build() {
             Preconditions.checkNotNull(instance.path, "path cannot be null");
             Preconditions.checkNotNull(instance.retryPolicy, "retryPolicy cannot be null");
 
-            return new PromotedToLock(instance.path, instance.maxLockTime, instance.maxLockTimeUnit, instance.retryPolicy);
+            return new PromotedToLock(
+                    instance.path, instance.maxLockTime, instance.maxLockTimeUnit, instance.retryPolicy);
         }
 
         /**
@@ -68,9 +65,9 @@ public class PromotedToLock
          * @param path path
          * @return this
          */
-        public Builder          lockPath(String path)
-        {
-            instance = new PromotedToLock(PathUtils.validatePath(path), instance.maxLockTime, instance.maxLockTimeUnit, instance.retryPolicy);
+        public Builder lockPath(String path) {
+            instance = new PromotedToLock(
+                    PathUtils.validatePath(path), instance.maxLockTime, instance.maxLockTimeUnit, instance.retryPolicy);
             return this;
         }
 
@@ -80,8 +77,7 @@ public class PromotedToLock
          * @param retryPolicy new policy
          * @return this
          */
-        public Builder          retryPolicy(RetryPolicy retryPolicy)
-        {
+        public Builder retryPolicy(RetryPolicy retryPolicy) {
             instance = new PromotedToLock(instance.path, instance.maxLockTime, instance.maxLockTimeUnit, retryPolicy);
             return this;
         }
@@ -93,39 +89,31 @@ public class PromotedToLock
          * @param maxLockTimeUnit unit
          * @return this
          */
-        public Builder          timeout(long maxLockTime, TimeUnit maxLockTimeUnit)
-        {
+        public Builder timeout(long maxLockTime, TimeUnit maxLockTimeUnit) {
             instance = new PromotedToLock(instance.path, maxLockTime, maxLockTimeUnit, instance.retryPolicy);
             return this;
         }
 
-        private Builder()
-        {
-        }
+        private Builder() {}
     }
 
-    String getPath()
-    {
+    String getPath() {
         return path;
     }
 
-    long getMaxLockTime()
-    {
+    long getMaxLockTime() {
         return maxLockTime;
     }
 
-    TimeUnit getMaxLockTimeUnit()
-    {
+    TimeUnit getMaxLockTimeUnit() {
         return maxLockTimeUnit;
     }
 
-    RetryPolicy getRetryPolicy()
-    {
+    RetryPolicy getRetryPolicy() {
         return retryPolicy;
     }
 
-    private PromotedToLock(String path, long maxLockTime, TimeUnit maxLockTimeUnit, RetryPolicy retryPolicy)
-    {
+    private PromotedToLock(String path, long maxLockTime, TimeUnit maxLockTimeUnit, RetryPolicy retryPolicy) {
         this.path = path;
         this.maxLockTime = maxLockTime;
         this.maxLockTimeUnit = maxLockTimeUnit;

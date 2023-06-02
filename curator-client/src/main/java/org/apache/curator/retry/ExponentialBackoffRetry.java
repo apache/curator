@@ -20,16 +20,15 @@
 package org.apache.curator.retry;
 
 import com.google.common.annotations.VisibleForTesting;
+import java.util.Random;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.Random;
 
 /**
  * Retry policy that retries a set number of times with increasing sleep time between retries
  */
-public class ExponentialBackoffRetry extends SleepingRetry
-{
-    private static final Logger     log = LoggerFactory.getLogger(ExponentialBackoffRetry.class);
+public class ExponentialBackoffRetry extends SleepingRetry {
+    private static final Logger log = LoggerFactory.getLogger(ExponentialBackoffRetry.class);
 
     private static final int MAX_RETRIES_LIMIT = 29;
     private static final int DEFAULT_MAX_SLEEP_MS = Integer.MAX_VALUE;
@@ -42,8 +41,7 @@ public class ExponentialBackoffRetry extends SleepingRetry
      * @param baseSleepTimeMs initial amount of time to wait between retries
      * @param maxRetries max number of times to retry
      */
-    public ExponentialBackoffRetry(int baseSleepTimeMs, int maxRetries)
-    {
+    public ExponentialBackoffRetry(int baseSleepTimeMs, int maxRetries) {
         this(baseSleepTimeMs, maxRetries, DEFAULT_MAX_SLEEP_MS);
     }
 
@@ -52,36 +50,30 @@ public class ExponentialBackoffRetry extends SleepingRetry
      * @param maxRetries max number of times to retry
      * @param maxSleepMs max time in ms to sleep on each retry
      */
-    public ExponentialBackoffRetry(int baseSleepTimeMs, int maxRetries, int maxSleepMs)
-    {
+    public ExponentialBackoffRetry(int baseSleepTimeMs, int maxRetries, int maxSleepMs) {
         super(validateMaxRetries(maxRetries));
         this.baseSleepTimeMs = baseSleepTimeMs;
         this.maxSleepMs = maxSleepMs;
     }
 
     @VisibleForTesting
-    public int getBaseSleepTimeMs()
-    {
+    public int getBaseSleepTimeMs() {
         return baseSleepTimeMs;
     }
 
     @Override
-    protected long getSleepTimeMs(int retryCount, long elapsedTimeMs)
-    {
+    protected long getSleepTimeMs(int retryCount, long elapsedTimeMs) {
         // copied from Hadoop's RetryPolicies.java
         long sleepMs = baseSleepTimeMs * Math.max(1, random.nextInt(1 << (retryCount + 1)));
-        if ( sleepMs > maxSleepMs )
-        {
+        if (sleepMs > maxSleepMs) {
             log.warn(String.format("Sleep extension too large (%d). Pinning to %d", sleepMs, maxSleepMs));
             sleepMs = maxSleepMs;
         }
         return sleepMs;
     }
 
-    private static int validateMaxRetries(int maxRetries)
-    {
-        if ( maxRetries > MAX_RETRIES_LIMIT )
-        {
+    private static int validateMaxRetries(int maxRetries) {
+        if (maxRetries > MAX_RETRIES_LIMIT) {
             log.warn(String.format("maxRetries too large (%d). Pinning to %d", maxRetries, MAX_RETRIES_LIMIT));
             maxRetries = MAX_RETRIES_LIMIT;
         }

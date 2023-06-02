@@ -19,17 +19,16 @@
 
 package org.apache.curator.x.async.modeled;
 
-import org.apache.curator.x.async.AsyncStage;
-import org.apache.zookeeper.data.Stat;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
+import org.apache.curator.x.async.AsyncStage;
+import org.apache.zookeeper.data.Stat;
 
 /**
  * Abstracts a ZooKeeper node
  */
-public interface ZNode<T>
-{
+public interface ZNode<T> {
     /**
      * The path of the node
      *
@@ -57,8 +56,7 @@ public interface ZNode<T>
      * @param from original stage
      * @return stage of models
      */
-    static <T> CompletionStage<List<T>> models(AsyncStage<List<ZNode<T>>> from)
-    {
+    static <T> CompletionStage<List<T>> models(AsyncStage<List<ZNode<T>>> from) {
         return from.thenApply(nodes -> nodes.stream().map(ZNode::model).collect(Collectors.toList()));
     }
 
@@ -68,8 +66,7 @@ public interface ZNode<T>
      * @param from original stage
      * @return stage of a model
      */
-    static <T> CompletionStage<T> model(AsyncStage<ZNode<T>> from)
-    {
+    static <T> CompletionStage<T> model(AsyncStage<ZNode<T>> from) {
         return from.thenApply(ZNode::model);
     }
 }

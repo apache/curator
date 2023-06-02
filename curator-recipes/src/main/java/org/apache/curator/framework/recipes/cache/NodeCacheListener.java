@@ -19,10 +19,9 @@
 
 package org.apache.curator.framework.recipes.cache;
 
-public interface NodeCacheListener
-{
+public interface NodeCacheListener {
     /**
      * Called when a change has occurred
      */
-    public void     nodeChanged() throws Exception;
+    public void nodeChanged() throws Exception;
 }

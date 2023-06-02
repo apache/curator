@@ -20,21 +20,23 @@
 package org.apache.curator.x.discovery.server.jetty_resteasy;
 
 import org.apache.curator.x.discovery.ServiceDiscovery;
+import org.apache.curator.x.discovery.server.contexts.StringDiscoveryContext;
 import org.apache.curator.x.discovery.server.entity.JsonServiceInstanceMarshaller;
 import org.apache.curator.x.discovery.server.entity.JsonServiceInstancesMarshaller;
 import org.apache.curator.x.discovery.server.entity.JsonServiceNamesMarshaller;
 import org.apache.curator.x.discovery.server.mocks.MockServiceDiscovery;
-import org.apache.curator.x.discovery.server.contexts.StringDiscoveryContext;
 import org.apache.curator.x.discovery.strategies.RandomStrategy;
 
 /**
  * For testing purposes only. You will inject these however is appropriate for your application
  */
-public class RestEasySingletons
-{
+public class RestEasySingletons {
     public final ServiceDiscovery<String> serviceDiscoverySingleton = new MockServiceDiscovery<String>();
-    public final StringDiscoveryContext contextSingleton = new StringDiscoveryContext(serviceDiscoverySingleton, new RandomStrategy<String>(), 1000);
-    public final JsonServiceInstanceMarshaller<String> serviceInstanceMarshallerSingleton = new JsonServiceInstanceMarshaller<String>(contextSingleton);
-    public final JsonServiceInstancesMarshaller<String> serviceInstancesMarshallerSingleton = new JsonServiceInstancesMarshaller<String>(contextSingleton);
+    public final StringDiscoveryContext contextSingleton =
+            new StringDiscoveryContext(serviceDiscoverySingleton, new RandomStrategy<String>(), 1000);
+    public final JsonServiceInstanceMarshaller<String> serviceInstanceMarshallerSingleton =
+            new JsonServiceInstanceMarshaller<String>(contextSingleton);
+    public final JsonServiceInstancesMarshaller<String> serviceInstancesMarshallerSingleton =
+            new JsonServiceInstancesMarshaller<String>(contextSingleton);
     public final JsonServiceNamesMarshaller serviceNamesMarshallerSingleton = new JsonServiceNamesMarshaller();
 }

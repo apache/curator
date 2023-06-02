@@ -27,8 +27,7 @@ import java.util.Objects;
  * Models a set of migrations. Each individual migration is applied
  * in a transaction.
  */
-public interface MigrationSet
-{
+public interface MigrationSet {
     /**
      * @return the unique ID for this migration set
      */
@@ -39,21 +38,17 @@ public interface MigrationSet
      */
     List<Migration> migrations();
 
-    static MigrationSet build(String id, List<Migration> migrations)
-    {
+    static MigrationSet build(String id, List<Migration> migrations) {
         Objects.requireNonNull(id, "id cannot be null");
         final List<Migration> migrationsCopy = ImmutableList.copyOf(migrations);
-        return new MigrationSet()
-        {
+        return new MigrationSet() {
             @Override
-            public String id()
-            {
+            public String id() {
                 return id;
             }
 
             @Override
-            public List<Migration> migrations()
-            {
+            public List<Migration> migrations() {
                 return migrationsCopy;
             }
         };

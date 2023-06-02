@@ -19,12 +19,11 @@
 
 package org.apache.curator.framework.recipes.cache;
 
+import java.util.function.Consumer;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.CuratorCacheListener.Type;
-import java.util.function.Consumer;
 
-public interface CuratorCacheListenerBuilder
-{
+public interface CuratorCacheListenerBuilder {
     /**
      * Add a standard listener
      *
@@ -42,8 +41,7 @@ public interface CuratorCacheListenerBuilder
     CuratorCacheListenerBuilder forCreates(Consumer<ChildData> listener);
 
     @FunctionalInterface
-    interface ChangeListener
-    {
+    interface ChangeListener {
         void event(ChildData oldNode, ChildData node);
     }
 
@@ -91,7 +89,8 @@ public interface CuratorCacheListenerBuilder
      * @param listener the listener to wrap
      * @return a CuratorCacheListener that forwards to the given listener
      */
-    CuratorCacheListenerBuilder forPathChildrenCache(String rootPath, CuratorFramework client, PathChildrenCacheListener listener);
+    CuratorCacheListenerBuilder forPathChildrenCache(
+            String rootPath, CuratorFramework client, PathChildrenCacheListener listener);
 
     /**
      * Bridge listener. You can reuse old-style {@link org.apache.curator.framework.recipes.cache.TreeCacheListener}s

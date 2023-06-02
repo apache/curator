@@ -28,8 +28,7 @@ import org.apache.curator.framework.state.ConnectionStateListener;
  *
  * @see LeaderSelector
  */
-public interface LeaderSelectorListener extends ConnectionStateListener
-{
+public interface LeaderSelectorListener extends ConnectionStateListener {
     /**
      * Called when your instance has been granted leadership. This method
      * should not return until you wish to release leadership.
@@ -46,5 +45,5 @@ public interface LeaderSelectorListener extends ConnectionStateListener
      * @param client the client
      * @throws Exception any errors
      */
-    public void         takeLeadership(CuratorFramework client) throws Exception;
+    public void takeLeadership(CuratorFramework client) throws Exception;
 }

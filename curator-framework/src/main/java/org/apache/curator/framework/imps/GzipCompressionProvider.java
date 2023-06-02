@@ -20,8 +20,6 @@
 package org.apache.curator.framework.imps;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.curator.framework.api.CompressionProvider;
-
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.BufferUnderflowException;
@@ -30,9 +28,9 @@ import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.zip.*;
+import org.apache.curator.framework.api.CompressionProvider;
 
-public class GzipCompressionProvider implements CompressionProvider
-{
+public class GzipCompressionProvider implements CompressionProvider {
     // This class re-implements java.util.zip.GZIPInputStream and GZIPOutputStream functionality to avoid
     // creation many finalized Deflater and Inflater objects on heap (see
     // https://issues.apache.org/jira/browse/CURATOR-487). Even when Curator's minimum supported Java version becomes
@@ -49,6 +47,7 @@ public class GzipCompressionProvider implements CompressionProvider
     // The value of the OS bit has changed in JDK 16;
     // see https://bugs.openjdk.org/browse/JDK-8244706 for details.
     private static final byte OS_BIT;
+
     static {
         final String version = System.getProperty("java.specification.version");
         if (version.contains(".")) {
@@ -61,22 +60,23 @@ public class GzipCompressionProvider implements CompressionProvider
 
     /** See {@code java.util.zip.GZIPOutputStream.writeHeader()} */
     private static final byte[] GZIP_HEADER = new byte[] {
-            (byte) GZIP_MAGIC,        // Magic number (byte 0)
-            (byte) (GZIP_MAGIC >> 8), // Magic number (byte 1)
-            Deflater.DEFLATED,        // Compression method (CM)
-            0,                        // Flags (FLG)
-            0,                        // Modification time MTIME (byte 0)
-            0,                        // Modification time MTIME (byte 1)
-            0,                        // Modification time MTIME (byte 2)
-            0,                        // Modification time MTIME (byte 3)
-            0,                        // Extra flags (XFLG)
-            OS_BIT                    // Operating system (OS)
+        (byte) GZIP_MAGIC, // Magic number (byte 0)
+        (byte) (GZIP_MAGIC >> 8), // Magic number (byte 1)
+        Deflater.DEFLATED, // Compression method (CM)
+        0, // Flags (FLG)
+        0, // Modification time MTIME (byte 0)
+        0, // Modification time MTIME (byte 1)
+        0, // Modification time MTIME (byte 2)
+        0, // Modification time MTIME (byte 3)
+        0, // Extra flags (XFLG)
+        OS_BIT // Operating system (OS)
     };
 
     /** GZip flags, {@link #GZIP_HEADER}'s 4th byte */
     private static final int FHCRC = 1 << 1;
+
     private static final int FEXTRA = 1 << 2;
-    private static final int FNAME  = 1 << 3;
+    private static final int FNAME = 1 << 3;
     private static final int FCOMMENT = 1 << 4;
 
     private static final int GZIP_HEADER_SIZE = GZIP_HEADER.length;
@@ -94,29 +94,25 @@ public class GzipCompressionProvider implements CompressionProvider
      * of strongly-referenced objects.
      */
     private static final ConcurrentLinkedQueue<Deflater> DEFLATER_POOL = new ConcurrentLinkedQueue<>();
+
     private static final ConcurrentLinkedQueue<Inflater> INFLATER_POOL = new ConcurrentLinkedQueue<>();
 
     /** The value verified in GzipCompressionProviderTest.testEmpty() */
-    private static final byte[] COMPRESSED_EMPTY_BYTES = new byte[] {
-            31, -117, 8, 0, 0, 0, 0, 0, 0, OS_BIT, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0
-    };
+    private static final byte[] COMPRESSED_EMPTY_BYTES =
+            new byte[] {31, -117, 8, 0, 0, 0, 0, 0, 0, OS_BIT, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-    private static Deflater acquireDeflater()
-    {
+    private static Deflater acquireDeflater() {
         Deflater deflater = DEFLATER_POOL.poll();
-        if ( deflater == null )
-        {
+        if (deflater == null) {
             // Using the same settings as in GZIPOutputStream constructor
             deflater = new Deflater(Deflater.DEFAULT_COMPRESSION, true);
         }
         return deflater;
     }
 
-    private static Inflater acquireInflater()
-    {
+    private static Inflater acquireInflater() {
         Inflater inflater = INFLATER_POOL.poll();
-        if ( inflater == null )
-        {
+        if (inflater == null) {
             // Using the same nowrap setting as GZIPInputStream constructor
             inflater = new Inflater(true);
         }
@@ -124,10 +120,8 @@ public class GzipCompressionProvider implements CompressionProvider
     }
 
     @Override
-    public byte[] compress(String path, byte[] data)
-    {
-        if ( data.length == 0 )
-        {
+    public byte[] compress(String path, byte[] data) {
+        if (data.length == 0) {
             // clone() because clients could update the array
             return COMPRESSED_EMPTY_BYTES.clone();
         }
@@ -135,21 +129,18 @@ public class GzipCompressionProvider implements CompressionProvider
     }
 
     @VisibleForTesting
-    static byte[] doCompress(byte[] data)
-    {
+    static byte[] doCompress(byte[] data) {
         byte[] result = Arrays.copyOf(GZIP_HEADER, conservativeGZippedSizeEstimate(data.length));
         Deflater deflater = acquireDeflater();
         try {
             deflater.setInput(data);
             deflater.finish();
             int offset = GZIP_HEADER_SIZE;
-            while ( true )
-            {
+            while (true) {
                 int available = result.length - GZIP_TRAILER_SIZE - offset;
                 int numCompressedBytes = deflater.deflate(result, offset, available);
                 offset += numCompressedBytes;
-                if ( deflater.finished() )
-                {
+                if (deflater.finished()) {
                     break;
                 }
                 int newResultLength = result.length + (result.length / 2);
@@ -161,8 +152,7 @@ public class GzipCompressionProvider implements CompressionProvider
             writeLittleEndianInt(result, offset, (int) crc.getValue());
             writeLittleEndianInt(result, offset + 4, data.length);
             int endOffset = offset + GZIP_TRAILER_SIZE;
-            if ( result.length != endOffset )
-            {
+            if (result.length != endOffset) {
                 result = Arrays.copyOf(result, endOffset);
             }
             return result;
@@ -172,24 +162,19 @@ public class GzipCompressionProvider implements CompressionProvider
         }
     }
 
-    private static int conservativeGZippedSizeEstimate(int dataSize)
-    {
+    private static int conservativeGZippedSizeEstimate(int dataSize) {
         int conservativeCompressedDataSizeEstimate;
-        if ( dataSize < 512 )
-        {
+        if (dataSize < 512) {
             // Assuming DEFLATE doesn't compress small data well
             conservativeCompressedDataSizeEstimate = Math.max(dataSize, MIN_COMPRESSED_DATA_SIZE);
-        }
-        else
-        {
+        } else {
             // Assuming pretty bad 2:1 compression ratio
             conservativeCompressedDataSizeEstimate = Math.max(512, dataSize / 2);
         }
         return GZIP_HEADER_SIZE + conservativeCompressedDataSizeEstimate + GZIP_TRAILER_SIZE;
     }
 
-    private static void writeLittleEndianInt(byte[] b, int offset, int v)
-    {
+    private static void writeLittleEndianInt(byte[] b, int offset, int v) {
         b[offset] = (byte) v;
         b[offset + 1] = (byte) (v >> 8);
         b[offset + 2] = (byte) (v >> 16);
@@ -198,8 +183,7 @@ public class GzipCompressionProvider implements CompressionProvider
 
     @Override
     public byte[] decompress(String path, byte[] gzippedDataBytes) throws IOException {
-        if ( Arrays.equals(gzippedDataBytes, COMPRESSED_EMPTY_BYTES) )
-        {
+        if (Arrays.equals(gzippedDataBytes, COMPRESSED_EMPTY_BYTES)) {
             // Allocating a new array instead of creating a static constant because clients may somehow depend on the
             // identity of the returned arrays
             return new byte[0];
@@ -207,8 +191,7 @@ public class GzipCompressionProvider implements CompressionProvider
         ByteBuffer gzippedData = ByteBuffer.wrap(gzippedDataBytes);
         gzippedData.order(ByteOrder.LITTLE_ENDIAN);
         int headerSize = readGzipHeader(gzippedData);
-        if ( gzippedDataBytes.length < headerSize + MIN_COMPRESSED_DATA_SIZE + GZIP_TRAILER_SIZE )
-        {
+        if (gzippedDataBytes.length < headerSize + MIN_COMPRESSED_DATA_SIZE + GZIP_TRAILER_SIZE) {
             throw new EOFException("Too short GZipped data");
         }
         int compressedDataSize = gzippedDataBytes.length - headerSize - GZIP_TRAILER_SIZE;
@@ -221,8 +204,7 @@ public class GzipCompressionProvider implements CompressionProvider
             inflater.setInput(gzippedDataBytes, headerSize, compressedDataSize);
             CRC32 crc = new CRC32();
             int offset = 0;
-            while (true)
-            {
+            while (true) {
                 int numDecompressedBytes;
                 try {
                     numDecompressedBytes = inflater.inflate(result, offset, result.length - offset);
@@ -232,43 +214,36 @@ public class GzipCompressionProvider implements CompressionProvider
                 }
                 crc.update(result, offset, numDecompressedBytes);
                 offset += numDecompressedBytes;
-                if ( inflater.finished() || inflater.needsDictionary() )
-                {
+                if (inflater.finished() || inflater.needsDictionary()) {
                     break;
                 }
                 // Just calling inflater.needsInput() doesn't work as expected, apparently it doesn't uphold it's own
                 // contract and could have needsInput() == true if numDecompressedBytes != 0 and that just means that
                 // there is not enough space in the result array
-                else if ( numDecompressedBytes == 0 && inflater.needsInput() )
-                {
+                else if (numDecompressedBytes == 0 && inflater.needsInput()) {
                     throw new ZipException("Corrupt GZipped data");
                 }
                 // Inflater's contract doesn't say whether it's able to be finished() without returning 0 from inflate()
                 // call, so the additional `numDecompressedBytes == 0` condition ensures that we did another cycle and
                 // definitely need to inflate some more bytes.
-                if ( result.length == MAX_SAFE_JAVA_BYTE_ARRAY_SIZE && numDecompressedBytes == 0 )
-                {
+                if (result.length == MAX_SAFE_JAVA_BYTE_ARRAY_SIZE && numDecompressedBytes == 0) {
                     throw new OutOfMemoryError("Unable to uncompress that much data into a single byte[] array");
                 }
                 int newResultLength =
                         (int) Math.min((long) result.length + (result.length / 2), MAX_SAFE_JAVA_BYTE_ARRAY_SIZE);
-                if ( result.length != newResultLength )
-                {
+                if (result.length != newResultLength) {
                     result = Arrays.copyOf(result, newResultLength);
                 }
             }
-            if ( inflater.getRemaining() != 0 )
-            {
+            if (inflater.getRemaining() != 0) {
                 throw new ZipException("Expected just one GZip block, without garbage in the end");
             }
             int checksum = gzippedData.getInt(gzippedDataBytes.length - GZIP_TRAILER_SIZE);
             int numUncompressedBytes = gzippedData.getInt(gzippedDataBytes.length - Integer.BYTES);
-            if ( checksum != (int) crc.getValue() || numUncompressedBytes != offset )
-            {
+            if (checksum != (int) crc.getValue() || numUncompressedBytes != offset) {
                 throw new ZipException("Corrupt GZIP trailer");
             }
-            if ( result.length != offset )
-            {
+            if (result.length != offset) {
                 result = Arrays.copyOf(result, offset);
             }
             return result;
@@ -281,8 +256,7 @@ public class GzipCompressionProvider implements CompressionProvider
     /**
      * Returns the header size
      */
-    private static int readGzipHeader(ByteBuffer gzippedData) throws IOException
-    {
+    private static int readGzipHeader(ByteBuffer gzippedData) throws IOException {
         try {
             return doReadHeader(gzippedData);
         } catch (BufferUnderflowException e) {
@@ -291,44 +265,36 @@ public class GzipCompressionProvider implements CompressionProvider
     }
 
     private static int doReadHeader(ByteBuffer gzippedData) throws IOException {
-        if ( gzippedData.getChar() != GZIP_MAGIC )
-        {
+        if (gzippedData.getChar() != GZIP_MAGIC) {
             throw new ZipException("Not in GZip format");
         }
-        if ( gzippedData.get() != Deflater.DEFLATED )
-        {
+        if (gzippedData.get() != Deflater.DEFLATED) {
             throw new ZipException("Unsupported compression method");
         }
         int flags = gzippedData.get();
         // Skip MTIME, XFL, and OS fields
         skip(gzippedData, Integer.BYTES + Byte.BYTES + Byte.BYTES);
-        if ( (flags & FEXTRA) != 0 )
-        {
+        if ((flags & FEXTRA) != 0) {
             int extraBytes = gzippedData.getChar();
             skip(gzippedData, extraBytes);
         }
-        if ( (flags & FNAME) != 0 )
-        {
+        if ((flags & FNAME) != 0) {
             skipZeroTerminatedString(gzippedData);
         }
-        if ( (flags & FCOMMENT) != 0 )
-        {
+        if ((flags & FCOMMENT) != 0) {
             skipZeroTerminatedString(gzippedData);
         }
-        if ( (flags & FHCRC) != 0 )
-        {
+        if ((flags & FHCRC) != 0) {
             CRC32 crc = new CRC32();
             crc.update(gzippedData.array(), 0, gzippedData.position());
-            if ( gzippedData.getChar() != (char) crc.getValue() )
-            {
+            if (gzippedData.getChar() != (char) crc.getValue()) {
                 throw new ZipException("Corrupt GZIP header");
             }
         }
         return gzippedData.position();
     }
 
-    private static void skip(ByteBuffer gzippedData, int skipBytes) throws IOException
-    {
+    private static void skip(ByteBuffer gzippedData, int skipBytes) throws IOException {
         try {
             gzippedData.position(gzippedData.position() + skipBytes);
         } catch (IllegalArgumentException e) {
@@ -336,8 +302,7 @@ public class GzipCompressionProvider implements CompressionProvider
         }
     }
 
-    private static void skipZeroTerminatedString(ByteBuffer gzippedData)
-    {
+    private static void skipZeroTerminatedString(ByteBuffer gzippedData) {
         while (gzippedData.get() != 0) {
             // loop
         }

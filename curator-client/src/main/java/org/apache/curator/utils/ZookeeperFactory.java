@@ -24,8 +24,7 @@ import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.admin.ZooKeeperAdmin;
 import org.apache.zookeeper.client.ZKClientConfig;
 
-public interface ZookeeperFactory
-{
+public interface ZookeeperFactory {
     /**
      * Allocate a new ZooKeeper instance
      *
@@ -40,8 +39,9 @@ public interface ZookeeperFactory
      * @return the instance
      * @throws Exception errors
      */
-    public ZooKeeper        newZooKeeper(String connectString, int sessionTimeout, Watcher watcher, boolean canBeReadOnly) throws Exception;
-    
+    public ZooKeeper newZooKeeper(String connectString, int sessionTimeout, Watcher watcher, boolean canBeReadOnly)
+            throws Exception;
+
     /**
      * Allocate a new ZooKeeper instance
      *
@@ -57,10 +57,16 @@ public interface ZookeeperFactory
      * @return the instance
      * @throws Exception errors
      */
-    public default ZooKeeper newZooKeeper(String connectString, int sessionTimeout, Watcher watcher, boolean canBeReadOnly, ZKClientConfig zkClientConfig) throws Exception {
-		if (zkClientConfig == null) {
-			return newZooKeeper(connectString, sessionTimeout, watcher, canBeReadOnly);
-		}
-    	return new ZooKeeperAdmin(connectString, sessionTimeout, watcher, canBeReadOnly, zkClientConfig);
+    public default ZooKeeper newZooKeeper(
+            String connectString,
+            int sessionTimeout,
+            Watcher watcher,
+            boolean canBeReadOnly,
+            ZKClientConfig zkClientConfig)
+            throws Exception {
+        if (zkClientConfig == null) {
+            return newZooKeeper(connectString, sessionTimeout, watcher, canBeReadOnly);
+        }
+        return new ZooKeeperAdmin(connectString, sessionTimeout, watcher, canBeReadOnly, zkClientConfig);
     }
 }

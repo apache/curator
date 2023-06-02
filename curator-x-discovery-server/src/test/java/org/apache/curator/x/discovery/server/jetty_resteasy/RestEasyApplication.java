@@ -20,26 +20,24 @@
 package org.apache.curator.x.discovery.server.jetty_resteasy;
 
 import com.google.common.collect.Sets;
-import javax.ws.rs.core.Application;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.ws.rs.core.Application;
 
-public class RestEasyApplication extends Application
-{
-    public static final AtomicReference<RestEasySingletons>     singletonsRef = new AtomicReference<RestEasySingletons>(new RestEasySingletons());
+public class RestEasyApplication extends Application {
+    public static final AtomicReference<RestEasySingletons> singletonsRef =
+            new AtomicReference<RestEasySingletons>(new RestEasySingletons());
 
     @Override
-    public Set<Class<?>> getClasses()
-    {
-        Set<Class<?>>       classes = Sets.newHashSet();
+    public Set<Class<?>> getClasses() {
+        Set<Class<?>> classes = Sets.newHashSet();
         classes.add(StringDiscoveryResource.class);
         return classes;
     }
 
     @Override
-    public Set<Object> getSingletons()
-    {
-        Set<Object>     singletons = Sets.newHashSet();
+    public Set<Object> getSingletons() {
+        Set<Object> singletons = Sets.newHashSet();
         singletons.add(singletonsRef.get().contextSingleton);
         singletons.add(singletonsRef.get().serviceNamesMarshallerSingleton);
         singletons.add(singletonsRef.get().serviceInstanceMarshallerSingleton);

@@ -19,16 +19,15 @@
 
 package org.apache.curator.framework.state;
 
-import org.apache.curator.RetryPolicy;
-import org.apache.curator.RetrySleeper;
-import org.apache.curator.utils.ThreadUtils;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.apache.curator.RetryPolicy;
+import org.apache.curator.RetrySleeper;
+import org.apache.curator.utils.ThreadUtils;
 
-class CircuitBreaker
-{
+class CircuitBreaker {
     private final RetryPolicy retryPolicy;
     private final ScheduledExecutorService service;
 
@@ -36,58 +35,49 @@ class CircuitBreaker
     private int retryCount = 0;
     private long startNanos = 0;
 
-    static CircuitBreaker build(RetryPolicy retryPolicy)
-    {
-        return new CircuitBreaker(retryPolicy, ThreadUtils.newSingleThreadScheduledExecutor("CircuitBreakingConnectionStateListener"));
+    static CircuitBreaker build(RetryPolicy retryPolicy) {
+        return new CircuitBreaker(
+                retryPolicy, ThreadUtils.newSingleThreadScheduledExecutor("CircuitBreakingConnectionStateListener"));
     }
 
-    static CircuitBreaker build(RetryPolicy retryPolicy, ScheduledExecutorService service)
-    {
+    static CircuitBreaker build(RetryPolicy retryPolicy, ScheduledExecutorService service) {
         return new CircuitBreaker(retryPolicy, service);
     }
 
     // IMPORTANT - all methods below MUST be guarded by synchronization
 
-    boolean isOpen()
-    {
+    boolean isOpen() {
         return isOpen;
     }
 
-    int getRetryCount()
-    {
+    int getRetryCount() {
         return retryCount;
     }
 
-    boolean tryToOpen(Runnable completion)
-    {
-        if ( isOpen )
-        {
+    boolean tryToOpen(Runnable completion) {
+        if (isOpen) {
             return false;
         }
 
         isOpen = true;
         retryCount = 0;
         startNanos = System.nanoTime();
-        if ( tryToRetry(completion) )
-        {
+        if (tryToRetry(completion)) {
             return true;
         }
         close();
         return false;
     }
 
-    boolean tryToRetry(Runnable completion)
-    {
-        if ( !isOpen )
-        {
+    boolean tryToRetry(Runnable completion) {
+        if (!isOpen) {
             return false;
         }
 
-        long[] sleepTimeNanos = new long[]{0L};
+        long[] sleepTimeNanos = new long[] {0L};
         RetrySleeper retrySleeper = (time, unit) -> sleepTimeNanos[0] = unit.toNanos(time);
         Duration elapsedTime = Duration.ofNanos(System.nanoTime() - startNanos);
-        if ( retryPolicy.allowRetry(retryCount, elapsedTime.toMillis(), retrySleeper) )
-        {
+        if (retryPolicy.allowRetry(retryCount, elapsedTime.toMillis(), retrySleeper)) {
             ++retryCount;
             service.schedule(completion, sleepTimeNanos[0], TimeUnit.NANOSECONDS);
             return true;
@@ -95,8 +85,7 @@ class CircuitBreaker
         return false;
     }
 
-    boolean close()
-    {
+    boolean close() {
         boolean wasOpen = isOpen;
         retryCount = 0;
         isOpen = false;
@@ -104,8 +93,7 @@ class CircuitBreaker
         return wasOpen;
     }
 
-    private CircuitBreaker(RetryPolicy retryPolicy, ScheduledExecutorService service)
-    {
+    private CircuitBreaker(RetryPolicy retryPolicy, ScheduledExecutorService service) {
         this.retryPolicy = Objects.requireNonNull(retryPolicy, "retryPolicy cannot be null");
         this.service = Objects.requireNonNull(service, "service cannot be null");
     }

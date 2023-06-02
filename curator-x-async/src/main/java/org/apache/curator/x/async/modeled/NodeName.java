@@ -25,15 +25,12 @@ package org.apache.curator.x.async.modeled;
  * the {@link #nodeName()} method is used instead of calling <code>toString()</code>
  */
 @FunctionalInterface
-public interface NodeName
-{
+public interface NodeName {
     String nodeName();
 
-    static String nameFrom(Object obj)
-    {
-        if ( obj instanceof NodeName )
-        {
-            return ((NodeName)obj).nodeName();
+    static String nameFrom(Object obj) {
+        if (obj instanceof NodeName) {
+            return ((NodeName) obj).nodeName();
         }
         return String.valueOf(obj);
     }

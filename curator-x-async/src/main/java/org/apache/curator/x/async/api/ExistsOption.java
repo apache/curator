@@ -22,8 +22,7 @@ package org.apache.curator.x.async.api;
 /**
  * Options to use when checking for ZNode existence
  */
-public enum ExistsOption
-{
+public enum ExistsOption {
     /**
      * see {@link CreateOption#createParentsIfNeeded}
      */

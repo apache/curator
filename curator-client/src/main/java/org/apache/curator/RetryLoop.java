@@ -19,9 +19,9 @@
 
 package org.apache.curator;
 
+import java.util.concurrent.Callable;
 import org.apache.curator.connection.ThreadLocalRetryLoop;
 import org.apache.curator.utils.ThreadUtils;
-import java.util.concurrent.Callable;
 
 /**
  * <p>Mechanism to perform an operation on Zookeeper that is safe against
@@ -57,15 +57,13 @@ import java.util.concurrent.Callable;
  *     and if it becomes an interface we risk {@link java.lang.IncompatibleClassChangeError}s with clients.
  * </p>
  */
-public abstract class RetryLoop
-{
+public abstract class RetryLoop {
     /**
      * Returns the default retry sleeper
      *
      * @return sleeper
      */
-    public static RetrySleeper getDefaultRetrySleeper()
-    {
+    public static RetrySleeper getDefaultRetrySleeper() {
         return RetryLoopImpl.getRetrySleeper();
     }
 
@@ -78,31 +76,23 @@ public abstract class RetryLoop
      * @return procedure result
      * @throws Exception any non-retriable errors
      */
-    public static <T> T callWithRetry(CuratorZookeeperClient client, Callable<T> proc) throws Exception
-    {
+    public static <T> T callWithRetry(CuratorZookeeperClient client, Callable<T> proc) throws Exception {
         client.internalBlockUntilConnectedOrTimedOut();
 
         T result = null;
         ThreadLocalRetryLoop threadLocalRetryLoop = new ThreadLocalRetryLoop();
         RetryLoop retryLoop = threadLocalRetryLoop.getRetryLoop(client::newRetryLoop);
-        try
-        {
-            while ( retryLoop.shouldContinue() )
-            {
-                try
-                {
+        try {
+            while (retryLoop.shouldContinue()) {
+                try {
                     result = proc.call();
                     retryLoop.markComplete();
-                }
-                catch ( Exception e )
-                {
+                } catch (Exception e) {
                     ThreadUtils.checkInterrupted(e);
                     retryLoop.takeException(e);
                 }
             }
-        }
-        finally
-        {
+        } finally {
             threadLocalRetryLoop.release();
         }
 

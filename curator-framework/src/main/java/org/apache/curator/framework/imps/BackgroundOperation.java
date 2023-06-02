@@ -19,7 +19,6 @@
 
 package org.apache.curator.framework.imps;
 
-interface BackgroundOperation<T>
-{
+interface BackgroundOperation<T> {
     public void performBackgroundOperation(OperationAndData<T> data) throws Exception;
 }

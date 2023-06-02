@@ -19,18 +19,17 @@
 
 package org.apache.curator.x.discovery.details;
 
-import org.apache.curator.x.discovery.ServiceInstance;
 import java.util.List;
+import org.apache.curator.x.discovery.ServiceInstance;
 
 /**
  * Provides a set of available instances for a service so that a strategy can pick one of them
  */
-public interface InstanceProvider<T>
-{
+public interface InstanceProvider<T> {
     /**
      * Return the current available set of instances
      * @return instances
      * @throws Exception any errors
      */
-    public List<ServiceInstance<T>>      getInstances() throws Exception;
+    public List<ServiceInstance<T>> getInstances() throws Exception;
 }

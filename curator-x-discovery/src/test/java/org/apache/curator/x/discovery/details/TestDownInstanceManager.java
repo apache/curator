@@ -21,21 +21,22 @@ package org.apache.curator.x.discovery.details;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.util.concurrent.TimeUnit;
 import org.apache.curator.x.discovery.DownInstancePolicy;
 import org.apache.curator.x.discovery.ServiceInstance;
 import org.junit.jupiter.api.Test;
-import java.util.concurrent.TimeUnit;
 
-public class TestDownInstanceManager
-{
+public class TestDownInstanceManager {
     private static final DownInstancePolicy debugDownInstancePolicy = new DownInstancePolicy(1, TimeUnit.SECONDS, 1);
-    private static final DownInstancePolicy debugMultiDownInstancePolicy = new DownInstancePolicy(1, TimeUnit.SECONDS, 2);
+    private static final DownInstancePolicy debugMultiDownInstancePolicy =
+            new DownInstancePolicy(1, TimeUnit.SECONDS, 2);
 
     @Test
-    public void testBasic() throws Exception
-    {
-        ServiceInstance<Void> instance1 = ServiceInstance.<Void>builder().name("hey").id("1").build();
-        ServiceInstance<Void> instance2 = ServiceInstance.<Void>builder().name("hey").id("2").build();
+    public void testBasic() throws Exception {
+        ServiceInstance<Void> instance1 =
+                ServiceInstance.<Void>builder().name("hey").id("1").build();
+        ServiceInstance<Void> instance2 =
+                ServiceInstance.<Void>builder().name("hey").id("2").build();
 
         DownInstanceManager<Void> downInstanceManager = new DownInstanceManager<Void>(debugDownInstancePolicy);
         assertTrue(downInstanceManager.apply(instance1));
@@ -47,10 +48,11 @@ public class TestDownInstanceManager
     }
 
     @Test
-    public void testThreshold() throws Exception
-    {
-        ServiceInstance<Void> instance1 = ServiceInstance.<Void>builder().name("hey").id("1").build();
-        ServiceInstance<Void> instance2 = ServiceInstance.<Void>builder().name("hey").id("2").build();
+    public void testThreshold() throws Exception {
+        ServiceInstance<Void> instance1 =
+                ServiceInstance.<Void>builder().name("hey").id("1").build();
+        ServiceInstance<Void> instance2 =
+                ServiceInstance.<Void>builder().name("hey").id("2").build();
 
         DownInstanceManager<Void> downInstanceManager = new DownInstanceManager<Void>(debugMultiDownInstancePolicy);
         assertTrue(downInstanceManager.apply(instance1));
@@ -66,10 +68,11 @@ public class TestDownInstanceManager
     }
 
     @Test
-    public void testExpiration() throws Exception
-    {
-        ServiceInstance<Void> instance1 = ServiceInstance.<Void>builder().name("hey").id("1").build();
-        ServiceInstance<Void> instance2 = ServiceInstance.<Void>builder().name("hey").id("2").build();
+    public void testExpiration() throws Exception {
+        ServiceInstance<Void> instance1 =
+                ServiceInstance.<Void>builder().name("hey").id("1").build();
+        ServiceInstance<Void> instance2 =
+                ServiceInstance.<Void>builder().name("hey").id("2").build();
 
         DownInstanceManager<Void> downInstanceManager = new DownInstanceManager<Void>(debugDownInstancePolicy);
 

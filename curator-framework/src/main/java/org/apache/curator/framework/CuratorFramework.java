@@ -19,6 +19,9 @@
 
 package org.apache.curator.framework;
 
+import java.io.Closeable;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import org.apache.curator.CuratorZookeeperClient;
 import org.apache.curator.framework.api.*;
 import org.apache.curator.framework.api.transaction.CuratorMultiTransaction;
@@ -33,15 +36,11 @@ import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
-import java.io.Closeable;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Zookeeper framework-style client
  */
-public interface CuratorFramework extends Closeable
-{
+public interface CuratorFramework extends Closeable {
     /**
      * Start the client. Most mutator methods will not work until the client is started
      */
@@ -346,10 +345,9 @@ public interface CuratorFramework extends Closeable
      * @return a CompletableFuture that can be used to monitor when the call is complete
      * @since 4.1.0
      */
-    default CompletableFuture<Void> postSafeNotify(Object monitorHolder)
-    {
+    default CompletableFuture<Void> postSafeNotify(Object monitorHolder) {
         return runSafe(() -> {
-            synchronized(monitorHolder) {
+            synchronized (monitorHolder) {
                 monitorHolder.notifyAll();
             }
         });
@@ -358,7 +356,7 @@ public interface CuratorFramework extends Closeable
     /**
      * Curator (and user) recipes can use this to run notifyAll
      * and other blocking calls that might normally block ZooKeeper's event thread.
-
+     *
      * @param runnable proc to call from a safe internal thread
      * @return a CompletableFuture that can be used to monitor when the call is complete
      * @since 4.1.0

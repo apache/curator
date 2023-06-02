@@ -19,8 +19,7 @@
 
 package pubsub.models;
 
-public enum Priority
-{
+public enum Priority {
     low,
     medium,
     high

@@ -25,7 +25,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import org.apache.zookeeper.ZooKeeper;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -33,13 +32,13 @@ import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import org.apache.zookeeper.ZooKeeper;
 
 /**
  * manages an internally running ensemble of ZooKeeper servers. FOR TESTING PURPOSES ONLY
  */
-public class TestingCluster implements Closeable
-{
-    private final List<TestingZooKeeperServer>  servers;
+public class TestingCluster implements Closeable {
+    private final List<TestingZooKeeperServer> servers;
 
     /**
      * Creates an ensemble comprised of <code>n</code> servers. Each server will use
@@ -47,8 +46,7 @@ public class TestingCluster implements Closeable
      *
      * @param instanceQty number of servers to create in the ensemble
      */
-    public TestingCluster(int instanceQty)
-    {
+    public TestingCluster(int instanceQty) {
         this(makeSpecs(instanceQty));
     }
 
@@ -57,8 +55,7 @@ public class TestingCluster implements Closeable
      *
      * @param specs the server specs
      */
-    public TestingCluster(InstanceSpec... specs)
-    {
+    public TestingCluster(InstanceSpec... specs) {
         this(listToMap(ImmutableList.copyOf(specs)));
     }
 
@@ -67,8 +64,7 @@ public class TestingCluster implements Closeable
      *
      * @param specs the server specs
      */
-    public TestingCluster(Collection<InstanceSpec> specs)
-    {
+    public TestingCluster(Collection<InstanceSpec> specs) {
         this(listToMap(specs));
     }
 
@@ -78,11 +74,9 @@ public class TestingCluster implements Closeable
      * @param specs map of an instance spec to its set of quorum instances. Allows simulation of an ensemble with instances
      *              having different config peers
      */
-    public TestingCluster(Map<InstanceSpec, Collection<InstanceSpec>> specs)
-    {
+    public TestingCluster(Map<InstanceSpec, Collection<InstanceSpec>> specs) {
         ImmutableList.Builder<TestingZooKeeperServer> serverBuilder = ImmutableList.builder();
-        for ( Map.Entry<InstanceSpec, Collection<InstanceSpec>> entry : specs.entrySet() )
-        {
+        for (Map.Entry<InstanceSpec, Collection<InstanceSpec>> entry : specs.entrySet()) {
             List<InstanceSpec> instanceSpecs = Lists.newArrayList(entry.getValue());
             int index = instanceSpecs.indexOf(entry.getKey());
             Preconditions.checkState(index >= 0, entry.getKey() + " not found in specs");
@@ -97,25 +91,18 @@ public class TestingCluster implements Closeable
      *
      * @return set of servers
      */
-    public Collection<InstanceSpec> getInstances()
-    {
-        Iterable<InstanceSpec> transformed = Iterables.transform
-            (
-                servers,
-                new Function<TestingZooKeeperServer, InstanceSpec>()
-                {
+    public Collection<InstanceSpec> getInstances() {
+        Iterable<InstanceSpec> transformed =
+                Iterables.transform(servers, new Function<TestingZooKeeperServer, InstanceSpec>() {
                     @Override
-                    public InstanceSpec apply(TestingZooKeeperServer server)
-                    {
+                    public InstanceSpec apply(TestingZooKeeperServer server) {
                         return server.getInstanceSpec();
                     }
-                }
-            );
+                });
         return Lists.newArrayList(transformed);
     }
 
-    public List<TestingZooKeeperServer> getServers()
-    {
+    public List<TestingZooKeeperServer> getServers() {
         return Lists.newArrayList(servers);
     }
 
@@ -124,13 +111,10 @@ public class TestingCluster implements Closeable
      *
      * @return connection string
      */
-    public String   getConnectString()
-    {
-        StringBuilder       str = new StringBuilder();
-        for ( InstanceSpec spec : getInstances() )
-        {
-            if ( str.length() > 0 )
-            {
+    public String getConnectString() {
+        StringBuilder str = new StringBuilder();
+        for (InstanceSpec spec : getInstances()) {
+            if (str.length() > 0) {
                 str.append(",");
             }
             str.append(spec.getConnectString());
@@ -143,10 +127,8 @@ public class TestingCluster implements Closeable
      *
      * @throws Exception errors
      */
-    public void     start() throws Exception
-    {
-        for ( TestingZooKeeperServer server : servers )
-        {
+    public void start() throws Exception {
+        for (TestingZooKeeperServer server : servers) {
             server.start();
         }
     }
@@ -154,10 +136,8 @@ public class TestingCluster implements Closeable
     /**
      * Shutdown the ensemble WITHOUT freeing resources, etc.
      */
-    public void stop() throws IOException
-    {
-        for ( TestingZooKeeperServer server : servers )
-        {
+    public void stop() throws IOException {
+        for (TestingZooKeeperServer server : servers) {
             server.stop();
         }
     }
@@ -169,10 +149,8 @@ public class TestingCluster implements Closeable
      * @throws IOException errors
      */
     @Override
-    public void close() throws IOException
-    {
-        for ( TestingZooKeeperServer server : servers )
-        {
+    public void close() throws IOException {
+        for (TestingZooKeeperServer server : servers) {
             server.close();
         }
     }
@@ -184,12 +162,9 @@ public class TestingCluster implements Closeable
      * @return true if the instance was found
      * @throws Exception errors
      */
-    public boolean killServer(InstanceSpec instance) throws Exception
-    {
-        for ( TestingZooKeeperServer server : servers )
-        {
-            if ( server.getInstanceSpec().equals(instance) )
-            {
+    public boolean killServer(InstanceSpec instance) throws Exception {
+        for (TestingZooKeeperServer server : servers) {
+            if (server.getInstanceSpec().equals(instance)) {
                 server.kill();
                 return true;
             }
@@ -204,12 +179,9 @@ public class TestingCluster implements Closeable
      * @return true of the server was found
      * @throws Exception errors
      */
-    public boolean restartServer(InstanceSpec instance) throws Exception
-    {
-        for ( TestingZooKeeperServer server : servers )
-        {
-            if ( server.getInstanceSpec().equals(instance) )
-            {
+    public boolean restartServer(InstanceSpec instance) throws Exception {
+        for (TestingZooKeeperServer server : servers) {
+            if (server.getInstanceSpec().equals(instance)) {
                 server.restart();
                 return true;
             }
@@ -224,17 +196,13 @@ public class TestingCluster implements Closeable
      * @return the server
      * @throws Exception errors
      */
-    public InstanceSpec findConnectionInstance(ZooKeeper client) throws Exception
-    {
-        Method              m = ZooKeeper.class.getDeclaredMethod("testableRemoteSocketAddress");
+    public InstanceSpec findConnectionInstance(ZooKeeper client) throws Exception {
+        Method m = ZooKeeper.class.getDeclaredMethod("testableRemoteSocketAddress");
         m.setAccessible(true);
-        InetSocketAddress   address = (InetSocketAddress)m.invoke(client);
-        if ( address != null )
-        {
-            for ( TestingZooKeeperServer server : servers )
-            {
-                if ( server.getInstanceSpec().getPort() == address.getPort() )
-                {
+        InetSocketAddress address = (InetSocketAddress) m.invoke(client);
+        if (address != null) {
+            for (TestingZooKeeperServer server : servers) {
+                if (server.getInstanceSpec().getPort() == address.getPort()) {
                     return server.getInstanceSpec();
                 }
             }
@@ -243,31 +211,25 @@ public class TestingCluster implements Closeable
         return null;
     }
 
-    public static Map<InstanceSpec, Collection<InstanceSpec>> makeSpecs(int instanceQty)
-    {
+    public static Map<InstanceSpec, Collection<InstanceSpec>> makeSpecs(int instanceQty) {
         return makeSpecs(instanceQty, true);
     }
 
-    public static Map<InstanceSpec, Collection<InstanceSpec>> makeSpecs(int instanceQty, boolean resetServerIds)
-    {
-        if ( resetServerIds )
-        {
+    public static Map<InstanceSpec, Collection<InstanceSpec>> makeSpecs(int instanceQty, boolean resetServerIds) {
+        if (resetServerIds) {
             InstanceSpec.reset();
         }
         ImmutableList.Builder<InstanceSpec> builder = ImmutableList.builder();
-        for ( int i = 0; i < instanceQty; ++i )
-        {
+        for (int i = 0; i < instanceQty; ++i) {
             builder.add(InstanceSpec.newInstanceSpec());
         }
 
         return listToMap(builder.build());
     }
 
-    private static Map<InstanceSpec, Collection<InstanceSpec>> listToMap(Collection<InstanceSpec> list)
-    {
+    private static Map<InstanceSpec, Collection<InstanceSpec>> listToMap(Collection<InstanceSpec> list) {
         ImmutableMap.Builder<InstanceSpec, Collection<InstanceSpec>> mapBuilder = ImmutableMap.builder();
-        for ( InstanceSpec spec : list )
-        {
+        for (InstanceSpec spec : list) {
             mapBuilder.put(spec, list);
         }
 

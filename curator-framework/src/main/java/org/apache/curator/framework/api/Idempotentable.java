@@ -19,8 +19,7 @@
 
 package org.apache.curator.framework.api;
 
-public interface Idempotentable<T>
-{
+public interface Idempotentable<T> {
     /**
      * If the first try of this operation gets a transient error, curator will retry
      * the operation, and treat it as successful so long as the end state of the znode

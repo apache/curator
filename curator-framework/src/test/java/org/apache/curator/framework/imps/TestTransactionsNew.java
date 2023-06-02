@@ -29,6 +29,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Queues;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.BackgroundCallback;
@@ -45,29 +50,18 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.junit.jupiter.api.Test;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-
-public class TestTransactionsNew extends BaseClassForTests
-{
+public class TestTransactionsNew extends BaseClassForTests {
     @Test
-    public void testErrors() throws Exception
-    {
+    public void testErrors() throws Exception {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+        try {
             client.start();
             CuratorOp createOp1 = client.transactionOp().create().forPath("/bar");
             CuratorOp createOp2 = client.transactionOp().create().forPath("/z/blue");
             final BlockingQueue<CuratorEvent> callbackQueue = new LinkedBlockingQueue<>();
-            BackgroundCallback callback = new BackgroundCallback()
-            {
+            BackgroundCallback callback = new BackgroundCallback() {
                 @Override
-                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
-                {
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
                     callbackQueue.add(event);
                 }
             };
@@ -78,80 +72,77 @@ public class TestTransactionsNew extends BaseClassForTests
             assertEquals(event.getOpResults().size(), 2);
             assertEquals(event.getOpResults().get(0).getError(), KeeperException.Code.OK.intValue());
             assertEquals(event.getOpResults().get(1).getError(), KeeperException.Code.NONODE.intValue());
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
 
     @Test
-    public void testCheckVersion() throws Exception
-    {
+    public void testCheckVersion() throws Exception {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+        try {
             client.start();
             client.create().forPath("/foo");
-            Stat stat = client.setData().forPath("/foo", "new".getBytes());  // up the version
+            Stat stat = client.setData().forPath("/foo", "new".getBytes()); // up the version
 
-            CuratorOp statOp = client.transactionOp().check().withVersion(stat.getVersion() + 1).forPath("/foo");
+            CuratorOp statOp = client.transactionOp()
+                    .check()
+                    .withVersion(stat.getVersion() + 1)
+                    .forPath("/foo");
             CuratorOp createOp = client.transactionOp().create().forPath("/bar");
-            try
-            {
+            try {
                 client.transaction().forOperations(statOp, createOp);
                 fail();
-            }
-            catch ( KeeperException.BadVersionException correct )
-            {
+            } catch (KeeperException.BadVersionException correct) {
                 // correct
             }
 
             assertNull(client.checkExists().forPath("/bar"));
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
 
     @Test
-    public void testWithNamespace() throws Exception
-    {
-        CuratorFramework client = CuratorFrameworkFactory.builder().connectString(server.getConnectString()).retryPolicy(new RetryOneTime(1)).namespace("galt").build();
-        try
-        {
+    public void testWithNamespace() throws Exception {
+        CuratorFramework client = CuratorFrameworkFactory.builder()
+                .connectString(server.getConnectString())
+                .retryPolicy(new RetryOneTime(1))
+                .namespace("galt")
+                .build();
+        try {
             client.start();
             CuratorOp createOp1 = client.transactionOp().create().forPath("/foo", "one".getBytes());
-            CuratorOp createOp2 = client.transactionOp().create().withMode(CreateMode.PERSISTENT_SEQUENTIAL).forPath("/test-", "one".getBytes());
+            CuratorOp createOp2 = client.transactionOp()
+                    .create()
+                    .withMode(CreateMode.PERSISTENT_SEQUENTIAL)
+                    .forPath("/test-", "one".getBytes());
             CuratorOp setDataOp = client.transactionOp().setData().forPath("/foo", "two".getBytes());
             CuratorOp createOp3 = client.transactionOp().create().forPath("/foo/bar");
             CuratorOp deleteOp = client.transactionOp().delete().forPath("/foo/bar");
 
-            Collection<CuratorTransactionResult> results = client.transaction().forOperations(createOp1, createOp2, setDataOp, createOp3, deleteOp);
+            Collection<CuratorTransactionResult> results =
+                    client.transaction().forOperations(createOp1, createOp2, setDataOp, createOp3, deleteOp);
 
             assertTrue(client.checkExists().forPath("/foo") != null);
             assertTrue(client.usingNamespace(null).checkExists().forPath("/galt/foo") != null);
             assertArrayEquals(client.getData().forPath("/foo"), "two".getBytes());
             assertTrue(client.checkExists().forPath("/foo/bar") == null);
 
-            CuratorTransactionResult ephemeralResult = Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/test-"));
+            CuratorTransactionResult ephemeralResult =
+                    Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/test-"));
             assertNotNull(ephemeralResult);
             assertNotEquals(ephemeralResult.getResultPath(), "/test-");
             assertTrue(ephemeralResult.getResultPath().startsWith("/test-"));
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
 
     @Test
-    public void testBasic() throws Exception
-    {
+    public void testBasic() throws Exception {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+        try {
             client.start();
             CuratorOp createOp1 = client.transactionOp().create().forPath("/foo");
             CuratorOp createOp2 = client.transactionOp().create().forPath("/foo/bar", "snafu".getBytes());
@@ -161,36 +152,32 @@ public class TestTransactionsNew extends BaseClassForTests
             assertTrue(client.checkExists().forPath("/foo/bar") != null);
             assertArrayEquals(client.getData().forPath("/foo/bar"), "snafu".getBytes());
 
-            CuratorTransactionResult fooResult = Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/foo"));
-            CuratorTransactionResult fooBarResult = Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/foo/bar"));
+            CuratorTransactionResult fooResult =
+                    Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/foo"));
+            CuratorTransactionResult fooBarResult =
+                    Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/foo/bar"));
             assertNotNull(fooResult);
             assertNotNull(fooBarResult);
             assertNotSame(fooResult, fooBarResult);
             assertEquals(fooResult.getResultPath(), "/foo");
             assertEquals(fooBarResult.getResultPath(), "/foo/bar");
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
 
     @Test
-    public void testBackground() throws Exception
-    {
+    public void testBackground() throws Exception {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+        try {
             client.start();
             CuratorOp createOp1 = client.transactionOp().create().forPath("/foo");
             CuratorOp createOp2 = client.transactionOp().create().forPath("/foo/bar", "snafu".getBytes());
 
             final BlockingQueue<List<CuratorTransactionResult>> queue = Queues.newLinkedBlockingQueue();
-            BackgroundCallback callback = new BackgroundCallback()
-            {
+            BackgroundCallback callback = new BackgroundCallback() {
                 @Override
-                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
-                {
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
                     queue.add(event.getOpResults());
                 }
             };
@@ -201,43 +188,48 @@ public class TestTransactionsNew extends BaseClassForTests
             assertTrue(client.checkExists().forPath("/foo/bar") != null);
             assertArrayEquals(client.getData().forPath("/foo/bar"), "snafu".getBytes());
 
-            CuratorTransactionResult fooResult = Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/foo"));
-            CuratorTransactionResult fooBarResult = Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/foo/bar"));
+            CuratorTransactionResult fooResult =
+                    Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/foo"));
+            CuratorTransactionResult fooBarResult =
+                    Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/foo/bar"));
             assertNotNull(fooResult);
             assertNotNull(fooBarResult);
             assertNotSame(fooResult, fooBarResult);
             assertEquals(fooResult.getResultPath(), "/foo");
             assertEquals(fooBarResult.getResultPath(), "/foo/bar");
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
 
     @Test
-    public void testBackgroundWithNamespace() throws Exception
-    {
-        CuratorFramework client = CuratorFrameworkFactory.builder().connectString(server.getConnectString()).retryPolicy(new RetryOneTime(1)).namespace("galt").build();
-        try
-        {
+    public void testBackgroundWithNamespace() throws Exception {
+        CuratorFramework client = CuratorFrameworkFactory.builder()
+                .connectString(server.getConnectString())
+                .retryPolicy(new RetryOneTime(1))
+                .namespace("galt")
+                .build();
+        try {
             client.start();
             CuratorOp createOp1 = client.transactionOp().create().forPath("/foo", "one".getBytes());
-            CuratorOp createOp2 = client.transactionOp().create().withMode(CreateMode.PERSISTENT_SEQUENTIAL).forPath("/test-", "one".getBytes());
+            CuratorOp createOp2 = client.transactionOp()
+                    .create()
+                    .withMode(CreateMode.PERSISTENT_SEQUENTIAL)
+                    .forPath("/test-", "one".getBytes());
             CuratorOp setDataOp = client.transactionOp().setData().forPath("/foo", "two".getBytes());
             CuratorOp createOp3 = client.transactionOp().create().forPath("/foo/bar");
             CuratorOp deleteOp = client.transactionOp().delete().forPath("/foo/bar");
 
             final BlockingQueue<List<CuratorTransactionResult>> queue = Queues.newLinkedBlockingQueue();
-            BackgroundCallback callback = new BackgroundCallback()
-            {
+            BackgroundCallback callback = new BackgroundCallback() {
                 @Override
-                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
-                {
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
                     queue.add(event.getOpResults());
                 }
             };
-            client.transaction().inBackground(callback).forOperations(createOp1, createOp2, setDataOp, createOp3, deleteOp);
+            client.transaction()
+                    .inBackground(callback)
+                    .forOperations(createOp1, createOp2, setDataOp, createOp3, deleteOp);
 
             Collection<CuratorTransactionResult> results = queue.poll(5, TimeUnit.SECONDS);
 
@@ -247,13 +239,12 @@ public class TestTransactionsNew extends BaseClassForTests
             assertArrayEquals(client.getData().forPath("/foo"), "two".getBytes());
             assertTrue(client.checkExists().forPath("/foo/bar") == null);
 
-            CuratorTransactionResult ephemeralResult = Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/test-"));
+            CuratorTransactionResult ephemeralResult =
+                    Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/test-"));
             assertNotNull(ephemeralResult);
             assertNotEquals(ephemeralResult.getResultPath(), "/test-");
             assertTrue(ephemeralResult.getResultPath().startsWith("/test-"));
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }

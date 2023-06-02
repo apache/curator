@@ -22,8 +22,6 @@ package org.apache.curator.test;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
-import org.apache.curator.test.compatibility.Timing2;
-import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -31,84 +29,69 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import org.apache.curator.test.compatibility.Timing2;
+import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 
 @SuppressWarnings("UnusedDeclaration")
-public class QuorumConfigBuilder implements Closeable
-{
+public class QuorumConfigBuilder implements Closeable {
     private final ImmutableList<InstanceSpec> instanceSpecs;
     private final boolean fromRandom;
     private final File fakeConfigFile;
 
-    public QuorumConfigBuilder(Collection<InstanceSpec> specs)
-    {
+    public QuorumConfigBuilder(Collection<InstanceSpec> specs) {
         this(specs.toArray(new InstanceSpec[0]));
     }
 
-    public QuorumConfigBuilder(InstanceSpec... specs)
-    {
+    public QuorumConfigBuilder(InstanceSpec... specs) {
         fromRandom = (specs == null) || (specs.length == 0);
         instanceSpecs = fromRandom ? ImmutableList.of(InstanceSpec.newInstanceSpec()) : ImmutableList.copyOf(specs);
         File fakeConfigFile = null;
-        try
-        {
+        try {
             fakeConfigFile = File.createTempFile("temp", "temp");
-        }
-        catch ( IOException e )
-        {
+        } catch (IOException e) {
             Throwables.propagate(e);
         }
         this.fakeConfigFile = fakeConfigFile;
     }
 
-    public boolean isFromRandom()
-    {
+    public boolean isFromRandom() {
         return fromRandom;
     }
 
-    public QuorumPeerConfig buildConfig() throws Exception
-    {
+    public QuorumPeerConfig buildConfig() throws Exception {
         return buildConfig(0);
     }
 
-    public InstanceSpec getInstanceSpec(int index)
-    {
+    public InstanceSpec getInstanceSpec(int index) {
         return instanceSpecs.get(index);
     }
 
-    public List<InstanceSpec> getInstanceSpecs()
-    {
+    public List<InstanceSpec> getInstanceSpecs() {
         return instanceSpecs;
     }
 
-    public int size()
-    {
+    public int size() {
         return instanceSpecs.size();
     }
 
     @Override
-    public void close()
-    {
-        if ( fakeConfigFile != null )
-        {
+    public void close() {
+        if (fakeConfigFile != null) {
             //noinspection ResultOfMethodCallIgnored
             fakeConfigFile.delete();
         }
     }
 
-    public QuorumPeerConfig buildConfig(int instanceIndex) throws Exception
-    {
+    public QuorumPeerConfig buildConfig(int instanceIndex) throws Exception {
         InstanceSpec spec = instanceSpecs.get(instanceIndex);
         return buildConfig(instanceIndex, spec.getPort());
     }
 
-    public QuorumPeerConfig buildConfig(int instanceIndex, int instancePort) throws Exception
-    {
+    public QuorumPeerConfig buildConfig(int instanceIndex, int instancePort) throws Exception {
         Properties properties = buildConfigProperties(instanceIndex, instancePort);
-        QuorumPeerConfig config = new QuorumPeerConfig()
-        {
+        QuorumPeerConfig config = new QuorumPeerConfig() {
             {
-                if ( fakeConfigFile != null )
-                {
+                if (fakeConfigFile != null) {
                     configFileStr = fakeConfigFile.getPath();
                 }
             }
@@ -117,19 +100,16 @@ public class QuorumConfigBuilder implements Closeable
         return config;
     }
 
-    public Properties buildConfigProperties(int instanceIndex) throws Exception
-    {
+    public Properties buildConfigProperties(int instanceIndex) throws Exception {
         InstanceSpec spec = instanceSpecs.get(instanceIndex);
         return buildConfigProperties(instanceIndex, spec.getPort());
     }
 
-    public Properties buildConfigProperties(int instanceIndex, int instancePort) throws Exception
-    {
+    public Properties buildConfigProperties(int instanceIndex, int instancePort) throws Exception {
         boolean isCluster = (instanceSpecs.size() > 1);
         InstanceSpec spec = instanceSpecs.get(instanceIndex);
 
-        if ( isCluster )
-        {
+        if (isCluster) {
             Files.write(Integer.toString(spec.getServerId()).getBytes(), new File(spec.getDataDirectory(), "myid"));
         }
 
@@ -145,20 +125,25 @@ public class QuorumConfigBuilder implements Closeable
         properties.setProperty("tickTime", tickTime);
         properties.setProperty("minSessionTimeout", tickTime);
         int maxClientCnxns = spec.getMaxClientCnxns();
-        if ( maxClientCnxns >= 0 )
-        {
+        if (maxClientCnxns >= 0) {
             properties.setProperty("maxClientCnxns", Integer.toString(maxClientCnxns));
         }
 
-        if ( isCluster )
-        {
-            for ( InstanceSpec thisSpec : instanceSpecs )
-            {
+        if (isCluster) {
+            for (InstanceSpec thisSpec : instanceSpecs) {
                 int clientPort = thisSpec == spec ? instancePort : thisSpec.getPort();
-                properties.setProperty("server." + thisSpec.getServerId(), String.format("%s:%d:%d;%s:%d", thisSpec.getHostname(), thisSpec.getQuorumPort(), thisSpec.getElectionPort(), thisSpec.getHostname(), clientPort));
+                properties.setProperty(
+                        "server." + thisSpec.getServerId(),
+                        String.format(
+                                "%s:%d:%d;%s:%d",
+                                thisSpec.getHostname(),
+                                thisSpec.getQuorumPort(),
+                                thisSpec.getElectionPort(),
+                                thisSpec.getHostname(),
+                                clientPort));
             }
         }
-        Map<String,Object> customProperties = spec.getCustomProperties();
+        Map<String, Object> customProperties = spec.getCustomProperties();
         if (customProperties != null) {
             properties.putAll(customProperties);
         }

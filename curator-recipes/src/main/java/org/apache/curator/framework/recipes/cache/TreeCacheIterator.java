@@ -25,78 +25,62 @@ import java.util.LinkedList;
 import java.util.NoSuchElementException;
 
 // depth first iterator over tree cache nodes
-class TreeCacheIterator implements Iterator<ChildData>
-{
+class TreeCacheIterator implements Iterator<ChildData> {
     private final LinkedList<Current> stack = new LinkedList<>();
     private Current current;
 
-    private static class Current
-    {
+    private static class Current {
         final Iterator<TreeCache.TreeNode> iterator;
         TreeCache.TreeNode node;
 
-        Current(Iterator<TreeCache.TreeNode> iterator)
-        {
+        Current(Iterator<TreeCache.TreeNode> iterator) {
             this.iterator = iterator;
             node = iterator.next();
         }
     }
 
-    TreeCacheIterator(TreeCache.TreeNode root)
-    {
+    TreeCacheIterator(TreeCache.TreeNode root) {
         current = new Current(Iterators.forArray(root));
         stack.push(current);
     }
 
     @Override
-    public boolean hasNext()
-    {
+    public boolean hasNext() {
         return (current != null) && TreeCache.isLive(current.node.childData);
     }
 
     @Override
-    public ChildData next()
-    {
-        if ( current == null )
-        {
+    public ChildData next() {
+        if (current == null) {
             throw new NoSuchElementException();
         }
 
-        ChildData result = current.node.childData;  // result of next iteration is current node's data
+        ChildData result = current.node.childData; // result of next iteration is current node's data
 
         // set the next node for the next iteration (or note completion)
 
-        do
-        {
+        do {
             setNext();
-        } while ( (current != null) && !TreeCache.isLive(current.node.childData) );
+        } while ((current != null) && !TreeCache.isLive(current.node.childData));
 
         return result;
     }
 
-    private void setNext()
-    {
-        if ( current.node.children != null )
-        {
+    private void setNext() {
+        if (current.node.children != null) {
             stack.push(current);
             current = new Current(current.node.children.values().iterator());
-        }
-        else while ( true )
-        {
-            if ( current.iterator.hasNext() )
-            {
-                current.node = current.iterator.next();
-                break;
+        } else
+            while (true) {
+                if (current.iterator.hasNext()) {
+                    current.node = current.iterator.next();
+                    break;
+                } else if (stack.size() > 0) {
+                    current = stack.pop();
+                } else {
+                    current = null; // done
+                    break;
+                }
             }
-            else if ( stack.size() > 0 )
-            {
-                current = stack.pop();
-            }
-            else
-            {
-                current = null; // done
-                break;
-            }
-        }
     }
 }

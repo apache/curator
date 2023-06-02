@@ -24,10 +24,8 @@ import org.apache.curator.framework.api.PathAndBytesable;
 import org.apache.curator.framework.api.VersionPathAndBytesable;
 import org.apache.curator.framework.api.Versionable;
 
-public interface TransactionSetDataBuilder<T> extends
-    PathAndBytesable<T>,
-    Versionable<PathAndBytesable<T>>,
-    VersionPathAndBytesable<T>,
-    Compressible<VersionPathAndBytesable<T>>
-{
-}
+public interface TransactionSetDataBuilder<T>
+        extends PathAndBytesable<T>,
+                Versionable<PathAndBytesable<T>>,
+                VersionPathAndBytesable<T>,
+                Compressible<VersionPathAndBytesable<T>> {}

@@ -19,15 +19,14 @@
 
 package org.apache.curator.x.async.api;
 
+import java.util.Set;
 import org.apache.curator.x.async.AsyncStage;
 import org.apache.zookeeper.data.Stat;
-import java.util.Set;
 
 /**
  * Builder for ZNode exists
  */
-public interface AsyncExistsBuilder extends AsyncPathable<AsyncStage<Stat>>
-{
+public interface AsyncExistsBuilder extends AsyncPathable<AsyncStage<Stat>> {
     /**
      * Use the given options. The default is to use no options
      *

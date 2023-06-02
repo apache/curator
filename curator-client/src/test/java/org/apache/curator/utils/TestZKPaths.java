@@ -20,16 +20,14 @@
 package org.apache.curator.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.Collections;
+import org.junit.jupiter.api.Test;
 
-public class TestZKPaths
-{
+public class TestZKPaths {
     @SuppressWarnings("NullArgumentToVariableArgMethod")
     @Test
-    public void testMakePath()
-    {
+    public void testMakePath() {
         assertEquals(ZKPaths.makePath(null, "/"), "/");
         assertEquals(ZKPaths.makePath("", null), "/");
         assertEquals(ZKPaths.makePath("/", null), "/");
@@ -77,8 +75,7 @@ public class TestZKPaths
     }
 
     @Test
-    public void testSplit()
-    {
+    public void testSplit() {
         assertEquals(ZKPaths.split("/"), Collections.emptyList());
         assertEquals(ZKPaths.split("/test"), Collections.singletonList("test"));
         assertEquals(ZKPaths.split("/test/one"), Arrays.asList("test", "one"));

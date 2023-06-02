@@ -21,8 +21,7 @@ package org.apache.curator.framework.api;
 
 import java.util.List;
 
-public interface Leaveable<T>
-{
+public interface Leaveable<T> {
     /**
      * Sets one or more servers to leaving the ensemble.
      *

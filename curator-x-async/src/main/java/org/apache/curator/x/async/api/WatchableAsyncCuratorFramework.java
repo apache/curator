@@ -22,8 +22,7 @@ package org.apache.curator.x.async.api;
 /**
  * operations that support watching
  */
-public interface WatchableAsyncCuratorFramework
-{
+public interface WatchableAsyncCuratorFramework {
     /**
      * Start an exists builder. The builder will return a Stat object as if org.apache.zookeeper.ZooKeeper.exists() were called.  Thus, a null
      * means that it does not exist and an actual Stat object means it does exist.

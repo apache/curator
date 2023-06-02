@@ -19,15 +19,14 @@
 
 package org.apache.curator.x.async.migrations;
 
-import org.apache.curator.framework.api.transaction.CuratorOp;
 import java.util.List;
+import org.apache.curator.framework.api.transaction.CuratorOp;
 
 /**
  * Models a single migration/transition
  */
 @FunctionalInterface
-public interface Migration
-{
+public interface Migration {
     /**
      * Return the operations to execute in a transaction. IMPORTANT: during a migration
      * this method may be called multiple times.

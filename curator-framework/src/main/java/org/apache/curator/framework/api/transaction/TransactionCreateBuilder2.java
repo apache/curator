@@ -25,11 +25,9 @@ import org.apache.curator.framework.api.Compressible;
 import org.apache.curator.framework.api.CreateModable;
 import org.apache.curator.framework.api.PathAndBytesable;
 
-public interface TransactionCreateBuilder2<T> extends
-    PathAndBytesable<T>,
-    CreateModable<ACLPathAndBytesable<T>>,
-    ACLPathAndBytesable<T>,
-    ACLCreateModePathAndBytesable<T>,
-    Compressible<ACLCreateModePathAndBytesable<T>>
-{
-}
+public interface TransactionCreateBuilder2<T>
+        extends PathAndBytesable<T>,
+                CreateModable<ACLPathAndBytesable<T>>,
+                ACLPathAndBytesable<T>,
+                ACLCreateModePathAndBytesable<T>,
+                Compressible<ACLCreateModePathAndBytesable<T>> {}
