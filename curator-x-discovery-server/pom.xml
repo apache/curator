@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
+
     Licensed to the Apache Software Foundation (ASF) under one
     or more contributor license agreements.  See the NOTICE file
     distributed with this work for additional information
@@ -16,19 +17,20 @@
     KIND, either express or implied.  See the License for the
     specific language governing permissions and limitations
     under the License.
-  -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
         <groupId>org.apache.curator</groupId>
         <artifactId>apache-curator</artifactId>
-        <version>4.0.2-SNAPSHOT</version>
+        <version>5.5.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>curator-x-discovery-server</artifactId>
-    <version>4.0.2-SNAPSHOT</version>
+    <version>5.5.1-SNAPSHOT</version>
     <packaging>bundle</packaging>
 
     <name>Curator Service Discovery Server</name>
@@ -37,10 +39,10 @@
 
     <properties>
         <osgi.import.package>
-            *
+            org.apache.zookeeper.*;version="[3.4,4.0)", *
         </osgi.import.package>
         <osgi.export.package>
-            org.apache.curator.x.discovery.server*;version="${project.version}";-noimport:=true
+            org.apache.curator.x.discovery.server.*;version="${project.version}";-noimport:=true
         </osgi.export.package>
     </properties>
 
@@ -62,8 +64,8 @@
         </dependency>
 
         <dependency>
-            <groupId>org.testng</groupId>
-            <artifactId>testng</artifactId>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -92,8 +94,8 @@
         </dependency>
 
         <dependency>
-            <groupId>org.mortbay.jetty</groupId>
-            <artifactId>jetty</artifactId>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-webapp</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -127,4 +129,41 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>jdk-9-plus</id>
+            <activation>
+                <jdk>[1.9,)</jdk>
+            </activation>
+            <dependencies>
+                <!-- The following dependencies are added to make tests work with JDK 9 or later,
+                      as per this answer: https://stackoverflow.com/questions/43574426#43574427 -->
+
+                <dependency>
+                    <groupId>javax.xml.bind</groupId>
+                    <artifactId>jaxb-api</artifactId>
+                    <scope>test</scope>
+                </dependency>
+
+                <dependency>
+                    <groupId>com.sun.xml.bind</groupId>
+                    <artifactId>jaxb-core</artifactId>
+                    <scope>test</scope>
+                </dependency>
+
+                <dependency>
+                    <groupId>com.sun.xml.bind</groupId>
+                    <artifactId>jaxb-impl</artifactId>
+                    <scope>test</scope>
+                </dependency>
+
+                <dependency>
+                    <groupId>javax.activation</groupId>
+                    <artifactId>activation</artifactId>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
 </project>

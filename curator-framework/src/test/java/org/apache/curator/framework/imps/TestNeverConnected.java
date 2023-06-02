@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -19,36 +19,31 @@
 
 package org.apache.curator.framework.imps;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.google.common.collect.Queues;
-import org.apache.curator.utils.CloseableUtils;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.Timing;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
+import org.apache.curator.utils.CloseableUtils;
+import org.junit.jupiter.api.Test;
 
-public class TestNeverConnected
-{
+public class TestNeverConnected {
     @Test
-    public void testNeverConnected() throws Exception
-    {
+    public void testNeverConnected() throws Exception {
         Timing timing = new Timing();
 
         // use a connection string to a non-existent server
         CuratorFramework client = CuratorFrameworkFactory.newClient("localhost:1111", 100, 100, new RetryOneTime(1));
-        try
-        {
+        try {
             final BlockingQueue<ConnectionState> queue = Queues.newLinkedBlockingQueue();
-            ConnectionStateListener listener = new ConnectionStateListener()
-            {
+            ConnectionStateListener listener = new ConnectionStateListener() {
                 @Override
-                public void stateChanged(CuratorFramework client, ConnectionState state)
-                {
+                public void stateChanged(CuratorFramework client, ConnectionState state) {
                     queue.add(state);
                 }
             };
@@ -58,12 +53,10 @@ public class TestNeverConnected
             client.create().inBackground().forPath("/");
 
             ConnectionState polled = queue.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS);
-            Assert.assertEquals(polled, ConnectionState.SUSPENDED);
+            assertEquals(polled, ConnectionState.SUSPENDED);
             polled = queue.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS);
-            Assert.assertEquals(polled, ConnectionState.LOST);
-        }
-        finally
-        {
+            assertEquals(polled, ConnectionState.LOST);
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }

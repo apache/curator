@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,30 +16,25 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.cache;
 
-class EventOperation implements Operation
-{
+class EventOperation implements Operation {
     private final PathChildrenCache cache;
     private final PathChildrenCacheEvent event;
 
-    EventOperation(PathChildrenCache cache, PathChildrenCacheEvent event)
-    {
+    EventOperation(PathChildrenCache cache, PathChildrenCacheEvent event) {
         this.cache = cache;
         this.event = event;
     }
 
     @Override
-    public void invoke()
-    {
+    public void invoke() {
         cache.callListeners(event);
     }
 
     @Override
-    public String toString()
-    {
-        return "EventOperation{" +
-            "event=" + event +
-            '}';
+    public String toString() {
+        return "EventOperation{" + "event=" + event + '}';
     }
 }

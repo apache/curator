@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,12 +16,20 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.locks;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.curator.RetryLoop;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.WatcherRemoveCuratorFramework;
@@ -33,70 +41,50 @@ import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
-public class LockInternals
-{
-    private final WatcherRemoveCuratorFramework     client;
-    private final String                            path;
-    private final String                            basePath;
-    private final LockInternalsDriver               driver;
-    private final String                            lockName;
-    private final AtomicReference<RevocationSpec>   revocable = new AtomicReference<RevocationSpec>(null);
-    private final CuratorWatcher                    revocableWatcher = new CuratorWatcher()
-    {
+public class LockInternals {
+    private final WatcherRemoveCuratorFramework client;
+    private final String path;
+    private final String basePath;
+    private final LockInternalsDriver driver;
+    private final String lockName;
+    private final AtomicReference<RevocationSpec> revocable = new AtomicReference<RevocationSpec>(null);
+    private final CuratorWatcher revocableWatcher = new CuratorWatcher() {
         @Override
-        public void process(WatchedEvent event) throws Exception
-        {
-            if ( event.getType() == Watcher.Event.EventType.NodeDataChanged )
-            {
+        public void process(WatchedEvent event) throws Exception {
+            if (event.getType() == Watcher.Event.EventType.NodeDataChanged) {
                 checkRevocableWatcher(event.getPath());
             }
         }
     };
 
-    private final Watcher watcher = new Watcher()
-    {
+    private final Watcher watcher = new Watcher() {
         @Override
-        public void process(WatchedEvent event)
-        {
-            notifyFromWatcher();
+        public void process(WatchedEvent event) {
+            client.postSafeNotify(LockInternals.this);
         }
     };
 
-    private volatile int    maxLeases;
+    private volatile int maxLeases;
 
-    static final byte[]             REVOKE_MESSAGE = "__REVOKE__".getBytes();
+    static final byte[] REVOKE_MESSAGE = "__REVOKE__".getBytes();
 
     /**
      * Attempt to delete the lock node so that sequence numbers get reset
      *
      * @throws Exception errors
      */
-    public void clean() throws Exception
-    {
-        try
-        {
+    public void clean() throws Exception {
+        try {
             client.delete().forPath(basePath);
-        }
-        catch ( KeeperException.BadVersionException ignore )
-        {
+        } catch (KeeperException.BadVersionException ignore) {
             // ignore - another thread/process got the lock
-        }
-        catch ( KeeperException.NotEmptyException ignore )
-        {
+        } catch (KeeperException.NotEmptyException ignore) {
             // ignore - other threads/processes are waiting
         }
     }
 
-    LockInternals(CuratorFramework client, LockInternalsDriver driver, String path, String lockName, int maxLeases)
-    {
+    LockInternals(CuratorFramework client, LockInternalsDriver driver, String path, String lockName, int maxLeases) {
         this.driver = driver;
         this.lockName = lockName;
         this.maxLeases = maxLeases;
@@ -106,254 +94,190 @@ public class LockInternals
         this.path = ZKPaths.makePath(path, lockName);
     }
 
-    synchronized void setMaxLeases(int maxLeases)
-    {
+    synchronized void setMaxLeases(int maxLeases) {
         this.maxLeases = maxLeases;
         notifyAll();
     }
 
-    void makeRevocable(RevocationSpec entry)
-    {
+    void makeRevocable(RevocationSpec entry) {
         revocable.set(entry);
     }
 
-    final void releaseLock(String lockPath) throws Exception
-    {
+    final void releaseLock(String lockPath) throws Exception {
         client.removeWatchers();
         revocable.set(null);
         deleteOurPath(lockPath);
     }
 
-    CuratorFramework getClient()
-    {
+    CuratorFramework getClient() {
         return client;
     }
 
-    public static Collection<String> getParticipantNodes(CuratorFramework client, final String basePath, String lockName, LockInternalsSorter sorter) throws Exception
-    {
-        List<String>        names = getSortedChildren(client, basePath, lockName, sorter);
-        Iterable<String>    transformed = Iterables.transform
-            (
-                names,
-                new Function<String, String>()
-                {
-                    @Override
-                    public String apply(String name)
-                    {
-                        return ZKPaths.makePath(basePath, name);
-                    }
-                }
-            );
+    public static Collection<String> getParticipantNodes(
+            CuratorFramework client, final String basePath, String lockName, LockInternalsSorter sorter)
+            throws Exception {
+        List<String> names = getSortedChildren(client, basePath, lockName, sorter);
+        Iterable<String> transformed = Iterables.transform(names, new Function<String, String>() {
+            @Override
+            public String apply(String name) {
+                return ZKPaths.makePath(basePath, name);
+            }
+        });
         return ImmutableList.copyOf(transformed);
     }
 
-    public static List<String> getSortedChildren(CuratorFramework client, String basePath, final String lockName, final LockInternalsSorter sorter) throws Exception
-    {
-        try
-        {
+    public static List<String> getSortedChildren(
+            CuratorFramework client, String basePath, final String lockName, final LockInternalsSorter sorter)
+            throws Exception {
+        try {
             List<String> children = client.getChildren().forPath(basePath);
             List<String> sortedList = Lists.newArrayList(children);
-            Collections.sort
-            (
-                sortedList,
-                new Comparator<String>()
-                {
-                    @Override
-                    public int compare(String lhs, String rhs)
-                    {
-                        return sorter.fixForSorting(lhs, lockName).compareTo(sorter.fixForSorting(rhs, lockName));
-                    }
+            Collections.sort(sortedList, new Comparator<String>() {
+                @Override
+                public int compare(String lhs, String rhs) {
+                    return sorter.fixForSorting(lhs, lockName).compareTo(sorter.fixForSorting(rhs, lockName));
                 }
-            );
+            });
             return sortedList;
-        }
-        catch ( KeeperException.NoNodeException ignore )
-        {
+        } catch (KeeperException.NoNodeException ignore) {
             return Collections.emptyList();
         }
     }
 
-    public static List<String> getSortedChildren(final String lockName, final LockInternalsSorter sorter, List<String> children)
-    {
+    public static List<String> getSortedChildren(
+            final String lockName, final LockInternalsSorter sorter, List<String> children) {
         List<String> sortedList = Lists.newArrayList(children);
-        Collections.sort
-        (
-            sortedList,
-            new Comparator<String>()
-            {
-                @Override
-                public int compare(String lhs, String rhs)
-                {
-                    return sorter.fixForSorting(lhs, lockName).compareTo(sorter.fixForSorting(rhs, lockName));
-                }
+        Collections.sort(sortedList, new Comparator<String>() {
+            @Override
+            public int compare(String lhs, String rhs) {
+                return sorter.fixForSorting(lhs, lockName).compareTo(sorter.fixForSorting(rhs, lockName));
             }
-        );
+        });
         return sortedList;
     }
 
-    List<String> getSortedChildren() throws Exception
-    {
+    List<String> getSortedChildren() throws Exception {
         return getSortedChildren(client, basePath, lockName, driver);
     }
 
-    String getLockName()
-    {
+    String getLockName() {
         return lockName;
     }
 
-    LockInternalsDriver getDriver()
-    {
+    LockInternalsDriver getDriver() {
         return driver;
     }
 
-    String attemptLock(long time, TimeUnit unit, byte[] lockNodeBytes) throws Exception
-    {
-        final long      startMillis = System.currentTimeMillis();
-        final Long      millisToWait = (unit != null) ? unit.toMillis(time) : null;
-        final byte[]    localLockNodeBytes = (revocable.get() != null) ? new byte[0] : lockNodeBytes;
-        int             retryCount = 0;
+    String attemptLock(long time, TimeUnit unit, byte[] lockNodeBytes) throws Exception {
+        final long startMillis = System.currentTimeMillis();
+        final Long millisToWait = (unit != null) ? unit.toMillis(time) : null;
+        final byte[] localLockNodeBytes = (revocable.get() != null) ? new byte[0] : lockNodeBytes;
+        int retryCount = 0;
 
-        String          ourPath = null;
-        boolean         hasTheLock = false;
-        boolean         isDone = false;
-        while ( !isDone )
-        {
+        String ourPath = null;
+        boolean hasTheLock = false;
+        boolean isDone = false;
+        while (!isDone) {
             isDone = true;
 
-            try
-            {
+            try {
                 ourPath = driver.createsTheLock(client, path, localLockNodeBytes);
                 hasTheLock = internalLockLoop(startMillis, millisToWait, ourPath);
-            }
-            catch ( KeeperException.NoNodeException e )
-            {
+            } catch (KeeperException.NoNodeException e) {
                 // gets thrown by StandardLockInternalsDriver when it can't find the lock node
                 // this can happen when the session expires, etc. So, if the retry allows, just try it all again
-                if ( client.getZookeeperClient().getRetryPolicy().allowRetry(retryCount++, System.currentTimeMillis() - startMillis, RetryLoop.getDefaultRetrySleeper()) )
-                {
+                if (client.getZookeeperClient()
+                        .getRetryPolicy()
+                        .allowRetry(
+                                retryCount++,
+                                System.currentTimeMillis() - startMillis,
+                                RetryLoop.getDefaultRetrySleeper())) {
                     isDone = false;
-                }
-                else
-                {
+                } else {
                     throw e;
                 }
             }
         }
 
-        if ( hasTheLock )
-        {
+        if (hasTheLock) {
             return ourPath;
         }
 
         return null;
     }
 
-    private void checkRevocableWatcher(String path) throws Exception
-    {
-        RevocationSpec  entry = revocable.get();
-        if ( entry != null )
-        {
-            try
-            {
-                byte[]      bytes = client.getData().usingWatcher(revocableWatcher).forPath(path);
-                if ( Arrays.equals(bytes, REVOKE_MESSAGE) )
-                {
+    private void checkRevocableWatcher(String path) throws Exception {
+        RevocationSpec entry = revocable.get();
+        if (entry != null) {
+            try {
+                byte[] bytes = client.getData().usingWatcher(revocableWatcher).forPath(path);
+                if (Arrays.equals(bytes, REVOKE_MESSAGE)) {
                     entry.getExecutor().execute(entry.getRunnable());
                 }
-            }
-            catch ( KeeperException.NoNodeException ignore )
-            {
+            } catch (KeeperException.NoNodeException ignore) {
                 // ignore
             }
         }
     }
 
-    private boolean internalLockLoop(long startMillis, Long millisToWait, String ourPath) throws Exception
-    {
-        boolean     haveTheLock = false;
-        boolean     doDelete = false;
-        try
-        {
-            if ( revocable.get() != null )
-            {
+    private boolean internalLockLoop(long startMillis, Long millisToWait, String ourPath) throws Exception {
+        boolean haveTheLock = false;
+        boolean doDelete = false;
+        try {
+            if (revocable.get() != null) {
                 client.getData().usingWatcher(revocableWatcher).forPath(ourPath);
             }
 
-            while ( (client.getState() == CuratorFrameworkState.STARTED) && !haveTheLock )
-            {
-                List<String>        children = getSortedChildren();
-                String              sequenceNodeName = ourPath.substring(basePath.length() + 1); // +1 to include the slash
+            while ((client.getState() == CuratorFrameworkState.STARTED) && !haveTheLock) {
+                List<String> children = getSortedChildren();
+                String sequenceNodeName = ourPath.substring(basePath.length() + 1); // +1 to include the slash
 
-                PredicateResults    predicateResults = driver.getsTheLock(client, children, sequenceNodeName, maxLeases);
-                if ( predicateResults.getsTheLock() )
-                {
+                PredicateResults predicateResults = driver.getsTheLock(client, children, sequenceNodeName, maxLeases);
+                if (predicateResults.getsTheLock()) {
                     haveTheLock = true;
-                }
-                else
-                {
-                    String  previousSequencePath = basePath + "/" + predicateResults.getPathToWatch();
+                } else {
+                    String previousSequencePath = basePath + "/" + predicateResults.getPathToWatch();
 
-                    synchronized(this)
-                    {
-                        try 
-                        {
-                            // use getData() instead of exists() to avoid leaving unneeded watchers which is a type of resource leak
+                    synchronized (this) {
+                        try {
+                            // use getData() instead of exists() to avoid leaving unneeded watchers which is a type of
+                            // resource leak
                             client.getData().usingWatcher(watcher).forPath(previousSequencePath);
-                            if ( millisToWait != null )
-                            {
+                            if (millisToWait != null) {
                                 millisToWait -= (System.currentTimeMillis() - startMillis);
                                 startMillis = System.currentTimeMillis();
-                                if ( millisToWait <= 0 )
-                                {
-                                    doDelete = true;    // timed out - delete our node
+                                if (millisToWait <= 0) {
+                                    doDelete = true; // timed out - delete our node
                                     break;
                                 }
 
                                 wait(millisToWait);
-                            }
-                            else
-                            {
+                            } else {
                                 wait();
                             }
-                        }
-                        catch ( KeeperException.NoNodeException e ) 
-                        {
+                        } catch (KeeperException.NoNodeException e) {
                             // it has been deleted (i.e. lock released). Try to acquire again
                         }
                     }
                 }
             }
-        }
-        catch ( Exception e )
-        {
+        } catch (Exception e) {
             ThreadUtils.checkInterrupted(e);
             doDelete = true;
             throw e;
-        }
-        finally
-        {
-            if ( doDelete )
-            {
+        } finally {
+            if (doDelete) {
                 deleteOurPath(ourPath);
             }
         }
         return haveTheLock;
     }
 
-    private void deleteOurPath(String ourPath) throws Exception
-    {
-        try
-        {
+    private void deleteOurPath(String ourPath) throws Exception {
+        try {
             client.delete().guaranteed().forPath(ourPath);
-        }
-        catch ( KeeperException.NoNodeException e )
-        {
+        } catch (KeeperException.NoNodeException e) {
             // ignore - already deleted (possibly expired session, etc.)
         }
-    }
-
-    private synchronized void notifyFromWatcher()
-    {
-        notifyAll();
     }
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,33 +16,29 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.test;
 
 import java.util.concurrent.ExecutorService;
 
-public class ExecuteCalledWatchingExecutorService extends DelegatingExecutorService
-{
+public class ExecuteCalledWatchingExecutorService extends DelegatingExecutorService {
     boolean executeCalled = false;
 
-    public ExecuteCalledWatchingExecutorService(ExecutorService delegate)
-    {
+    public ExecuteCalledWatchingExecutorService(ExecutorService delegate) {
         super(delegate);
     }
 
     @Override
-    public synchronized void execute(Runnable command)
-    {
+    public synchronized void execute(Runnable command) {
         executeCalled = true;
         super.execute(command);
     }
 
-    public synchronized boolean isExecuteCalled()
-    {
+    public synchronized boolean isExecuteCalled() {
         return executeCalled;
     }
 
-    public synchronized void setExecuteCalled(boolean executeCalled)
-    {
+    public synchronized void setExecuteCalled(boolean executeCalled) {
         this.executeCalled = executeCalled;
     }
 }

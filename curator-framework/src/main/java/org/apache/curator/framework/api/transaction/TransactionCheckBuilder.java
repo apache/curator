@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,13 +16,10 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.api.transaction;
 
 import org.apache.curator.framework.api.Pathable;
 import org.apache.curator.framework.api.Versionable;
 
-public interface TransactionCheckBuilder<T> extends
-    Pathable<T>,
-    Versionable<Pathable<T>>
-{
-}
+public interface TransactionCheckBuilder<T> extends Pathable<T>, Versionable<Pathable<T>> {}

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,17 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async.api;
 
+import java.util.List;
 import org.apache.curator.x.async.AsyncStage;
 import org.apache.zookeeper.data.Stat;
-import java.util.List;
 
 /**
  * Builder for reconfigs
  */
-public interface AsyncReconfigBuilder
-{
+public interface AsyncReconfigBuilder {
     /**
      * Sets one or more members that are meant to be the ensemble.
      * The expected format is: <code>server.[id]=[hostname]:[peer port]:[election port]:[type];[client port]</code>
@@ -67,7 +67,8 @@ public interface AsyncReconfigBuilder
      * @see #withJoiningAndLeaving(java.util.List, java.util.List)
      * @return this
      */
-    AsyncEnsemblable<AsyncStage<Void>> withJoiningAndLeaving(List<String> joining, List<String> leaving, long fromConfig);
+    AsyncEnsemblable<AsyncStage<Void>> withJoiningAndLeaving(
+            List<String> joining, List<String> leaving, long fromConfig);
 
     /**
      * Same as {@link #withNewMembers(java.util.List)} but allows a stat to hold the stat info from "/zookeeper/config"
@@ -114,5 +115,6 @@ public interface AsyncReconfigBuilder
      * @see #withJoiningAndLeaving(java.util.List, java.util.List, org.apache.zookeeper.data.Stat)
      * @return this
      */
-    AsyncEnsemblable<AsyncStage<Void>> withJoiningAndLeaving(List<String> joining, List<String> leaving, Stat stat, long fromConfig);
+    AsyncEnsemblable<AsyncStage<Void>> withJoiningAndLeaving(
+            List<String> joining, List<String> leaving, Stat stat, long fromConfig);
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async.modeled.typed;
 
 import org.apache.curator.x.async.modeled.ModelSpec;
@@ -25,8 +26,7 @@ import org.apache.curator.x.async.modeled.ModelSpecBuilder;
  * Same as {@link org.apache.curator.x.async.modeled.typed.TypedModelSpec}, but with 5 parameters
  */
 @FunctionalInterface
-public interface TypedModelSpec5<M, P1, P2, P3, P4, P5>
-{
+public interface TypedModelSpec5<M, P1, P2, P3, P4, P5> {
     ModelSpec<M> resolved(P1 p1, P2 p2, P3 p3, P4 p4, P5 p5);
 
     /**
@@ -38,9 +38,10 @@ public interface TypedModelSpec5<M, P1, P2, P3, P4, P5>
      * @param path typed path
      * @return new TypedModelSpec
      */
-    static <M, P1, P2, P3, P4, P5> TypedModelSpec5<M, P1, P2, P3, P4, P5> from(ModelSpecBuilder<M> builder, TypedZPath5<P1, P2, P3, P4, P5> path)
-    {
-        return (p1, p2, p3, p4, p5) -> builder.withPath(path.resolved(p1, p2, p3, p4, p5)).build();
+    static <M, P1, P2, P3, P4, P5> TypedModelSpec5<M, P1, P2, P3, P4, P5> from(
+            ModelSpecBuilder<M> builder, TypedZPath5<P1, P2, P3, P4, P5> path) {
+        return (p1, p2, p3, p4, p5) ->
+                builder.withPath(path.resolved(p1, p2, p3, p4, p5)).build();
     }
 
     /**
@@ -53,9 +54,10 @@ public interface TypedModelSpec5<M, P1, P2, P3, P4, P5>
      * @param pathWithIds typed path
      * @return new TypedModelSpec
      */
-    static <M, P1, P2, P3, P4, P5> TypedModelSpec5<M, P1, P2, P3, P4, P5> from(ModelSpecBuilder<M> builder, String pathWithIds)
-    {
+    static <M, P1, P2, P3, P4, P5> TypedModelSpec5<M, P1, P2, P3, P4, P5> from(
+            ModelSpecBuilder<M> builder, String pathWithIds) {
         TypedZPath5<P1, P2, P3, P4, P5> zPath = TypedZPath5.from(pathWithIds);
-        return (p1, p2, p3, p4, p5) -> builder.withPath(zPath.resolved(p1, p2, p3, p4, p5)).build();
+        return (p1, p2, p3, p4, p5) ->
+                builder.withPath(zPath.resolved(p1, p2, p3, p4, p5)).build();
     }
 }

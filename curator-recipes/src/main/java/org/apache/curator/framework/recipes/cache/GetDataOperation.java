@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,44 +16,38 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.cache;
 
 import org.apache.curator.utils.PathUtils;
 
-class GetDataOperation implements Operation
-{
+class GetDataOperation implements Operation {
     private final PathChildrenCache cache;
     private final String fullPath;
 
-    GetDataOperation(PathChildrenCache cache, String fullPath)
-    {
+    GetDataOperation(PathChildrenCache cache, String fullPath) {
         this.cache = cache;
         this.fullPath = PathUtils.validatePath(fullPath);
     }
 
     @Override
-    public void invoke() throws Exception
-    {
+    public void invoke() throws Exception {
         cache.getDataAndStat(fullPath);
     }
 
     @Override
-    public boolean equals(Object o)
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
-        GetDataOperation that = (GetDataOperation)o;
+        GetDataOperation that = (GetDataOperation) o;
 
         //noinspection RedundantIfStatement
-        if ( !fullPath.equals(that.fullPath) )
-        {
+        if (!fullPath.equals(that.fullPath)) {
             return false;
         }
 
@@ -61,16 +55,12 @@ class GetDataOperation implements Operation
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return fullPath.hashCode();
     }
 
     @Override
-    public String toString()
-    {
-        return "GetDataOperation{" +
-            "fullPath='" + fullPath + '\'' +
-            '}';
+    public String toString() {
+        return "GetDataOperation{" + "fullPath='" + fullPath + '\'' + '}';
     }
 }

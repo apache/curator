@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,16 +16,16 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async;
 
-import org.apache.zookeeper.WatchedEvent;
 import java.util.concurrent.CompletionStage;
+import org.apache.zookeeper.WatchedEvent;
 
 /**
  * A {@link java.util.concurrent.CompletionStage} that is the result of most operations.
  */
-public interface AsyncStage<T> extends CompletionStage<T>
-{
+public interface AsyncStage<T> extends CompletionStage<T> {
     /**
      * <p>
      *     If the {@link org.apache.curator.x.async.api.WatchableAsyncCuratorFramework} facade is

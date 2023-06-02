@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -24,10 +24,5 @@ package org.apache.curator.framework.api;
  * This builder has access only to the incremental reconfiguration methods joining and leaving, so that we prevent
  * mixing concepts that can't be used together.
  */
-public interface LeaveStatConfigEnsembleable extends
-    Leaveable<JoinStatConfigEnsembleable>,
-    ConfigureEnsembleable,
-    Statable<ConfigureEnsembleable>
-{
-
-}
+public interface LeaveStatConfigEnsembleable
+        extends Leaveable<JoinStatConfigEnsembleable>, ConfigureEnsembleable, Statable<ConfigureEnsembleable> {}

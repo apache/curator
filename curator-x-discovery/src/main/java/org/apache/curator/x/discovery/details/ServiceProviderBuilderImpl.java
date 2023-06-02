@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,37 +16,38 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.discovery.details;
 
 import com.google.common.collect.Lists;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadFactory;
 import org.apache.curator.x.discovery.DownInstancePolicy;
 import org.apache.curator.x.discovery.InstanceFilter;
 import org.apache.curator.x.discovery.ProviderStrategy;
 import org.apache.curator.x.discovery.ServiceProvider;
 import org.apache.curator.x.discovery.ServiceProviderBuilder;
 import org.apache.curator.x.discovery.strategies.RoundRobinStrategy;
-import java.util.List;
-import java.util.concurrent.ThreadFactory;
 
 /**
  * Builder for service providers
  */
-class ServiceProviderBuilderImpl<T> implements ServiceProviderBuilder<T>
-{
+class ServiceProviderBuilderImpl<T> implements ServiceProviderBuilder<T> {
     private ServiceDiscoveryImpl<T> discovery;
     private String serviceName;
     private ProviderStrategy<T> providerStrategy;
     private ThreadFactory threadFactory;
+    private ExecutorService executorService;
     private List<InstanceFilter<T>> filters = Lists.newArrayList();
     private DownInstancePolicy downInstancePolicy = new DownInstancePolicy();
 
-    public ServiceProvider<T> build()
-    {
-        return new ServiceProviderImpl<T>(discovery, serviceName, providerStrategy, threadFactory, filters, downInstancePolicy);
+    public ServiceProvider<T> build() {
+        return new ServiceProviderImpl<T>(
+                discovery, serviceName, providerStrategy, threadFactory, executorService, filters, downInstancePolicy);
     }
 
-    ServiceProviderBuilderImpl(ServiceDiscoveryImpl<T> discovery)
-    {
+    ServiceProviderBuilderImpl(ServiceDiscoveryImpl<T> discovery) {
         this.discovery = discovery;
     }
 
@@ -57,8 +58,7 @@ class ServiceProviderBuilderImpl<T> implements ServiceProviderBuilder<T>
      * @return this
      */
     @Override
-    public ServiceProviderBuilder<T> serviceName(String serviceName)
-    {
+    public ServiceProviderBuilder<T> serviceName(String serviceName) {
         this.serviceName = serviceName;
         return this;
     }
@@ -70,8 +70,7 @@ class ServiceProviderBuilderImpl<T> implements ServiceProviderBuilder<T>
      * @return this
      */
     @Override
-    public ServiceProviderBuilder<T> providerStrategy(ProviderStrategy<T> providerStrategy)
-    {
+    public ServiceProviderBuilder<T> providerStrategy(ProviderStrategy<T> providerStrategy) {
         this.providerStrategy = providerStrategy;
         return this;
     }
@@ -83,23 +82,29 @@ class ServiceProviderBuilderImpl<T> implements ServiceProviderBuilder<T>
      * @return this
      */
     @Override
-    public ServiceProviderBuilder<T> threadFactory(ThreadFactory threadFactory)
-    {
+    @Deprecated
+    public ServiceProviderBuilder<T> threadFactory(ThreadFactory threadFactory) {
         this.threadFactory = threadFactory;
+        this.executorService = null;
         return this;
     }
 
     @Override
-    public ServiceProviderBuilder<T> downInstancePolicy(DownInstancePolicy downInstancePolicy)
-    {
+    public ServiceProviderBuilder<T> downInstancePolicy(DownInstancePolicy downInstancePolicy) {
         this.downInstancePolicy = downInstancePolicy;
         return this;
     }
 
     @Override
-    public ServiceProviderBuilder<T> additionalFilter(InstanceFilter<T> filter)
-    {
+    public ServiceProviderBuilder<T> additionalFilter(InstanceFilter<T> filter) {
         filters.add(filter);
+        return this;
+    }
+
+    @Override
+    public ServiceProviderBuilder<T> executorService(ExecutorService executorService) {
+        this.executorService = executorService;
+        this.threadFactory = null;
         return this;
     }
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,21 +16,21 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.shared;
 
-import org.apache.curator.framework.listen.ListenerContainer;
+import org.apache.curator.framework.listen.Listenable;
 
 /**
  * Abstracts a shared value and allows listening for changes to the value
  */
-public interface SharedValueReader
-{
+public interface SharedValueReader {
     /**
      * Return the current value of the count
      *
      * @return count
      */
-    public byte[]   getValue();
+    public byte[] getValue();
 
     /**
      * Return the current version and value
@@ -44,5 +44,5 @@ public interface SharedValueReader
      *
      * @return listenable
      */
-    public ListenerContainer<SharedValueListener> getListenable();
+    public Listenable<SharedValueListener> getListenable();
 }

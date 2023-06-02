@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,70 +16,61 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.utils;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import org.testng.Assert;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
-public class TestCloseableScheduledExecutorService
-{
+public class TestCloseableScheduledExecutorService {
     private static final int QTY = 10;
     private static final int DELAY_MS = 100;
 
     private volatile ScheduledExecutorService executorService;
 
-    @BeforeMethod
-    public void setup()
-    {
+    @BeforeEach
+    public void setup() {
         executorService = Executors.newScheduledThreadPool(QTY * 2);
     }
 
-    @AfterMethod
-    public void tearDown()
-    {
+    @AfterEach
+    public void tearDown() {
         executorService.shutdownNow();
     }
 
     @Test
-    public void testCloseableScheduleWithFixedDelay() throws InterruptedException
-    {
+    public void testCloseableScheduleWithFixedDelay() throws InterruptedException {
         CloseableScheduledExecutorService service = new CloseableScheduledExecutorService(executorService);
 
         final CountDownLatch latch = new CountDownLatch(QTY);
         service.scheduleWithFixedDelay(
-                new Runnable()
-                {
+                new Runnable() {
                     @Override
-                    public void run()
-                    {
+                    public void run() {
                         latch.countDown();
                     }
                 },
                 DELAY_MS,
                 DELAY_MS,
-                TimeUnit.MILLISECONDS
-        );
+                TimeUnit.MILLISECONDS);
 
-        Assert.assertTrue(latch.await((QTY * 2) * DELAY_MS, TimeUnit.MILLISECONDS));
+        assertTrue(latch.await((QTY * 2) * DELAY_MS, TimeUnit.MILLISECONDS));
     }
 
     @Test
-    public void testCloseableScheduleWithFixedDelayAndAdditionalTasks() throws InterruptedException
-    {
+    public void testCloseableScheduleWithFixedDelayAndAdditionalTasks() throws InterruptedException {
         final AtomicInteger outerCounter = new AtomicInteger(0);
-        Runnable command = new Runnable()
-        {
+        Runnable command = new Runnable() {
             @Override
-            public void run()
-            {
+            public void run() {
                 outerCounter.incrementAndGet();
             }
         };
@@ -88,14 +79,16 @@ public class TestCloseableScheduledExecutorService
         CloseableScheduledExecutorService service = new CloseableScheduledExecutorService(executorService);
 
         final AtomicInteger innerCounter = new AtomicInteger(0);
-        service.scheduleWithFixedDelay(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                innerCounter.incrementAndGet();
-            }
-        }, DELAY_MS, DELAY_MS, TimeUnit.MILLISECONDS);
+        service.scheduleWithFixedDelay(
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        innerCounter.incrementAndGet();
+                    }
+                },
+                DELAY_MS,
+                DELAY_MS,
+                TimeUnit.MILLISECONDS);
 
         Thread.sleep(DELAY_MS * 4);
 
@@ -103,18 +96,18 @@ public class TestCloseableScheduledExecutorService
         Thread.sleep(DELAY_MS * 2);
 
         int innerValue = innerCounter.get();
-        Assert.assertTrue(innerValue > 0);
+        assertTrue(innerValue > 0);
 
         int value = outerCounter.get();
         Thread.sleep(DELAY_MS * 2);
         int newValue = outerCounter.get();
-        Assert.assertTrue(newValue > value);
-        Assert.assertEquals(innerValue, innerCounter.get());
+        assertTrue(newValue > value);
+        assertEquals(innerValue, innerCounter.get());
 
         value = newValue;
         Thread.sleep(DELAY_MS * 2);
         newValue = outerCounter.get();
-        Assert.assertTrue(newValue > value);
-        Assert.assertEquals(innerValue, innerCounter.get());
+        assertTrue(newValue > value);
+        assertEquals(innerValue, innerCounter.get());
     }
 }

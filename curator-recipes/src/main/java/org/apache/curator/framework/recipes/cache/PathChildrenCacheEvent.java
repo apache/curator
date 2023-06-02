@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,24 +16,23 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.cache;
 
-import org.apache.curator.framework.state.ConnectionState;
 import java.util.List;
+import org.apache.curator.framework.state.ConnectionState;
 
 /**
  * POJO that abstracts a change to a path
  */
-public class PathChildrenCacheEvent
-{
+public class PathChildrenCacheEvent {
     private final Type type;
     private final ChildData data;
 
     /**
      * Type of change
      */
-    public enum Type
-    {
+    public enum Type {
         /**
          * A child was added to the path
          */
@@ -97,8 +96,7 @@ public class PathChildrenCacheEvent
      * @param type event type
      * @param data event data or null
      */
-    public PathChildrenCacheEvent(Type type, ChildData data)
-    {
+    public PathChildrenCacheEvent(Type type, ChildData data) {
         this.type = type;
         this.data = data;
     }
@@ -106,16 +104,14 @@ public class PathChildrenCacheEvent
     /**
      * @return change type
      */
-    public Type getType()
-    {
+    public Type getType() {
         return type;
     }
 
     /**
      * @return the node's data
      */
-    public ChildData getData()
-    {
+    public ChildData getData() {
         return data;
     }
 
@@ -126,17 +122,12 @@ public class PathChildrenCacheEvent
      *
      * @return initial state of cache for {@link Type#INITIALIZED} events. Otherwise, <code>null</code>.
      */
-    public List<ChildData> getInitialData()
-    {
+    public List<ChildData> getInitialData() {
         return null;
     }
 
     @Override
-    public String toString()
-    {
-        return "PathChildrenCacheEvent{" +
-            "type=" + type +
-            ", data=" + data +
-            '}';
+    public String toString() {
+        return "PathChildrenCacheEvent{" + "type=" + type + ", data=" + data + '}';
     }
 }

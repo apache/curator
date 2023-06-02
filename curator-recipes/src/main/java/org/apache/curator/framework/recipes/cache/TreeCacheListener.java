@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -24,8 +24,7 @@ import org.apache.curator.framework.CuratorFramework;
 /**
  * Listener for {@link TreeCache} changes
  */
-public interface TreeCacheListener
-{
+public interface TreeCacheListener {
     /**
      * Called when a change has occurred
      *

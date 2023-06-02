@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,141 +16,117 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.locks;
 
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.framework.imps.TestCleanState;
-import org.apache.curator.retry.RetryOneTime;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.imps.TestCleanState;
+import org.apache.curator.retry.RetryOneTime;
+import org.junit.jupiter.api.Test;
 
-public class TestInterProcessMultiMutex extends TestInterProcessMutexBase
-{
-    private static final String     LOCK_PATH_1 = LOCK_BASE_PATH + "/our-lock-1";
-    private static final String     LOCK_PATH_2 = LOCK_BASE_PATH + "/our-lock-2";
+public class TestInterProcessMultiMutex extends TestInterProcessMutexBase {
+    private static final String LOCK_PATH_1 = LOCK_BASE_PATH + "/our-lock-1";
+    private static final String LOCK_PATH_2 = LOCK_BASE_PATH + "/our-lock-2";
 
     @Override
-    protected InterProcessLock makeLock(CuratorFramework client)
-    {
+    protected InterProcessLock makeLock(CuratorFramework client) {
         return new InterProcessMultiLock(client, Arrays.asList(LOCK_PATH_1, LOCK_PATH_2));
     }
 
     @Test
-    public void testSomeReleasesFail() throws IOException
-    {
+    public void testSomeReleasesFail() throws IOException {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
         client.start();
-        try
-        {
-            InterProcessLock        goodLock = new InterProcessMutex(client, LOCK_PATH_1);
-            final InterProcessLock  otherGoodLock = new InterProcessMutex(client, LOCK_PATH_2);
-            InterProcessLock        badLock = new InterProcessLock()
-            {
+        try {
+            InterProcessLock goodLock = new InterProcessMutex(client, LOCK_PATH_1);
+            final InterProcessLock otherGoodLock = new InterProcessMutex(client, LOCK_PATH_2);
+            InterProcessLock badLock = new InterProcessLock() {
                 @Override
-                public void acquire() throws Exception
-                {
+                public void acquire() throws Exception {
                     otherGoodLock.acquire();
                 }
 
                 @Override
-                public boolean acquire(long time, TimeUnit unit) throws Exception
-                {
+                public boolean acquire(long time, TimeUnit unit) throws Exception {
                     return otherGoodLock.acquire(time, unit);
                 }
 
                 @Override
-                public void release() throws Exception
-                {
+                public void release() throws Exception {
                     throw new Exception("foo");
                 }
 
                 @Override
-                public boolean isAcquiredInThisProcess()
-                {
+                public boolean isAcquiredInThisProcess() {
                     return otherGoodLock.isAcquiredInThisProcess();
                 }
             };
 
-            InterProcessMultiLock       lock = new InterProcessMultiLock(Arrays.asList(goodLock, badLock));
-            try
-            {
+            InterProcessMultiLock lock = new InterProcessMultiLock(Arrays.asList(goodLock, badLock));
+            try {
                 lock.acquire();
                 lock.release();
-                Assert.fail();
-            }
-            catch ( Exception e )
-            {
+                fail();
+            } catch (Exception e) {
                 // ignore
             }
-            Assert.assertFalse(goodLock.isAcquiredInThisProcess());
-            Assert.assertTrue(otherGoodLock.isAcquiredInThisProcess());
-        }
-        finally
-        {
+            assertFalse(goodLock.isAcquiredInThisProcess());
+            assertTrue(otherGoodLock.isAcquiredInThisProcess());
+        } finally {
             TestCleanState.closeAndTestClean(client);
         }
     }
 
     @Test
-    public void testSomeLocksFailToLock() throws IOException
-    {
+    public void testSomeLocksFailToLock() throws IOException {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
         client.start();
-        try
-        {
-            final AtomicBoolean     goodLockWasLocked = new AtomicBoolean(false);
-            final InterProcessLock  goodLock = new InterProcessMutex(client, LOCK_PATH_1);
-            InterProcessLock        badLock = new InterProcessLock()
-            {
+        try {
+            final AtomicBoolean goodLockWasLocked = new AtomicBoolean(false);
+            final InterProcessLock goodLock = new InterProcessMutex(client, LOCK_PATH_1);
+            InterProcessLock badLock = new InterProcessLock() {
                 @Override
-                public void acquire() throws Exception
-                {
-                    if ( goodLock.isAcquiredInThisProcess() )
-                    {
+                public void acquire() throws Exception {
+                    if (goodLock.isAcquiredInThisProcess()) {
                         goodLockWasLocked.set(true);
                     }
                     throw new Exception("foo");
                 }
 
                 @Override
-                public boolean acquire(long time, TimeUnit unit) throws Exception
-                {
+                public boolean acquire(long time, TimeUnit unit) throws Exception {
                     throw new Exception("foo");
                 }
 
                 @Override
-                public void release() throws Exception
-                {
+                public void release() throws Exception {
                     throw new Exception("foo");
                 }
 
                 @Override
-                public boolean isAcquiredInThisProcess()
-                {
+                public boolean isAcquiredInThisProcess() {
                     return false;
                 }
             };
 
-            InterProcessMultiLock       lock = new InterProcessMultiLock(Arrays.asList(goodLock, badLock));
-            try
-            {
+            InterProcessMultiLock lock = new InterProcessMultiLock(Arrays.asList(goodLock, badLock));
+            try {
                 lock.acquire();
-                Assert.fail();
-            }
-            catch ( Exception e )
-            {
+                fail();
+            } catch (Exception e) {
                 // ignore
             }
-            Assert.assertFalse(goodLock.isAcquiredInThisProcess());
-            Assert.assertTrue(goodLockWasLocked.get());
-        }
-        finally
-        {
+            assertFalse(goodLock.isAcquiredInThisProcess());
+            assertTrue(goodLockWasLocked.get());
+        } finally {
             TestCleanState.closeAndTestClean(client);
         }
     }

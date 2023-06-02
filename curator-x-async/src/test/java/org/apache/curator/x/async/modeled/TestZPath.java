@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,111 +16,113 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async.modeled;
 
+import static org.apache.curator.x.async.modeled.ZPath.parameter;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.curator.x.async.modeled.details.ZPathImpl;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.apache.curator.x.async.modeled.ZPath.parameter;
-
-public class TestZPath
-{
+public class TestZPath {
     @Test
-    public void testRoot()
-    {
-        Assert.assertEquals(ZPath.root.nodeName(), ZKPaths.PATH_SEPARATOR);
-        Assert.assertEquals(ZPath.root, ZPathImpl.root);
-        Assert.assertTrue(ZPath.root.isRoot());
-        Assert.assertEquals(ZPath.root.child("foo").parent(), ZPath.root);
-        Assert.assertTrue(ZPath.root.child("foo").parent().isRoot());
+    public void testRoot() {
+        assertEquals(ZPath.root.nodeName(), ZKPaths.PATH_SEPARATOR);
+        assertEquals(ZPath.root, ZPathImpl.root);
+        assertTrue(ZPath.root.isRoot());
+        assertEquals(ZPath.root.child("foo").parent(), ZPath.root);
+        assertTrue(ZPath.root.child("foo").parent().isRoot());
     }
 
     @Test
-    public void testBasic()
-    {
+    public void testBasic() {
         ZPath path = ZPath.root.child("one").child("two");
-        Assert.assertFalse(path.isRoot());
-        Assert.assertEquals(path, ZPath.root.child("one").child("two"));
-        Assert.assertNotEquals(path, ZPath.root.child("onex").child("two"));
-        Assert.assertEquals(path.nodeName(), "two");
-        Assert.assertEquals(path.fullPath(), "/one/two");
-        Assert.assertEquals(path.parent().fullPath(), "/one");
-        Assert.assertEquals(path.fullPath(), "/one/two");       // call twice to test the internal cache
-        Assert.assertEquals(path.parent().fullPath(), "/one");  // call twice to test the internal cache
+        assertFalse(path.isRoot());
+        assertEquals(path, ZPath.root.child("one").child("two"));
+        assertNotEquals(path, ZPath.root.child("onex").child("two"));
+        assertEquals(path.nodeName(), "two");
+        assertEquals(path.fullPath(), "/one/two");
+        assertEquals(path.parent().fullPath(), "/one");
+        assertEquals(path.fullPath(), "/one/two"); // call twice to test the internal cache
+        assertEquals(path.parent().fullPath(), "/one"); // call twice to test the internal cache
 
-        Assert.assertTrue(path.startsWith(ZPath.root.child("one")));
-        Assert.assertFalse(path.startsWith(ZPath.root.child("two")));
+        assertTrue(path.startsWith(ZPath.root.child("one")));
+        assertFalse(path.startsWith(ZPath.root.child("two")));
 
+        // Despite these paths containing elements which appear to be parameters, ZPath.parse() always returns
+        // a ZPath which is considered fully resolved.  This allows users to include parameter-like elements in their
+        // ZPath's that aren't treated as parameters.
         ZPath checkIdLike = ZPath.parse("/one/{two}/three");
-        Assert.assertTrue(checkIdLike.isResolved());
+        assertTrue(checkIdLike.isResolved(), "parse method always returns a fully resolved ZPath");
         checkIdLike = ZPath.parse("/one/" + ZPath.parameter() + "/three");
-        Assert.assertTrue(checkIdLike.isResolved());
+        assertTrue(checkIdLike.isResolved(), "parse method always returns a fully resolved ZPath");
         checkIdLike = ZPath.parse("/one/" + ZPath.parameter("others") + "/three");
-        Assert.assertTrue(checkIdLike.isResolved());
+        assertTrue(checkIdLike.isResolved(), "parse method always returns a fully resolved ZPath");
     }
 
     @Test
-    public void testParsing()
-    {
-        Assert.assertEquals(ZPath.parse("/"), ZPath.root);
-        Assert.assertEquals(ZPath.parse("/one/two/three"), ZPath.root.child("one").child("two").child("three"));
-        Assert.assertEquals(ZPath.parse("/one/two/three"), ZPath.from("one", "two", "three"));
-        Assert.assertEquals(ZPath.parseWithIds("/one/{id}/two/{id}"), ZPath.from("one", parameter(), "two", parameter()));
-    }
-
-    @Test(expectedExceptions = IllegalStateException.class)
-    public void testUnresolvedPath()
-    {
-        ZPath path = ZPath.from("one", parameter(), "two");
-        path.fullPath();
+    public void testParsing() {
+        assertEquals(ZPath.parse("/"), ZPath.root);
+        assertEquals(
+                ZPath.parse("/one/two/three"),
+                ZPath.root.child("one").child("two").child("three"));
+        assertEquals(ZPath.parse("/one/two/three"), ZPath.from("one", "two", "three"));
+        assertEquals(ZPath.parseWithIds("/one/{id}/two/{id}"), ZPath.from("one", parameter(), "two", parameter()));
     }
 
     @Test
-    public void testResolvedPath()
-    {
+    public void testUnresolvedPath() {
+        assertThrows(IllegalStateException.class, () -> {
+            ZPath path = ZPath.from("one", parameter(), "two");
+            path.fullPath();
+        });
+    }
+
+    @Test
+    public void testResolvedPath() {
         ZPath path = ZPath.from("one", parameter(), "two", parameter());
-        Assert.assertEquals(path.resolved("a", "b"), ZPath.from("one", "a", "two", "b"));
+        assertEquals(path.resolved("a", "b"), ZPath.from("one", "a", "two", "b"));
     }
 
     @Test
-    public void testSchema()
-    {
+    public void testSchema() {
         ZPath path = ZPath.from("one", parameter(), "two", parameter());
-        Assert.assertEquals(path.toSchemaPathPattern().toString(), "/one/.*/two/.*");
+        assertEquals(path.toSchemaPathPattern().toString(), "/one/.*/two/.*");
         path = ZPath.parse("/one/two/three");
-        Assert.assertEquals(path.toSchemaPathPattern().toString(), "/one/two/three");
+        assertEquals(path.toSchemaPathPattern().toString(), "/one/two/three");
         path = ZPath.parseWithIds("/one/{id}/three");
-        Assert.assertEquals(path.toSchemaPathPattern().toString(), "/one/.*/three");
+        assertEquals(path.toSchemaPathPattern().toString(), "/one/.*/three");
         path = ZPath.parseWithIds("/{id}/{id}/three");
-        Assert.assertEquals(path.toSchemaPathPattern().toString(), "/.*/.*/three");
+        assertEquals(path.toSchemaPathPattern().toString(), "/.*/.*/three");
     }
 
     @Test
-    public void testCustomIds()
-    {
-        Assert.assertEquals(ZPath.parseWithIds("/a/{a}/bee/{bee}/c/{c}").toString(), "/a/{a}/bee/{bee}/c/{c}");
-        Assert.assertEquals(ZPath.from("a", parameter(), "b", parameter()).toString(), "/a/{id}/b/{id}");
-        Assert.assertEquals(ZPath.from("a", parameter("foo"), "b", parameter("bar")).toString(), "/a/{foo}/b/{bar}");
+    public void testCustomIds() {
+        assertEquals(ZPath.parseWithIds("/a/{a}/bee/{bee}/c/{c}").toString(), "/a/{a}/bee/{bee}/c/{c}");
+        assertEquals(ZPath.from("a", parameter(), "b", parameter()).toString(), "/a/{id}/b/{id}");
+        assertEquals(ZPath.from("a", parameter("foo"), "b", parameter("bar")).toString(), "/a/{foo}/b/{bar}");
     }
 
     @Test
-    public void testPartialResolution()
-    {
+    public void testPartialResolution() {
         ZPath path = ZPath.parseWithIds("/one/{1}/two/{2}");
-        Assert.assertFalse(path.parent().isResolved());
-        Assert.assertFalse(path.parent().parent().isResolved());
-        Assert.assertTrue(path.parent().parent().parent().isResolved());
-        Assert.assertFalse(path.isResolved());
+        assertFalse(path.parent().isResolved());
+        assertFalse(path.parent().parent().isResolved());
+        assertTrue(path.parent().parent().parent().isResolved());
+        assertFalse(path.isResolved());
 
         path = path.resolved("p1");
-        Assert.assertFalse(path.isResolved());
-        Assert.assertTrue(path.parent().isResolved());
-        Assert.assertEquals(path.toString(), "/one/p1/two/{2}");
+        assertFalse(path.isResolved());
+        assertTrue(path.parent().isResolved());
+        assertEquals(path.toString(), "/one/p1/two/{2}");
 
         path = path.resolved("p2");
-        Assert.assertTrue(path.isResolved());
-        Assert.assertEquals(path.toString(), "/one/p1/two/p2");
+        assertTrue(path.isResolved());
+        assertEquals(path.toString(), "/one/p1/two/p2");
     }
 }

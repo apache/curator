@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -19,32 +19,16 @@
 
 package org.apache.curator.framework.recipes.cache;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.curator.utils.PathUtils.validatePath;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.WatcherRemoveCuratorFramework;
-import org.apache.curator.framework.api.BackgroundCallback;
-import org.apache.curator.framework.api.CuratorEvent;
-import org.apache.curator.framework.api.UnhandledErrorListener;
-import org.apache.curator.framework.listen.Listenable;
-import org.apache.curator.framework.listen.ListenerContainer;
-import org.apache.curator.framework.state.ConnectionState;
-import org.apache.curator.framework.state.ConnectionStateListener;
-import org.apache.curator.utils.PathUtils;
-import org.apache.curator.utils.ThreadUtils;
-import org.apache.curator.utils.ZKPaths;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.data.Stat;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -56,9 +40,28 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-import static org.apache.curator.utils.PathUtils.validatePath;
+import java.util.function.Supplier;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.WatcherRemoveCuratorFramework;
+import org.apache.curator.framework.api.BackgroundCallback;
+import org.apache.curator.framework.api.BackgroundPathable;
+import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.framework.api.Pathable;
+import org.apache.curator.framework.api.UnhandledErrorListener;
+import org.apache.curator.framework.api.Watchable;
+import org.apache.curator.framework.listen.Listenable;
+import org.apache.curator.framework.listen.StandardListenerManager;
+import org.apache.curator.framework.state.ConnectionState;
+import org.apache.curator.framework.state.ConnectionStateListener;
+import org.apache.curator.utils.PathUtils;
+import org.apache.curator.utils.ThreadUtils;
+import org.apache.curator.utils.ZKPaths;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.data.Stat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A utility that attempts to keep all data from all children of a ZK path locally cached. This class
@@ -68,15 +71,17 @@ import static org.apache.curator.utils.PathUtils.validatePath;
  * <p><b>IMPORTANT</b> - it's not possible to stay transactionally in sync. Users of this class must
  * be prepared for false-positives and false-negatives. Additionally, always use the version number
  * when updating data to avoid overwriting another process' change.</p>
+ *
+ * @deprecated replace by {@link org.apache.curator.framework.recipes.cache.CuratorCache}
  */
-public class TreeCache implements Closeable
-{
+@Deprecated
+public class TreeCache implements Closeable {
     private static final Logger LOG = LoggerFactory.getLogger(TreeCache.class);
     private final boolean createParentNodes;
+    private final boolean disableZkWatches;
     private final TreeCacheSelector selector;
 
-    public static final class Builder
-    {
+    public static final class Builder {
         private final CuratorFramework client;
         private final String path;
         private boolean cacheData = true;
@@ -84,10 +89,10 @@ public class TreeCache implements Closeable
         private ExecutorService executorService = null;
         private int maxDepth = Integer.MAX_VALUE;
         private boolean createParentNodes = false;
+        private boolean disableZkWatches = false;
         private TreeCacheSelector selector = new DefaultTreeCacheSelector();
 
-        private Builder(CuratorFramework client, String path)
-        {
+        private Builder(CuratorFramework client, String path) {
             this.client = checkNotNull(client);
             this.path = validatePath(path);
         }
@@ -95,21 +100,27 @@ public class TreeCache implements Closeable
         /**
          * Builds the {@link TreeCache} based on configured values.
          */
-        public TreeCache build()
-        {
+        public TreeCache build() {
             ExecutorService executor = executorService;
-            if ( executor == null )
-            {
-                executor = Executors.newSingleThreadExecutor(defaultThreadFactory);
+            if (executor == null) {
+                executor = Executors.newSingleThreadExecutor(defaultThreadFactorySupplier.get());
             }
-            return new TreeCache(client, path, cacheData, dataIsCompressed, maxDepth, executor, createParentNodes, selector);
+            return new TreeCache(
+                    client,
+                    path,
+                    cacheData,
+                    dataIsCompressed,
+                    maxDepth,
+                    executor,
+                    createParentNodes,
+                    disableZkWatches,
+                    selector);
         }
 
         /**
          * Sets whether or not to cache byte data per node; default {@code true}.
          */
-        public Builder setCacheData(boolean cacheData)
-        {
+        public Builder setCacheData(boolean cacheData) {
             this.cacheData = cacheData;
             return this;
         }
@@ -117,8 +128,7 @@ public class TreeCache implements Closeable
         /**
          * Sets whether or to decompress node data; default {@code false}.
          */
-        public Builder setDataIsCompressed(boolean dataIsCompressed)
-        {
+        public Builder setDataIsCompressed(boolean dataIsCompressed) {
             this.dataIsCompressed = dataIsCompressed;
             return this;
         }
@@ -126,16 +136,14 @@ public class TreeCache implements Closeable
         /**
          * Sets the executor to publish events; a default executor will be created if not specified.
          */
-        public Builder setExecutor(ThreadFactory threadFactory)
-        {
+        public Builder setExecutor(ThreadFactory threadFactory) {
             return setExecutor(Executors.newSingleThreadExecutor(threadFactory));
         }
 
         /**
          * Sets the executor to publish events; a default executor will be created if not specified.
          */
-        public Builder setExecutor(ExecutorService executorService)
-        {
+        public Builder setExecutor(ExecutorService executorService) {
             this.executorService = checkNotNull(executorService);
             return this;
         }
@@ -146,8 +154,7 @@ public class TreeCache implements Closeable
          * root node and its immediate children (kind of like {@link PathChildrenCache}.
          * Default: {@code Integer.MAX_VALUE}
          */
-        public Builder setMaxDepth(int maxDepth)
-        {
+        public Builder setMaxDepth(int maxDepth) {
             this.maxDepth = maxDepth;
             return this;
         }
@@ -159,9 +166,19 @@ public class TreeCache implements Closeable
          * @param createParentNodes true to create parent nodes
          * @return this for chaining
          */
-        public Builder setCreateParentNodes(boolean createParentNodes)
-        {
+        public Builder setCreateParentNodes(boolean createParentNodes) {
             this.createParentNodes = createParentNodes;
+            return this;
+        }
+
+        /**
+         * By default, TreeCache creates {@link org.apache.zookeeper.ZooKeeper} watches for every created path.
+         * Change this behavior with this method.
+         * @param disableZkWatches true to disable zk watches
+         * @return this for chaining
+         */
+        public Builder disableZkWatches(boolean disableZkWatches) {
+            this.disableZkWatches = disableZkWatches;
             return this;
         }
 
@@ -171,8 +188,7 @@ public class TreeCache implements Closeable
          * @param selector new selector
          * @return this for chaining
          */
-        public Builder setSelector(TreeCacheSelector selector)
-        {
+        public Builder setSelector(TreeCacheSelector selector) {
             this.selector = selector;
             return this;
         }
@@ -191,41 +207,38 @@ public class TreeCache implements Closeable
      *               the server
      * @return a new builder
      */
-    public static Builder newBuilder(CuratorFramework client, String path)
-    {
+    public static Builder newBuilder(CuratorFramework client, String path) {
         return new Builder(client, path);
     }
 
     private static final ChildData DEAD = new ChildData("/", null, null);
 
-    private static boolean isLive(ChildData cd)
-    {
+    static boolean isLive(ChildData cd) {
         return cd != null && cd != DEAD;
     }
 
-    private static final AtomicReferenceFieldUpdater<TreeNode, ChildData> childDataUpdater = AtomicReferenceFieldUpdater.newUpdater(TreeNode.class, ChildData.class, "childData");
+    private static final AtomicReferenceFieldUpdater<TreeNode, ChildData> childDataUpdater =
+            AtomicReferenceFieldUpdater.newUpdater(TreeNode.class, ChildData.class, "childData");
 
-    private static final AtomicReferenceFieldUpdater<TreeNode, ConcurrentMap<String, TreeNode>> childrenUpdater = (AtomicReferenceFieldUpdater)AtomicReferenceFieldUpdater.newUpdater(TreeNode.class, ConcurrentMap.class, "children");
+    private static final AtomicReferenceFieldUpdater<TreeNode, ConcurrentMap<String, TreeNode>> childrenUpdater =
+            (AtomicReferenceFieldUpdater)
+                    AtomicReferenceFieldUpdater.newUpdater(TreeNode.class, ConcurrentMap.class, "children");
 
-    private final class TreeNode implements Watcher, BackgroundCallback
-    {
+    final class TreeNode implements Watcher, BackgroundCallback {
         volatile ChildData childData;
         final TreeNode parent;
         final String path;
         volatile ConcurrentMap<String, TreeNode> children;
         final int depth;
 
-        TreeNode(String path, TreeNode parent)
-        {
+        TreeNode(String path, TreeNode parent) {
             this.path = path;
             this.parent = parent;
             this.depth = parent == null ? 0 : parent.depth + 1;
         }
 
-        private void refresh() throws Exception
-        {
-            if ((depth < maxDepth) && selector.traverseChildren(path))
-            {
+        private void refresh() throws Exception {
+            if ((depth < maxDepth) && selector.traverseChildren(path)) {
                 outstandingOps.addAndGet(2);
                 doRefreshData();
                 doRefreshChildren();
@@ -234,256 +247,221 @@ public class TreeCache implements Closeable
             }
         }
 
-        private void refreshChildren() throws Exception
-        {
-            if ((depth < maxDepth) && selector.traverseChildren(path))
-            {
+        private void refreshChildren() throws Exception {
+            if ((depth < maxDepth) && selector.traverseChildren(path)) {
                 outstandingOps.incrementAndGet();
                 doRefreshChildren();
             }
         }
 
-        private void refreshData() throws Exception
-        {
+        private void refreshData() throws Exception {
             outstandingOps.incrementAndGet();
             doRefreshData();
         }
 
-        private void doRefreshChildren() throws Exception
-        {
-            if ( treeState.get() == TreeState.STARTED )
-            {
-                client.getChildren().usingWatcher(this).inBackground(this).forPath(path);
+        private void doRefreshChildren() throws Exception {
+            if (treeState.get() == TreeState.STARTED) {
+                maybeWatch(client.getChildren()).forPath(path);
             }
         }
 
-        private void doRefreshData() throws Exception
-        {
-            if ( treeState.get() == TreeState.STARTED )
-            {
-                if ( dataIsCompressed )
-                {
-                    client.getData().decompressed().usingWatcher(this).inBackground(this).forPath(path);
-                }
-                else
-                {
-                    client.getData().usingWatcher(this).inBackground(this).forPath(path);
+        private void doRefreshData() throws Exception {
+            if (treeState.get() == TreeState.STARTED) {
+                if (dataIsCompressed) {
+                    maybeWatch(client.getData().decompressed()).forPath(path);
+                } else {
+                    maybeWatch(client.getData()).forPath(path);
                 }
             }
         }
 
-        void wasReconnected() throws Exception
-        {
+        private <T, P extends Watchable<BackgroundPathable<T>> & BackgroundPathable<T>> Pathable<T> maybeWatch(
+                P dataBuilder) {
+            if (disableZkWatches) {
+                return dataBuilder.inBackground(this);
+            } else {
+                return dataBuilder.usingWatcher(this).inBackground(this);
+            }
+        }
+
+        void wasReconnected() throws Exception {
             refresh();
             ConcurrentMap<String, TreeNode> childMap = children;
-            if ( childMap != null )
-            {
-                for ( TreeNode child : childMap.values() )
-                {
+            if (childMap != null) {
+                for (TreeNode child : childMap.values()) {
                     child.wasReconnected();
                 }
             }
         }
 
-        void wasCreated() throws Exception
-        {
+        void wasCreated() throws Exception {
             refresh();
         }
 
-        void wasDeleted() throws Exception
-        {
+        void wasDeleted() throws Exception {
             ChildData oldChildData = childDataUpdater.getAndSet(this, DEAD);
-            if ( oldChildData == DEAD )
-            {
+            if (oldChildData == DEAD) {
                 return;
             }
             ConcurrentMap<String, TreeNode> childMap = childrenUpdater.getAndSet(this, null);
-            if ( childMap != null )
-            {
+            if (childMap != null) {
                 ArrayList<TreeNode> childCopy = new ArrayList<TreeNode>(childMap.values());
                 childMap.clear();
-                for ( TreeNode child : childCopy )
-                {
+                for (TreeNode child : childCopy) {
                     child.wasDeleted();
                 }
             }
 
-            if ( treeState.get() == TreeState.CLOSED )
-            {
+            if (treeState.get() == TreeState.CLOSED) {
                 return;
             }
 
-            if ( isLive(oldChildData) )
-            {
-                publishEvent(TreeCacheEvent.Type.NODE_REMOVED, oldChildData);
+            if (isLive(oldChildData)) {
+                publishEvent(TreeCacheEvent.Type.NODE_REMOVED, oldChildData, null);
             }
 
-            if ( parent == null )
-            {
+            if (parent == null) {
                 // Root node; use an exist query to watch for existence.
-                client.checkExists().usingWatcher(this).inBackground(this).forPath(path);
-            }
-            else
-            {
+                maybeWatch(client.checkExists()).forPath(path);
+            } else {
                 // Remove from parent if we're currently a child
                 ConcurrentMap<String, TreeNode> parentChildMap = parent.children;
-                if ( parentChildMap != null )
-                {
+                if (parentChildMap != null) {
                     parentChildMap.remove(ZKPaths.getNodeFromPath(path), this);
                 }
             }
         }
 
         @Override
-        public void process(WatchedEvent event)
-        {
+        public void process(WatchedEvent event) {
             LOG.debug("process: {}", event);
-            try
-            {
-                switch ( event.getType() )
-                {
-                case NodeCreated:
-                    Preconditions.checkState(parent == null, "unexpected NodeCreated on non-root node");
-                    wasCreated();
-                    break;
-                case NodeChildrenChanged:
-                    refreshChildren();
-                    break;
-                case NodeDataChanged:
-                    refreshData();
-                    break;
-                case NodeDeleted:
-                    wasDeleted();
-                    break;
+            try {
+                switch (event.getType()) {
+                    case NodeCreated:
+                        Preconditions.checkState(parent == null, "unexpected NodeCreated on non-root node");
+                        wasCreated();
+                        break;
+                    case NodeChildrenChanged:
+                        refreshChildren();
+                        break;
+                    case NodeDataChanged:
+                        refreshData();
+                        break;
+                    case NodeDeleted:
+                        wasDeleted();
+                        break;
                 }
-            }
-            catch ( Exception e )
-            {
+            } catch (Exception e) {
                 ThreadUtils.checkInterrupted(e);
                 handleException(e);
             }
         }
 
         @Override
-        public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
-        {
+        public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
             LOG.debug("processResult: {}", event);
             Stat newStat = event.getStat();
-            switch ( event.getType() )
-            {
-            case EXISTS:
-                Preconditions.checkState(parent == null, "unexpected EXISTS on non-root node");
-                if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
-                {
-                    childDataUpdater.compareAndSet(this, DEAD, null);
-                    wasCreated();
-                }
-                break;
-            case CHILDREN:
-                if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
-                {
-                    ChildData oldChildData = childData;
-                    //TODO consider doing update of cversion, pzxid, numChildren only
-                    if ( isLive(oldChildData) && oldChildData.getStat().getMzxid() == newStat.getMzxid() )
-                    {
-                        // Only update stat if mzxid is same, otherwise we might obscure
-                        // GET_DATA event updates.
-                        childDataUpdater.compareAndSet(this, oldChildData, new ChildData(oldChildData.getPath(), newStat, oldChildData.getData()));
+            switch (event.getType()) {
+                case EXISTS:
+                    Preconditions.checkState(parent == null, "unexpected EXISTS on non-root node");
+                    if (event.getResultCode() == KeeperException.Code.OK.intValue()) {
+                        childDataUpdater.compareAndSet(this, DEAD, null);
+                        wasCreated();
                     }
-
-                    if ( event.getChildren().isEmpty() )
-                    {
-                        break;
-                    }
-
-                    ConcurrentMap<String, TreeNode> childMap = children;
-                    while ( childMap == null )
-                    {
-                        childMap = Maps.newConcurrentMap();
-                        if ( !childrenUpdater.compareAndSet(this, null, childMap) )
-                        {
-                            childMap = children;
+                    break;
+                case CHILDREN:
+                    if (event.getResultCode() == KeeperException.Code.OK.intValue()) {
+                        ChildData oldChildData = childData;
+                        // TODO consider doing update of cversion, pzxid, numChildren only
+                        if (isLive(oldChildData) && oldChildData.getStat().getMzxid() == newStat.getMzxid()) {
+                            // Only update stat if mzxid is same, otherwise we might obscure
+                            // GET_DATA event updates.
+                            childDataUpdater.compareAndSet(
+                                    this,
+                                    oldChildData,
+                                    new ChildData(oldChildData.getPath(), newStat, oldChildData.getData()));
                         }
-                    }
 
-                    // Present new children in sorted order for test determinism.
-                    List<String> newChildren = new ArrayList<String>();
-                    for ( String child : event.getChildren() )
-                    {
-                        if ( !childMap.containsKey(child) && selector.acceptChild(ZKPaths.makePath(path, child)) )
-                        {
-                            newChildren.add(child);
-                        }
-                    }
-
-                    Collections.sort(newChildren);
-                    for ( String child : newChildren )
-                    {
-                        String fullPath = ZKPaths.makePath(path, child);
-                        TreeNode node = new TreeNode(fullPath, this);
-                        if ( childMap.putIfAbsent(child, node) == null )
-                        {
-                            node.wasCreated();
-                        }
-                    }
-                }
-                else if ( event.getResultCode() == KeeperException.Code.NONODE.intValue() )
-                {
-                    wasDeleted();
-                }
-                break;
-            case GET_DATA:
-                if ( event.getResultCode() == KeeperException.Code.OK.intValue() )
-                {
-                    String eventPath = event.getPath();
-                    ChildData toPublish = new ChildData(eventPath, newStat, event.getData());
-                    ChildData toUpdate = cacheData ? toPublish : new ChildData(eventPath, newStat, null);
-                    while ( true )
-                    {
-                        final ChildData oldChildData = childData;
-                        // Ignore this event if we've already processed a newer update for this node.
-                        if ( isLive(oldChildData) && newStat.getMzxid() <= oldChildData.getStat().getMzxid() )
-                        {
+                        if (event.getChildren().isEmpty()) {
                             break;
                         }
-                        // Non-root nodes are not allowed to transition from dead -> live;
-                        // make sure this isn't a delayed response that came in after death.
-                        if ( parent != null && oldChildData == DEAD )
-                        {
-                            break;
+
+                        ConcurrentMap<String, TreeNode> childMap = children;
+                        while (childMap == null) {
+                            childMap = Maps.newConcurrentMap();
+                            if (!childrenUpdater.compareAndSet(this, null, childMap)) {
+                                childMap = children;
+                            }
                         }
-                        if ( childDataUpdater.compareAndSet(this, oldChildData, toUpdate) )
-                        {
-                            publishEvent(isLive(oldChildData) ? TreeCacheEvent.Type.NODE_UPDATED : TreeCacheEvent.Type.NODE_ADDED, toPublish);
-                            break;
+
+                        // Present new children in sorted order for test determinism.
+                        List<String> newChildren = new ArrayList<String>();
+                        for (String child : event.getChildren()) {
+                            if (!childMap.containsKey(child) && selector.acceptChild(ZKPaths.makePath(path, child))) {
+                                newChildren.add(child);
+                            }
                         }
+
+                        Collections.sort(newChildren);
+                        for (String child : newChildren) {
+                            String fullPath = ZKPaths.makePath(path, child);
+                            TreeNode node = new TreeNode(fullPath, this);
+                            if (childMap.putIfAbsent(child, node) == null) {
+                                node.wasCreated();
+                            }
+                        }
+                    } else if (event.getResultCode() == KeeperException.Code.NONODE.intValue()) {
+                        wasDeleted();
                     }
-                }
-                else if ( event.getResultCode() == KeeperException.Code.NONODE.intValue() )
-                {
-                    wasDeleted();
-                }
-                break;
-            default:
-                // An unknown event, probably an error of some sort like connection loss.
-                LOG.info(String.format("Unknown event %s", event));
-                // Don't produce an initialized event on error; reconnect can fix this.
-                outstandingOps.decrementAndGet();
-                return;
+                    break;
+                case GET_DATA:
+                    if (event.getResultCode() == KeeperException.Code.OK.intValue()) {
+                        String eventPath = event.getPath();
+                        ChildData toPublish = new ChildData(eventPath, newStat, event.getData());
+                        ChildData toUpdate = cacheData ? toPublish : new ChildData(eventPath, newStat, null);
+                        while (true) {
+                            final ChildData oldChildData = childData;
+                            // Ignore this event if we've already processed a newer update for this node.
+                            if (isLive(oldChildData)
+                                    && newStat.getMzxid()
+                                            <= oldChildData.getStat().getMzxid()) {
+                                break;
+                            }
+                            // Non-root nodes are not allowed to transition from dead -> live;
+                            // make sure this isn't a delayed response that came in after death.
+                            if (parent != null && oldChildData == DEAD) {
+                                break;
+                            }
+                            if (childDataUpdater.compareAndSet(this, oldChildData, toUpdate)) {
+                                if (isLive(oldChildData)) {
+                                    publishEvent(TreeCacheEvent.Type.NODE_UPDATED, toPublish, oldChildData);
+                                } else {
+                                    publishEvent(TreeCacheEvent.Type.NODE_ADDED, toPublish, null);
+                                }
+                                break;
+                            }
+                        }
+                    } else if (event.getResultCode() == KeeperException.Code.NONODE.intValue()) {
+                        wasDeleted();
+                    }
+                    break;
+                default:
+                    // An unknown event, probably an error of some sort like connection loss.
+                    LOG.info(String.format("Unknown event %s", event));
+                    // Don't produce an initialized event on error; reconnect can fix this.
+                    outstandingOps.decrementAndGet();
+                    return;
             }
 
-            if ( outstandingOps.decrementAndGet() == 0 )
-            {
-                if ( isInitialized.compareAndSet(false, true) )
-                {
+            if (outstandingOps.decrementAndGet() == 0) {
+                if (isInitialized.compareAndSet(false, true)) {
                     publishEvent(TreeCacheEvent.Type.INITIALIZED);
                 }
             }
         }
     }
 
-    private enum TreeState
-    {
+    private enum TreeState {
         LATENT,
         STARTED,
         CLOSED
@@ -505,20 +483,19 @@ public class TreeCache implements Closeable
     private final boolean cacheData;
     private final boolean dataIsCompressed;
     private final int maxDepth;
-    private final ListenerContainer<TreeCacheListener> listeners = new ListenerContainer<TreeCacheListener>();
-    private final ListenerContainer<UnhandledErrorListener> errorListeners = new ListenerContainer<UnhandledErrorListener>();
+    private final StandardListenerManager<TreeCacheListener> listeners = StandardListenerManager.standard();
+    private final StandardListenerManager<UnhandledErrorListener> errorListeners = StandardListenerManager.standard();
     private final AtomicReference<TreeState> treeState = new AtomicReference<TreeState>(TreeState.LATENT);
 
-    private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
-    {
+    private final ConnectionStateListener connectionStateListener = new ConnectionStateListener() {
         @Override
-        public void stateChanged(CuratorFramework client, ConnectionState newState)
-        {
+        public void stateChanged(CuratorFramework client, ConnectionState newState) {
             handleStateChange(newState);
         }
     };
 
-    static final ThreadFactory defaultThreadFactory = ThreadUtils.newThreadFactory("TreeCache");
+    private static final Supplier<ThreadFactory> defaultThreadFactorySupplier =
+            () -> ThreadUtils.newThreadFactory("TreeCache");
 
     /**
      * Create a TreeCache for the given client and path with default options.
@@ -533,9 +510,17 @@ public class TreeCache implements Closeable
      *               the server
      * @see #newBuilder(CuratorFramework, String)
      */
-    public TreeCache(CuratorFramework client, String path)
-    {
-        this(client, path, true, false, Integer.MAX_VALUE, Executors.newSingleThreadExecutor(defaultThreadFactory), false, new DefaultTreeCacheSelector());
+    public TreeCache(CuratorFramework client, String path) {
+        this(
+                client,
+                path,
+                true,
+                false,
+                Integer.MAX_VALUE,
+                Executors.newSingleThreadExecutor(defaultThreadFactorySupplier.get()),
+                false,
+                false,
+                new DefaultTreeCacheSelector());
     }
 
     /**
@@ -545,10 +530,19 @@ public class TreeCache implements Closeable
      * @param dataIsCompressed if true, data in the path is compressed
      * @param executorService  Closeable ExecutorService to use for the TreeCache's background thread
      * @param createParentNodes true to create parent nodes as containers
+     * @param disableZkWatches true to disable Zookeeper watches
      * @param selector         the selector to use
      */
-    TreeCache(CuratorFramework client, String path, boolean cacheData, boolean dataIsCompressed, int maxDepth, final ExecutorService executorService, boolean createParentNodes, TreeCacheSelector selector)
-    {
+    TreeCache(
+            CuratorFramework client,
+            String path,
+            boolean cacheData,
+            boolean dataIsCompressed,
+            int maxDepth,
+            final ExecutorService executorService,
+            boolean createParentNodes,
+            boolean disableZkWatches,
+            TreeCacheSelector selector) {
         this.createParentNodes = createParentNodes;
         this.selector = Preconditions.checkNotNull(selector, "selector cannot be null");
         this.root = new TreeNode(validatePath(path), null);
@@ -557,6 +551,7 @@ public class TreeCache implements Closeable
         this.cacheData = cacheData;
         this.dataIsCompressed = dataIsCompressed;
         this.maxDepth = maxDepth;
+        this.disableZkWatches = disableZkWatches;
         this.executorService = Preconditions.checkNotNull(executorService, "executorService cannot be null");
     }
 
@@ -566,16 +561,13 @@ public class TreeCache implements Closeable
      * @return this
      * @throws Exception errors
      */
-    public TreeCache start() throws Exception
-    {
+    public TreeCache start() throws Exception {
         Preconditions.checkState(treeState.compareAndSet(TreeState.LATENT, TreeState.STARTED), "already started");
-        if ( createParentNodes )
-        {
+        if (createParentNodes) {
             client.createContainers(root.path);
         }
         client.getConnectionStateListenable().addListener(connectionStateListener);
-        if ( client.getZookeeperClient().isConnected() )
-        {
+        if (client.getZookeeperClient().isConnected()) {
             root.wasCreated();
         }
         return this;
@@ -585,20 +577,15 @@ public class TreeCache implements Closeable
      * Close/end the cache.
      */
     @Override
-    public void close()
-    {
-        if ( treeState.compareAndSet(TreeState.STARTED, TreeState.CLOSED) )
-        {
+    public void close() {
+        if (treeState.compareAndSet(TreeState.STARTED, TreeState.CLOSED)) {
             client.removeWatchers();
             client.getConnectionStateListenable().removeListener(connectionStateListener);
             listeners.clear();
             executorService.shutdown();
-            try
-            {
+            try {
                 root.wasDeleted();
-            }
-            catch ( Exception e )
-            {
+            } catch (Exception e) {
                 ThreadUtils.checkInterrupted(e);
                 handleException(e);
             }
@@ -610,8 +597,7 @@ public class TreeCache implements Closeable
      *
      * @return listenable
      */
-    public Listenable<TreeCacheListener> getListenable()
-    {
+    public Listenable<TreeCacheListener> getListenable() {
         return listeners;
     }
 
@@ -621,13 +607,11 @@ public class TreeCache implements Closeable
      * TODO: consider making public.
      */
     @VisibleForTesting
-    public Listenable<UnhandledErrorListener> getUnhandledErrorListenable()
-    {
+    public Listenable<UnhandledErrorListener> getUnhandledErrorListenable() {
         return errorListeners;
     }
 
-    private TreeNode find(String findPath)
-    {
+    private TreeNode find(String findPath) {
         PathUtils.validatePath(findPath);
         LinkedList<String> rootElements = new LinkedList<String>(ZKPaths.split(root.path));
         LinkedList<String> findElements = new LinkedList<String>(ZKPaths.split(findPath));
@@ -648,13 +632,11 @@ public class TreeCache implements Closeable
         while (!findElements.isEmpty()) {
             String nextFind = findElements.removeFirst();
             ConcurrentMap<String, TreeNode> map = current.children;
-            if ( map == null )
-            {
+            if (map == null) {
                 return null;
             }
             current = map.get(nextFind);
-            if ( current == null )
-            {
+            if (current == null) {
                 return null;
             }
         }
@@ -669,28 +651,21 @@ public class TreeCache implements Closeable
      * @param fullPath full path to the node to check
      * @return a possibly-empty list of children if the node is alive, or null
      */
-    public Map<String, ChildData> getCurrentChildren(String fullPath)
-    {
+    public Map<String, ChildData> getCurrentChildren(String fullPath) {
         TreeNode node = find(fullPath);
-        if ( node == null || !isLive(node.childData) )
-        {
+        if (node == null || !isLive(node.childData)) {
             return null;
         }
         ConcurrentMap<String, TreeNode> map = node.children;
         Map<String, ChildData> result;
-        if ( map == null )
-        {
+        if (map == null) {
             result = ImmutableMap.of();
-        }
-        else
-        {
+        } else {
             ImmutableMap.Builder<String, ChildData> builder = ImmutableMap.builder();
-            for ( Map.Entry<String, TreeNode> entry : map.entrySet() )
-            {
+            for (Map.Entry<String, TreeNode> entry : map.entrySet()) {
                 ChildData childData = entry.getValue().childData;
                 // Double-check liveness after retrieving data.
-                if ( isLive(childData) )
-                {
+                if (isLive(childData)) {
                     builder.put(entry.getKey(), childData);
                 }
             }
@@ -709,34 +684,57 @@ public class TreeCache implements Closeable
      * @param fullPath full path to the node to check
      * @return data if the node is alive, or null
      */
-    public ChildData getCurrentData(String fullPath)
-    {
+    public ChildData getCurrentData(String fullPath) {
         TreeNode node = find(fullPath);
-        if ( node == null )
-        {
+        if (node == null) {
             return null;
         }
         ChildData result = node.childData;
         return isLive(result) ? result : null;
     }
 
-    private void callListeners(final TreeCacheEvent event)
-    {
-        listeners.forEach(new Function<TreeCacheListener, Void>()
-        {
-            @Override
-            public Void apply(TreeCacheListener listener)
-            {
-                try
-                {
-                    listener.childEvent(client, event);
+    /**
+     * Return an iterator over all nodes in the cache. There are no
+     * guarantees of accuracy; this is merely the most recent view of the data.
+     *
+     * @return a possibly-empty iterator of nodes in the cache
+     */
+    public Iterator<ChildData> iterator() {
+        return new TreeCacheIterator(root);
+    }
+
+    /**
+     * Return the number of nodes in the cache. There are no
+     * guarantees of accuracy; this is merely the most recent view of the data.
+     *
+     * @return size
+     */
+    public int size() {
+        return size(root);
+    }
+
+    private int size(TreeNode node) {
+        int size;
+        if (isLive(node.childData)) {
+            size = 1;
+            if (node.children != null) {
+                for (TreeNode child : node.children.values()) {
+                    size += size(child);
                 }
-                catch ( Exception e )
-                {
-                    ThreadUtils.checkInterrupted(e);
-                    handleException(e);
-                }
-                return null;
+            }
+        } else {
+            size = 0;
+        }
+        return size;
+    }
+
+    private void callListeners(final TreeCacheEvent event) {
+        listeners.forEach(listener -> {
+            try {
+                listener.childEvent(client, event);
+            } catch (Exception e) {
+                ThreadUtils.checkInterrupted(e);
+                handleException(e);
             }
         });
     }
@@ -744,100 +742,70 @@ public class TreeCache implements Closeable
     /**
      * Send an exception to any listeners, or else log the error if there are none.
      */
-    private void handleException(final Throwable e)
-    {
-        if ( errorListeners.size() == 0 )
-        {
+    private void handleException(final Throwable e) {
+        if (errorListeners.size() == 0) {
             LOG.error("", e);
-        }
-        else
-        {
-            errorListeners.forEach(new Function<UnhandledErrorListener, Void>()
-            {
-                @Override
-                public Void apply(UnhandledErrorListener listener)
-                {
-                    try
-                    {
-                        listener.unhandledError("", e);
-                    }
-                    catch ( Exception e )
-                    {
-                        ThreadUtils.checkInterrupted(e);
-                        LOG.error("Exception handling exception", e);
-                    }
-                    return null;
+        } else {
+            errorListeners.forEach(listener -> {
+                try {
+                    listener.unhandledError("", e);
+                } catch (Exception e2) {
+                    ThreadUtils.checkInterrupted(e2);
+                    LOG.error("Exception handling exception", e2);
                 }
             });
         }
     }
 
-    private void handleStateChange(ConnectionState newState)
-    {
-        switch ( newState )
-        {
-        case SUSPENDED:
-            publishEvent(TreeCacheEvent.Type.CONNECTION_SUSPENDED);
-            break;
+    private void handleStateChange(ConnectionState newState) {
+        switch (newState) {
+            case SUSPENDED:
+                publishEvent(TreeCacheEvent.Type.CONNECTION_SUSPENDED);
+                break;
 
-        case LOST:
-            isInitialized.set(false);
-            publishEvent(TreeCacheEvent.Type.CONNECTION_LOST);
-            break;
+            case LOST:
+                isInitialized.set(false);
+                publishEvent(TreeCacheEvent.Type.CONNECTION_LOST);
+                break;
 
-        case CONNECTED:
-            try
-            {
-                root.wasCreated();
-            }
-            catch ( Exception e )
-            {
-                ThreadUtils.checkInterrupted(e);
-                handleException(e);
-            }
-            break;
+            case CONNECTED:
+                try {
+                    root.wasCreated();
+                } catch (Exception e) {
+                    ThreadUtils.checkInterrupted(e);
+                    handleException(e);
+                }
+                break;
 
-        case RECONNECTED:
-            try
-            {
-                root.wasReconnected();
-                publishEvent(TreeCacheEvent.Type.CONNECTION_RECONNECTED);
-            }
-            catch ( Exception e )
-            {
-                ThreadUtils.checkInterrupted(e);
-                handleException(e);
-            }
-            break;
+            case RECONNECTED:
+                try {
+                    root.wasReconnected();
+                    publishEvent(TreeCacheEvent.Type.CONNECTION_RECONNECTED);
+                } catch (Exception e) {
+                    ThreadUtils.checkInterrupted(e);
+                    handleException(e);
+                }
+                break;
         }
     }
 
-    private void publishEvent(TreeCacheEvent.Type type)
-    {
+    private void publishEvent(TreeCacheEvent.Type type) {
         publishEvent(new TreeCacheEvent(type, null));
     }
 
-    private void publishEvent(TreeCacheEvent.Type type, ChildData data)
-    {
-        publishEvent(new TreeCacheEvent(type, data));
+    private void publishEvent(TreeCacheEvent.Type type, ChildData data, ChildData oldData) {
+        publishEvent(new TreeCacheEvent(type, data, oldData));
     }
 
-    private void publishEvent(final TreeCacheEvent event)
-    {
-        if ( treeState.get() != TreeState.CLOSED )
-        {
+    private void publishEvent(final TreeCacheEvent event) {
+        if (treeState.get() != TreeState.CLOSED) {
             LOG.debug("publishEvent: {}", event);
-            executorService.submit(new Runnable()
-            {
+            executorService.submit(new Runnable() {
                 @Override
-                public void run()
-                {
-                    try
-                    {
+                public void run() {
+                    try {
                         callListeners(event);
-                    }
-                    catch ( Exception e )
-                    {
+                    } catch (Exception e) {
                         ThreadUtils.checkInterrupted(e);
                         handleException(e);
                     }

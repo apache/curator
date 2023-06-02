@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,50 +16,43 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.imps;
 
 import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.utils.InternalACLProvider;
 import org.apache.zookeeper.data.ACL;
-import java.util.List;
 
-class ACLing implements InternalACLProvider
-{
-    private final List<ACL>     aclList;
-    private final ACLProvider   aclProvider;
-    private final boolean       applyToParents;
+class ACLing implements InternalACLProvider {
+    private final List<ACL> aclList;
+    private final ACLProvider aclProvider;
+    private final boolean applyToParents;
 
-    ACLing(ACLProvider aclProvider)
-    {
+    ACLing(ACLProvider aclProvider) {
         this(aclProvider, null);
     }
 
-    ACLing(ACLProvider aclProvider, List<ACL> aclList)
-    {
+    ACLing(ACLProvider aclProvider, List<ACL> aclList) {
         this(aclProvider, aclList, false);
     }
 
-    ACLing(ACLProvider aclProvider, List<ACL> aclList, boolean applyToParents)
-    {
+    ACLing(ACLProvider aclProvider, List<ACL> aclList, boolean applyToParents) {
         this.aclProvider = aclProvider;
         this.aclList = (aclList != null) ? ImmutableList.copyOf(aclList) : null;
         this.applyToParents = applyToParents;
     }
 
-    InternalACLProvider getACLProviderForParents()
-    {
+    InternalACLProvider getACLProviderForParents() {
         return applyToParents ? this : aclProvider;
     }
 
-    List<ACL> getAclList(String path)
-    {
-        if ( aclList != null ) return aclList;
-        if ( path != null )
-        {
+    List<ACL> getAclList(String path) {
+        if (aclList != null) return aclList;
+        if (path != null) {
             List<ACL> localAclList = aclProvider.getAclForPath(path);
-            if ( localAclList != null )
-            {
+            if (localAclList != null) {
                 return localAclList;
             }
         }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,13 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.api;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.Watcher;
 
-public enum CuratorEventType
-{
+public enum CuratorEventType {
     /**
      * Corresponds to {@link CuratorFramework#create()}
      */
@@ -96,5 +96,10 @@ public enum CuratorEventType
     /**
      * Event sent when client is being closed
      */
-    CLOSING
+    CLOSING,
+
+    /**
+     * Corresponds to {@link CuratorFramework#watches()}
+     */
+    ADD_WATCH
 }

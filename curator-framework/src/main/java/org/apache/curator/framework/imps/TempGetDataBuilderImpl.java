@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,62 +16,55 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.imps;
 
+import java.util.concurrent.Callable;
 import org.apache.curator.RetryLoop;
 import org.apache.curator.drivers.OperationTrace;
 import org.apache.curator.framework.api.Pathable;
 import org.apache.curator.framework.api.StatPathable;
 import org.apache.curator.framework.api.TempGetDataBuilder;
 import org.apache.zookeeper.data.Stat;
-import java.util.concurrent.Callable;
 
-class TempGetDataBuilderImpl implements TempGetDataBuilder
-{
-    private final CuratorFrameworkImpl  client;
-    private Stat                        responseStat;
-    private boolean                     decompress;
+class TempGetDataBuilderImpl implements TempGetDataBuilder {
+    private final CuratorFrameworkImpl client;
+    private Stat responseStat;
+    private boolean decompress;
 
-    TempGetDataBuilderImpl(CuratorFrameworkImpl client)
-    {
+    TempGetDataBuilderImpl(CuratorFrameworkImpl client) {
         this.client = client;
         responseStat = null;
         decompress = false;
     }
 
     @Override
-    public StatPathable<byte[]> decompressed()
-    {
+    public StatPathable<byte[]> decompressed() {
         decompress = true;
         return this;
     }
 
     @Override
-    public Pathable<byte[]> storingStatIn(Stat stat)
-    {
+    public Pathable<byte[]> storingStatIn(Stat stat) {
         responseStat = stat;
         return this;
     }
 
     @Override
-    public byte[] forPath(String path) throws Exception
-    {
-        final String    localPath = client.fixForNamespace(path);
+    public byte[] forPath(String path) throws Exception {
+        final String localPath = client.fixForNamespace(path);
 
-        OperationTrace       trace = client.getZookeeperClient().startAdvancedTracer("GetDataBuilderImpl-Foreground");
-        byte[]          responseData = RetryLoop.callWithRetry
-        (
-            client.getZookeeperClient(),
-            new Callable<byte[]>()
-            {
-                @Override
-                public byte[] call() throws Exception
-                {
-                    return client.getZooKeeper().getData(localPath, false, responseStat);
-                }
+        OperationTrace trace = client.getZookeeperClient().startAdvancedTracer("GetDataBuilderImpl-Foreground");
+        byte[] responseData = RetryLoop.callWithRetry(client.getZookeeperClient(), new Callable<byte[]>() {
+            @Override
+            public byte[] call() throws Exception {
+                return client.getZooKeeper().getData(localPath, false, responseStat);
             }
-        );
-        trace.setResponseBytesLength(responseData).setPath(path).setStat(responseStat).commit();
+        });
+        trace.setResponseBytesLength(responseData)
+                .setPath(path)
+                .setStat(responseStat)
+                .commit();
 
         return decompress ? client.getCompressionProvider().decompress(path, responseData) : responseData;
     }

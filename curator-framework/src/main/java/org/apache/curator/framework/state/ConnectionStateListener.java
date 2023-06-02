@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,17 +16,29 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.state;
 
 import org.apache.curator.framework.CuratorFramework;
 
-public interface ConnectionStateListener
-{
+public interface ConnectionStateListener {
     /**
      * Called when there is a state change in the connection
      *
      * @param client the client
      * @param newState the new state
      */
-    public void stateChanged(CuratorFramework client, ConnectionState newState);
+    void stateChanged(CuratorFramework client, ConnectionState newState);
+
+    /**
+     * ConnectionStateListener managers set via {@link org.apache.curator.framework.CuratorFrameworkFactory.Builder#connectionStateListenerManagerFactory(ConnectionStateListenerManagerFactory)}
+     * are allowed to proxy (etc.) ConnectionStateListeners as needed. If this method returns <code>true</code>
+     * the ConnectionStateListener manager must <em>not</em> proxy the listener as it's a vital internal
+     * listener used by Curator.
+     *
+     * @return true/false
+     */
+    default boolean doNotProxy() {
+        return false;
+    }
 }

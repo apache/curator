@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,14 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.imps;
 
 import org.apache.zookeeper.WatchedEvent;
 
-class NamespaceWatchedEvent extends WatchedEvent
-{
-    NamespaceWatchedEvent(CuratorFrameworkImpl client, WatchedEvent event)
-    {
+class NamespaceWatchedEvent extends WatchedEvent {
+    NamespaceWatchedEvent(CuratorFrameworkImpl client, WatchedEvent event) {
         super(event.getType(), event.getState(), client.unfixForNamespace(event.getPath()));
     }
 }

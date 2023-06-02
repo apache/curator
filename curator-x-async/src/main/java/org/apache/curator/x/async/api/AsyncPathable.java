@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,13 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async.api;
 
 /**
  * Terminal operation for various builders
  */
-public interface AsyncPathable<T>
-{
+public interface AsyncPathable<T> {
     /**
      * Commit the currently building operation using the given path
      * and invoke ZooKeeper

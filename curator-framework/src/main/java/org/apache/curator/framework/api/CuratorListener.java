@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.api;
 
 import org.apache.curator.framework.CuratorFramework;
@@ -23,8 +24,7 @@ import org.apache.curator.framework.CuratorFramework;
 /**
  * Receives notifications about errors and background events
  */
-public interface CuratorListener
-{
+public interface CuratorListener {
     /**
      * Called when a background task has completed or a watch has triggered
      *
@@ -32,5 +32,5 @@ public interface CuratorListener
      * @param event the event
      * @throws Exception any errors
      */
-    public void         eventReceived(CuratorFramework client, CuratorEvent event) throws Exception;
+    public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception;
 }

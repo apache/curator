@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.schema;
 
 import com.google.common.base.Function;
@@ -26,33 +27,28 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import org.apache.curator.framework.CuratorFramework;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import org.apache.curator.framework.CuratorFramework;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Collection of all schemas for a Curator instance
  */
-public class SchemaSet
-{
+public class SchemaSet {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final Map<String, Schema> schemas;
     private final Map<String, Schema> pathToSchemas;
     private final List<Schema> regexSchemas;
-    private final CacheLoader<String, Schema> cacheLoader = new CacheLoader<String, Schema>()
-    {
+    private final CacheLoader<String, Schema> cacheLoader = new CacheLoader<String, Schema>() {
         @Override
-        public Schema load(String path) throws Exception
-        {
-            for ( Schema schema : regexSchemas )
-            {
-                if ( schema.getPathRegex().matcher(path).matches() )
-                {
+        public Schema load(String path) throws Exception {
+            for (Schema schema : regexSchemas) {
+                if (schema.getPathRegex().matcher(path).matches()) {
                     log.debug("path -> {}", schema);
                     return schema;
                 }
@@ -60,13 +56,31 @@ public class SchemaSet
             return nullSchema;
         }
     };
-    private final LoadingCache<String, Schema> regexCache = CacheBuilder
-        .newBuilder()
-        .softValues()
-        .build(cacheLoader);
+    private final LoadingCache<String, Schema> regexCache =
+            CacheBuilder.newBuilder().softValues().build(cacheLoader);
 
-    private static final Schema nullSchema = new Schema("__null__", null, "", "Null schema", new DefaultSchemaValidator(), Schema.Allowance.CAN, Schema.Allowance.CAN, Schema.Allowance.CAN, true, ImmutableMap.<String, String>of());
-    private static final Schema defaultSchema = new Schema("__default__", null, "", "Default schema", new DefaultSchemaValidator(), Schema.Allowance.CAN, Schema.Allowance.CAN, Schema.Allowance.CAN, true, ImmutableMap.<String, String>of());
+    private static final Schema nullSchema = new Schema(
+            "__null__",
+            null,
+            "",
+            "Null schema",
+            new DefaultSchemaValidator(),
+            Schema.Allowance.CAN,
+            Schema.Allowance.CAN,
+            Schema.Allowance.CAN,
+            true,
+            ImmutableMap.<String, String>of());
+    private static final Schema defaultSchema = new Schema(
+            "__default__",
+            null,
+            "",
+            "Default schema",
+            new DefaultSchemaValidator(),
+            Schema.Allowance.CAN,
+            Schema.Allowance.CAN,
+            Schema.Allowance.CAN,
+            true,
+            ImmutableMap.<String, String>of());
     private final boolean useDefaultSchema;
 
     /**
@@ -74,13 +88,10 @@ public class SchemaSet
      *
      * @return default schema set
      */
-    public static SchemaSet getDefaultSchemaSet()
-    {
-        return new SchemaSet(Collections.<Schema>emptyList(), true)
-        {
+    public static SchemaSet getDefaultSchemaSet() {
+        return new SchemaSet(Collections.<Schema>emptyList(), true) {
             @Override
-            public String toDocumentation()
-            {
+            public String toDocumentation() {
                 return "Default schema";
             }
         };
@@ -96,29 +107,22 @@ public class SchemaSet
      * @param schemas the schemas for the set.
      * @param useDefaultSchema if true, return a default schema when there is no match. Otherwise, an exception is thrown
      */
-    public SchemaSet(List<Schema> schemas, boolean useDefaultSchema)
-    {
+    public SchemaSet(List<Schema> schemas, boolean useDefaultSchema) {
         schemas = Preconditions.checkNotNull(schemas, "schemas cannot be null");
 
         this.useDefaultSchema = useDefaultSchema;
-        this.schemas = Maps.uniqueIndex(schemas, new Function<Schema, String>()
-        {
+        this.schemas = Maps.uniqueIndex(schemas, new Function<Schema, String>() {
             @Override
-            public String apply(Schema schema)
-            {
+            public String apply(Schema schema) {
                 return schema.getName();
             }
         });
         ImmutableMap.Builder<String, Schema> pathBuilder = ImmutableMap.builder();
         ImmutableList.Builder<Schema> regexBuilder = ImmutableList.builder();
-        for ( Schema schema : schemas )
-        {
-            if ( schema.getPath() != null )
-            {
+        for (Schema schema : schemas) {
+            if (schema.getPath() != null) {
                 pathBuilder.put(schema.getPath(), schema);
-            }
-            else
-            {
+            } else {
                 regexBuilder.add(schema);
             }
         }
@@ -131,8 +135,7 @@ public class SchemaSet
      *
      * @return schemas
      */
-    public Collection<Schema> getSchemas()
-    {
+    public Collection<Schema> getSchemas() {
         return schemas.values();
     }
 
@@ -142,36 +145,28 @@ public class SchemaSet
      * @param path ZNode full path
      * @return matching schema or a default schema
      */
-    public Schema getSchema(String path)
-    {
-        if ( schemas.size() > 0 )
-        {
+    public Schema getSchema(String path) {
+        if (schemas.size() > 0) {
             Schema schema = pathToSchemas.get(path);
-            if ( schema == null )
-            {
-                try
-                {
+            if (schema == null) {
+                try {
                     schema = regexCache.get(path);
-                    if ( schema.equals(nullSchema) )
-                    {
+                    if (schema.equals(nullSchema)) {
                         schema = useDefaultSchema ? defaultSchema : null;
                     }
-                }
-                catch ( ExecutionException e )
-                {
+                } catch (ExecutionException e) {
                     throw new RuntimeException(e);
                 }
             }
-            if ( schema != null )
-            {
+            if (schema != null) {
                 return schema;
             }
         }
-        if ( useDefaultSchema )
-        {
+        if (useDefaultSchema) {
             return defaultSchema;
         }
-        throw new SchemaViolation(null, new SchemaViolation.ViolatorData(path, null, null), "No schema found for: " + path);
+        throw new SchemaViolation(
+                null, new SchemaViolation.ViolatorData(path, null, null), "No schema found for: " + path);
     }
 
     /**
@@ -181,8 +176,7 @@ public class SchemaSet
      * @param name path/schema name
      * @return ZNode path
      */
-    public static String getNamedPath(CuratorFramework client, String name)
-    {
+    public static String getNamedPath(CuratorFramework client, String name) {
         return client.getSchemaSet().getNamedSchema(name).getRawPath();
     }
 
@@ -192,8 +186,7 @@ public class SchemaSet
      * @param name name
      * @return schema or null
      */
-    public Schema getNamedSchema(String name)
-    {
+    public Schema getNamedSchema(String name) {
         return schemas.get(name);
     }
 
@@ -202,12 +195,13 @@ public class SchemaSet
      *
      * @return documentation
      */
-    public String toDocumentation()
-    {
+    public String toDocumentation() {
         StringBuilder str = new StringBuilder("Curator Schemas:\n\n");
-        for ( Map.Entry<String, Schema> schemaEntry : schemas.entrySet() )
-        {
-            str.append(schemaEntry.getKey()).append('\n').append(schemaEntry.getValue().toDocumentation()).append('\n');
+        for (Map.Entry<String, Schema> schemaEntry : schemas.entrySet()) {
+            str.append(schemaEntry.getKey())
+                    .append('\n')
+                    .append(schemaEntry.getValue().toDocumentation())
+                    .append('\n');
         }
         return str.toString();
     }

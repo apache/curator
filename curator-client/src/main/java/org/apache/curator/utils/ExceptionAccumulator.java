@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.utils;
 
 import com.google.common.base.Throwables;
@@ -24,17 +25,14 @@ import com.google.common.base.Throwables;
  * Utility to accumulate multiple potential exceptions into one that
  * is thrown at the end
  */
-public class ExceptionAccumulator
-{
+public class ExceptionAccumulator {
     private volatile Throwable mainEx = null;
 
     /**
      * If there is an accumulated exception, throw it
      */
-    public void propagate()
-    {
-        if ( mainEx != null )
-        {
+    public void propagate() {
+        if (mainEx != null) {
             Throwables.propagate(mainEx);
         }
     }
@@ -46,23 +44,17 @@ public class ExceptionAccumulator
      *
      * @param e the exception
      */
-    public void add(Throwable e)
-    {
-        if ( e instanceof InterruptedException )
-        {
-            if ( mainEx != null )
-            {
+    public void add(Throwable e) {
+        if (e instanceof InterruptedException) {
+            if (mainEx != null) {
                 e.addSuppressed(mainEx);
             }
             Thread.currentThread().interrupt();
         }
 
-        if ( mainEx == null )
-        {
+        if (mainEx == null) {
             mainEx = e;
-        }
-        else
-        {
+        } else {
             mainEx.addSuppressed(e);
         }
     }

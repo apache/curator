@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,28 +16,25 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.locks;
 
 import java.util.concurrent.Executor;
 
-class RevocationSpec
-{
-    private final Runnable      runnable;
-    private final Executor      executor;
+class RevocationSpec {
+    private final Runnable runnable;
+    private final Executor executor;
 
-    RevocationSpec(Executor executor, Runnable runnable)
-    {
+    RevocationSpec(Executor executor, Runnable runnable) {
         this.runnable = runnable;
         this.executor = executor;
     }
 
-    Runnable getRunnable()
-    {
+    Runnable getRunnable() {
         return runnable;
     }
 
-    Executor getExecutor()
-    {
+    Executor getExecutor() {
         return executor;
     }
 }

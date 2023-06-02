@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,16 +16,16 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.discovery;
 
-public enum ServiceType
-{
+public enum ServiceType {
     DYNAMIC,
     STATIC,
-    PERMANENT, 
+    PERMANENT,
     DYNAMIC_SEQUENTIAL;
 
-	public boolean isDynamic() {
-		return this == DYNAMIC || this == DYNAMIC_SEQUENTIAL;
-	}
+    public boolean isDynamic() {
+        return this == DYNAMIC || this == DYNAMIC_SEQUENTIAL;
+    }
 }

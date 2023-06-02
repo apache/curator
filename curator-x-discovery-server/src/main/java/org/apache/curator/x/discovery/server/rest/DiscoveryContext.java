@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,31 +16,31 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.discovery.server.rest;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.curator.x.discovery.ProviderStrategy;
 import org.apache.curator.x.discovery.ServiceDiscovery;
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.node.ObjectNode;
 
 /**
  * Bridge between the specifics of your needs and the generic implementation
  */
-public interface DiscoveryContext<T>
-{
+public interface DiscoveryContext<T> {
     /**
      * Return the threshold in milliseconds to consider a registration stale
      *
      * @return number of milliseconds
      */
-    public int                      getInstanceRefreshMs();
+    public int getInstanceRefreshMs();
 
     /**
      * Return the service singleton
      *
      * @return service
      */
-    public ServiceDiscovery<T>      getServiceDiscovery();
+    public ServiceDiscovery<T> getServiceDiscovery();
 
     /**
      * Serialize your payload
@@ -50,7 +50,7 @@ public interface DiscoveryContext<T>
      * @param payload the payload value (can be null)
      * @throws Exception any errors
      */
-    public void                     marshallJson(ObjectNode node, String fieldName, T payload) throws Exception;
+    public void marshallJson(ObjectNode node, String fieldName, T payload) throws Exception;
 
     /**
      * Deserialize your payload
@@ -59,12 +59,12 @@ public interface DiscoveryContext<T>
      * @return the payload or null
      * @throws Exception any errors
      */
-    public T                        unMarshallJson(JsonNode node) throws Exception;
+    public T unMarshallJson(JsonNode node) throws Exception;
 
     /**
      * Return the provider strategy to use for {@link DiscoveryResource#getAny(String)}
      *
      * @return strategy
      */
-    public ProviderStrategy<T>      getProviderStrategy();
+    public ProviderStrategy<T> getProviderStrategy();
 }

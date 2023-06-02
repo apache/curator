@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.discovery;
 
 import com.google.common.collect.Lists;
@@ -30,8 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Builder for service instances
  */
-public class ServiceInstanceBuilder<T>
-{
+public class ServiceInstanceBuilder<T> {
     private T payload;
     private String name;
     private String address;
@@ -43,25 +43,22 @@ public class ServiceInstanceBuilder<T>
     private UriSpec uriSpec;
     private boolean enabled = true;
 
-    private static final AtomicReference<LocalIpFilter> localIpFilter = new AtomicReference<LocalIpFilter>
-    (
-        new LocalIpFilter()
-        {
-            @Override
-            public boolean use(NetworkInterface nif, InetAddress adr) throws SocketException
-            {
-                return (adr != null) && !adr.isLoopbackAddress() && (nif.isPointToPoint() || !adr.isLinkLocalAddress());
-            }
-        }
-    );
+    private static final AtomicReference<LocalIpFilter> localIpFilter =
+            new AtomicReference<LocalIpFilter>(new LocalIpFilter() {
+                @Override
+                public boolean use(NetworkInterface nif, InetAddress adr) throws SocketException {
+                    return (adr != null)
+                            && !adr.isLoopbackAddress()
+                            && (nif.isPointToPoint() || !adr.isLinkLocalAddress());
+                }
+            });
 
     /**
      * Replace the default local ip filter used by {@link #getAllLocalIPs()}
      *
      * @param newLocalIpFilter the new local ip filter
      */
-    public static void setLocalIpFilter(LocalIpFilter newLocalIpFilter)
-    {
+    public static void setLocalIpFilter(LocalIpFilter newLocalIpFilter) {
         localIpFilter.set(newLocalIpFilter);
     }
 
@@ -70,81 +67,68 @@ public class ServiceInstanceBuilder<T>
      *
      * @return ip filter
      */
-    public static LocalIpFilter getLocalIpFilter()
-    {
+    public static LocalIpFilter getLocalIpFilter() {
         return localIpFilter.get();
     }
 
-    ServiceInstanceBuilder()
-    {
-    }
+    ServiceInstanceBuilder() {}
 
     /**
      * Return a new instance with the currently set values
      *
      * @return instance
      */
-    public ServiceInstance<T> build()
-    {
-        return new ServiceInstance<T>(name, id, address, port, sslPort, payload, registrationTimeUTC, serviceType, uriSpec, enabled);
+    public ServiceInstance<T> build() {
+        return new ServiceInstance<T>(
+                name, id, address, port, sslPort, payload, registrationTimeUTC, serviceType, uriSpec, enabled);
     }
 
-    public ServiceInstanceBuilder<T> name(String name)
-    {
+    public ServiceInstanceBuilder<T> name(String name) {
         this.name = name;
         return this;
     }
 
-    public ServiceInstanceBuilder<T> address(String address)
-    {
+    public ServiceInstanceBuilder<T> address(String address) {
         this.address = address;
         return this;
     }
 
-    public ServiceInstanceBuilder<T> id(String id)
-    {
+    public ServiceInstanceBuilder<T> id(String id) {
         this.id = id;
         return this;
     }
 
-    public ServiceInstanceBuilder<T> port(int port)
-    {
+    public ServiceInstanceBuilder<T> port(int port) {
         this.port = port;
         return this;
     }
 
-    public ServiceInstanceBuilder<T> sslPort(int port)
-    {
+    public ServiceInstanceBuilder<T> sslPort(int port) {
         this.sslPort = port;
         return this;
     }
 
-    public ServiceInstanceBuilder<T> payload(T payload)
-    {
+    public ServiceInstanceBuilder<T> payload(T payload) {
         this.payload = payload;
         return this;
     }
 
-    public ServiceInstanceBuilder<T> serviceType(ServiceType serviceType)
-    {
+    public ServiceInstanceBuilder<T> serviceType(ServiceType serviceType) {
         this.serviceType = serviceType;
         return this;
     }
 
-    public ServiceInstanceBuilder<T> registrationTimeUTC(long registrationTimeUTC)
-    {
+    public ServiceInstanceBuilder<T> registrationTimeUTC(long registrationTimeUTC) {
         this.registrationTimeUTC = registrationTimeUTC;
         return this;
     }
 
-    public ServiceInstanceBuilder<T> uriSpec(UriSpec uriSpec)
-    {
+    public ServiceInstanceBuilder<T> uriSpec(UriSpec uriSpec) {
         this.uriSpec = uriSpec;
         return this;
     }
 
-    public ServiceInstanceBuilder<T> enabled(boolean enabled)
-    {
+    public ServiceInstanceBuilder<T> enabled(boolean enabled) {
         this.enabled = enabled;
         return this;
     }
@@ -168,23 +152,19 @@ public class ServiceInstanceBuilder<T>
      * @since   0.1.0
      * @throws SocketException errors
      */
-    public static Collection<InetAddress> getAllLocalIPs() throws SocketException
-    {
+    public static Collection<InetAddress> getAllLocalIPs() throws SocketException {
         List<InetAddress> listAdr = Lists.newArrayList();
         Enumeration<NetworkInterface> nifs = NetworkInterface.getNetworkInterfaces();
         if (nifs == null) return listAdr;
 
-        while (nifs.hasMoreElements())
-        {
+        while (nifs.hasMoreElements()) {
             NetworkInterface nif = nifs.nextElement();
             // We ignore subinterfaces - as not yet needed.
 
             Enumeration<InetAddress> adrs = nif.getInetAddresses();
-            while ( adrs.hasMoreElements() )
-            {
+            while (adrs.hasMoreElements()) {
                 InetAddress adr = adrs.nextElement();
-                if ( localIpFilter.get().use(nif, adr) )
-                {
+                if (localIpFilter.get().use(nif, adr)) {
                     listAdr.add(adr);
                 }
             }

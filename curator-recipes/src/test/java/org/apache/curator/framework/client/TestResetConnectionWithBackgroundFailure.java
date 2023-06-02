@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -19,51 +19,43 @@
 
 package org.apache.curator.framework.client;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.google.common.collect.Queues;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.framework.recipes.leader.LeaderSelector;
 import org.apache.curator.framework.recipes.leader.LeaderSelectorListener;
 import org.apache.curator.framework.recipes.leader.LeaderSelectorListenerAdapter;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
-import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
-import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.ZooDefs;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
 
-public class TestResetConnectionWithBackgroundFailure extends BaseClassForTests
-{
+public class TestResetConnectionWithBackgroundFailure extends BaseClassForTests {
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     @Test
-    public void testConnectionStateListener() throws Exception
-    {
+    public void testConnectionStateListener() throws Exception {
         server.stop();
 
         LeaderSelector selector = null;
         Timing timing = new Timing();
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
-        try
-        {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(
+                server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        try {
             client.start();
             timing.sleepABit();
 
-            LeaderSelectorListener listenerLeader = new LeaderSelectorListenerAdapter()
-            {
+            LeaderSelectorListener listenerLeader = new LeaderSelectorListenerAdapter() {
                 @Override
-                public void takeLeadership(CuratorFramework client) throws Exception
-                {
+                public void takeLeadership(CuratorFramework client) throws Exception {
                     Thread.currentThread().join();
                 }
             };
@@ -72,11 +64,9 @@ public class TestResetConnectionWithBackgroundFailure extends BaseClassForTests
             selector.start();
 
             final BlockingQueue<ConnectionState> listenerSequence = Queues.newLinkedBlockingQueue();
-            ConnectionStateListener listener1 = new ConnectionStateListener()
-            {
+            ConnectionStateListener listener1 = new ConnectionStateListener() {
                 @Override
-                public void stateChanged(CuratorFramework client, ConnectionState newState)
-                {
+                public void stateChanged(CuratorFramework client, ConnectionState newState) {
                     listenerSequence.add(newState);
                 }
             };
@@ -86,27 +76,29 @@ public class TestResetConnectionWithBackgroundFailure extends BaseClassForTests
             client.getConnectionStateListenable().addListener(listener1);
             log.debug("Starting ZK server");
             server.restart();
-            Assert.assertEquals(listenerSequence.poll(forWaiting.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.CONNECTED);
+            assertEquals(
+                    listenerSequence.poll(forWaiting.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.CONNECTED);
 
             log.debug("Stopping ZK server");
             server.stop();
-            Assert.assertEquals(listenerSequence.poll(forWaiting.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.SUSPENDED);
-            Assert.assertEquals(listenerSequence.poll(forWaiting.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.LOST);
+            assertEquals(
+                    listenerSequence.poll(forWaiting.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.SUSPENDED);
+            assertEquals(listenerSequence.poll(forWaiting.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.LOST);
 
             log.debug("Starting ZK server");
             server.restart();
-            Assert.assertEquals(listenerSequence.poll(forWaiting.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.RECONNECTED);
+            assertEquals(
+                    listenerSequence.poll(forWaiting.milliseconds(), TimeUnit.MILLISECONDS),
+                    ConnectionState.RECONNECTED);
 
             log.debug("Stopping ZK server");
             server.close();
-            Assert.assertEquals(listenerSequence.poll(forWaiting.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.SUSPENDED);
-            Assert.assertEquals(listenerSequence.poll(forWaiting.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.LOST);
-        }
-        finally
-        {
+            assertEquals(
+                    listenerSequence.poll(forWaiting.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.SUSPENDED);
+            assertEquals(listenerSequence.poll(forWaiting.milliseconds(), TimeUnit.MILLISECONDS), ConnectionState.LOST);
+        } finally {
             CloseableUtils.closeQuietly(selector);
             CloseableUtils.closeQuietly(client);
         }
     }
-
 }

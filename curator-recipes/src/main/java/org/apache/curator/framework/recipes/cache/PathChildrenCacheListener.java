@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.cache;
 
 import org.apache.curator.framework.CuratorFramework;
@@ -23,8 +24,7 @@ import org.apache.curator.framework.CuratorFramework;
 /**
  * Listener for PathChildrenCache changes
  */
-public interface PathChildrenCacheListener
-{
+public interface PathChildrenCacheListener {
     /**
      * Called when a change has occurred
      *
@@ -32,5 +32,5 @@ public interface PathChildrenCacheListener
      * @param event describes the change
      * @throws Exception errors
      */
-    public void     childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception;
+    public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception;
 }

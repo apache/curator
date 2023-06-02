@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,19 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.imps;
 
-class StandardInternalConnectionHandler implements InternalConnectionHandler
-{
+class StandardInternalConnectionHandler implements InternalConnectionHandler {
     @Override
-    public void suspendConnection(CuratorFrameworkImpl client)
-    {
+    public void suspendConnection(CuratorFrameworkImpl client) {
         client.setToSuspended();
     }
 
     @Override
-    public void checkNewConnection(CuratorFrameworkImpl client)
-    {
+    public void checkNewConnection(CuratorFrameworkImpl client) {
         client.checkInstanceIndex();
     }
 }

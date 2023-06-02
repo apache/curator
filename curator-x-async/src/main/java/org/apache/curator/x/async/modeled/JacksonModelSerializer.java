@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async.modeled;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -35,89 +36,71 @@ import java.util.Objects;
  * file to avoid adding a new dependency to Curator. Therefore, if you wish to use the
  * JacksonModelSerializer you must manually add the dependency to your build system
  */
-public class JacksonModelSerializer<T> implements ModelSerializer<T>
-{
+public class JacksonModelSerializer<T> implements ModelSerializer<T> {
     private static final ObjectMapper mapper = new ObjectMapper();
-    static
-    {
+
+    static {
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
     private final ObjectReader reader;
     private final ObjectWriter writer;
 
-    public static <T> JacksonModelSerializer<T> build(Class<T> modelClass)
-    {
+    public static <T> JacksonModelSerializer<T> build(Class<T> modelClass) {
         return new JacksonModelSerializer<>(modelClass);
     }
 
-    public static <T> JacksonModelSerializer<T> build(JavaType type)
-    {
+    public static <T> JacksonModelSerializer<T> build(JavaType type) {
         return new JacksonModelSerializer<>(type);
     }
 
-    public static <T> JacksonModelSerializer<T> build(TypeReference type)
-    {
+    public static <T> JacksonModelSerializer<T> build(TypeReference type) {
         return new JacksonModelSerializer<>(type);
     }
 
-    public JacksonModelSerializer(Class<T> modelClass)
-    {
+    public JacksonModelSerializer(Class<T> modelClass) {
         this(mapper.getTypeFactory().constructType(modelClass));
     }
 
-    public JacksonModelSerializer(JavaType type)
-    {
+    public JacksonModelSerializer(JavaType type) {
         reader = mapper.readerFor(type);
         writer = mapper.writerFor(type);
     }
 
-    public JacksonModelSerializer(TypeReference type)
-    {
+    public JacksonModelSerializer(TypeReference type) {
         reader = mapper.readerFor(type);
         writer = mapper.writerFor(type);
     }
 
-    public JacksonModelSerializer(ObjectMapper mapper, JavaType type)
-    {
+    public JacksonModelSerializer(ObjectMapper mapper, JavaType type) {
         reader = mapper.readerFor(type);
         writer = mapper.writerFor(type);
     }
 
-    public JacksonModelSerializer(ObjectMapper mapper, TypeReference type)
-    {
+    public JacksonModelSerializer(ObjectMapper mapper, TypeReference type) {
         reader = mapper.readerFor(type);
         writer = mapper.writerFor(type);
     }
 
-    public JacksonModelSerializer(ObjectReader reader, ObjectWriter writer)
-    {
+    public JacksonModelSerializer(ObjectReader reader, ObjectWriter writer) {
         this.reader = Objects.requireNonNull(reader, "reader cannot be null");
         this.writer = Objects.requireNonNull(writer, "writer cannot be null");
     }
 
     @Override
-    public byte[] serialize(T model)
-    {
-        try
-        {
+    public byte[] serialize(T model) {
+        try {
             return writer.writeValueAsBytes(model);
-        }
-        catch ( JsonProcessingException e )
-        {
+        } catch (JsonProcessingException e) {
             throw new RuntimeException(String.format("Could not serialize value: %s", model), e);
         }
     }
 
     @Override
-    public T deserialize(byte[] bytes)
-    {
-        try
-        {
+    public T deserialize(byte[] bytes) {
+        try {
             return reader.readValue(bytes);
-        }
-        catch ( IOException e )
-        {
+        } catch (IOException e) {
             throw new RuntimeException(String.format("Could not deserialize value: %s", Arrays.toString(bytes)), e);
         }
     }

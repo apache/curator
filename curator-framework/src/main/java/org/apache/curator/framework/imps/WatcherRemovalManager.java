@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,70 +16,55 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.imps;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import java.util.List;
+import java.util.Set;
 import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.List;
-import java.util.Set;
 
-public class WatcherRemovalManager
-{
+public class WatcherRemovalManager {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorFrameworkImpl client;
     private final Set<NamespaceWatcher> entries = Sets.newConcurrentHashSet();
 
-    WatcherRemovalManager(CuratorFrameworkImpl client)
-    {
+    WatcherRemovalManager(CuratorFrameworkImpl client) {
         this.client = client;
     }
 
-    void add(NamespaceWatcher watcher)
-    {
+    void add(NamespaceWatcher watcher) {
         watcher = Preconditions.checkNotNull(watcher, "watcher cannot be null");
         entries.add(watcher);
     }
 
     @VisibleForTesting
-    Set<? extends Watcher> getEntries()
-    {
+    Set<? extends Watcher> getEntries() {
         return Sets.newHashSet(entries);
     }
 
-    void removeWatchers()
-    {
-        if ( client.isZk34CompatibilityMode() )
-        {
-            return;
-        }
-
+    void removeWatchers() {
         List<NamespaceWatcher> localEntries = Lists.newArrayList(entries);
-        while ( localEntries.size() > 0 )
-        {
+        while (localEntries.size() > 0) {
             NamespaceWatcher watcher = localEntries.remove(0);
-            if ( entries.remove(watcher) && !client.isZk34CompatibilityMode() )
-            {
-                try
-                {
+            if (entries.remove(watcher)) {
+                try {
                     log.debug("Removing watcher for path: " + watcher.getUnfixedPath());
                     RemoveWatchesBuilderImpl builder = new RemoveWatchesBuilderImpl(client);
                     builder.internalRemoval(watcher, watcher.getUnfixedPath());
-                }
-                catch ( Exception e )
-                {
+                } catch (Exception e) {
                     log.error("Could not remove watcher for path: " + watcher.getUnfixedPath());
                 }
             }
         }
     }
 
-    void noteTriggeredWatcher(NamespaceWatcher watcher)
-    {
+    void noteTriggeredWatcher(NamespaceWatcher watcher) {
         entries.remove(watcher);
     }
 }

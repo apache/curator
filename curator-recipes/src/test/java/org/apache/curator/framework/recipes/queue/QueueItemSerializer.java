@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,19 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.queue;
 
-class QueueItemSerializer implements QueueSerializer<TestQueueItem>
-{
+class QueueItemSerializer implements QueueSerializer<TestQueueItem> {
     @Override
-    public byte[] serialize(TestQueueItem item)
-    {
+    public byte[] serialize(TestQueueItem item) {
         return item.str.getBytes();
     }
 
     @Override
-    public TestQueueItem deserialize(byte[] bytes)
-    {
+    public TestQueueItem deserialize(byte[] bytes) {
         return new TestQueueItem(new String(bytes));
     }
 }

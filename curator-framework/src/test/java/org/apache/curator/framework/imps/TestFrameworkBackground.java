@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -19,8 +19,19 @@
 
 package org.apache.curator.framework.imps;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.ACLProvider;
@@ -36,116 +47,84 @@ import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.KeeperException.Code;
 import org.apache.zookeeper.data.ACL;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.Assert;
-import org.testng.annotations.Test;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-
-public class TestFrameworkBackground extends BaseClassForTests
-{
+public class TestFrameworkBackground extends BaseClassForTests {
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     @Test
-    public void testErrorListener() throws Exception
-    {
-        //The first call to the ACL provider will return a reasonable
-        //value. The second will throw an error. This is because the ACL
-        //provider is accessed prior to the backgrounding call.
+    public void testErrorListener() throws Exception {
+        // The first call to the ACL provider will return a reasonable
+        // value. The second will throw an error. This is because the ACL
+        // provider is accessed prior to the backgrounding call.
         final AtomicBoolean aclProviderCalled = new AtomicBoolean(false);
-        
-        ACLProvider badAclProvider = new ACLProvider()
-        {
+
+        ACLProvider badAclProvider = new ACLProvider() {
             @Override
-            public List<ACL> getDefaultAcl()
-            {
-                if(aclProviderCalled.getAndSet(true))
-                {
+            public List<ACL> getDefaultAcl() {
+                if (aclProviderCalled.getAndSet(true)) {
                     throw new UnsupportedOperationException();
-                }
-                else
-                {
+                } else {
                     return new ArrayList<>();
                 }
             }
 
             @Override
-            public List<ACL> getAclForPath(String path)
-            {
-                if(aclProviderCalled.getAndSet(true))
-                {
+            public List<ACL> getAclForPath(String path) {
+                if (aclProviderCalled.getAndSet(true)) {
                     throw new UnsupportedOperationException();
-                }
-                else
-                {
+                } else {
                     return new ArrayList<>();
                 }
             }
         };
         CuratorFramework client = CuratorFrameworkFactory.builder()
-            .connectString(server.getConnectString())
-            .retryPolicy(new RetryOneTime(1))
-            .aclProvider(badAclProvider)
-            .build();
-        try
-        {
+                .connectString(server.getConnectString())
+                .retryPolicy(new RetryOneTime(1))
+                .aclProvider(badAclProvider)
+                .build();
+        try {
             client.start();
 
             final CountDownLatch errorLatch = new CountDownLatch(1);
-            UnhandledErrorListener listener = new UnhandledErrorListener()
-            {
+            UnhandledErrorListener listener = new UnhandledErrorListener() {
                 @Override
-                public void unhandledError(String message, Throwable e)
-                {
-                    if ( e instanceof UnsupportedOperationException )
-                    {
+                public void unhandledError(String message, Throwable e) {
+                    if (e instanceof UnsupportedOperationException) {
                         errorLatch.countDown();
                     }
                 }
             };
             client.create().inBackground().withUnhandledErrorListener(listener).forPath("/foo");
-            Assert.assertTrue(new Timing().awaitLatch(errorLatch));
-        }
-        finally
-        {
+            assertTrue(new Timing().awaitLatch(errorLatch));
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
 
     @Test
-    public void testListenerConnectedAtStart() throws Exception
-    {
+    public void testListenerConnectedAtStart() throws Exception {
         server.stop();
 
         Timing timing = new Timing(2);
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryNTimes(0, 0));
-        try
-        {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(
+                server.getConnectString(), timing.session(), timing.connection(), new RetryNTimes(0, 0));
+        try {
             client.start();
 
             final CountDownLatch connectedLatch = new CountDownLatch(1);
             final AtomicBoolean firstListenerAction = new AtomicBoolean(true);
             final AtomicReference<ConnectionState> firstListenerState = new AtomicReference<ConnectionState>();
-            ConnectionStateListener listener = new ConnectionStateListener()
-            {
+            ConnectionStateListener listener = new ConnectionStateListener() {
                 @Override
-                public void stateChanged(CuratorFramework client, ConnectionState newState)
-                {
-                    if ( firstListenerAction.compareAndSet(true, false) )
-                    {
+                public void stateChanged(CuratorFramework client, ConnectionState newState) {
+                    if (firstListenerAction.compareAndSet(true, false)) {
                         firstListenerState.set(newState);
                         System.out.println("First listener state is " + newState);
                     }
-                    if ( newState == ConnectionState.CONNECTED )
-                    {
+                    if (newState == ConnectionState.CONNECTED) {
                         connectedLatch.countDown();
                     }
                 }
@@ -157,40 +136,37 @@ public class TestFrameworkBackground extends BaseClassForTests
 
             server.restart();
 
-            Assert.assertTrue(timing.awaitLatch(connectedLatch));
-            Assert.assertFalse(firstListenerAction.get());
+            assertTrue(timing.awaitLatch(connectedLatch));
+            assertFalse(firstListenerAction.get());
             ConnectionState firstconnectionState = firstListenerState.get();
-            Assert.assertEquals(firstconnectionState, ConnectionState.CONNECTED, "First listener state MUST BE CONNECTED but is " + firstconnectionState);
-        }
-        finally
-        {
+            assertEquals(
+                    firstconnectionState,
+                    ConnectionState.CONNECTED,
+                    "First listener state MUST BE CONNECTED but is " + firstconnectionState);
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
 
     @Test
-    public void testRetries() throws Exception
-    {
+    public void testRetries() throws Exception {
         final int SLEEP = 1000;
         final int TIMES = 5;
 
         Timing timing = new Timing();
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryNTimes(TIMES, SLEEP));
-        try
-        {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(
+                server.getConnectString(), timing.session(), timing.connection(), new RetryNTimes(TIMES, SLEEP));
+        try {
             client.start();
             client.getZookeeperClient().blockUntilConnectedOrTimedOut();
 
             final CountDownLatch latch = new CountDownLatch(TIMES);
             final List<Long> times = Lists.newArrayList();
             final AtomicLong start = new AtomicLong(System.currentTimeMillis());
-            ((CuratorFrameworkImpl)client).debugListener = new CuratorFrameworkImpl.DebugBackgroundListener()
-            {
+            ((CuratorFrameworkImpl) client).debugListener = new CuratorFrameworkImpl.DebugBackgroundListener() {
                 @Override
-                public void listen(OperationAndData<?> data)
-                {
-                    if ( data.getOperation().getClass().getName().contains("CreateBuilderImpl") )
-                    {
+                public void listen(OperationAndData<?> data) {
+                    if (data.getOperation().getClass().getName().contains("CreateBuilderImpl")) {
                         long now = System.currentTimeMillis();
                         times.add(now - start.get());
                         start.set(now);
@@ -204,44 +180,37 @@ public class TestFrameworkBackground extends BaseClassForTests
 
             latch.await();
 
-            for ( long elapsed : times.subList(1, times.size()) )   // first one isn't a retry
+            for (long elapsed : times.subList(1, times.size())) // first one isn't a retry
             {
-                Assert.assertTrue(elapsed >= SLEEP, elapsed + ": " + times);
+                assertTrue(elapsed >= SLEEP, elapsed + ": " + times);
             }
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
 
     @Test
-    public void testBasic() throws Exception
-    {
+    public void testBasic() throws Exception {
         Timing timing = new Timing();
-        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
-        try
-        {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(
+                server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        try {
             client.start();
 
             final BlockingQueue<String> paths = Queues.newLinkedBlockingQueue();
-                BackgroundCallback callback = new BackgroundCallback()
-            {
+            BackgroundCallback callback = new BackgroundCallback() {
                 @Override
-                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
-                {
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
                     paths.add(event.getPath());
                 }
             };
             client.create().inBackground(callback).forPath("/one");
-            Assert.assertEquals(paths.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), "/one");
+            assertEquals(paths.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), "/one");
             client.create().inBackground(callback).forPath("/one/two");
-            Assert.assertEquals(paths.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), "/one/two");
+            assertEquals(paths.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), "/one/two");
             client.create().inBackground(callback).forPath("/one/two/three");
-            Assert.assertEquals(paths.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), "/one/two/three");
-        }
-        finally
-        {
+            assertEquals(paths.poll(timing.milliseconds(), TimeUnit.MILLISECONDS), "/one/two/three");
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
@@ -251,22 +220,22 @@ public class TestFrameworkBackground extends BaseClassForTests
      * Return code must be {@link Code#CONNECTIONLOSS}
      */
     @Test
-    public void testCuratorCallbackOnError() throws Exception
-    {
+    public void testCuratorCallbackOnError() throws Exception {
         Timing timing = new Timing();
-        CuratorFramework client = CuratorFrameworkFactory.builder().connectString(server.getConnectString()).sessionTimeoutMs(timing.session()).connectionTimeoutMs(timing.connection()).retryPolicy(new RetryOneTime(1000)).build();
+        CuratorFramework client = CuratorFrameworkFactory.builder()
+                .connectString(server.getConnectString())
+                .sessionTimeoutMs(timing.session())
+                .connectionTimeoutMs(timing.connection())
+                .retryPolicy(new RetryOneTime(1000))
+                .build();
         final CountDownLatch latch = new CountDownLatch(1);
-        try
-        {
+        try {
             client.start();
-            BackgroundCallback curatorCallback = new BackgroundCallback()
-            {
+            BackgroundCallback curatorCallback = new BackgroundCallback() {
 
                 @Override
-                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
-                {
-                    if ( event.getResultCode() == Code.CONNECTIONLOSS.intValue() )
-                    {
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
+                    if (event.getResultCode() == Code.CONNECTIONLOSS.intValue()) {
                         latch.countDown();
                     }
                 }
@@ -276,13 +245,10 @@ public class TestFrameworkBackground extends BaseClassForTests
             // Attempt to retrieve children list
             client.getChildren().inBackground(curatorCallback).forPath("/");
             // Check if the callback has been called with a correct return code
-            Assert.assertTrue(timing.awaitLatch(latch), "Callback has not been called by curator !");
-        }
-        finally
-        {
+            assertTrue(timing.awaitLatch(latch), "Callback has not been called by curator !");
+        } finally {
             client.close();
         }
-
     }
 
     /**
@@ -290,26 +256,21 @@ public class TestFrameworkBackground extends BaseClassForTests
      * Shutdown the Curator client while there are still background operations running.
      */
     @Test
-    public void testShutdown() throws Exception
-    {
+    public void testShutdown() throws Exception {
         Timing timing = new Timing();
-        CuratorFramework client = CuratorFrameworkFactory
-            .builder()
-            .connectString(server.getConnectString())
-            .sessionTimeoutMs(timing.session())
-            .connectionTimeoutMs(timing.connection()).retryPolicy(new RetryOneTime(1))
-            .maxCloseWaitMs(timing.forWaiting().milliseconds())
-            .build();
-        try
-        {
+        CuratorFramework client = CuratorFrameworkFactory.builder()
+                .connectString(server.getConnectString())
+                .sessionTimeoutMs(timing.session())
+                .connectionTimeoutMs(timing.connection())
+                .retryPolicy(new RetryOneTime(1))
+                .maxCloseWaitMs(timing.forWaiting().milliseconds())
+                .build();
+        try {
             final AtomicBoolean hadIllegalStateException = new AtomicBoolean(false);
-            ((CuratorFrameworkImpl)client).debugUnhandledErrorListener = new UnhandledErrorListener()
-            {
+            ((CuratorFrameworkImpl) client).debugUnhandledErrorListener = new UnhandledErrorListener() {
                 @Override
-                public void unhandledError(String message, Throwable e)
-                {
-                    if ( e instanceof IllegalStateException )
-                    {
+                public void unhandledError(String message, Throwable e) {
+                    if (e instanceof IllegalStateException) {
                         hadIllegalStateException.set(true);
                     }
                 }
@@ -317,17 +278,12 @@ public class TestFrameworkBackground extends BaseClassForTests
             client.start();
 
             final CountDownLatch operationReadyLatch = new CountDownLatch(1);
-            ((CuratorFrameworkImpl)client).debugListener = new CuratorFrameworkImpl.DebugBackgroundListener()
-            {
+            ((CuratorFrameworkImpl) client).debugListener = new CuratorFrameworkImpl.DebugBackgroundListener() {
                 @Override
-                public void listen(OperationAndData<?> data)
-                {
-                    try
-                    {
+                public void listen(OperationAndData<?> data) {
+                    try {
                         operationReadyLatch.await();
-                    }
-                    catch ( InterruptedException e )
-                    {
+                    } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                     }
                 }
@@ -345,13 +301,9 @@ public class TestFrameworkBackground extends BaseClassForTests
             timing.sleepABit();
 
             // should not generate an exception
-            Assert.assertFalse(hadIllegalStateException.get());
-        }
-        finally
-        {
+            assertFalse(hadIllegalStateException.get());
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
-
-
 }

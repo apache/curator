@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,16 +16,16 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.api;
 
-public interface Guaranteeable<T>
-{
+public interface Guaranteeable<T> {
     /**
      * Solves edge cases where an operation may succeed on the server but connection failure occurs before a
      * response can be successfully returned to the client.
-     * 
-     * @see org.apache.curator.framework.api.GuaranteeableDeletable 
-     *  
+     *
+     * @see org.apache.curator.framework.api.GuaranteeableDeletable
+     *
      * @return this
      */
     public T guaranteed();

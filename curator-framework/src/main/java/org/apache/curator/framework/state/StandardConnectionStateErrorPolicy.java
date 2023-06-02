@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,17 +16,16 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.state;
 
 /**
  * This policy treats {@link ConnectionState#SUSPENDED} and {@link ConnectionState#LOST}
  * as errors
  */
-public class StandardConnectionStateErrorPolicy implements ConnectionStateErrorPolicy
-{
+public class StandardConnectionStateErrorPolicy implements ConnectionStateErrorPolicy {
     @Override
-    public boolean isErrorState(ConnectionState state)
-    {
+    public boolean isErrorState(ConnectionState state) {
         return ((state == ConnectionState.SUSPENDED) || (state == ConnectionState.LOST));
     }
 }

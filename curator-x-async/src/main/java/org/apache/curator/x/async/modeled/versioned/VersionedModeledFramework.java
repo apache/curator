@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,14 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async.modeled.versioned;
 
 import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.x.async.AsyncStage;
 import org.apache.zookeeper.data.Stat;
 
-public interface VersionedModeledFramework<T>
-{
+public interface VersionedModeledFramework<T> {
     /**
      * @see org.apache.curator.x.async.modeled.ModeledFramework#set(Object)
      */

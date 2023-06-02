@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -19,69 +19,66 @@
 
 package org.apache.curator.utils;
 
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.Arrays;
 import java.util.Collections;
+import org.junit.jupiter.api.Test;
 
-public class TestZKPaths
-{
+public class TestZKPaths {
     @SuppressWarnings("NullArgumentToVariableArgMethod")
     @Test
-    public void testMakePath()
-    {
-        Assert.assertEquals(ZKPaths.makePath(null, "/"), "/");
-        Assert.assertEquals(ZKPaths.makePath("", null), "/");
-        Assert.assertEquals(ZKPaths.makePath("/", null), "/");
-        Assert.assertEquals(ZKPaths.makePath(null, null), "/");
+    public void testMakePath() {
+        assertEquals(ZKPaths.makePath(null, "/"), "/");
+        assertEquals(ZKPaths.makePath("", null), "/");
+        assertEquals(ZKPaths.makePath("/", null), "/");
+        assertEquals(ZKPaths.makePath(null, null), "/");
 
-        Assert.assertEquals(ZKPaths.makePath("/", "/"), "/");
-        Assert.assertEquals(ZKPaths.makePath("", "/"), "/");
-        Assert.assertEquals(ZKPaths.makePath("/", ""), "/");
-        Assert.assertEquals(ZKPaths.makePath("", ""), "/");
+        assertEquals(ZKPaths.makePath("/", "/"), "/");
+        assertEquals(ZKPaths.makePath("", "/"), "/");
+        assertEquals(ZKPaths.makePath("/", ""), "/");
+        assertEquals(ZKPaths.makePath("", ""), "/");
 
-        Assert.assertEquals(ZKPaths.makePath("foo", ""), "/foo");
-        Assert.assertEquals(ZKPaths.makePath("foo", "/"), "/foo");
-        Assert.assertEquals(ZKPaths.makePath("/foo", ""), "/foo");
-        Assert.assertEquals(ZKPaths.makePath("/foo", "/"), "/foo");
+        assertEquals(ZKPaths.makePath("foo", ""), "/foo");
+        assertEquals(ZKPaths.makePath("foo", "/"), "/foo");
+        assertEquals(ZKPaths.makePath("/foo", ""), "/foo");
+        assertEquals(ZKPaths.makePath("/foo", "/"), "/foo");
 
-        Assert.assertEquals(ZKPaths.makePath("foo", null), "/foo");
-        Assert.assertEquals(ZKPaths.makePath("foo", null), "/foo");
-        Assert.assertEquals(ZKPaths.makePath("/foo", null), "/foo");
-        Assert.assertEquals(ZKPaths.makePath("/foo", null), "/foo");
+        assertEquals(ZKPaths.makePath("foo", null), "/foo");
+        assertEquals(ZKPaths.makePath("foo", null), "/foo");
+        assertEquals(ZKPaths.makePath("/foo", null), "/foo");
+        assertEquals(ZKPaths.makePath("/foo", null), "/foo");
 
-        Assert.assertEquals(ZKPaths.makePath("", "bar"), "/bar");
-        Assert.assertEquals(ZKPaths.makePath("/", "bar"), "/bar");
-        Assert.assertEquals(ZKPaths.makePath("", "/bar"), "/bar");
-        Assert.assertEquals(ZKPaths.makePath("/", "/bar"), "/bar");
+        assertEquals(ZKPaths.makePath("", "bar"), "/bar");
+        assertEquals(ZKPaths.makePath("/", "bar"), "/bar");
+        assertEquals(ZKPaths.makePath("", "/bar"), "/bar");
+        assertEquals(ZKPaths.makePath("/", "/bar"), "/bar");
 
-        Assert.assertEquals(ZKPaths.makePath(null, "bar"), "/bar");
-        Assert.assertEquals(ZKPaths.makePath(null, "bar"), "/bar");
-        Assert.assertEquals(ZKPaths.makePath(null, "/bar"), "/bar");
-        Assert.assertEquals(ZKPaths.makePath(null, "/bar"), "/bar");
+        assertEquals(ZKPaths.makePath(null, "bar"), "/bar");
+        assertEquals(ZKPaths.makePath(null, "bar"), "/bar");
+        assertEquals(ZKPaths.makePath(null, "/bar"), "/bar");
+        assertEquals(ZKPaths.makePath(null, "/bar"), "/bar");
 
-        Assert.assertEquals(ZKPaths.makePath("foo", "bar"), "/foo/bar");
-        Assert.assertEquals(ZKPaths.makePath("/foo", "bar"), "/foo/bar");
-        Assert.assertEquals(ZKPaths.makePath("foo", "/bar"), "/foo/bar");
-        Assert.assertEquals(ZKPaths.makePath("/foo", "/bar"), "/foo/bar");
-        Assert.assertEquals(ZKPaths.makePath("/foo", "bar/"), "/foo/bar");
-        Assert.assertEquals(ZKPaths.makePath("/foo/", "/bar/"), "/foo/bar");
+        assertEquals(ZKPaths.makePath("foo", "bar"), "/foo/bar");
+        assertEquals(ZKPaths.makePath("/foo", "bar"), "/foo/bar");
+        assertEquals(ZKPaths.makePath("foo", "/bar"), "/foo/bar");
+        assertEquals(ZKPaths.makePath("/foo", "/bar"), "/foo/bar");
+        assertEquals(ZKPaths.makePath("/foo", "bar/"), "/foo/bar");
+        assertEquals(ZKPaths.makePath("/foo/", "/bar/"), "/foo/bar");
 
-        Assert.assertEquals(ZKPaths.makePath("foo", "bar", "baz"), "/foo/bar/baz");
-        Assert.assertEquals(ZKPaths.makePath("foo", "bar", "baz", "qux"), "/foo/bar/baz/qux");
-        Assert.assertEquals(ZKPaths.makePath("/foo", "/bar", "/baz"), "/foo/bar/baz");
-        Assert.assertEquals(ZKPaths.makePath("/foo/", "/bar/", "/baz/"), "/foo/bar/baz");
-        Assert.assertEquals(ZKPaths.makePath("foo", null, null), "/foo");
-        Assert.assertEquals(ZKPaths.makePath("foo", "bar", null), "/foo/bar");
-        Assert.assertEquals(ZKPaths.makePath("foo", null, "baz"), "/foo/baz");
+        assertEquals(ZKPaths.makePath("foo", "bar", "baz"), "/foo/bar/baz");
+        assertEquals(ZKPaths.makePath("foo", "bar", "baz", "qux"), "/foo/bar/baz/qux");
+        assertEquals(ZKPaths.makePath("/foo", "/bar", "/baz"), "/foo/bar/baz");
+        assertEquals(ZKPaths.makePath("/foo/", "/bar/", "/baz/"), "/foo/bar/baz");
+        assertEquals(ZKPaths.makePath("foo", null, null), "/foo");
+        assertEquals(ZKPaths.makePath("foo", "bar", null), "/foo/bar");
+        assertEquals(ZKPaths.makePath("foo", null, "baz"), "/foo/baz");
     }
 
     @Test
-    public void testSplit()
-    {
-        Assert.assertEquals(ZKPaths.split("/"), Collections.emptyList());
-        Assert.assertEquals(ZKPaths.split("/test"), Collections.singletonList("test"));
-        Assert.assertEquals(ZKPaths.split("/test/one"), Arrays.asList("test", "one"));
-        Assert.assertEquals(ZKPaths.split("/test/one/two"), Arrays.asList("test", "one", "two"));
+    public void testSplit() {
+        assertEquals(ZKPaths.split("/"), Collections.emptyList());
+        assertEquals(ZKPaths.split("/test"), Collections.singletonList("test"));
+        assertEquals(ZKPaths.split("/test/one"), Arrays.asList("test", "one"));
+        assertEquals(ZKPaths.split("/test/one/two"), Arrays.asList("test", "one", "two"));
     }
 }

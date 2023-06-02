@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.listen;
 
 import java.util.concurrent.Executor;
@@ -24,13 +25,11 @@ import java.util.concurrent.Executor;
  * Generic holder POJO for a listener and its executor
  * @param <T> the listener type
  */
-public class ListenerEntry<T>
-{
-    public final T        listener;
+public class ListenerEntry<T> {
+    public final T listener;
     public final Executor executor;
 
-    public ListenerEntry(T listener, Executor executor)
-    {
+    public ListenerEntry(T listener, Executor executor) {
         this.listener = listener;
         this.executor = executor;
     }

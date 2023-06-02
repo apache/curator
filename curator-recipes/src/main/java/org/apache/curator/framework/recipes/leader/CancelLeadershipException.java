@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.leader;
 
 import org.apache.curator.framework.CuratorFramework;
@@ -26,24 +27,18 @@ import org.apache.curator.framework.state.ConnectionState;
  * cause {@link LeaderSelector#interruptLeadership()} to get called. IMPORTANT: this is only supported
  * when thrown from {@link LeaderSelectorListener#stateChanged(CuratorFramework, ConnectionState)}.
  */
-public class CancelLeadershipException extends RuntimeException
-{
-    public CancelLeadershipException()
-    {
-    }
+public class CancelLeadershipException extends RuntimeException {
+    public CancelLeadershipException() {}
 
-    public CancelLeadershipException(String message)
-    {
+    public CancelLeadershipException(String message) {
         super(message);
     }
 
-    public CancelLeadershipException(String message, Throwable cause)
-    {
+    public CancelLeadershipException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    public CancelLeadershipException(Throwable cause)
-    {
+    public CancelLeadershipException(Throwable cause) {
         super(cause);
     }
 }

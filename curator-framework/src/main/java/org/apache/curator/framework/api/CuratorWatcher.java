@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.api;
 
 import org.apache.zookeeper.WatchedEvent;
@@ -24,8 +25,7 @@ import org.apache.zookeeper.Watcher;
 /**
  * A version of {@link Watcher} that can throw an exception
  */
-public interface CuratorWatcher
-{
+public interface CuratorWatcher {
     /**
      * Same as {@link Watcher#process(WatchedEvent)}. If an exception
      * is thrown, Curator will log it

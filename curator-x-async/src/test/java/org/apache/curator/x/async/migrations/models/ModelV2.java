@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,31 +16,27 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async.migrations.models;
 
-public class ModelV2
-{
+public class ModelV2 {
     private final String name;
     private final int age;
 
-    public ModelV2()
-    {
+    public ModelV2() {
         this("", 0);
     }
 
-    public ModelV2(String name, int age)
-    {
+    public ModelV2(String name, int age) {
         this.name = name;
         this.age = age;
     }
 
-    public String getName()
-    {
+    public String getName() {
         return name;
     }
 
-    public int getAge()
-    {
+    public int getAge() {
         return age;
     }
 }

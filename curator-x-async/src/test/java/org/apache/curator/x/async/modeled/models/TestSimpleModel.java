@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,69 +16,59 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async.modeled.models;
 
 import java.util.Objects;
 
-public class TestSimpleModel
-{
+public class TestSimpleModel {
     private final String name;
     private final int age;
 
-    public TestSimpleModel()
-    {
+    public TestSimpleModel() {
         this("", 0);
     }
 
-    public TestSimpleModel(String name, int age)
-    {
+    public TestSimpleModel(String name, int age) {
         this.name = Objects.requireNonNull(name, "name cannot be null");
         this.age = Objects.requireNonNull(age, "age cannot be null");
     }
 
-    public String getName()
-    {
+    public String getName() {
         return name;
     }
 
-    public int getAge()
-    {
+    public int getAge() {
         return age;
     }
 
     @Override
-    public boolean equals(Object o)
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
-        TestSimpleModel that = (TestSimpleModel)o;
+        TestSimpleModel that = (TestSimpleModel) o;
 
         //noinspection SimplifiableIfStatement
-        if ( age != that.age )
-        {
+        if (age != that.age) {
             return false;
         }
         return name.equals(that.name);
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         int result = name.hashCode();
         result = 31 * result + age;
         return result;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "TestSimpleModel{" + "name='" + name + '\'' + ", age=" + age + '}';
     }
 }

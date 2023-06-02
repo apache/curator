@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async.modeled.typed;
 
 import org.apache.curator.x.async.modeled.ZPath;
@@ -24,8 +25,7 @@ import org.apache.curator.x.async.modeled.ZPath;
  * Same as {@link org.apache.curator.x.async.modeled.typed.TypedZPath}, but with 2 parameters
  */
 @FunctionalInterface
-public interface TypedZPath2<T1, T2>
-{
+public interface TypedZPath2<T1, T2> {
     ZPath resolved(T1 p1, T2 p2);
 
     /**
@@ -34,8 +34,7 @@ public interface TypedZPath2<T1, T2>
      * @param pathWithIds path to pass to {@link org.apache.curator.x.async.modeled.ZPath#parseWithIds}
      * @return TypedZPath
      */
-    static <T1, T2> TypedZPath2<T1, T2> from(String pathWithIds)
-    {
+    static <T1, T2> TypedZPath2<T1, T2> from(String pathWithIds) {
         return from(ZPath.parseWithIds(pathWithIds));
     }
 
@@ -45,8 +44,7 @@ public interface TypedZPath2<T1, T2>
      * @param path path to use
      * @return TypedZPath
      */
-    static <T1, T2> TypedZPath2<T1, T2> from(ZPath path)
-    {
+    static <T1, T2> TypedZPath2<T1, T2> from(ZPath path) {
         return (p1, p2) -> path.resolved(p1, p2);
     }
 }

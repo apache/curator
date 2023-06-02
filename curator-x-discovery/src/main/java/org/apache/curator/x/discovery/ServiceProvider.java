@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -19,17 +19,16 @@
 
 package org.apache.curator.x.discovery;
 
-import org.apache.curator.x.discovery.details.InstanceProvider;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
+import org.apache.curator.x.discovery.details.InstanceProvider;
 
 /**
  * The main API for Discovery. This class is essentially a facade over a {@link ProviderStrategy}
  * paired with an {@link InstanceProvider}
  */
-public interface ServiceProvider<T> extends Closeable
-{
+public interface ServiceProvider<T> extends Closeable {
     /**
      * The provider must be started before use
      *

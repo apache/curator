@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,39 +16,31 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.imps;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.Watcher;
 
-class FailedRemoveWatchManager extends FailedOperationManager<FailedRemoveWatchManager.FailedRemoveWatchDetails>
-{
-    FailedRemoveWatchManager(CuratorFramework client)
-    {
+class FailedRemoveWatchManager extends FailedOperationManager<FailedRemoveWatchManager.FailedRemoveWatchDetails> {
+    FailedRemoveWatchManager(CuratorFramework client) {
         super(client);
     }
 
     @Override
-    protected void executeGuaranteedOperationInBackground(FailedRemoveWatchDetails details)
-            throws Exception
-    {
-        if(details.watcher == null)
-        {
+    protected void executeGuaranteedOperationInBackground(FailedRemoveWatchDetails details) throws Exception {
+        if (details.watcher == null) {
             client.watches().removeAll().guaranteed().inBackground().forPath(details.path);
-        }
-        else
-        {
+        } else {
             client.watches().remove(details.watcher).guaranteed().inBackground().forPath(details.path);
         }
     }
-    
-    static class FailedRemoveWatchDetails
-    {
+
+    static class FailedRemoveWatchDetails {
         public final String path;
         public final Watcher watcher;
-        
-        public FailedRemoveWatchDetails(String path, Watcher watcher)
-        {
+
+        public FailedRemoveWatchDetails(String path, Watcher watcher) {
             this.path = path;
             this.watcher = watcher;
         }

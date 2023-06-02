@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,14 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.api;
 
+import java.util.List;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
-import org.apache.zookeeper.OpResult;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
-import java.util.List;
 
 /**
  * A super set of all the various Zookeeper events/background methods.
@@ -31,8 +31,7 @@ import java.util.List;
  * IMPORTANT: the methods only return values as specified by the operation that generated them. Many methods
  * will return <tt>null</tt>
  */
-public interface CuratorEvent
-{
+public interface CuratorEvent {
     /**
      * check here first - this value determines the type of event and which methods will have
      * valid values

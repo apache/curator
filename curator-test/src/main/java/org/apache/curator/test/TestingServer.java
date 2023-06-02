@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -26,18 +26,20 @@ import java.io.IOException;
 /**
  * manages an internally running ZooKeeper server. FOR TESTING PURPOSES ONLY
  */
-public class TestingServer implements Closeable
-{
+public class TestingServer implements Closeable {
     private final TestingZooKeeperServer testingZooKeeperServer;
     private final InstanceSpec spec;
+
+    TestingZooKeeperServer getTestingZooKeeperServer() {
+        return testingZooKeeperServer;
+    }
 
     /**
      * Create the server using a random port
      *
      * @throws Exception errors
      */
-    public TestingServer() throws Exception
-    {
+    public TestingServer() throws Exception {
         this(-1, null, true);
     }
 
@@ -47,8 +49,7 @@ public class TestingServer implements Closeable
      * @param start True if the server should be started, false otherwise
      * @throws Exception errors
      */
-    public TestingServer(boolean start) throws Exception
-    {
+    public TestingServer(boolean start) throws Exception {
         this(-1, null, start);
     }
 
@@ -58,8 +59,7 @@ public class TestingServer implements Closeable
      * @param port the port
      * @throws Exception errors
      */
-    public TestingServer(int port) throws Exception
-    {
+    public TestingServer(int port) throws Exception {
         this(port, null, true);
     }
 
@@ -70,8 +70,7 @@ public class TestingServer implements Closeable
      * @param start True if the server should be started, false otherwise
      * @throws Exception errors
      */
-    public TestingServer(int port, boolean start) throws Exception
-    {
+    public TestingServer(int port, boolean start) throws Exception {
         this(port, null, start);
     }
 
@@ -82,8 +81,7 @@ public class TestingServer implements Closeable
      * @param tempDirectory directory to use
      * @throws Exception errors
      */
-    public TestingServer(int port, File tempDirectory) throws Exception
-    {
+    public TestingServer(int port, File tempDirectory) throws Exception {
         this(port, tempDirectory, true);
     }
 
@@ -95,9 +93,8 @@ public class TestingServer implements Closeable
      * @param start         True if the server should be started, false otherwise
      * @throws Exception errors
      */
-    public TestingServer(int port, File tempDirectory, boolean start) throws Exception
-    {
-        this(new InstanceSpec(tempDirectory, port, -1, -1, true, -1), start);
+    public TestingServer(int port, File tempDirectory, boolean start) throws Exception {
+        this(new InstanceSpec(tempDirectory, Math.max(0, port), -1, -1, true, -1), start);
     }
 
     /**
@@ -107,25 +104,27 @@ public class TestingServer implements Closeable
      * @param start True if the server should be started, false otherwise
      * @throws Exception errors
      */
-    public TestingServer(InstanceSpec spec, boolean start) throws Exception
-    {
+    public TestingServer(InstanceSpec spec, boolean start) throws Exception {
         this.spec = spec;
         testingZooKeeperServer = new TestingZooKeeperServer(new QuorumConfigBuilder(spec));
 
-        if ( start )
-        {
+        if (start) {
             testingZooKeeperServer.start();
         }
     }
 
     /**
-     * Return the port being used
+     * Return the port being used or will be used.
      *
      * @return port
+     * @throws IllegalStateException if server is configured to bind to port 0 but not started
      */
-    public int getPort()
-    {
-        return spec.getPort();
+    public int getPort() {
+        int port = spec.getPort();
+        if (port > 0) {
+            return port;
+        }
+        return testingZooKeeperServer.getLocalPort();
     }
 
     /**
@@ -133,8 +132,7 @@ public class TestingServer implements Closeable
      *
      * @return directory
      */
-    public File getTempDirectory()
-    {
+    public File getTempDirectory() {
         return spec.getDataDirectory();
     }
 
@@ -143,16 +141,14 @@ public class TestingServer implements Closeable
      *
      * @throws Exception
      */
-    public void start() throws Exception
-    {
+    public void start() throws Exception {
         testingZooKeeperServer.start();
     }
 
     /**
      * Stop the server without deleting the temp directory
      */
-    public void stop() throws IOException
-    {
+    public void stop() throws IOException {
         testingZooKeeperServer.stop();
     }
 
@@ -164,8 +160,7 @@ public class TestingServer implements Closeable
      *
      * @throws Exception
      */
-    public void restart() throws Exception
-    {
+    public void restart() throws Exception {
         testingZooKeeperServer.restart();
     }
 
@@ -173,8 +168,7 @@ public class TestingServer implements Closeable
      * Close the server and any open clients and delete the temp directory
      */
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         testingZooKeeperServer.close();
     }
 
@@ -182,9 +176,9 @@ public class TestingServer implements Closeable
      * Returns the connection string to use
      *
      * @return connection string
+     * @throws IllegalStateException if server is configured to bind to port 0 but not started
      */
-    public String getConnectString()
-    {
-        return spec.getConnectString();
+    public String getConnectString() {
+        return spec.getHostname() + ":" + getPort();
     }
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,16 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.state;
 
 /**
  * This policy treats only {@link ConnectionState#LOST} as an error
  */
-public class SessionConnectionStateErrorPolicy implements ConnectionStateErrorPolicy
-{
+public class SessionConnectionStateErrorPolicy implements ConnectionStateErrorPolicy {
     @Override
-    public boolean isErrorState(ConnectionState state)
-    {
+    public boolean isErrorState(ConnectionState state) {
         return state == ConnectionState.LOST;
     }
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -20,8 +20,12 @@
 package org.apache.curator;
 
 import com.google.common.base.Preconditions;
-import org.apache.curator.connection.ConnectionHandlingPolicy;
-import org.apache.curator.connection.StandardConnectionHandlingPolicy;
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.curator.drivers.OperationTrace;
 import org.apache.curator.drivers.TracerDriver;
 import org.apache.curator.ensemble.EnsembleProvider;
@@ -35,26 +39,19 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * A wrapper around Zookeeper that takes care of some low-level housekeeping
  */
 @SuppressWarnings("UnusedDeclaration")
-public class CuratorZookeeperClient implements Closeable
-{
+public class CuratorZookeeperClient implements Closeable {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final ConnectionState state;
     private final AtomicReference<RetryPolicy> retryPolicy = new AtomicReference<RetryPolicy>();
     private final int connectionTimeoutMs;
+    private final int waitForShutdownTimeoutMs;
     private final AtomicBoolean started = new AtomicBoolean(false);
     private final AtomicReference<TracerDriver> tracer = new AtomicReference<TracerDriver>(new DefaultTracerDriver());
-    private final ConnectionHandlingPolicy connectionHandlingPolicy;
 
     /**
      *
@@ -64,9 +61,20 @@ public class CuratorZookeeperClient implements Closeable
      * @param watcher default watcher or null
      * @param retryPolicy the retry policy to use
      */
-    public CuratorZookeeperClient(String connectString, int sessionTimeoutMs, int connectionTimeoutMs, Watcher watcher, RetryPolicy retryPolicy)
-    {
-        this(new DefaultZookeeperFactory(), new FixedEnsembleProvider(connectString), sessionTimeoutMs, connectionTimeoutMs, watcher, retryPolicy, false, new StandardConnectionHandlingPolicy());
+    public CuratorZookeeperClient(
+            String connectString,
+            int sessionTimeoutMs,
+            int connectionTimeoutMs,
+            Watcher watcher,
+            RetryPolicy retryPolicy) {
+        this(
+                new DefaultZookeeperFactory(),
+                new FixedEnsembleProvider(connectString),
+                sessionTimeoutMs,
+                connectionTimeoutMs,
+                watcher,
+                retryPolicy,
+                false);
     }
 
     /**
@@ -76,9 +84,20 @@ public class CuratorZookeeperClient implements Closeable
      * @param watcher default watcher or null
      * @param retryPolicy the retry policy to use
      */
-    public CuratorZookeeperClient(EnsembleProvider ensembleProvider, int sessionTimeoutMs, int connectionTimeoutMs, Watcher watcher, RetryPolicy retryPolicy)
-    {
-        this(new DefaultZookeeperFactory(), ensembleProvider, sessionTimeoutMs, connectionTimeoutMs, watcher, retryPolicy, false, new StandardConnectionHandlingPolicy());
+    public CuratorZookeeperClient(
+            EnsembleProvider ensembleProvider,
+            int sessionTimeoutMs,
+            int connectionTimeoutMs,
+            Watcher watcher,
+            RetryPolicy retryPolicy) {
+        this(
+                new DefaultZookeeperFactory(),
+                ensembleProvider,
+                sessionTimeoutMs,
+                connectionTimeoutMs,
+                watcher,
+                retryPolicy,
+                false);
     }
 
     /**
@@ -93,9 +112,23 @@ public class CuratorZookeeperClient implements Closeable
      *                      {@link ZooKeeper#ZooKeeper(String, int, Watcher, long, byte[], boolean)}
      *                      for details
      */
-    public CuratorZookeeperClient(ZookeeperFactory zookeeperFactory, EnsembleProvider ensembleProvider, int sessionTimeoutMs, int connectionTimeoutMs, Watcher watcher, RetryPolicy retryPolicy, boolean canBeReadOnly)
-    {
-        this(zookeeperFactory, ensembleProvider, sessionTimeoutMs, connectionTimeoutMs, watcher, retryPolicy, canBeReadOnly, new StandardConnectionHandlingPolicy());
+    public CuratorZookeeperClient(
+            ZookeeperFactory zookeeperFactory,
+            EnsembleProvider ensembleProvider,
+            int sessionTimeoutMs,
+            int connectionTimeoutMs,
+            Watcher watcher,
+            RetryPolicy retryPolicy,
+            boolean canBeReadOnly) {
+        this(
+                zookeeperFactory,
+                ensembleProvider,
+                sessionTimeoutMs,
+                connectionTimeoutMs,
+                0,
+                watcher,
+                retryPolicy,
+                canBeReadOnly);
     }
 
     /**
@@ -103,28 +136,37 @@ public class CuratorZookeeperClient implements Closeable
      * @param ensembleProvider the ensemble provider
      * @param sessionTimeoutMs session timeout
      * @param connectionTimeoutMs connection timeout
+     * @param waitForShutdownTimeoutMs default timeout fo close operation
      * @param watcher default watcher or null
      * @param retryPolicy the retry policy to use
      * @param canBeReadOnly if true, allow ZooKeeper client to enter
      *                      read only mode in case of a network partition. See
      *                      {@link ZooKeeper#ZooKeeper(String, int, Watcher, long, byte[], boolean)}
      *                      for details
-     * @param connectionHandlingPolicy connection handling policy - use one of the pre-defined policies or write your own
-     * @since 3.0.0
+     * @since 4.0.2
      */
-    public CuratorZookeeperClient(ZookeeperFactory zookeeperFactory, EnsembleProvider ensembleProvider, int sessionTimeoutMs, int connectionTimeoutMs, Watcher watcher, RetryPolicy retryPolicy, boolean canBeReadOnly, ConnectionHandlingPolicy connectionHandlingPolicy)
-    {
-        this.connectionHandlingPolicy = connectionHandlingPolicy;
-        if ( sessionTimeoutMs < connectionTimeoutMs )
-        {
-            log.warn(String.format("session timeout [%d] is less than connection timeout [%d]", sessionTimeoutMs, connectionTimeoutMs));
+    public CuratorZookeeperClient(
+            ZookeeperFactory zookeeperFactory,
+            EnsembleProvider ensembleProvider,
+            int sessionTimeoutMs,
+            int connectionTimeoutMs,
+            int waitForShutdownTimeoutMs,
+            Watcher watcher,
+            RetryPolicy retryPolicy,
+            boolean canBeReadOnly) {
+        if (sessionTimeoutMs < connectionTimeoutMs) {
+            log.warn(String.format(
+                    "session timeout [%d] is less than connection timeout [%d]",
+                    sessionTimeoutMs, connectionTimeoutMs));
         }
 
         retryPolicy = Preconditions.checkNotNull(retryPolicy, "retryPolicy cannot be null");
         ensembleProvider = Preconditions.checkNotNull(ensembleProvider, "ensembleProvider cannot be null");
 
         this.connectionTimeoutMs = connectionTimeoutMs;
-        state = new ConnectionState(zookeeperFactory, ensembleProvider, sessionTimeoutMs, connectionTimeoutMs, watcher, tracer, canBeReadOnly, connectionHandlingPolicy);
+        this.waitForShutdownTimeoutMs = waitForShutdownTimeoutMs;
+        state = new ConnectionState(
+                zookeeperFactory, ensembleProvider, sessionTimeoutMs, watcher, tracer, canBeReadOnly);
         setRetryPolicy(retryPolicy);
     }
 
@@ -134,8 +176,7 @@ public class CuratorZookeeperClient implements Closeable
      * @return client the client
      * @throws Exception if the connection timeout has elapsed or an exception occurs in a background process
      */
-    public ZooKeeper getZooKeeper() throws Exception
-    {
+    public ZooKeeper getZooKeeper() throws Exception {
         Preconditions.checkState(started.get(), "Client is not started");
 
         return state.getZooKeeper();
@@ -146,9 +187,8 @@ public class CuratorZookeeperClient implements Closeable
      *
      * @return new retry loop
      */
-    public RetryLoop newRetryLoop()
-    {
-        return new RetryLoop(retryPolicy.get(), tracer);
+    public RetryLoop newRetryLoop() {
+        return new RetryLoopImpl(retryPolicy.get(), tracer);
     }
 
     /**
@@ -158,8 +198,7 @@ public class CuratorZookeeperClient implements Closeable
      * @param mode failure mode
      * @return new retry loop
      */
-    public SessionFailRetryLoop newSessionFailRetryLoop(SessionFailRetryLoop.Mode mode)
-    {
+    public SessionFailRetryLoop newSessionFailRetryLoop(SessionFailRetryLoop.Mode mode) {
         return new SessionFailRetryLoop(this, mode);
     }
 
@@ -168,8 +207,7 @@ public class CuratorZookeeperClient implements Closeable
      *
      * @return true/false
      */
-    public boolean isConnected()
-    {
+    public boolean isConnected() {
         return state.isConnected();
     }
 
@@ -180,12 +218,11 @@ public class CuratorZookeeperClient implements Closeable
      * @return true if the connection succeeded, false if not
      * @throws InterruptedException interrupted while waiting
      */
-    public boolean blockUntilConnectedOrTimedOut() throws InterruptedException
-    {
+    public boolean blockUntilConnectedOrTimedOut() throws InterruptedException {
         Preconditions.checkState(started.get(), "Client is not started");
 
         log.debug("blockUntilConnectedOrTimedOut() start");
-        OperationTrace       trace = startAdvancedTracer("blockUntilConnectedOrTimedOut");
+        OperationTrace trace = startAdvancedTracer("blockUntilConnectedOrTimedOut");
 
         internalBlockUntilConnectedOrTimedOut();
 
@@ -202,12 +239,10 @@ public class CuratorZookeeperClient implements Closeable
      *
      * @throws IOException errors
      */
-    public void start() throws Exception
-    {
+    public void start() throws Exception {
         log.debug("Starting");
 
-        if ( !started.compareAndSet(false, true) )
-        {
+        if (!started.compareAndSet(false, true)) {
             throw new IllegalStateException("Already started");
         }
 
@@ -215,19 +250,31 @@ public class CuratorZookeeperClient implements Closeable
     }
 
     /**
-     * Close the client
+     * Close the client.
+     *
+     * Same as {@link #close(int) } using the timeout set at construction time.
+     *
+     * @see #close(int)
      */
-    public void close()
-    {
-        log.debug("Closing");
+    @Override
+    public void close() {
+        close(waitForShutdownTimeoutMs);
+    }
+
+    /**
+     * Close this client object as the {@link #close() } method.
+     * This method will wait for internal resources to be released.
+     *
+     * @param waitForShutdownTimeoutMs timeout (in milliseconds) to wait for resources to be released.
+     *                  Use zero or a negative value to skip the wait.
+     */
+    public void close(int waitForShutdownTimeoutMs) {
+        log.debug("Closing, waitForShutdownTimeoutMs {}", waitForShutdownTimeoutMs);
 
         started.set(false);
-        try
-        {
-            state.close();
-        }
-        catch ( IOException e )
-        {
+        try {
+            state.close(waitForShutdownTimeoutMs);
+        } catch (IOException e) {
             ThreadUtils.checkInterrupted(e);
             log.error("", e);
         }
@@ -238,8 +285,7 @@ public class CuratorZookeeperClient implements Closeable
      *
      * @param policy new policy
      */
-    public void setRetryPolicy(RetryPolicy policy)
-    {
+    public void setRetryPolicy(RetryPolicy policy) {
         Preconditions.checkNotNull(policy, "policy cannot be null");
 
         retryPolicy.set(policy);
@@ -250,8 +296,7 @@ public class CuratorZookeeperClient implements Closeable
      *
      * @return policy
      */
-    public RetryPolicy getRetryPolicy()
-    {
+    public RetryPolicy getRetryPolicy() {
         return retryPolicy.get();
     }
 
@@ -260,8 +305,7 @@ public class CuratorZookeeperClient implements Closeable
      * @param name name of the event
      * @return the new tracer ({@link TimeTrace#commit()} must be called)
      */
-    public TimeTrace startTracer(String name)
-    {
+    public TimeTrace startTracer(String name) {
         return new TimeTrace(name, tracer.get());
     }
 
@@ -270,8 +314,7 @@ public class CuratorZookeeperClient implements Closeable
      * @param name name of the event
      * @return the new tracer ({@link OperationTrace#commit()} must be called)
      */
-    public OperationTrace          startAdvancedTracer(String name)
-    {
+    public OperationTrace startAdvancedTracer(String name) {
         return new OperationTrace(name, tracer.get(), state.getSessionId());
     }
 
@@ -280,8 +323,7 @@ public class CuratorZookeeperClient implements Closeable
      *
      * @return tracing driver
      */
-    public TracerDriver getTracerDriver()
-    {
+    public TracerDriver getTracerDriver() {
         return tracer.get();
     }
 
@@ -290,8 +332,7 @@ public class CuratorZookeeperClient implements Closeable
      *
      * @param tracer new tracing driver
      */
-    public void setTracerDriver(TracerDriver tracer)
-    {
+    public void setTracerDriver(TracerDriver tracer) {
         this.tracer.set(tracer);
     }
 
@@ -301,8 +342,7 @@ public class CuratorZookeeperClient implements Closeable
      *
      * @return connection string
      */
-    public String getCurrentConnectionString()
-    {
+    public String getCurrentConnectionString() {
         return state.getEnsembleProvider().getConnectionString();
     }
 
@@ -311,8 +351,7 @@ public class CuratorZookeeperClient implements Closeable
      *
      * @return timeout
      */
-    public int getConnectionTimeoutMs()
-    {
+    public int getConnectionTimeoutMs() {
         return connectionTimeoutMs;
     }
 
@@ -321,8 +360,7 @@ public class CuratorZookeeperClient implements Closeable
      *
      * @throws Exception errors
      */
-    public void reset() throws Exception
-    {
+    public void reset() throws Exception {
         state.reset();
     }
 
@@ -332,19 +370,8 @@ public class CuratorZookeeperClient implements Closeable
      *
      * @return the current instance index
      */
-    public long getInstanceIndex()
-    {
+    public long getInstanceIndex() {
         return state.getInstanceIndex();
-    }
-
-    /**
-     * Return the configured connection handling policy
-     *
-     * @return ConnectionHandlingPolicy
-     */
-    public ConnectionHandlingPolicy getConnectionHandlingPolicy()
-    {
-        return connectionHandlingPolicy;
     }
 
     /**
@@ -352,18 +379,15 @@ public class CuratorZookeeperClient implements Closeable
      *
      * @return session timeout or 0
      */
-    public int getLastNegotiatedSessionTimeoutMs()
-    {
+    public int getLastNegotiatedSessionTimeoutMs() {
         return state.getLastNegotiatedSessionTimeoutMs();
     }
 
-    void addParentWatcher(Watcher watcher)
-    {
+    void addParentWatcher(Watcher watcher) {
         state.addParentWatcher(watcher);
     }
 
-    void removeParentWatcher(Watcher watcher)
-    {
+    void removeParentWatcher(Watcher watcher) {
         state.removeParentWatcher(watcher);
     }
 
@@ -372,29 +396,23 @@ public class CuratorZookeeperClient implements Closeable
      *
      * @throws InterruptedException interruptions
      */
-    public void internalBlockUntilConnectedOrTimedOut() throws InterruptedException
-    {
+    public void internalBlockUntilConnectedOrTimedOut() throws InterruptedException {
         long waitTimeMs = connectionTimeoutMs;
-        while ( !state.isConnected() && (waitTimeMs > 0) )
-        {
+        while (!state.isConnected() && (waitTimeMs > 0)) {
             final CountDownLatch latch = new CountDownLatch(1);
-            Watcher tempWatcher = new Watcher()
-            {
+            Watcher tempWatcher = new Watcher() {
                 @Override
-                public void process(WatchedEvent event)
-                {
+                public void process(WatchedEvent event) {
                     latch.countDown();
                 }
             };
 
             state.addParentWatcher(tempWatcher);
             long startTimeMs = System.currentTimeMillis();
-            try
-            {
-                latch.await(1, TimeUnit.SECONDS);
-            }
-            finally
-            {
+            long timeoutMs = Math.min(waitTimeMs, 1000);
+            try {
+                latch.await(timeoutMs, TimeUnit.MILLISECONDS);
+            } finally {
                 state.removeParentWatcher(tempWatcher);
             }
             long elapsed = Math.max(1, System.currentTimeMillis() - startTimeMs);

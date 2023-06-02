@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.shared;
 
 import org.apache.curator.framework.state.ConnectionStateListener;
@@ -23,8 +24,7 @@ import org.apache.curator.framework.state.ConnectionStateListener;
 /**
  * Listener for changes to a shared count
  */
-public interface SharedCountListener extends ConnectionStateListener
-{
+public interface SharedCountListener extends ConnectionStateListener {
     /**
      * Called when the shared value has changed
      *
@@ -32,5 +32,5 @@ public interface SharedCountListener extends ConnectionStateListener
      * @param newCount the new count
      * @throws Exception errors
      */
-    public void         countHasChanged(SharedCountReader sharedCount, int newCount) throws Exception;
+    public void countHasChanged(SharedCountReader sharedCount, int newCount) throws Exception;
 }

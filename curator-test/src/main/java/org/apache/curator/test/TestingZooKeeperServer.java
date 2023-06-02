@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -19,65 +19,81 @@
 
 package org.apache.curator.test;
 
-import org.apache.zookeeper.server.quorum.QuorumPeer;
-import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicReference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Thanks to Jeremie BORDIER (ahfeel) for this code
  */
-public class TestingZooKeeperServer implements Closeable
-{
-    private static final Logger logger = LoggerFactory.getLogger(TestingZooKeeperServer.class);
+public class TestingZooKeeperServer implements Closeable {
+    private static final Logger log = LoggerFactory.getLogger(TestingZooKeeperServer.class);
+    static boolean hasZooKeeperServerEmbedded;
 
+    private final AtomicReference<State> state = new AtomicReference<>(State.LATENT);
     private final QuorumConfigBuilder configBuilder;
     private final int thisInstanceIndex;
+    private int thisInstancePort;
     private volatile ZooKeeperMainFace main;
-    private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
 
-    private enum State
-    {
-        LATENT, STARTED, STOPPED, CLOSED
+    static {
+        boolean localHasZooKeeperServerEmbedded;
+        try {
+            Class.forName("org.apache.zookeeper.server.embedded.ZooKeeperServerEmbedded");
+            localHasZooKeeperServerEmbedded = true;
+        } catch (Throwable t) {
+            localHasZooKeeperServerEmbedded = false;
+            log.info("ZooKeeperServerEmbedded is not available in the version of the ZooKeeper library being used");
+        }
+        hasZooKeeperServerEmbedded = localHasZooKeeperServerEmbedded;
     }
 
-    public TestingZooKeeperServer(QuorumConfigBuilder configBuilder)
-    {
+    ZooKeeperMainFace getMain() {
+        return main;
+    }
+
+    private enum State {
+        LATENT,
+        STARTED,
+        STOPPED,
+        CLOSED
+    }
+
+    public TestingZooKeeperServer(QuorumConfigBuilder configBuilder) {
         this(configBuilder, 0);
     }
 
-    public TestingZooKeeperServer(QuorumConfigBuilder configBuilder, int thisInstanceIndex)
-    {
-        System.setProperty("zookeeper.jmx.log4j.disable", "true");  // disable JMX logging
+    public TestingZooKeeperServer(QuorumConfigBuilder configBuilder, int thisInstanceIndex) {
+        System.setProperty("zookeeper.jmx.log4j.disable", "true"); // disable JMX logging
 
         this.configBuilder = configBuilder;
         this.thisInstanceIndex = thisInstanceIndex;
-        main = isCluster() ? new TestingQuorumPeerMain() : new TestingZooKeeperMain();
+        this.thisInstancePort = configBuilder.getInstanceSpec(thisInstanceIndex).getPort();
+        main = createServerMain();
+    }
+
+    private ZooKeeperMainFace createServerMain() {
+        if (hasZooKeeperServerEmbedded) {
+            return new ZooKeeperServerEmbeddedAdapter();
+        } else if (isCluster()) {
+            return new TestingQuorumPeerMain();
+        } else {
+            return new TestingZooKeeperMain();
+        }
     }
 
     private boolean isCluster() {
         return configBuilder.size() > 1;
     }
-    
-    public QuorumPeer getQuorumPeer()
-    {
-        if (isCluster()) {
-            return ((TestingQuorumPeerMain) main).getTestingQuorumPeer();
-        }
-        throw new UnsupportedOperationException();
-    }
 
-    public Collection<InstanceSpec> getInstanceSpecs()
-    {
+    public Collection<InstanceSpec> getInstanceSpecs() {
         return configBuilder.getInstanceSpecs();
     }
 
-    public void kill()
-    {
+    public void kill() {
         main.kill();
         state.set(State.STOPPED);
     }
@@ -87,83 +103,62 @@ public class TestingZooKeeperServer implements Closeable
      * started again. If it is not running (in a LATENT or STOPPED state) then
      * it will be restarted. If it is in a CLOSED state then an exception will
      * be thrown.
-     *
-     * @throws Exception
      */
-    public void restart() throws Exception
-    {
+    public void restart() throws Exception {
         // Can't restart from a closed state as all the temporary data is gone
-        if ( state.get() == State.CLOSED )
-        {
+        if (state.get() == State.CLOSED) {
             throw new IllegalStateException("Cannot restart a closed instance");
         }
 
         // If the server's currently running then stop it.
-        if ( state.get() == State.STARTED )
-        {
+        if (state.get() == State.STARTED) {
             stop();
         }
 
         // Set to a LATENT state so we can restart
         state.set(State.LATENT);
 
-        main = isCluster() ? new TestingQuorumPeerMain() : new TestingZooKeeperMain();
+        main = createServerMain();
         start();
     }
 
-    public void stop() throws IOException
-    {
-        if ( state.compareAndSet(State.STARTED, State.STOPPED) )
-        {
+    public void stop() throws IOException {
+        if (state.compareAndSet(State.STARTED, State.STOPPED)) {
             main.close();
         }
     }
 
-    public InstanceSpec getInstanceSpec()
-    {
+    public InstanceSpec getInstanceSpec() {
         return configBuilder.getInstanceSpec(thisInstanceIndex);
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         stop();
 
-        if ( state.compareAndSet(State.STOPPED, State.CLOSED) )
-        {
+        if (state.compareAndSet(State.STOPPED, State.CLOSED)) {
             configBuilder.close();
 
             InstanceSpec spec = getInstanceSpec();
-            if ( spec.deleteDataDirectoryOnClose() )
-            {
+            if (spec.deleteDataDirectoryOnClose()) {
                 DirectoryUtils.deleteRecursively(spec.getDataDirectory());
             }
         }
     }
 
-    public void start() throws Exception
-    {
-        if ( !state.compareAndSet(State.LATENT, State.STARTED) )
-        {
+    public void start() throws Exception {
+        if (!state.compareAndSet(State.LATENT, State.STARTED)) {
             return;
         }
 
-        new Thread(new Runnable()
-        {
-            public void run()
-            {
-                try
-                {
-                    QuorumPeerConfig config = configBuilder.buildConfig(thisInstanceIndex);
-                    main.runFromConfig(config);
-                }
-                catch ( Exception e )
-                {
-                    logger.error(String.format("From testing server (random state: %s) for instance: %s", String.valueOf(configBuilder.isFromRandom()), getInstanceSpec()), e);
-                }
-            }
-        }).start();
+        main.start(configBuilder.bindInstance(thisInstanceIndex, thisInstancePort));
+        thisInstancePort = main.getClientPort();
+    }
 
-        main.blockUntilStarted();
+    public int getLocalPort() {
+        if (thisInstancePort == 0) {
+            throw new IllegalStateException("server is configured to bind to port 0 but not started");
+        }
+        return thisInstancePort;
     }
 }

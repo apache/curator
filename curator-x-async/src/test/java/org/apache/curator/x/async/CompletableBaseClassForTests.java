@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,56 +16,62 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 import com.google.common.base.Throwables;
-import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.test.compatibility.Timing2;
-import org.testng.Assert;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
+import org.apache.curator.test.BaseClassForTests;
+import org.apache.curator.test.compatibility.Timing2;
 
-public abstract class CompletableBaseClassForTests extends BaseClassForTests
-{
+public abstract class CompletableBaseClassForTests extends BaseClassForTests {
     protected static final Timing2 timing = new Timing2();
 
-    protected <T, U> void complete(CompletionStage<T> stage)
-    {
+    protected void joinThrowable(CompletionStage<?> stage) throws Throwable {
+        try {
+            stage.toCompletableFuture().get();
+        } catch (Exception ex) {
+            throw Throwables.getRootCause(ex);
+        }
+    }
+
+    protected void exceptional(CompletionStage<?> stage, Class<? extends Throwable> throwable) {
+        assertThrows(throwable, () -> {
+            joinThrowable(stage);
+        });
+    }
+
+    protected <T, U> void complete(CompletionStage<T> stage) {
         complete(stage, (v, e) -> {
-            if ( e != null )
-            {
+            if (e != null) {
                 Throwables.propagate(e);
             }
         });
     }
 
-    protected <T, U> void complete(CompletionStage<T> stage, BiConsumer<? super T, Throwable> handler)
-    {
-        try
-        {
+    protected <T, U> void complete(CompletionStage<T> stage, BiConsumer<? super T, Throwable> handler) {
+        try {
             stage.handle((v, e) -> {
-                handler.accept(v, e);
-                return null;
-            }).toCompletableFuture().get(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS);
-        }
-        catch ( InterruptedException e )
-        {
+                        handler.accept(v, e);
+                        return null;
+                    })
+                    .toCompletableFuture()
+                    .get(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
             Thread.interrupted();
-        }
-        catch ( ExecutionException e )
-        {
-            if ( e.getCause() instanceof AssertionError )
-            {
-                throw (AssertionError)e.getCause();
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof AssertionError) {
+                throw (AssertionError) e.getCause();
             }
-            Assert.fail("get() failed", e);
-        }
-        catch ( TimeoutException e )
-        {
-            Assert.fail("get() timed out");
+            fail("get() failed", e);
+        } catch (TimeoutException e) {
+            fail("get() timed out");
         }
     }
 }

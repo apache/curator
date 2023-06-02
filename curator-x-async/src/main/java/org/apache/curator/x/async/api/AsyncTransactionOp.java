@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,14 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async.api;
 
 /**
  * Builds operations that can be committed as a transaction
  * via {@link org.apache.curator.x.async.AsyncCuratorFramework#transaction()}
  */
-public interface AsyncTransactionOp
-{
+public interface AsyncTransactionOp {
     /**
      * Start a create builder in the transaction
      *

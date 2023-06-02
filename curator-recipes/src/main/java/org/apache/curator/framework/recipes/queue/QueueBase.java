@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,27 +16,27 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.queue;
 
-import org.apache.curator.framework.listen.ListenerContainer;
 import java.io.Closeable;
 import java.util.concurrent.TimeUnit;
+import org.apache.curator.framework.listen.Listenable;
 
-public interface QueueBase<T> extends Closeable
-{
+public interface QueueBase<T> extends Closeable {
     /**
      * Start the queue. No other methods work until this is called
      *
      * @throws Exception startup errors
      */
-    void     start() throws Exception;
+    void start() throws Exception;
 
     /**
      * Return the manager for put listeners
      *
      * @return put listener container
      */
-    ListenerContainer<QueuePutListener<T>> getPutListenerContainer();
+    Listenable<QueuePutListener<T>> getPutListenerContainer();
 
     /**
      * Used when the queue is created with a {@link QueueBuilder#lockPath(String)}. Determines
@@ -44,7 +44,7 @@ public interface QueueBase<T> extends Closeable
      *
      * @param newErrorMode the new error mode (the default is {@link ErrorMode#REQUEUE}
      */
-    void     setErrorMode(ErrorMode newErrorMode);
+    void setErrorMode(ErrorMode newErrorMode);
 
     /**
      * Wait until any pending puts are committed

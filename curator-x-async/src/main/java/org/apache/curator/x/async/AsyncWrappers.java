@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,15 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
-import org.apache.curator.framework.recipes.locks.InterProcessLock;
-import org.apache.curator.utils.ThreadUtils;
-import org.apache.curator.utils.ZKPaths;
-import org.apache.curator.x.async.api.ExistsOption;
-import org.apache.zookeeper.KeeperException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +28,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import org.apache.curator.framework.recipes.locks.InterProcessLock;
+import org.apache.curator.utils.ThreadUtils;
+import org.apache.curator.utils.ZKPaths;
+import org.apache.curator.x.async.api.ExistsOption;
+import org.apache.zookeeper.KeeperException;
 
 /**
  * <p>
@@ -70,8 +71,7 @@ import java.util.concurrent.TimeUnit;
  * </pre></code>
  * </p>
  */
-public class AsyncWrappers
-{
+public class AsyncWrappers {
     /**
      * <p>
      * Return the children of the given path (keyed by the full path) and the data for each node.
@@ -87,8 +87,7 @@ public class AsyncWrappers
      *
      * @return CompletionStage
      */
-    public static CompletionStage<Map<String, byte[]>> childrenWithData(AsyncCuratorFramework client, String path)
-    {
+    public static CompletionStage<Map<String, byte[]>> childrenWithData(AsyncCuratorFramework client, String path) {
         return childrenWithData(client, path, false);
     }
 
@@ -108,23 +107,17 @@ public class AsyncWrappers
      * @param isCompressed pass true if data is compressed
      * @return CompletionStage
      */
-    public static CompletionStage<Map<String, byte[]>> childrenWithData(AsyncCuratorFramework client, String path, boolean isCompressed)
-    {
+    public static CompletionStage<Map<String, byte[]>> childrenWithData(
+            AsyncCuratorFramework client, String path, boolean isCompressed) {
         CompletableFuture<Map<String, byte[]>> future = new CompletableFuture<>();
         client.getChildren().forPath(path).handle((children, e) -> {
-            if ( e != null )
-            {
-                if ( Throwables.getRootCause(e) instanceof KeeperException.NoNodeException )
-                {
+            if (e != null) {
+                if (Throwables.getRootCause(e) instanceof KeeperException.NoNodeException) {
                     future.complete(Maps.newHashMap());
-                }
-                else
-                {
+                } else {
                     future.completeExceptionally(e);
                 }
-            }
-            else
-            {
+            } else {
                 completeChildren(client, future, path, children, isCompressed);
             }
             return null;
@@ -139,8 +132,7 @@ public class AsyncWrappers
      * @param path path to ensure
      * @return stage
      */
-    public static CompletionStage<Void> asyncEnsureParents(AsyncCuratorFramework client, String path)
-    {
+    public static CompletionStage<Void> asyncEnsureParents(AsyncCuratorFramework client, String path) {
         return ensure(client, path, ExistsOption.createParentsIfNeeded);
     }
 
@@ -151,8 +143,7 @@ public class AsyncWrappers
      * @param path path to ensure
      * @return stage
      */
-    public static CompletionStage<Void> asyncEnsureContainers(AsyncCuratorFramework client, String path)
-    {
+    public static CompletionStage<Void> asyncEnsureContainers(AsyncCuratorFramework client, String path) {
         return ensure(client, path, ExistsOption.createParentsAsContainers);
     }
 
@@ -160,9 +151,7 @@ public class AsyncWrappers
      * Set as the completion stage's exception when trying to acquire a lock
      * times out
      */
-    public static class TimeoutException extends RuntimeException
-    {
-    }
+    public static class TimeoutException extends RuntimeException {}
 
     /**
      * Attempt to acquire the given lock asynchronously using the given timeout and executor. If the lock
@@ -175,15 +164,12 @@ public class AsyncWrappers
      * @param executor executor to use to asynchronously acquire
      * @return stage
      */
-    public static CompletionStage<Void> lockAsync(InterProcessLock lock, long timeout, TimeUnit unit, Executor executor)
-    {
+    public static CompletionStage<Void> lockAsync(
+            InterProcessLock lock, long timeout, TimeUnit unit, Executor executor) {
         CompletableFuture<Void> future = new CompletableFuture<>();
-        if ( executor == null )
-        {
+        if (executor == null) {
             CompletableFuture.runAsync(() -> lock(future, lock, timeout, unit));
-        }
-        else
-        {
+        } else {
             CompletableFuture.runAsync(() -> lock(future, lock, timeout, unit), executor);
         }
         return future;
@@ -200,15 +186,12 @@ public class AsyncWrappers
      * @param executor executor to use to asynchronously acquire
      * @return stage
      */
-    public static CompletionStage<Boolean> lockAsyncIf(InterProcessLock lock, long timeout, TimeUnit unit, Executor executor)
-    {
+    public static CompletionStage<Boolean> lockAsyncIf(
+            InterProcessLock lock, long timeout, TimeUnit unit, Executor executor) {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
-        if ( executor == null )
-        {
+        if (executor == null) {
             CompletableFuture.runAsync(() -> lockIf(future, lock, timeout, unit));
-        }
-        else
-        {
+        } else {
             CompletableFuture.runAsync(() -> lockIf(future, lock, timeout, unit), executor);
         }
         return future;
@@ -222,8 +205,7 @@ public class AsyncWrappers
      * @param executor executor to use to asynchronously acquire
      * @return stage
      */
-    public static CompletionStage<Void> lockAsync(InterProcessLock lock, Executor executor)
-    {
+    public static CompletionStage<Void> lockAsync(InterProcessLock lock, Executor executor) {
         return lockAsync(lock, 0, null, executor);
     }
 
@@ -237,8 +219,7 @@ public class AsyncWrappers
      * @param unit time unit of timeout
      * @return stage
      */
-    public static CompletionStage<Void> lockAsync(InterProcessLock lock, long timeout, TimeUnit unit)
-    {
+    public static CompletionStage<Void> lockAsync(InterProcessLock lock, long timeout, TimeUnit unit) {
         return lockAsync(lock, timeout, unit, null);
     }
 
@@ -252,8 +233,7 @@ public class AsyncWrappers
      * @param unit time unit of timeout
      * @return stage
      */
-    public static CompletionStage<Boolean> lockAsyncIf(InterProcessLock lock, long timeout, TimeUnit unit)
-    {
+    public static CompletionStage<Boolean> lockAsyncIf(InterProcessLock lock, long timeout, TimeUnit unit) {
         return lockAsyncIf(lock, timeout, unit, null);
     }
 
@@ -264,8 +244,7 @@ public class AsyncWrappers
      * {@link org.apache.curator.framework.recipes.locks.InterProcessSemaphoreV2}, etc.)
      * @return stage
      */
-    public static CompletionStage<Void> lockAsync(InterProcessLock lock)
-    {
+    public static CompletionStage<Void> lockAsync(InterProcessLock lock) {
         return lockAsync(lock, 0, null, null);
     }
 
@@ -274,8 +253,7 @@ public class AsyncWrappers
      *
      * @param lock lock to release
      */
-    public static void release(InterProcessLock lock)
-    {
+    public static void release(InterProcessLock lock) {
         release(lock, true);
     }
 
@@ -285,89 +263,69 @@ public class AsyncWrappers
      * @param lock lock to release
      * @param ignoreNoLockExceptions if true {@link java.lang.IllegalStateException} is ignored
      */
-    public static void release(InterProcessLock lock, boolean ignoreNoLockExceptions)
-    {
-        try
-        {
+    public static void release(InterProcessLock lock, boolean ignoreNoLockExceptions) {
+        try {
             lock.release();
-        }
-        catch ( IllegalStateException e )
-        {
-            if ( !ignoreNoLockExceptions )
-            {
+        } catch (IllegalStateException e) {
+            if (!ignoreNoLockExceptions) {
                 throw new RuntimeException(e);
             }
-        }
-        catch ( Exception e )
-        {
+        } catch (Exception e) {
             ThreadUtils.checkInterrupted(e);
             throw new RuntimeException(e);
         }
     }
 
-    private static void lockIf(CompletableFuture<Boolean> future, InterProcessLock lock, long timeout, TimeUnit unit)
-    {
-        try
-        {
+    private static void lockIf(CompletableFuture<Boolean> future, InterProcessLock lock, long timeout, TimeUnit unit) {
+        try {
             future.complete(lock.acquire(timeout, unit));
-        }
-        catch ( Exception e )
-        {
+        } catch (Exception e) {
             ThreadUtils.checkInterrupted(e);
             future.completeExceptionally(e);
         }
     }
 
-    private static void lock(CompletableFuture<Void> future, InterProcessLock lock, long timeout, TimeUnit unit)
-    {
-        try
-        {
-            if ( unit != null )
-            {
-                if ( lock.acquire(timeout, unit) )
-                {
+    private static void lock(CompletableFuture<Void> future, InterProcessLock lock, long timeout, TimeUnit unit) {
+        try {
+            if (unit != null) {
+                if (lock.acquire(timeout, unit)) {
                     future.complete(null);
-                }
-                else
-                {
+                } else {
                     future.completeExceptionally(new TimeoutException());
                 }
-            }
-            else
-            {
+            } else {
                 lock.acquire();
                 future.complete(null);
             }
-        }
-        catch ( Throwable e )
-        {
+        } catch (Throwable e) {
             ThreadUtils.checkInterrupted(e);
             future.completeExceptionally(e);
         }
     }
 
-    private static void completeChildren(AsyncCuratorFramework client, CompletableFuture<Map<String, byte[]>> future, String parentPath, List<String> children, boolean isCompressed)
-    {
+    private static void completeChildren(
+            AsyncCuratorFramework client,
+            CompletableFuture<Map<String, byte[]>> future,
+            String parentPath,
+            List<String> children,
+            boolean isCompressed) {
         Map<String, byte[]> nodes = Maps.newHashMap();
-        if ( children.size() == 0 )
-        {
+        if (children.size() == 0) {
             future.complete(nodes);
             return;
         }
 
         children.forEach(node -> {
             String path = ZKPaths.makePath(parentPath, node);
-            AsyncStage<byte[]> stage = isCompressed ? client.getData().decompressed().forPath(path) : client.getData().forPath(path);
+            AsyncStage<byte[]> stage = isCompressed
+                    ? client.getData().decompressed().forPath(path)
+                    : client.getData().forPath(path);
             stage.handle((data, e) -> {
-                if ( e != null )
-                {
+                if (e != null) {
                     future.completeExceptionally(e);
-                }
-                else
-                {
+                } else {
                     nodes.put(path, data);
-                    if ( nodes.size() == children.size() )
-                    {
+                    if (nodes.size() == children.size()) {
                         future.complete(nodes);
                     }
                 }
@@ -376,18 +334,13 @@ public class AsyncWrappers
         });
     }
 
-    private static CompletionStage<Void> ensure(AsyncCuratorFramework client, String path, ExistsOption option)
-    {
+    private static CompletionStage<Void> ensure(AsyncCuratorFramework client, String path, ExistsOption option) {
         String localPath = ZKPaths.makePath(path, "foo");
-        return client
-            .checkExists()
-            .withOptions(Collections.singleton(option))
-            .forPath(localPath)
-            .thenApply(__ -> null)
-            ;
+        return client.checkExists()
+                .withOptions(Collections.singleton(option))
+                .forPath(localPath)
+                .thenApply(__ -> null);
     }
 
-    private AsyncWrappers()
-    {
-    }
+    private AsyncWrappers() {}
 }

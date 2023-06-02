@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -24,10 +24,5 @@ package org.apache.curator.framework.api;
  * This builder has access only to the non-incremental reconfiguration methods withMembers, so that we prevent
  * mixing concepts that can't be used together.
  */
-public interface AddStatConfigEnsembleable extends
-    Addable<Statable<ConfigureEnsembleable>>,
-    ConfigureEnsembleable,
-    Statable<ConfigureEnsembleable>
-{
-
-}
+public interface AddStatConfigEnsembleable
+        extends Addable<Statable<ConfigureEnsembleable>>, ConfigureEnsembleable, Statable<ConfigureEnsembleable> {}

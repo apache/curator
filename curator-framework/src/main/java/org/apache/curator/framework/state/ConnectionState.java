@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,9 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.state;
 
-import org.apache.curator.connection.ConnectionHandlingPolicy;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
@@ -26,16 +26,13 @@ import org.apache.zookeeper.Watcher;
 /**
  * Represents state changes in the connection to ZK
  */
-public enum ConnectionState
-{
+public enum ConnectionState {
     /**
      * Sent for the first successful connection to the server. NOTE: You will only
      * get one of these messages for any CuratorFramework instance.
      */
-    CONNECTED
-    {
-        public boolean isConnected()
-        {
+    CONNECTED {
+        public boolean isConnected() {
             return true;
         }
     },
@@ -44,21 +41,17 @@ public enum ConnectionState
      * There has been a loss of connection. Leaders, locks, etc. should suspend
      * until the connection is re-established.
      */
-    SUSPENDED
-    {
-        public boolean isConnected()
-        {
+    SUSPENDED {
+        public boolean isConnected() {
             return false;
         }
-    },    
+    },
 
     /**
      * A suspended, lost, or read-only connection has been re-established
      */
-    RECONNECTED
-    {
-        public boolean isConnected()
-        {
+    RECONNECTED {
+        public boolean isConnected() {
             return true;
         }
     },
@@ -73,16 +66,9 @@ public enum ConnectionState
      *     b) Curator closes the internally managed ZooKeeper instance; c) The session timeout
      *     elapses during a network partition.
      * </p>
-     *
-     * <p>
-     *     NOTE: see {@link CuratorFrameworkFactory.Builder#connectionHandlingPolicy(ConnectionHandlingPolicy)} for an important note about a
-     *     change in meaning to LOST since 3.0.0
-     * </p>
      */
-    LOST
-    {
-        public boolean isConnected()
-        {
+    LOST {
+        public boolean isConnected() {
             return false;
         }
     },
@@ -94,19 +80,15 @@ public enum ConnectionState
      * <a href="http://wiki.apache.org/hadoop/ZooKeeper/GSoCReadOnlyMode">http://wiki.apache.org/hadoop/ZooKeeper/GSoCReadOnlyMode</a>.
      * The connection will remain in read only mode until another state change is sent.
      */
-    READ_ONLY
-    {
-        public boolean isConnected()
-        {
+    READ_ONLY {
+        public boolean isConnected() {
             return true;
         }
-    }
+    };
 
-    ;
-    
     /**
      * Check if this state indicates that Curator has a connection to ZooKeeper
-     * 
+     *
      * @return True if connected, false otherwise
      */
     public abstract boolean isConnected();

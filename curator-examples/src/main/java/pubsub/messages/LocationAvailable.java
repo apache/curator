@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,40 +16,37 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package pubsub.messages;
 
-import pubsub.models.Message;
-import pubsub.models.Priority;
 import java.time.Duration;
 import java.util.Objects;
+import pubsub.models.Message;
+import pubsub.models.Priority;
 
-public class LocationAvailable extends Message
-{
+public class LocationAvailable extends Message {
     private final String name;
     private final Duration availableUntil;
 
-    public LocationAvailable()
-    {
+    public LocationAvailable() {
         this(Priority.low, "", Duration.ZERO);
     }
 
-    public LocationAvailable(Priority priority, String name, Duration availableUntil)
-    {
+    public LocationAvailable(Priority priority, String name, Duration availableUntil) {
         super(priority);
         this.name = Objects.requireNonNull(name, "name cannot be null");
         this.availableUntil = Objects.requireNonNull(availableUntil, "availableUntil cannot be null");
     }
 
-    public LocationAvailable(String id, Priority priority, String name, Duration availableUntil)
-    {
+    public LocationAvailable(String id, Priority priority, String name, Duration availableUntil) {
         super(id, priority);
         this.name = Objects.requireNonNull(name, "name cannot be null");
         this.availableUntil = Objects.requireNonNull(availableUntil, "availableUntil cannot be null");
     }
 
     @Override
-    public String toString()
-    {
-        return "LocationAvailable{" + "name='" + name + '\'' + ", availableUntil=" + availableUntil + "} " + super.toString();
+    public String toString() {
+        return "LocationAvailable{" + "name='" + name + '\'' + ", availableUntil=" + availableUntil + "} "
+                + super.toString();
     }
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.retry;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -23,8 +24,7 @@ import com.google.common.annotations.VisibleForTesting;
 /**
  * Retry policy that retries a set number of times with an increasing (up to a maximum bound) sleep time between retries
  */
-public class BoundedExponentialBackoffRetry extends ExponentialBackoffRetry
-{
+public class BoundedExponentialBackoffRetry extends ExponentialBackoffRetry {
     private final int maxSleepTimeMs;
 
     /**
@@ -32,21 +32,18 @@ public class BoundedExponentialBackoffRetry extends ExponentialBackoffRetry
      * @param maxSleepTimeMs maximum amount of time to wait between retries
      * @param maxRetries maximum number of times to retry
      */
-    public BoundedExponentialBackoffRetry(int baseSleepTimeMs, int maxSleepTimeMs, int maxRetries)
-    {
+    public BoundedExponentialBackoffRetry(int baseSleepTimeMs, int maxSleepTimeMs, int maxRetries) {
         super(baseSleepTimeMs, maxRetries);
         this.maxSleepTimeMs = maxSleepTimeMs;
     }
 
     @VisibleForTesting
-    public int getMaxSleepTimeMs()
-    {
+    public int getMaxSleepTimeMs() {
         return maxSleepTimeMs;
     }
 
     @Override
-    protected long getSleepTimeMs(int retryCount, long elapsedTimeMs)
-    {
+    protected long getSleepTimeMs(int retryCount, long elapsedTimeMs) {
         return Math.min(maxSleepTimeMs, super.getSleepTimeMs(retryCount, elapsedTimeMs));
     }
 }

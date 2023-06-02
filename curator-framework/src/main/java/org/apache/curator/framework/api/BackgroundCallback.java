@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.api;
 
 import org.apache.curator.framework.CuratorFramework;
@@ -23,8 +24,7 @@ import org.apache.curator.framework.CuratorFramework;
 /**
  * Functor for an async background operation
  */
-public interface BackgroundCallback
-{
+public interface BackgroundCallback {
     /**
      * Called when the async background operation completes
      *

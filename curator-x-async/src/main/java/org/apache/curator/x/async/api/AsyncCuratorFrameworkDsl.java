@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async.api;
 
 import org.apache.curator.framework.api.transaction.CuratorOp;
@@ -23,8 +24,7 @@ import org.apache.curator.framework.api.transaction.CuratorOp;
 /**
  * Zookeeper framework-style client
  */
-public interface AsyncCuratorFrameworkDsl extends WatchableAsyncCuratorFramework
-{
+public interface AsyncCuratorFrameworkDsl extends WatchableAsyncCuratorFramework {
     /**
      * <p>
      * Returns a facade that adds watching to any of the subsequently created builders. i.e. all
@@ -112,4 +112,13 @@ public interface AsyncCuratorFrameworkDsl extends WatchableAsyncCuratorFramework
      * @return builder object
      */
     AsyncRemoveWatchesBuilder removeWatches();
+
+    /**
+     * Start an add watch builder. Supported only when ZooKeeper JAR of version 3.6 or
+     * above is used, throws {@code IllegalStateException} for ZooKeeper JAR 3.5 or below
+     *
+     * @return builder object
+     * @throws IllegalStateException ZooKeeper JAR is 3.5 or below
+     */
+    AsyncWatchBuilder addWatch();
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.api;
 
 /**
@@ -31,9 +32,7 @@ package org.apache.curator.framework.api;
  *     exception when the deletion fails. But, you can be assured that as long as the
  *     {@link org.apache.curator.framework.CuratorFramework} instance is open attempts will be made to delete the node.
  * </p>
- *  
+ *
  * @return this
  */
-public interface GuaranteeableDeletable extends Guaranteeable<ChildrenDeletable>, BackgroundVersionable
-{
-}
+public interface GuaranteeableDeletable extends Guaranteeable<ChildrenDeletable>, BackgroundVersionable {}

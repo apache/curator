@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,24 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.retry;
 
 /**
  * Retry policy that retries a max number of times
  */
-public class RetryNTimes extends SleepingRetry
-{
+public class RetryNTimes extends SleepingRetry {
     private final int sleepMsBetweenRetries;
 
-    public RetryNTimes(int n, int sleepMsBetweenRetries)
-    {
+    public RetryNTimes(int n, int sleepMsBetweenRetries) {
         super(n);
         this.sleepMsBetweenRetries = sleepMsBetweenRetries;
     }
 
     @Override
-    protected long getSleepTimeMs(int retryCount, long elapsedTimeMs)
-    {
+    protected long getSleepTimeMs(int retryCount, long elapsedTimeMs) {
         return sleepMsBetweenRetries;
     }
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,12 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async;
 
-import org.apache.curator.x.async.details.AsyncResultImpl;
-import org.apache.zookeeper.KeeperException;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
+import org.apache.curator.x.async.details.AsyncResultImpl;
+import org.apache.zookeeper.KeeperException;
 
 /**
  * <p>
@@ -40,8 +41,7 @@ import java.util.concurrent.CompletionStage;
  * </p>
  * @param <T> value type
  */
-public interface AsyncResult<T>
-{
+public interface AsyncResult<T> {
     /**
      * Return a new stage that wraps an async stage into a result-style completion stage. The returned
      * CompletionStage will always complete successfully.
@@ -50,14 +50,11 @@ public interface AsyncResult<T>
      * @param <T> value type
      * @return completion stage that resolves to a result
      */
-    static <T> CompletionStage<AsyncResult<T>> of(AsyncStage<T> stage)
-    {
+    static <T> CompletionStage<AsyncResult<T>> of(AsyncStage<T> stage) {
         return stage.handle((value, ex) -> {
-            if ( ex != null )
-            {
-                if ( ex instanceof KeeperException )
-                {
-                    return new AsyncResultImpl<T>(((KeeperException)ex).code());
+            if (ex != null) {
+                if (ex instanceof KeeperException) {
+                    return new AsyncResultImpl<T>(((KeeperException) ex).code());
                 }
                 return new AsyncResultImpl<T>(ex);
             }

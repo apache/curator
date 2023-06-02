@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -19,6 +19,13 @@
 
 package org.apache.curator.framework.imps;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
@@ -28,37 +35,26 @@ import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.Test;
 
-public class TestBlockUntilConnected extends BaseClassForTests
-{
+public class TestBlockUntilConnected extends BaseClassForTests {
     /**
      * Test the case where we're already connected
      */
     @Test
-    public void testBlockUntilConnectedCurrentlyConnected() throws Exception
-    {
+    public void testBlockUntilConnectedCurrentlyConnected() throws Exception {
         Timing timing = new Timing();
-        CuratorFramework client = CuratorFrameworkFactory.builder().
-            connectString(server.getConnectString()).
-            retryPolicy(new RetryOneTime(1)).
-            build();
+        CuratorFramework client = CuratorFrameworkFactory.builder()
+                .connectString(server.getConnectString())
+                .retryPolicy(new RetryOneTime(1))
+                .build();
 
-        try
-        {
+        try {
             final CountDownLatch connectedLatch = new CountDownLatch(1);
-            client.getConnectionStateListenable().addListener(new ConnectionStateListener()
-            {
+            client.getConnectionStateListenable().addListener(new ConnectionStateListener() {
                 @Override
-                public void stateChanged(CuratorFramework client, ConnectionState newState)
-                {
-                    if ( newState.isConnected() )
-                    {
+                public void stateChanged(CuratorFramework client, ConnectionState newState) {
+                    if (newState.isConnected()) {
                         connectedLatch.countDown();
                     }
                 }
@@ -66,15 +62,11 @@ public class TestBlockUntilConnected extends BaseClassForTests
 
             client.start();
 
-            Assert.assertTrue(timing.awaitLatch(connectedLatch), "Timed out awaiting latch");
-            Assert.assertTrue(client.blockUntilConnected(1, TimeUnit.SECONDS), "Not connected");
-        }
-        catch ( InterruptedException e )
-        {
-            Assert.fail("Unexpected interruption");
-        }
-        finally
-        {
+            assertTrue(timing.awaitLatch(connectedLatch), "Timed out awaiting latch");
+            assertTrue(client.blockUntilConnected(1, TimeUnit.SECONDS), "Not connected");
+        } catch (InterruptedException e) {
+            fail("Unexpected interruption");
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
@@ -83,24 +75,18 @@ public class TestBlockUntilConnected extends BaseClassForTests
      * Test the case where we are not currently connected and never have been
      */
     @Test
-    public void testBlockUntilConnectedCurrentlyNeverConnected()
-    {
-        CuratorFramework client = CuratorFrameworkFactory.builder().
-            connectString(server.getConnectString()).
-            retryPolicy(new RetryOneTime(1)).
-            build();
+    public void testBlockUntilConnectedCurrentlyNeverConnected() {
+        CuratorFramework client = CuratorFrameworkFactory.builder()
+                .connectString(server.getConnectString())
+                .retryPolicy(new RetryOneTime(1))
+                .build();
 
-        try
-        {
+        try {
             client.start();
-            Assert.assertTrue(client.blockUntilConnected(5, TimeUnit.SECONDS), "Not connected");
-        }
-        catch ( InterruptedException e )
-        {
-            Assert.fail("Unexpected interruption");
-        }
-        finally
-        {
+            assertTrue(client.blockUntilConnected(5, TimeUnit.SECONDS), "Not connected");
+        } catch (InterruptedException e) {
+            fail("Unexpected interruption");
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
@@ -109,52 +95,43 @@ public class TestBlockUntilConnected extends BaseClassForTests
      * Test the case where we are not currently connected, but have been previously
      */
     @Test
-    public void testBlockUntilConnectedCurrentlyAwaitingReconnect()
-    {
+    public void testBlockUntilConnectedCurrentlyAwaitingReconnect() {
         Timing timing = new Timing();
-        CuratorFramework client = CuratorFrameworkFactory.builder().
-            connectString(server.getConnectString()).
-            sessionTimeoutMs(timing.session()).
-            retryPolicy(new RetryOneTime(1)).
-            build();
+        CuratorFramework client = CuratorFrameworkFactory.builder()
+                .connectString(server.getConnectString())
+                .sessionTimeoutMs(timing.session())
+                .retryPolicy(new RetryOneTime(1))
+                .build();
 
         final CountDownLatch lostLatch = new CountDownLatch(1);
-        client.getConnectionStateListenable().addListener(new ConnectionStateListener()
-        {
+        client.getConnectionStateListenable().addListener(new ConnectionStateListener() {
 
             @Override
-            public void stateChanged(CuratorFramework client, ConnectionState newState)
-            {
-                if ( newState == ConnectionState.LOST )
-                {
+            public void stateChanged(CuratorFramework client, ConnectionState newState) {
+                if (newState == ConnectionState.LOST) {
                     lostLatch.countDown();
                 }
             }
         });
 
-        try
-        {
+        try {
             client.start();
 
-            //Block until we're connected
-            Assert.assertTrue(client.blockUntilConnected(5, TimeUnit.SECONDS), "Failed to connect");
+            // Block until we're connected
+            assertTrue(client.blockUntilConnected(5, TimeUnit.SECONDS), "Failed to connect");
 
-            //Kill the server
+            // Kill the server
             CloseableUtils.closeQuietly(server);
 
-            //Wait until we hit the lost state
-            Assert.assertTrue(timing.awaitLatch(lostLatch), "Failed to reach LOST state");
+            // Wait until we hit the lost state
+            assertTrue(timing.awaitLatch(lostLatch), "Failed to reach LOST state");
 
             server = new TestingServer(server.getPort(), server.getTempDirectory());
 
-            Assert.assertTrue(client.blockUntilConnected(5, TimeUnit.SECONDS), "Not connected");
-        }
-        catch ( Exception e )
-        {
-            Assert.fail("Unexpected exception " + e);
-        }
-        finally
-        {
+            assertTrue(client.blockUntilConnected(5, TimeUnit.SECONDS), "Not connected");
+        } catch (Exception e) {
+            fail("Unexpected exception " + e);
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
@@ -164,27 +141,21 @@ public class TestBlockUntilConnected extends BaseClassForTests
      * connection becomes available.
      */
     @Test
-    public void testBlockUntilConnectedConnectTimeout()
-    {
-        //Kill the server
+    public void testBlockUntilConnectedConnectTimeout() {
+        // Kill the server
         CloseableUtils.closeQuietly(server);
 
-        CuratorFramework client = CuratorFrameworkFactory.builder().
-            connectString(server.getConnectString()).
-            retryPolicy(new RetryOneTime(1)).
-            build();
+        CuratorFramework client = CuratorFrameworkFactory.builder()
+                .connectString(server.getConnectString())
+                .retryPolicy(new RetryOneTime(1))
+                .build();
 
-        try
-        {
+        try {
             client.start();
-            Assert.assertFalse(client.blockUntilConnected(5, TimeUnit.SECONDS), "Connected");
-        }
-        catch ( InterruptedException e )
-        {
-            Assert.fail("Unexpected interruption");
-        }
-        finally
-        {
+            assertFalse(client.blockUntilConnected(5, TimeUnit.SECONDS), "Connected");
+        } catch (InterruptedException e) {
+            fail("Unexpected interruption");
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
@@ -194,42 +165,36 @@ public class TestBlockUntilConnected extends BaseClassForTests
      * prior to a connection becoming available
      */
     @Test
-    public void testBlockUntilConnectedInterrupt()
-    {
-        //Kill the server
+    public void testBlockUntilConnectedInterrupt() {
+        // Kill the server
         CloseableUtils.closeQuietly(server);
 
-        final CuratorFramework client = CuratorFrameworkFactory.builder().
-            connectString(server.getConnectString()).
-            retryPolicy(new RetryOneTime(1)).
-            build();
+        final CuratorFramework client = CuratorFrameworkFactory.builder()
+                .connectString(server.getConnectString())
+                .retryPolicy(new RetryOneTime(1))
+                .build();
 
-        try
-        {
+        try {
             client.start();
 
             final Thread threadToInterrupt = Thread.currentThread();
 
             Timer timer = new Timer();
-            timer.schedule(new TimerTask()
-            {
+            timer.schedule(
+                    new TimerTask() {
 
-                @Override
-                public void run()
-                {
-                    threadToInterrupt.interrupt();
-                }
-            }, 3000);
+                        @Override
+                        public void run() {
+                            threadToInterrupt.interrupt();
+                        }
+                    },
+                    3000);
 
             client.blockUntilConnected(5, TimeUnit.SECONDS);
-            Assert.fail("Expected interruption did not occur");
-        }
-        catch ( InterruptedException e )
-        {
-            //This is expected
-        }
-        finally
-        {
+            fail("Expected interruption did not occur");
+        } catch (InterruptedException e) {
+            // This is expected
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
@@ -238,21 +203,17 @@ public class TestBlockUntilConnected extends BaseClassForTests
      * Test that we are actually connected every time that we block until connection is established in a tight loop.
      */
     @Test
-    public void testBlockUntilConnectedTightLoop() throws InterruptedException
-    {
+    public void testBlockUntilConnectedTightLoop() throws InterruptedException {
         CuratorFramework client;
-        for(int i = 0 ; i < 50 ; i++)
-        {
+        for (int i = 0; i < 50; i++) {
             client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(100));
-            try
-            {
+            try {
                 client.start();
                 client.blockUntilConnected();
 
-                Assert.assertTrue(client.getZookeeperClient().isConnected(), "Not connected after blocking for connection #" + i);
-            }
-            finally
-            {
+                assertTrue(
+                        client.getZookeeperClient().isConnected(), "Not connected after blocking for connection #" + i);
+            } finally {
                 client.close();
             }
         }

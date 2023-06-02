@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,16 +16,16 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator;
 
-import org.apache.curator.drivers.TracerDriver;
 import java.util.concurrent.TimeUnit;
+import org.apache.curator.drivers.TracerDriver;
 
 /**
  * Utility to time a method or portion of code
  */
-public class TimeTrace
-{
+public class TimeTrace {
     private final String name;
     private final TracerDriver driver;
     private final long startTimeNanos = System.nanoTime();
@@ -36,8 +36,7 @@ public class TimeTrace
      * @param name name of the event
      * @param driver driver
      */
-    public TimeTrace(String name, TracerDriver driver)
-    {
+    public TimeTrace(String name, TracerDriver driver) {
         this.name = name;
         this.driver = driver;
     }
@@ -45,9 +44,8 @@ public class TimeTrace
     /**
      * Record the elapsed time
      */
-    public void commit()
-    {
-        long        elapsed = System.nanoTime() - startTimeNanos;
+    public void commit() {
+        long elapsed = System.nanoTime() - startTimeNanos;
         driver.addTrace(name, elapsed, TimeUnit.NANOSECONDS);
     }
 }

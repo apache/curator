@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,24 +16,21 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.locks;
 
-class Stepper
-{
-    private int     available = 0;
+class Stepper {
+    private int available = 0;
 
-    synchronized void        await() throws InterruptedException
-    {
-        while ( available == 0 )
-        {
+    synchronized void await() throws InterruptedException {
+        while (available == 0) {
             wait();
         }
         --available;
         notifyAll();
     }
 
-    synchronized void       countDown(int qty)
-    {
+    synchronized void countDown(int qty) {
         available += qty;
         notifyAll();
     }

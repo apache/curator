@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async.modeled;
 
 import org.apache.curator.framework.CuratorFramework;
@@ -26,24 +27,23 @@ import org.apache.curator.x.async.AsyncCuratorFramework;
 import org.apache.curator.x.async.CompletableBaseClassForTests;
 import org.apache.curator.x.async.modeled.models.TestModel;
 import org.apache.curator.x.async.modeled.models.TestNewerModel;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
-public class TestModeledFrameworkBase extends CompletableBaseClassForTests
-{
+public class TestModeledFrameworkBase extends CompletableBaseClassForTests {
     protected static final ZPath path = ZPath.parse("/test/path");
     protected CuratorFramework rawClient;
     protected ModelSpec<TestModel> modelSpec;
     protected ModelSpec<TestNewerModel> newModelSpec;
     protected AsyncCuratorFramework async;
 
-    @BeforeMethod
+    @BeforeEach
     @Override
-    public void setup() throws Exception
-    {
+    public void setup() throws Exception {
         super.setup();
 
-        rawClient = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        rawClient = CuratorFrameworkFactory.newClient(
+                server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         rawClient.start();
         async = AsyncCuratorFramework.wrap(rawClient);
 
@@ -54,10 +54,9 @@ public class TestModeledFrameworkBase extends CompletableBaseClassForTests
         newModelSpec = ModelSpec.builder(path, newSerializer).build();
     }
 
-    @AfterMethod
+    @AfterEach
     @Override
-    public void teardown() throws Exception
-    {
+    public void teardown() throws Exception {
         CloseableUtils.closeQuietly(rawClient);
         super.teardown();
     }

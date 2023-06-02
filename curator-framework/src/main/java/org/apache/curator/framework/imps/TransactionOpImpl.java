@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.imps;
 
 import org.apache.curator.framework.api.transaction.CuratorOp;
@@ -25,41 +26,34 @@ import org.apache.curator.framework.api.transaction.TransactionDeleteBuilder;
 import org.apache.curator.framework.api.transaction.TransactionOp;
 import org.apache.curator.framework.api.transaction.TransactionSetDataBuilder;
 
-public class TransactionOpImpl implements TransactionOp
-{
+public class TransactionOpImpl implements TransactionOp {
     private final CuratorFrameworkImpl client;
 
-    public TransactionOpImpl(CuratorFrameworkImpl client)
-    {
+    public TransactionOpImpl(CuratorFrameworkImpl client) {
         this.client = client;
     }
 
     @Override
-    public TransactionCreateBuilder<CuratorOp> create()
-    {
+    public TransactionCreateBuilder<CuratorOp> create() {
         ExtractingCuratorOp op = new ExtractingCuratorOp();
         return new CreateBuilderImpl(client).<CuratorOp>asTransactionCreateBuilder(op, op.getRecord());
     }
 
     @Override
-    public TransactionDeleteBuilder<CuratorOp> delete()
-    {
+    public TransactionDeleteBuilder<CuratorOp> delete() {
         ExtractingCuratorOp op = new ExtractingCuratorOp();
         return new DeleteBuilderImpl(client).<CuratorOp>asTransactionDeleteBuilder(op, op.getRecord());
     }
 
     @Override
-    public TransactionSetDataBuilder<CuratorOp> setData()
-    {
+    public TransactionSetDataBuilder<CuratorOp> setData() {
         ExtractingCuratorOp op = new ExtractingCuratorOp();
         return new SetDataBuilderImpl(client).<CuratorOp>asTransactionSetDataBuilder(op, op.getRecord());
     }
 
     @Override
-    public TransactionCheckBuilder<CuratorOp> check()
-    {
+    public TransactionCheckBuilder<CuratorOp> check() {
         ExtractingCuratorOp op = new ExtractingCuratorOp();
         return CuratorTransactionImpl.<CuratorOp>makeTransactionCheckBuilder(client, op, op.getRecord());
     }
-
 }

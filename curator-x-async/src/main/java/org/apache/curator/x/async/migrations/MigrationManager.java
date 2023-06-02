@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,17 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async.migrations;
 
+import static org.apache.curator.x.async.AsyncWrappers.*;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Throwables;
-import org.apache.curator.framework.api.transaction.CuratorOp;
-import org.apache.curator.framework.imps.ExtractingCuratorOp;
-import org.apache.curator.framework.recipes.locks.InterProcessLock;
-import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
-import org.apache.curator.utils.ZKPaths;
-import org.apache.curator.x.async.AsyncCuratorFramework;
-import org.apache.zookeeper.CreateMode;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
@@ -42,14 +37,18 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
-import static org.apache.curator.x.async.AsyncWrappers.*;
+import org.apache.curator.framework.api.transaction.CuratorOp;
+import org.apache.curator.framework.imps.ExtractingCuratorOp;
+import org.apache.curator.framework.recipes.locks.InterProcessLock;
+import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
+import org.apache.curator.utils.ZKPaths;
+import org.apache.curator.x.async.AsyncCuratorFramework;
+import org.apache.zookeeper.CreateMode;
 
 /**
  * Manages migrations
  */
-public class MigrationManager
-{
+public class MigrationManager {
     private final AsyncCuratorFramework client;
     private final String lockPath;
     private final String metaDataPath;
@@ -65,8 +64,8 @@ public class MigrationManager
      * @param executor the executor to use
      * @param lockMax max time to wait for locks
      */
-    public MigrationManager(AsyncCuratorFramework client, String lockPath, String metaDataPath, Executor executor, Duration lockMax)
-    {
+    public MigrationManager(
+            AsyncCuratorFramework client, String lockPath, String metaDataPath, Executor executor, Duration lockMax) {
         this.client = Objects.requireNonNull(client, "client cannot be null");
         this.lockPath = Objects.requireNonNull(lockPath, "lockPath cannot be null");
         this.metaDataPath = Objects.requireNonNull(metaDataPath, "metaDataPath cannot be null");
@@ -81,8 +80,7 @@ public class MigrationManager
      * @return completion stage. If there is a migration-specific error, the stage will be completed
      * exceptionally with {@link org.apache.curator.x.async.migrations.MigrationException}.
      */
-    public CompletionStage<Void> migrate(MigrationSet set)
-    {
+    public CompletionStage<Void> migrate(MigrationSet set) {
         InterProcessLock lock = new InterProcessSemaphoreMutex(client.unwrap(), ZKPaths.makePath(lockPath, set.id()));
         CompletionStage<Void> lockStage = lockAsync(lock, lockMax.toMillis(), TimeUnit.MILLISECONDS, executor);
         return lockStage.thenCompose(__ -> runMigrationInLock(lock, set));
@@ -98,101 +96,82 @@ public class MigrationManager
      * @return the list of actual migrations to perform. The filter can return any value here or an empty list.
      * @throws MigrationException errors
      */
-    protected List<Migration> filter(MigrationSet set, List<byte[]> operationHashesInOrder) throws MigrationException
-    {
-        if ( operationHashesInOrder.size() > set.migrations().size() )
-        {
-            throw new MigrationException(set.id(), String.format("More metadata than migrations. Migration ID: %s", set.id()));
+    protected List<Migration> filter(MigrationSet set, List<byte[]> operationHashesInOrder) throws MigrationException {
+        if (operationHashesInOrder.size() > set.migrations().size()) {
+            throw new MigrationException(
+                    set.id(), String.format("More metadata than migrations. Migration ID: %s", set.id()));
         }
 
         int compareSize = Math.min(set.migrations().size(), operationHashesInOrder.size());
-        for ( int i = 0; i < compareSize; ++i )
-        {
+        for (int i = 0; i < compareSize; ++i) {
             byte[] setHash = hash(set.migrations().get(i).operations());
-            if ( !Arrays.equals(setHash, operationHashesInOrder.get(i)) )
-            {
+            if (!Arrays.equals(setHash, operationHashesInOrder.get(i))) {
                 throw new MigrationException(set.id(), String.format("Metadata mismatch. Migration ID: %s", set.id()));
             }
         }
-        return set.migrations().subList(operationHashesInOrder.size(), set.migrations().size());
+        return set.migrations()
+                .subList(operationHashesInOrder.size(), set.migrations().size());
     }
 
-    private byte[] hash(List<CuratorOp> operations)
-    {
+    private byte[] hash(List<CuratorOp> operations) {
         MessageDigest digest;
-        try
-        {
+        try {
             digest = MessageDigest.getInstance("SHA-256");
-        }
-        catch ( NoSuchAlgorithmException e )
-        {
+        } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
         operations.forEach(op -> {
-            if ( op instanceof ExtractingCuratorOp )
-            {
-                ((ExtractingCuratorOp)op).addToDigest(digest);
-            }
-            else
-            {
+            if (op instanceof ExtractingCuratorOp) {
+                ((ExtractingCuratorOp) op).addToDigest(digest);
+            } else {
                 digest.update(op.toString().getBytes());
             }
         });
         return digest.digest();
     }
 
-    private CompletionStage<Void> runMigrationInLock(InterProcessLock lock, MigrationSet set)
-    {
+    private CompletionStage<Void> runMigrationInLock(InterProcessLock lock, MigrationSet set) {
         String thisMetaDataPath = ZKPaths.makePath(metaDataPath, set.id());
         return childrenWithData(client, thisMetaDataPath)
-            .thenCompose(metaData -> applyMetaData(set, metaData, thisMetaDataPath))
-            .handle((v, e) -> {
-                release(lock, true);
-                if ( e != null )
-                {
-                    Throwables.propagate(e);
-                }
-                return v;
-            }
-        );
+                .thenCompose(metaData -> applyMetaData(set, metaData, thisMetaDataPath))
+                .handle((v, e) -> {
+                    release(lock, true);
+                    if (e != null) {
+                        Throwables.propagate(e);
+                    }
+                    return v;
+                });
     }
 
-    private CompletionStage<Void> applyMetaData(MigrationSet set, Map<String, byte[]> metaData, String thisMetaDataPath)
-    {
-        List<byte[]> sortedMetaData = metaData.keySet()
-            .stream()
-            .sorted(Comparator.naturalOrder())
-            .map(metaData::get)
-            .collect(Collectors.toList());
+    private CompletionStage<Void> applyMetaData(
+            MigrationSet set, Map<String, byte[]> metaData, String thisMetaDataPath) {
+        List<byte[]> sortedMetaData = metaData.keySet().stream()
+                .sorted(Comparator.naturalOrder())
+                .map(metaData::get)
+                .collect(Collectors.toList());
 
         List<Migration> toBeApplied;
-        try
-        {
+        try {
             toBeApplied = filter(set, sortedMetaData);
-        }
-        catch ( MigrationException e )
-        {
+        } catch (MigrationException e) {
             CompletableFuture<Void> future = new CompletableFuture<>();
             future.completeExceptionally(e);
             return future;
         }
 
-        if ( toBeApplied.size() == 0 )
-        {
+        if (toBeApplied.size() == 0) {
             return CompletableFuture.completedFuture(null);
         }
 
         return asyncEnsureContainers(client, thisMetaDataPath)
-            .thenCompose(__ -> applyMetaDataAfterEnsure(toBeApplied, thisMetaDataPath));
+                .thenCompose(__ -> applyMetaDataAfterEnsure(toBeApplied, thisMetaDataPath));
     }
 
     @VisibleForTesting
     volatile AtomicInteger debugCount = null;
 
-    private CompletionStage<Void> applyMetaDataAfterEnsure(List<Migration> toBeApplied, String thisMetaDataPath)
-    {
-        if ( debugCount != null )
-        {
+    private CompletionStage<Void> applyMetaDataAfterEnsure(List<Migration> toBeApplied, String thisMetaDataPath) {
+        if (debugCount != null) {
             debugCount.incrementAndGet();
         }
 
@@ -201,7 +180,10 @@ public class MigrationManager
         toBeApplied.forEach(migration -> {
             List<CuratorOp> thisMigrationOperations = migration.operations();
             operations.addAll(thisMigrationOperations);
-            operations.add(client.transactionOp().create().withMode(CreateMode.PERSISTENT_SEQUENTIAL).forPath(metaDataBasePath, hash(thisMigrationOperations)));
+            operations.add(client.transactionOp()
+                    .create()
+                    .withMode(CreateMode.PERSISTENT_SEQUENTIAL)
+                    .forPath(metaDataBasePath, hash(thisMigrationOperations)));
         });
         return client.transaction().forOperations(operations).thenApply(__ -> null);
     }

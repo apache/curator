@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,19 +16,18 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.discovery.server.jetty_jersey;
 
-import org.apache.curator.x.discovery.server.rest.DiscoveryContext;
-import org.apache.curator.x.discovery.server.rest.DiscoveryResource;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.ext.ContextResolver;
+import org.apache.curator.x.discovery.server.rest.DiscoveryContext;
+import org.apache.curator.x.discovery.server.rest.DiscoveryResource;
 
 @Path("/")
-public class StringDiscoveryResource extends DiscoveryResource<String>
-{
-    public StringDiscoveryResource(@Context ContextResolver<DiscoveryContext<String>> resolver)
-    {
+public class StringDiscoveryResource extends DiscoveryResource<String> {
+    public StringDiscoveryResource(@Context ContextResolver<DiscoveryContext<String>> resolver) {
         super(resolver.getContext(DiscoveryContext.class));
     }
 }

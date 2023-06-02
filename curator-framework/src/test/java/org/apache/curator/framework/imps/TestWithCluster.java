@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,9 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.imps;
 
-import org.apache.curator.utils.CloseableUtils;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.util.concurrent.CountDownLatch;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
@@ -28,74 +31,65 @@ import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
 import org.apache.curator.test.Timing;
+import org.apache.curator.test.compatibility.CuratorTestBase;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.CreateMode;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-import java.util.concurrent.CountDownLatch;
+import org.junit.jupiter.api.Test;
 
-public class TestWithCluster
-{
+public class TestWithCluster extends CuratorTestBase {
     @Test
-    public void     testSessionSurvives() throws Exception
-    {
-        Timing              timing = new Timing();
+    public void testSessionSurvives() throws Exception {
+        Timing timing = new Timing();
 
-        CuratorFramework    client = null;
-        TestingCluster      cluster = new TestingCluster(3);
-        cluster.start();
-        try
-        {
-            client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), timing.session(), timing.connection(), new ExponentialBackoffRetry(100, 3));
+        CuratorFramework client = null;
+        TestingCluster cluster = createAndStartCluster(3);
+        try {
+            client = CuratorFrameworkFactory.newClient(
+                    cluster.getConnectString(),
+                    timing.session(),
+                    timing.connection(),
+                    new ExponentialBackoffRetry(100, 3));
             client.start();
 
             final CountDownLatch reconnectedLatch = new CountDownLatch(1);
-            ConnectionStateListener listener = new ConnectionStateListener()
-            {
+            ConnectionStateListener listener = new ConnectionStateListener() {
                 @Override
-                public void stateChanged(CuratorFramework client, ConnectionState newState)
-                {
-                    if ( newState == ConnectionState.RECONNECTED )
-                    {
-                        reconnectedLatch.countDown();;
+                public void stateChanged(CuratorFramework client, ConnectionState newState) {
+                    if (newState == ConnectionState.RECONNECTED) {
+                        reconnectedLatch.countDown();
+                        ;
                     }
                 }
             };
             client.getConnectionStateListenable().addListener(listener);
 
             client.create().withMode(CreateMode.EPHEMERAL).forPath("/temp", "value".getBytes());
-            Assert.assertNotNull(client.checkExists().forPath("/temp"));
+            assertNotNull(client.checkExists().forPath("/temp"));
 
-            for ( InstanceSpec spec : cluster.getInstances() )
-            {
+            for (InstanceSpec spec : cluster.getInstances()) {
                 cluster.killServer(spec);
-                timing.forWaiting().sleepABit();
+                timing.sleepABit();
                 cluster.restartServer(spec);
                 timing.sleepABit();
             }
 
-            Assert.assertTrue(timing.awaitLatch(reconnectedLatch));
-            Assert.assertNotNull(client.checkExists().forPath("/temp"));
-        }
-        finally
-        {
+            assertTrue(timing.awaitLatch(reconnectedLatch));
+            assertNotNull(client.checkExists().forPath("/temp"));
+        } finally {
             CloseableUtils.closeQuietly(client);
             CloseableUtils.closeQuietly(cluster);
         }
     }
 
     @Test
-    public void     testSplitBrain() throws Exception
-    {
-        Timing              timing = new Timing();
-        
-        CuratorFramework    client = null;
-        TestingCluster cluster = new TestingCluster(3);
-        cluster.start();
-        try
-        {
+    public void testSplitBrain() throws Exception {
+        Timing timing = new Timing();
+
+        CuratorFramework client = null;
+        TestingCluster cluster = createAndStartCluster(3);
+        try {
             // make sure all instances are up
-            for ( InstanceSpec instanceSpec : cluster.getInstances() )
-            {
+            for (InstanceSpec instanceSpec : cluster.getInstances()) {
                 client = CuratorFrameworkFactory.newClient(instanceSpec.getConnectString(), new RetryOneTime(1));
                 client.start();
                 client.checkExists().forPath("/");
@@ -103,41 +97,38 @@ public class TestWithCluster
                 client = null;
             }
 
-            client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+            client = CuratorFrameworkFactory.newClient(
+                    cluster.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
             client.start();
 
-            final CountDownLatch        latch = new CountDownLatch(2);
-            client.getConnectionStateListenable().addListener
-            (
-                new ConnectionStateListener()
-                {
-                    @Override
-                    public void stateChanged(CuratorFramework client, ConnectionState newState)
-                    {
-                        if ( (newState == ConnectionState.SUSPENDED) || (newState == ConnectionState.LOST) )
-                        {
-                            latch.countDown();
-                        }
+            final CountDownLatch latch = new CountDownLatch(2);
+            client.getConnectionStateListenable().addListener(new ConnectionStateListener() {
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState) {
+                    if ((newState == ConnectionState.SUSPENDED) || (newState == ConnectionState.LOST)) {
+                        latch.countDown();
                     }
                 }
-            );
+            });
 
             client.checkExists().forPath("/");
 
-            for ( InstanceSpec instanceSpec : cluster.getInstances() )
-            {
-                if ( !instanceSpec.equals(cluster.findConnectionInstance(client.getZookeeperClient().getZooKeeper())) )
-                {
-                    Assert.assertTrue(cluster.killServer(instanceSpec));
+            for (InstanceSpec instanceSpec : cluster.getInstances()) {
+                if (!instanceSpec.equals(cluster.findConnectionInstance(
+                        client.getZookeeperClient().getZooKeeper()))) {
+                    assertTrue(cluster.killServer(instanceSpec));
                 }
             }
 
-            Assert.assertTrue(timing.awaitLatch(latch));
-        }
-        finally
-        {
+            assertTrue(timing.awaitLatch(latch));
+        } finally {
             CloseableUtils.closeQuietly(client);
             CloseableUtils.closeQuietly(cluster);
         }
+    }
+
+    @Override
+    protected void createServer() throws Exception {
+        // NOP
     }
 }

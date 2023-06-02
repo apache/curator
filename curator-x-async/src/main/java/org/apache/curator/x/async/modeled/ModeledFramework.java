@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,8 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async.modeled;
 
+import java.util.List;
+import java.util.concurrent.ExecutorService;
 import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.x.async.AsyncCuratorFramework;
@@ -25,11 +28,8 @@ import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.modeled.cached.CachedModeledFramework;
 import org.apache.curator.x.async.modeled.versioned.VersionedModeledFramework;
 import org.apache.zookeeper.data.Stat;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
 
-public interface ModeledFramework<T>
-{
+public interface ModeledFramework<T> {
     /**
      * Return a new ModeledFramework for the given model
      *
@@ -37,8 +37,7 @@ public interface ModeledFramework<T>
      * @param model the model
      * @return new Modeled Curator instance
      */
-    static <T> ModeledFramework<T> wrap(AsyncCuratorFramework client, ModelSpec<T> model)
-    {
+    static <T> ModeledFramework<T> wrap(AsyncCuratorFramework client, ModelSpec<T> model) {
         return builder(client, model).build();
     }
 
@@ -49,8 +48,7 @@ public interface ModeledFramework<T>
      * @param model the model
      * @return builder
      */
-    static <T> ModeledFrameworkBuilder<T> builder(AsyncCuratorFramework client, ModelSpec<T> model)
-    {
+    static <T> ModeledFrameworkBuilder<T> builder(AsyncCuratorFramework client, ModelSpec<T> model) {
         return new ModeledFrameworkBuilder<>(client, model);
     }
 
@@ -61,8 +59,7 @@ public interface ModeledFramework<T>
      *
      * @return builder
      */
-    static <T> ModeledFrameworkBuilder<T> builder()
-    {
+    static <T> ModeledFrameworkBuilder<T> builder() {
         return new ModeledFrameworkBuilder<>();
     }
 

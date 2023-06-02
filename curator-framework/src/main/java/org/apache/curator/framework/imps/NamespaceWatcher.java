@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,74 +16,61 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.imps;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
+import java.io.Closeable;
 import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import java.io.Closeable;
 
-class NamespaceWatcher implements Watcher, Closeable
-{
+class NamespaceWatcher implements Watcher, Closeable {
     private volatile CuratorFrameworkImpl client;
     private volatile Watcher actualWatcher;
     private final String unfixedPath;
     private volatile CuratorWatcher curatorWatcher;
 
-    NamespaceWatcher(CuratorFrameworkImpl client, Watcher actualWatcher, String unfixedPath)
-    {
+    NamespaceWatcher(CuratorFrameworkImpl client, Watcher actualWatcher, String unfixedPath) {
         this.client = client;
         this.actualWatcher = actualWatcher;
         this.unfixedPath = Preconditions.checkNotNull(unfixedPath, "unfixedPath cannot be null");
         this.curatorWatcher = null;
     }
 
-    NamespaceWatcher(CuratorFrameworkImpl client, CuratorWatcher curatorWatcher, String unfixedPath)
-    {
+    NamespaceWatcher(CuratorFrameworkImpl client, CuratorWatcher curatorWatcher, String unfixedPath) {
         this.client = client;
         this.actualWatcher = null;
         this.curatorWatcher = curatorWatcher;
         this.unfixedPath = Preconditions.checkNotNull(unfixedPath, "unfixedPath cannot be null");
     }
 
-    String getUnfixedPath()
-    {
+    String getUnfixedPath() {
         return unfixedPath;
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         client = null;
         actualWatcher = null;
         curatorWatcher = null;
     }
 
     @Override
-    public void process(WatchedEvent event)
-    {
-        if ( client != null )
-        {
-            if ( (event.getType() != Event.EventType.None) && (client.getWatcherRemovalManager() != null) )
-            {
+    public void process(WatchedEvent event) {
+        if (client != null) {
+            if ((event.getType() != Event.EventType.None) && (client.getWatcherRemovalManager() != null)) {
                 client.getWatcherRemovalManager().noteTriggeredWatcher(this);
             }
 
-            if ( actualWatcher != null )
-            {
+            if (actualWatcher != null) {
                 actualWatcher.process(new NamespaceWatchedEvent(client, event));
-            }
-            else if ( curatorWatcher != null )
-            {
-                try
-                {
+            } else if (curatorWatcher != null) {
+                try {
                     curatorWatcher.process(new NamespaceWatchedEvent(client, event));
-                }
-                catch ( Exception e )
-                {
+                } catch (Exception e) {
                     ThreadUtils.checkInterrupted(e);
                     client.logError("Watcher exception", e);
                 }
@@ -95,31 +82,26 @@ class NamespaceWatcher implements Watcher, Closeable
      * NamespaceWatcher should equal other wrappers that wrap the same instance.
      */
     @Override
-    public boolean equals(Object o)
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null )
-        {
+        if (o == null) {
             return false;
         }
 
-        if ( getClass() == o.getClass() )
-        {
-            NamespaceWatcher watcher = (NamespaceWatcher)o;
+        if (getClass() == o.getClass()) {
+            NamespaceWatcher watcher = (NamespaceWatcher) o;
             return Objects.equal(unfixedPath, watcher.getUnfixedPath())
-                && Objects.equal(actualWatcher, watcher.actualWatcher)
-                && Objects.equal(curatorWatcher, watcher.curatorWatcher);
+                    && Objects.equal(actualWatcher, watcher.actualWatcher)
+                    && Objects.equal(curatorWatcher, watcher.curatorWatcher);
         }
 
         return false;
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return Objects.hashCode(actualWatcher, unfixedPath, curatorWatcher);
     }
 }

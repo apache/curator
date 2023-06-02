@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -22,16 +22,15 @@ package org.apache.curator.framework.recipes.cache;
 /**
  * POJO that abstracts a change to a path
  */
-public class TreeCacheEvent
-{
+public class TreeCacheEvent {
     private final Type type;
     private final ChildData data;
+    private final ChildData oldData;
 
     /**
      * Type of change
      */
-    public enum Type
-    {
+    public enum Type {
         /**
          * A node was added.
          */
@@ -111,34 +110,44 @@ public class TreeCacheEvent
      * @param type event type
      * @param data event data or null
      */
-    public TreeCacheEvent(Type type, ChildData data)
-    {
+    public TreeCacheEvent(Type type, ChildData data) {
+        this(type, data, null);
+    }
+
+    /**
+     * @param type event type
+     * @param data event data or null
+     * @param oldData event oldData or null
+     */
+    public TreeCacheEvent(Type type, ChildData data, ChildData oldData) {
         this.type = type;
         this.data = data;
+        this.oldData = oldData;
     }
 
     /**
      * @return change type
      */
-    public Type getType()
-    {
+    public Type getType() {
         return type;
     }
 
     /**
      * @return the node's data
      */
-    public ChildData getData()
-    {
+    public ChildData getData() {
         return data;
     }
 
+    /**
+     * @return the node's old data when the type is {@link org.apache.curator.framework.recipes.cache.TreeCacheEvent.Type#NODE_UPDATED}
+     */
+    public ChildData getOldData() {
+        return oldData;
+    }
+
     @Override
-    public String toString()
-    {
-        return TreeCacheEvent.class.getSimpleName() + "{" +
-            "type=" + type +
-            ", data=" + data +
-            '}';
+    public String toString() {
+        return TreeCacheEvent.class.getSimpleName() + "{" + "type=" + type + ", data=" + data + '}';
     }
 }

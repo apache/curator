@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,13 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async.api;
 
 /**
  * operations that support watching
  */
-public interface WatchableAsyncCuratorFramework
-{
+public interface WatchableAsyncCuratorFramework {
     /**
      * Start an exists builder. The builder will return a Stat object as if org.apache.zookeeper.ZooKeeper.exists() were called.  Thus, a null
      * means that it does not exist and an actual Stat object means it does exist.

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.api.transaction;
 
 import org.apache.curator.framework.CuratorFramework;
@@ -53,8 +54,7 @@ import org.apache.zookeeper.ZooKeeper;
  *
  * @deprecated Use {@link CuratorFramework#transaction()}
  */
-public interface CuratorTransaction
-{
+public interface CuratorTransaction {
     /**
      * Start a create builder in the transaction
      *

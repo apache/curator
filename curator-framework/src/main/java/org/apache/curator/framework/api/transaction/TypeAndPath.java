@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,26 +16,23 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.api.transaction;
 
-public class TypeAndPath
-{
+public class TypeAndPath {
     private final OperationType type;
     private final String forPath;
 
-    public TypeAndPath(OperationType type, String forPath)
-    {
+    public TypeAndPath(OperationType type, String forPath) {
         this.type = type;
         this.forPath = forPath;
     }
 
-    public OperationType getType()
-    {
+    public OperationType getType() {
         return type;
     }
 
-    public String getForPath()
-    {
+    public String getForPath() {
         return forPath;
     }
 }

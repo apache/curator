@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,33 +16,30 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.discovery.server.entity;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import org.apache.curator.x.discovery.ServiceInstance;
 import java.util.Collection;
 import java.util.List;
+import org.apache.curator.x.discovery.ServiceInstance;
 
 /**
  * Raw generic lists don't work well in JAX-RS. Thus, this wrapper is needed.
  */
-public class ServiceInstances<T>
-{
+public class ServiceInstances<T> {
     private final List<ServiceInstance<T>> services;
 
-    public ServiceInstances()
-    {
+    public ServiceInstances() {
         services = Lists.newArrayList();
     }
 
-    public ServiceInstances(Collection<? extends ServiceInstance<T>> c)
-    {
+    public ServiceInstances(Collection<? extends ServiceInstance<T>> c) {
         services = Lists.newArrayList(c);
     }
 
-    public List<ServiceInstance<T>> getServices()
-    {
+    public List<ServiceInstance<T>> getServices() {
         return ImmutableList.copyOf(services);
     }
 }

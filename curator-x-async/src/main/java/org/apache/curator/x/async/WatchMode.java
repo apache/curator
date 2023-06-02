@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,10 +16,10 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async;
 
-public enum WatchMode
-{
+public enum WatchMode {
     /**
      * The {@link java.util.concurrent.CompletionStage}&lt;org.apache.zookeeper.WatchedEvent&gt; will only
      * complete on successful trigger. i.e. connection issues are ignored

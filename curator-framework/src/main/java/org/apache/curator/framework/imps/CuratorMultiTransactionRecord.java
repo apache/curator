@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,49 +16,49 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.imps;
 
 import com.google.common.collect.Lists;
+import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import org.apache.curator.framework.api.transaction.OperationType;
 import org.apache.curator.framework.api.transaction.TypeAndPath;
-import org.apache.zookeeper.MultiTransactionRecord;
 import org.apache.zookeeper.Op;
-import java.security.MessageDigest;
-import java.util.List;
 
-class CuratorMultiTransactionRecord extends MultiTransactionRecord
-{
-    private final List<TypeAndPath>     metadata = Lists.newArrayList();
+class CuratorMultiTransactionRecord implements Iterable<Op> {
+    private final List<TypeAndPath> metadata = Lists.newArrayList();
+    private final List<Op> ops = new ArrayList<>();
 
-    @Override
-    public final void add(Op op)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    void add(Op op, OperationType type, String forPath)
-    {
-        super.add(op);
+    void add(Op op, OperationType type, String forPath) {
+        ops.add(op);
         metadata.add(new TypeAndPath(type, forPath));
     }
 
-    TypeAndPath     getMetadata(int index)
-    {
+    TypeAndPath getMetadata(int index) {
         return metadata.get(index);
     }
 
-    int             metadataSize()
-    {
+    int metadataSize() {
         return metadata.size();
     }
 
-    void addToDigest(MessageDigest digest)
-    {
-        for ( Op op : this )
-        {
+    void addToDigest(MessageDigest digest) {
+        for (Op op : ops) {
             digest.update(op.getPath().getBytes());
             digest.update(Integer.toString(op.getType()).getBytes());
             digest.update(op.toRequestRecord().toString().getBytes());
         }
+    }
+
+    @Override
+    public Iterator<Op> iterator() {
+        return ops.iterator();
+    }
+
+    int size() {
+        return ops.size();
     }
 }

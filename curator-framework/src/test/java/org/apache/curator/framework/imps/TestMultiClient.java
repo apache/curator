@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,83 +16,65 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.imps;
 
-import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.utils.CloseableUtils;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.CuratorListener;
 import org.apache.curator.retry.RetryOneTime;
+import org.apache.curator.test.BaseClassForTests;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.Watcher;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.Test;
 
-public class TestMultiClient extends BaseClassForTests
-{
+public class TestMultiClient extends BaseClassForTests {
     @Test
-    public void     testNotify() throws Exception
-    {
+    public void testNotify() throws Exception {
         CuratorFramework client1 = null;
         CuratorFramework client2 = null;
-        try
-        {
+        try {
             client1 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
             client2 = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
 
             client1.start();
             client2.start();
 
-            final CountDownLatch        latch = new CountDownLatch(1);
-            client1.getCuratorListenable().addListener
-            (
-                new CuratorListener()
-                {
-                    @Override
-                    public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception
-                    {
-                        if ( event.getType() == CuratorEventType.WATCHED )
-                        {
-                            if ( event.getWatchedEvent().getType() == Watcher.Event.EventType.NodeDataChanged )
-                            {
-                                if ( event.getPath().equals("/test") )
-                                {
-                                    latch.countDown();
-                                }
+            final CountDownLatch latch = new CountDownLatch(1);
+            client1.getCuratorListenable().addListener(new CuratorListener() {
+                @Override
+                public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception {
+                    if (event.getType() == CuratorEventType.WATCHED) {
+                        if (event.getWatchedEvent().getType() == Watcher.Event.EventType.NodeDataChanged) {
+                            if (event.getPath().equals("/test")) {
+                                latch.countDown();
                             }
                         }
                     }
                 }
-            );
+            });
 
-            client1.create().forPath("/test", new byte[]{1, 2, 3});
+            client1.create().forPath("/test", new byte[] {1, 2, 3});
             client1.checkExists().watched().forPath("/test");
 
-            client2.getCuratorListenable().addListener
-            (
-                new CuratorListener()
-                {
-                    @Override
-                    public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception
-                    {
-                        if ( event.getType() == CuratorEventType.SYNC )
-                        {
-                            client.setData().forPath("/test", new byte[]{10, 20});
-                        }
+            client2.getCuratorListenable().addListener(new CuratorListener() {
+                @Override
+                public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception {
+                    if (event.getType() == CuratorEventType.SYNC) {
+                        client.setData().forPath("/test", new byte[] {10, 20});
                     }
                 }
-            );
+            });
 
             client2.sync().forPath("/test");
 
-            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
-        }
-        finally
-        {
+            assertTrue(latch.await(10, TimeUnit.SECONDS));
+        } finally {
             CloseableUtils.closeQuietly(client1);
             CloseableUtils.closeQuietly(client2);
         }

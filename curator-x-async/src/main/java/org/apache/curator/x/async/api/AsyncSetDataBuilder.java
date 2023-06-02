@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async.api;
 
 import org.apache.curator.x.async.AsyncStage;
@@ -24,8 +25,7 @@ import org.apache.zookeeper.data.Stat;
 /**
  * Builder for setting ZNode data
  */
-public interface AsyncSetDataBuilder extends AsyncPathAndBytesable<AsyncStage<Stat>>
-{
+public interface AsyncSetDataBuilder extends AsyncPathAndBytesable<AsyncStage<Stat>> {
     /**
      * Cause the data to be compressed using the configured compression provider
      *

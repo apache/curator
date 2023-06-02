@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,39 +16,37 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async.details;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.function.UnaryOperator;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.x.async.AsyncStage;
 import org.apache.zookeeper.WatchedEvent;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.function.UnaryOperator;
 
-class InternalCallback<T> extends CompletableFuture<T> implements BackgroundCallback, AsyncStage<T>
-{
+class InternalCallback<T> extends CompletableFuture<T> implements BackgroundCallback, AsyncStage<T> {
     private final BackgroundProc<T> resultFunction;
     private final InternalWatcher watcher;
     private final UnaryOperator<CuratorEvent> resultFilter;
 
-    InternalCallback(BackgroundProc<T> resultFunction, InternalWatcher watcher, UnaryOperator<CuratorEvent> resultFilter)
-    {
+    InternalCallback(
+            BackgroundProc<T> resultFunction, InternalWatcher watcher, UnaryOperator<CuratorEvent> resultFilter) {
         this.resultFunction = resultFunction;
         this.watcher = watcher;
         this.resultFilter = resultFilter;
     }
 
     @Override
-    public CompletionStage<WatchedEvent> event()
-    {
+    public CompletionStage<WatchedEvent> event() {
         return (watcher != null) ? watcher.getFuture() : null;
     }
 
     @Override
-    public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
-    {
+    public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
         event = (resultFilter != null) ? resultFilter.apply(event) : event;
         resultFunction.apply(event, this);
     }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.discovery.server.entity;
 
 import com.google.common.collect.ImmutableList;
@@ -26,22 +27,18 @@ import java.util.List;
 /**
  * Raw generic lists don't work well in JAX-RS. Thus, this wrapper is needed.
  */
-public class ServiceNames
-{
+public class ServiceNames {
     private final List<String> names;
 
-    public ServiceNames()
-    {
+    public ServiceNames() {
         names = Lists.newArrayList();
     }
 
-    public ServiceNames(Collection<? extends String> c)
-    {
+    public ServiceNames(Collection<? extends String> c) {
         names = Lists.newArrayList(c);
     }
 
-    public List<String> getNames()
-    {
+    public List<String> getNames() {
         return ImmutableList.copyOf(names);
     }
 }

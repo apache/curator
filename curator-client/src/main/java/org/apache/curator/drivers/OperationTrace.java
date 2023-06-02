@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,20 +16,18 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.drivers;
 
-import org.apache.curator.drivers.TracerDriver;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.data.Stat;
+package org.apache.curator.drivers;
 
 import java.io.UnsupportedEncodingException;
 import java.util.concurrent.TimeUnit;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
 
 /**
  * Used to trace the metrics of a certain Zookeeper operation.
  */
-public class OperationTrace
-{
+public class OperationTrace {
     private final String name;
     private final TracerDriver driver;
 
@@ -45,118 +43,118 @@ public class OperationTrace
     private final long startTimeNanos = System.nanoTime();
 
     public OperationTrace(String name, TracerDriver driver) {
-      this(name, driver, -1);
+        this(name, driver, -1);
     }
 
     public OperationTrace(String name, TracerDriver driver, long sessionId) {
-      this.name = name;
-      this.driver = driver;
-      this.sessionId = sessionId;
+        this.name = name;
+        this.driver = driver;
+        this.sessionId = sessionId;
     }
 
     public OperationTrace setReturnCode(int returnCode) {
-      this.returnCode = returnCode;
-      return this;
+        this.returnCode = returnCode;
+        return this;
     }
 
     public OperationTrace setRequestBytesLength(long length) {
-      this.requestBytesLength = length;
-      return this;
+        this.requestBytesLength = length;
+        return this;
     }
 
     public OperationTrace setRequestBytesLength(String data) {
-      if (data == null) {
+        if (data == null) {
+            return this;
+        }
+
+        try {
+            this.setRequestBytesLength(data.getBytes("UTF-8").length);
+        } catch (UnsupportedEncodingException e) {
+            // Ignore the exception.
+        }
+
         return this;
-      }
-
-      try {
-        this.setRequestBytesLength(data.getBytes("UTF-8").length);
-      } catch (UnsupportedEncodingException e) {
-        // Ignore the exception.
-      }
-
-      return this;
     }
 
     public OperationTrace setRequestBytesLength(byte[] data) {
-      if (data == null) {
-        return this;
-      }
+        if (data == null) {
+            return this;
+        }
 
-      return this.setRequestBytesLength(data.length);
+        return this.setRequestBytesLength(data.length);
     }
 
     public OperationTrace setResponseBytesLength(long length) {
-      this.responseBytesLength = length;
-      return this;
+        this.responseBytesLength = length;
+        return this;
     }
 
     public OperationTrace setResponseBytesLength(byte[] data) {
-      if (data == null) {
-        return this;
-      }
+        if (data == null) {
+            return this;
+        }
 
-      return this.setResponseBytesLength(data.length);
+        return this.setResponseBytesLength(data.length);
     }
 
     public OperationTrace setPath(String path) {
-      this.path = path;
-      return this;
+        this.path = path;
+        return this;
     }
 
     public OperationTrace setWithWatcher(boolean withWatcher) {
-      this.withWatcher = withWatcher;
-      return this;
+        this.withWatcher = withWatcher;
+        return this;
     }
 
     public OperationTrace setStat(Stat stat) {
-      this.stat = stat;
-      return this;
+        this.stat = stat;
+        return this;
     }
 
     public String getName() {
-      return this.name;
+        return this.name;
     }
 
     public int getReturnCode() {
-      return this.returnCode;
+        return this.returnCode;
     }
 
     public long getLatencyMs() {
-      return this.latencyMs;
+        return this.latencyMs;
     }
 
     public long getRequestBytesLength() {
-      return this.requestBytesLength;
+        return this.requestBytesLength;
     }
 
     public long getResponseBytesLength() {
-      return this.responseBytesLength;
+        return this.responseBytesLength;
     }
 
     public long getSessionId() {
-      return this.sessionId;
+        return this.sessionId;
     }
 
     public String getPath() {
-      return this.path;
+        return this.path;
     }
 
     public boolean isWithWatcher() {
-      return this.withWatcher;
+        return this.withWatcher;
     }
 
     public Stat getStat() {
-      return this.stat;
+        return this.stat;
     }
 
     public void commit() {
-      long elapsed = System.nanoTime() - startTimeNanos;
-      this.latencyMs = TimeUnit.MILLISECONDS.convert(elapsed, TimeUnit.NANOSECONDS);
-      if (this.driver instanceof AdvancedTracerDriver) {
-        ((AdvancedTracerDriver) this.driver).addTrace(this);
-      } else {
-        this.driver.addTrace(this.name, elapsed, TimeUnit.NANOSECONDS);
-      }
+        long elapsed = System.nanoTime() - startTimeNanos;
+        this.latencyMs = TimeUnit.MILLISECONDS.convert(elapsed, TimeUnit.NANOSECONDS);
+        if (this.driver instanceof AdvancedTracerDriver) {
+            ((AdvancedTracerDriver) this.driver).addTrace(this);
+        } else {
+            this.driver.addTrace(this.name, elapsed, TimeUnit.NANOSECONDS);
+        }
     }
 }

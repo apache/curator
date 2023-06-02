@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async.migrations;
 
 import com.google.common.collect.ImmutableList;
@@ -26,8 +27,7 @@ import java.util.Objects;
  * Models a set of migrations. Each individual migration is applied
  * in a transaction.
  */
-public interface MigrationSet
-{
+public interface MigrationSet {
     /**
      * @return the unique ID for this migration set
      */
@@ -38,21 +38,17 @@ public interface MigrationSet
      */
     List<Migration> migrations();
 
-    static MigrationSet build(String id, List<Migration> migrations)
-    {
+    static MigrationSet build(String id, List<Migration> migrations) {
         Objects.requireNonNull(id, "id cannot be null");
         final List<Migration> migrationsCopy = ImmutableList.copyOf(migrations);
-        return new MigrationSet()
-        {
+        return new MigrationSet() {
             @Override
-            public String id()
-            {
+            public String id() {
                 return id;
             }
 
             @Override
-            public List<Migration> migrations()
-            {
+            public List<Migration> migrations() {
                 return migrationsCopy;
             }
         };

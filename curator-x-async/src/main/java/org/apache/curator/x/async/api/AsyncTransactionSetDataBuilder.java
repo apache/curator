@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async.api;
 
 import org.apache.curator.framework.api.transaction.CuratorOp;
@@ -23,8 +24,7 @@ import org.apache.curator.framework.api.transaction.CuratorOp;
 /**
  * @see AsyncTransactionOp#setData()
  */
-public interface AsyncTransactionSetDataBuilder extends AsyncPathAndBytesable<CuratorOp>
-{
+public interface AsyncTransactionSetDataBuilder extends AsyncPathAndBytesable<CuratorOp> {
     /**
      * Changes the version number used. By default, -1 is used
      *

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,14 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.queue;
 
 /**
  * Used when the queue is created with a {@link QueueBuilder#lockPath(String)}. Determines
  * the behavior when the queue consumer throws an exception
  */
-public enum ErrorMode
-{
+public enum ErrorMode {
     /**
      * If the consumer throws an exception, requeue the message. This is the default.
      */

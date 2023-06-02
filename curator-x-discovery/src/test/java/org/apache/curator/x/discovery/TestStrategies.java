@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,116 +16,107 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.discovery;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
+import java.util.List;
+import org.apache.commons.math.stat.descriptive.SummaryStatistics;
 import org.apache.curator.x.discovery.details.InstanceProvider;
 import org.apache.curator.x.discovery.strategies.RandomStrategy;
 import org.apache.curator.x.discovery.strategies.RoundRobinStrategy;
 import org.apache.curator.x.discovery.strategies.StickyStrategy;
-import org.apache.commons.math.stat.descriptive.SummaryStatistics;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-import java.util.List;
+import org.junit.jupiter.api.Test;
 
-public class TestStrategies
-{
-    private static class TestInstanceProvider implements InstanceProvider<Void>
-    {
-        private final List<ServiceInstance<Void>>       instances;
+public class TestStrategies {
+    private static class TestInstanceProvider implements InstanceProvider<Void> {
+        private final List<ServiceInstance<Void>> instances;
 
-        private TestInstanceProvider(int qty) throws Exception
-        {
+        private TestInstanceProvider(int qty) throws Exception {
             this(qty, 0);
         }
 
-        private TestInstanceProvider(int qty, int startingAt) throws Exception
-        {
+        private TestInstanceProvider(int qty, int startingAt) throws Exception {
             instances = Lists.newArrayList();
-            for ( int i = 0; i < qty; ++i )
-            {
+            for (int i = 0; i < qty; ++i) {
                 ServiceInstanceBuilder<Void> builder = ServiceInstance.builder();
-                instances.add(builder.id(Integer.toString(i + startingAt)).name("foo").build());
+                instances.add(
+                        builder.id(Integer.toString(i + startingAt)).name("foo").build());
             }
         }
 
         @Override
-        public List<ServiceInstance<Void>> getInstances() throws Exception
-        {
+        public List<ServiceInstance<Void>> getInstances() throws Exception {
             return instances;
         }
     }
 
     @Test
-    public void     testRandom() throws Exception
-    {
-        final int                       QTY = 10;
-        final int                       ITERATIONS = 1000;
+    public void testRandom() throws Exception {
+        final int QTY = 10;
+        final int ITERATIONS = 1000;
 
-        TestInstanceProvider            instanceProvider = new TestInstanceProvider(QTY, 0);
-        ProviderStrategy<Void>          strategy = new RandomStrategy<Void>();
+        TestInstanceProvider instanceProvider = new TestInstanceProvider(QTY, 0);
+        ProviderStrategy<Void> strategy = new RandomStrategy<Void>();
 
-        long[]                          counts = new long[QTY];
-        for ( int i = 0; i < ITERATIONS; ++i )
-        {
-            ServiceInstance<Void>   instance = strategy.getInstance(instanceProvider);
-            int                     id = Integer.parseInt(instance.getId());
+        long[] counts = new long[QTY];
+        for (int i = 0; i < ITERATIONS; ++i) {
+            ServiceInstance<Void> instance = strategy.getInstance(instanceProvider);
+            int id = Integer.parseInt(instance.getId());
             counts[id]++;
         }
 
-        SummaryStatistics               statistic = new SummaryStatistics();
-        for ( int i = 0; i < QTY; ++i )
-        {
+        SummaryStatistics statistic = new SummaryStatistics();
+        for (int i = 0; i < QTY; ++i) {
             statistic.addValue(counts[i]);
         }
-        Assert.assertTrue(statistic.getStandardDeviation() <= (QTY * 2), "" + statistic.getStandardDeviation()); // meager check for even distribution
+        assertTrue(
+                statistic.getStandardDeviation() <= (QTY * 2),
+                "" + statistic.getStandardDeviation()); // meager check for even distribution
     }
 
     @Test
-    public void     testRoundRobin() throws Exception
-    {
-        final int                       QTY = 10;
+    public void testRoundRobin() throws Exception {
+        final int QTY = 10;
 
-        TestInstanceProvider            instanceProvider = new TestInstanceProvider(QTY);
-        ProviderStrategy<Void>          strategy = new RoundRobinStrategy<Void>();
+        TestInstanceProvider instanceProvider = new TestInstanceProvider(QTY);
+        ProviderStrategy<Void> strategy = new RoundRobinStrategy<Void>();
 
-        for ( int i = 0; i < QTY; ++i )
-        {
+        for (int i = 0; i < QTY; ++i) {
             ServiceInstance<Void> instance = strategy.getInstance(instanceProvider);
-            Assert.assertEquals(instance.getId(), Integer.toString(i));
+            assertEquals(instance.getId(), Integer.toString(i));
         }
 
-        for ( int i = 0; i < (1234 * QTY); ++i )
-        {
+        for (int i = 0; i < (1234 * QTY); ++i) {
             ServiceInstance<Void> instance = strategy.getInstance(instanceProvider);
-            Assert.assertEquals(instance.getId(), Integer.toString(i % QTY));
+            assertEquals(instance.getId(), Integer.toString(i % QTY));
         }
     }
 
     @Test
-    public void     testSticky() throws Exception
-    {
-        final int                       QTY = 10;
+    public void testSticky() throws Exception {
+        final int QTY = 10;
 
-        TestInstanceProvider            instanceProvider = new TestInstanceProvider(QTY);
-        StickyStrategy<Void>            strategy = new StickyStrategy<Void>(new RandomStrategy<Void>());
+        TestInstanceProvider instanceProvider = new TestInstanceProvider(QTY);
+        StickyStrategy<Void> strategy = new StickyStrategy<Void>(new RandomStrategy<Void>());
 
-        ServiceInstance<Void>           theInstance = strategy.getInstance(instanceProvider);
-        int                             instanceNumber = strategy.getInstanceNumber();
-        for ( int i = 0; i < 1000; ++i )
-        {
-            Assert.assertEquals(strategy.getInstance(instanceProvider), theInstance);
+        ServiceInstance<Void> theInstance = strategy.getInstance(instanceProvider);
+        int instanceNumber = strategy.getInstanceNumber();
+        for (int i = 0; i < 1000; ++i) {
+            assertEquals(strategy.getInstance(instanceProvider), theInstance);
         }
 
         // assert what happens when an instance goes down
         instanceProvider = new TestInstanceProvider(QTY, QTY);
-        Assert.assertFalse(strategy.getInstance(instanceProvider).equals(theInstance));
-        Assert.assertFalse(instanceNumber == strategy.getInstanceNumber());
+        assertFalse(strategy.getInstance(instanceProvider).equals(theInstance));
+        assertFalse(instanceNumber == strategy.getInstanceNumber());
 
         theInstance = strategy.getInstance(instanceProvider);
-        for ( int i = 0; i < 1000; ++i )
-        {
-            Assert.assertEquals(strategy.getInstance(instanceProvider), theInstance);
+        for (int i = 0; i < 1000; ++i) {
+            assertEquals(strategy.getInstance(instanceProvider), theInstance);
         }
     }
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,15 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.curator.framework;
 
-import org.apache.zookeeper.Watcher;
+package org.apache.curator.framework;
 
 /**
  * A CuratorFramework facade that tracks watchers created and allows a one-shot removal of all watchers
  */
-public interface WatcherRemoveCuratorFramework extends CuratorFramework
-{
+public interface WatcherRemoveCuratorFramework extends CuratorFramework {
     /**
      * Remove all outstanding watchers that have been set
      */

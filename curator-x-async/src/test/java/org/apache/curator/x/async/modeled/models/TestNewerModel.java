@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,13 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async.modeled.models;
 
 import java.math.BigInteger;
 import java.util.Objects;
 
-public class TestNewerModel
-{
+public class TestNewerModel {
     private final String firstName;
     private final String lastName;
     private final String address;
@@ -30,13 +30,12 @@ public class TestNewerModel
     private final BigInteger salary;
     private final long newField;
 
-    public TestNewerModel()
-    {
+    public TestNewerModel() {
         this("", "", "", 0, BigInteger.ZERO, 0);
     }
 
-    public TestNewerModel(String firstName, String lastName, String address, int age, BigInteger salary, long newField)
-    {
+    public TestNewerModel(
+            String firstName, String lastName, String address, int age, BigInteger salary, long newField) {
         this.firstName = Objects.requireNonNull(firstName, "firstName cannot be null");
         this.lastName = Objects.requireNonNull(lastName, "lastName cannot be null");
         this.address = Objects.requireNonNull(address, "address cannot be null");
@@ -45,93 +44,76 @@ public class TestNewerModel
         this.newField = newField;
     }
 
-    public String getFirstName()
-    {
+    public String getFirstName() {
         return firstName;
     }
 
-    public String getLastName()
-    {
+    public String getLastName() {
         return lastName;
     }
 
-    public String getAddress()
-    {
+    public String getAddress() {
         return address;
     }
 
-    public int getAge()
-    {
+    public int getAge() {
         return age;
     }
 
-    public BigInteger getSalary()
-    {
+    public BigInteger getSalary() {
         return salary;
     }
 
-    public long getNewField()
-    {
+    public long getNewField() {
         return newField;
     }
 
-    public boolean equalsOld(TestModel model)
-    {
+    public boolean equalsOld(TestModel model) {
         return firstName.equals(model.getFirstName())
-            && lastName.equals(model.getLastName())
-            && address.equals(model.getAddress())
-            && salary.equals(model.getSalary())
-            && age == model.getAge()
-            ;
+                && lastName.equals(model.getLastName())
+                && address.equals(model.getAddress())
+                && salary.equals(model.getSalary())
+                && age == model.getAge();
     }
 
     @Override
-    public boolean equals(Object o)
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
-        TestNewerModel that = (TestNewerModel)o;
+        TestNewerModel that = (TestNewerModel) o;
 
-        if ( age != that.age )
-        {
+        if (age != that.age) {
             return false;
         }
-        if ( newField != that.newField )
-        {
+        if (newField != that.newField) {
             return false;
         }
-        if ( !firstName.equals(that.firstName) )
-        {
+        if (!firstName.equals(that.firstName)) {
             return false;
         }
-        if ( !lastName.equals(that.lastName) )
-        {
+        if (!lastName.equals(that.lastName)) {
             return false;
         }
         //noinspection SimplifiableIfStatement
-        if ( !address.equals(that.address) )
-        {
+        if (!address.equals(that.address)) {
             return false;
         }
         return salary.equals(that.salary);
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         int result = firstName.hashCode();
         result = 31 * result + lastName.hashCode();
         result = 31 * result + address.hashCode();
         result = 31 * result + age;
         result = 31 * result + salary.hashCode();
-        result = 31 * result + (int)(newField ^ (newField >>> 32));
+        result = 31 * result + (int) (newField ^ (newField >>> 32));
         return result;
     }
 }

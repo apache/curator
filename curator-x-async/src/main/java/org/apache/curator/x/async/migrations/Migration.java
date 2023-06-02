@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,17 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async.migrations;
 
-import org.apache.curator.framework.api.transaction.CuratorOp;
 import java.util.List;
+import org.apache.curator.framework.api.transaction.CuratorOp;
 
 /**
  * Models a single migration/transition
  */
 @FunctionalInterface
-public interface Migration
-{
+public interface Migration {
     /**
      * Return the operations to execute in a transaction. IMPORTANT: during a migration
      * this method may be called multiple times.

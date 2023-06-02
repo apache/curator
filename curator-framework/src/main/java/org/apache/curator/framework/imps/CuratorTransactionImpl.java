@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -21,6 +21,9 @@ package org.apache.curator.framework.imps;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.Callable;
 import org.apache.curator.RetryLoop;
 import org.apache.curator.framework.api.Pathable;
 import org.apache.curator.framework.api.transaction.*;
@@ -29,33 +32,26 @@ import org.apache.zookeeper.Op;
 import org.apache.zookeeper.OpResult;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.Stat;
-import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.Callable;
 
 @SuppressWarnings("deprecation")
-class CuratorTransactionImpl implements CuratorTransaction, CuratorTransactionBridge, CuratorTransactionFinal
-{
+class CuratorTransactionImpl implements CuratorTransaction, CuratorTransactionBridge, CuratorTransactionFinal {
     private final CuratorFrameworkImpl client;
     private final CuratorMultiTransactionRecord transaction;
 
     private boolean isCommitted = false;
 
-    CuratorTransactionImpl(CuratorFrameworkImpl client)
-    {
+    CuratorTransactionImpl(CuratorFrameworkImpl client) {
         this.client = client;
         transaction = new CuratorMultiTransactionRecord();
     }
 
     @Override
-    public CuratorTransactionFinal and()
-    {
+    public CuratorTransactionFinal and() {
         return this;
     }
 
     @Override
-    public TransactionCreateBuilder<CuratorTransactionBridge> create()
-    {
+    public TransactionCreateBuilder<CuratorTransactionBridge> create() {
         Preconditions.checkState(!isCommitted, "transaction already committed");
 
         CuratorTransactionBridge asBridge = this;
@@ -63,8 +59,7 @@ class CuratorTransactionImpl implements CuratorTransaction, CuratorTransactionBr
     }
 
     @Override
-    public TransactionDeleteBuilder<CuratorTransactionBridge> delete()
-    {
+    public TransactionDeleteBuilder<CuratorTransactionBridge> delete() {
         Preconditions.checkState(!isCommitted, "transaction already committed");
 
         CuratorTransactionBridge asBridge = this;
@@ -72,8 +67,7 @@ class CuratorTransactionImpl implements CuratorTransaction, CuratorTransactionBr
     }
 
     @Override
-    public TransactionSetDataBuilder<CuratorTransactionBridge> setData()
-    {
+    public TransactionSetDataBuilder<CuratorTransactionBridge> setData() {
         Preconditions.checkState(!isCommitted, "transaction already committed");
 
         CuratorTransactionBridge asBridge = this;
@@ -81,23 +75,20 @@ class CuratorTransactionImpl implements CuratorTransaction, CuratorTransactionBr
     }
 
     @Override
-    public TransactionCheckBuilder<CuratorTransactionBridge> check()
-    {
+    public TransactionCheckBuilder<CuratorTransactionBridge> check() {
         Preconditions.checkState(!isCommitted, "transaction already committed");
 
         CuratorTransactionBridge asBridge = this;
         return makeTransactionCheckBuilder(client, asBridge, transaction);
     }
 
-    static <T> TransactionCheckBuilder<T> makeTransactionCheckBuilder(final CuratorFrameworkImpl client, final T context, final CuratorMultiTransactionRecord transaction)
-    {
-        return new TransactionCheckBuilder<T>()
-        {
+    static <T> TransactionCheckBuilder<T> makeTransactionCheckBuilder(
+            final CuratorFrameworkImpl client, final T context, final CuratorMultiTransactionRecord transaction) {
+        return new TransactionCheckBuilder<T>() {
             private int version = -1;
 
             @Override
-            public T forPath(String path) throws Exception
-            {
+            public T forPath(String path) throws Exception {
                 String fixedPath = client.fixForNamespace(path);
                 transaction.add(Op.check(fixedPath, version), OperationType.CHECK, path);
 
@@ -105,8 +96,7 @@ class CuratorTransactionImpl implements CuratorTransaction, CuratorTransactionBr
             }
 
             @Override
-            public Pathable<T> withVersion(int version)
-            {
+            public Pathable<T> withVersion(int version) {
                 this.version = version;
                 return this;
             }
@@ -114,37 +104,30 @@ class CuratorTransactionImpl implements CuratorTransaction, CuratorTransactionBr
     }
 
     @Override
-    public Collection<CuratorTransactionResult> commit() throws Exception
-    {
+    public Collection<CuratorTransactionResult> commit() throws Exception {
         Preconditions.checkState(!isCommitted, "transaction already committed");
         isCommitted = true;
 
-        List<OpResult> resultList = RetryLoop.callWithRetry
-            (
-                client.getZookeeperClient(),
-                new Callable<List<OpResult>>()
-                {
+        List<OpResult> resultList =
+                RetryLoop.callWithRetry(client.getZookeeperClient(), new Callable<List<OpResult>>() {
                     @Override
-                    public List<OpResult> call() throws Exception
-                    {
+                    public List<OpResult> call() throws Exception {
                         return doOperation();
                     }
-                }
-            );
+                });
 
-        if ( resultList.size() != transaction.metadataSize() )
-        {
-            throw new IllegalStateException(String.format("Result size (%d) doesn't match input size (%d)", resultList.size(), transaction.metadataSize()));
+        if (resultList.size() != transaction.metadataSize()) {
+            throw new IllegalStateException(String.format(
+                    "Result size (%d) doesn't match input size (%d)", resultList.size(), transaction.metadataSize()));
         }
 
         return wrapResults(client, resultList, transaction);
     }
 
-    static List<CuratorTransactionResult> wrapResults(CuratorFrameworkImpl client, List<OpResult> resultList, CuratorMultiTransactionRecord transaction)
-    {
+    static List<CuratorTransactionResult> wrapResults(
+            CuratorFrameworkImpl client, List<OpResult> resultList, CuratorMultiTransactionRecord transaction) {
         ImmutableList.Builder<CuratorTransactionResult> builder = ImmutableList.builder();
-        for ( int i = 0; i < resultList.size(); ++i )
-        {
+        for (int i = 0; i < resultList.size(); ++i) {
             OpResult opResult = resultList.get(i);
             TypeAndPath metadata = transaction.getMetadata(i);
             CuratorTransactionResult curatorResult = makeCuratorResult(client, opResult, metadata);
@@ -154,36 +137,31 @@ class CuratorTransactionImpl implements CuratorTransaction, CuratorTransactionBr
         return builder.build();
     }
 
-    static CuratorTransactionResult makeCuratorResult(CuratorFrameworkImpl client, OpResult opResult, TypeAndPath metadata)
-    {
+    static CuratorTransactionResult makeCuratorResult(
+            CuratorFrameworkImpl client, OpResult opResult, TypeAndPath metadata) {
         String resultPath = null;
         Stat resultStat = null;
         int error = 0;
-        switch ( opResult.getType() )
-        {
-            default:
-            {
+        switch (opResult.getType()) {
+            default: {
                 // NOP
                 break;
             }
 
-            case ZooDefs.OpCode.create:
-            {
-                OpResult.CreateResult createResult = (OpResult.CreateResult)opResult;
+            case ZooDefs.OpCode.create: {
+                OpResult.CreateResult createResult = (OpResult.CreateResult) opResult;
                 resultPath = client.unfixForNamespace(createResult.getPath());
                 break;
             }
 
-            case ZooDefs.OpCode.setData:
-            {
-                OpResult.SetDataResult setDataResult = (OpResult.SetDataResult)opResult;
+            case ZooDefs.OpCode.setData: {
+                OpResult.SetDataResult setDataResult = (OpResult.SetDataResult) opResult;
                 resultStat = setDataResult.getStat();
                 break;
             }
 
-            case ZooDefs.OpCode.error:
-            {
-                OpResult.ErrorResult errorResult = (OpResult.ErrorResult)opResult;
+            case ZooDefs.OpCode.error: {
+                OpResult.ErrorResult errorResult = (OpResult.ErrorResult) opResult;
                 error = errorResult.getErr();
                 break;
             }
@@ -192,18 +170,14 @@ class CuratorTransactionImpl implements CuratorTransaction, CuratorTransactionBr
         return new CuratorTransactionResult(metadata.getType(), metadata.getForPath(), resultPath, resultStat, error);
     }
 
-    private List<OpResult> doOperation() throws Exception
-    {
+    private List<OpResult> doOperation() throws Exception {
         List<OpResult> opResults = client.getZooKeeper().multi(transaction);
-        if ( opResults.size() > 0 )
-        {
+        if (opResults.size() > 0) {
             OpResult firstResult = opResults.get(0);
-            if ( firstResult.getType() == ZooDefs.OpCode.error )
-            {
-                OpResult.ErrorResult error = (OpResult.ErrorResult)firstResult;
+            if (firstResult.getType() == ZooDefs.OpCode.error) {
+                OpResult.ErrorResult error = (OpResult.ErrorResult) firstResult;
                 KeeperException.Code code = KeeperException.Code.get(error.getErr());
-                if ( code == null )
-                {
+                if (code == null) {
                     code = KeeperException.Code.UNIMPLEMENTED;
                 }
                 throw KeeperException.create(code);

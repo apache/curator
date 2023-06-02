@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator;
 
 import org.apache.curator.ensemble.EnsembleProvider;
@@ -24,8 +25,7 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 
-class HandleHolder
-{
+class HandleHolder {
     private final ZookeeperFactory zookeeperFactory;
     private final Watcher watcher;
     private final EnsembleProvider ensembleProvider;
@@ -34,17 +34,12 @@ class HandleHolder
 
     private volatile Helper helper;
 
-    private interface Helper
-    {
-        ZooKeeper getZooKeeper() throws Exception;
-        
-        String getConnectionString();
-
-        int getNegotiatedSessionTimeoutMs();
-    }
-
-    HandleHolder(ZookeeperFactory zookeeperFactory, Watcher watcher, EnsembleProvider ensembleProvider, int sessionTimeout, boolean canBeReadOnly)
-    {
+    HandleHolder(
+            ZookeeperFactory zookeeperFactory,
+            Watcher watcher,
+            EnsembleProvider ensembleProvider,
+            int sessionTimeout,
+            boolean canBeReadOnly) {
         this.zookeeperFactory = zookeeperFactory;
         this.watcher = watcher;
         this.ensembleProvider = ensembleProvider;
@@ -52,114 +47,80 @@ class HandleHolder
         this.canBeReadOnly = canBeReadOnly;
     }
 
-    ZooKeeper getZooKeeper() throws Exception
-    {
+    ZooKeeper getZooKeeper() throws Exception {
         return (helper != null) ? helper.getZooKeeper() : null;
     }
 
-    int getNegotiatedSessionTimeoutMs()
-    {
+    int getNegotiatedSessionTimeoutMs() {
         return (helper != null) ? helper.getNegotiatedSessionTimeoutMs() : 0;
     }
 
-    String  getConnectionString()
-    {
+    String getConnectionString() {
         return (helper != null) ? helper.getConnectionString() : null;
     }
 
-    String getNewConnectionString()
-    {
+    String getNewConnectionString() {
         String helperConnectionString = (helper != null) ? helper.getConnectionString() : null;
-        return ((helperConnectionString != null) && !ensembleProvider.getConnectionString().equals(helperConnectionString)) ? helperConnectionString : null;
+        String ensembleProviderConnectionString = ensembleProvider.getConnectionString();
+        return ((helperConnectionString != null) && !ensembleProviderConnectionString.equals(helperConnectionString))
+                ? ensembleProviderConnectionString
+                : null;
     }
 
-    void closeAndClear() throws Exception
-    {
-        internalClose();
+    void resetConnectionString(String connectionString) {
+        if (helper != null) {
+            helper.resetConnectionString(connectionString);
+        }
+    }
+
+    void closeAndClear(int waitForShutdownTimeoutMs) throws Exception {
+        internalClose(waitForShutdownTimeoutMs);
         helper = null;
     }
 
-    void closeAndReset() throws Exception
-    {
-        internalClose();
+    void closeAndReset() throws Exception {
+        internalClose(0);
 
+        Helper.Data data = new Helper.Data(); // data shared between initial Helper and the un-synchronized Helper
         // first helper is synchronized when getZooKeeper is called. Subsequent calls
         // are not synchronized.
-        helper = new Helper()
-        {
-            private volatile ZooKeeper zooKeeperHandle = null;
-            private volatile String connectionString = null;
-
+        //noinspection NonAtomicOperationOnVolatileField
+        helper = new Helper(data) {
             @Override
-            public ZooKeeper getZooKeeper() throws Exception
-            {
-                synchronized(this)
-                {
-                    if ( zooKeeperHandle == null )
-                    {
-                        connectionString = ensembleProvider.getConnectionString();
-                        zooKeeperHandle = zookeeperFactory.newZooKeeper(connectionString, sessionTimeout, watcher, canBeReadOnly);
+            ZooKeeper getZooKeeper() throws Exception {
+                synchronized (this) {
+                    if (data.zooKeeperHandle == null) {
+                        resetConnectionString(ensembleProvider.getConnectionString());
+                        data.zooKeeperHandle = zookeeperFactory.newZooKeeper(
+                                data.connectionString, sessionTimeout, watcher, canBeReadOnly);
                     }
 
-                    helper = new Helper()
-                    {
-                        @Override
-                        public ZooKeeper getZooKeeper() throws Exception
-                        {
-                            return zooKeeperHandle;
-                        }
+                    helper = new Helper(data);
 
-                        @Override
-                        public String getConnectionString()
-                        {
-                            return connectionString;
-                        }
-
-                        @Override
-                        public int getNegotiatedSessionTimeoutMs()
-                        {
-                            return (zooKeeperHandle != null) ? zooKeeperHandle.getSessionTimeout() : 0;
-                        }
-                    };
-
-                    return zooKeeperHandle;
+                    return super.getZooKeeper();
                 }
-            }
-
-            @Override
-            public String getConnectionString()
-            {
-                return connectionString;
-            }
-
-            @Override
-            public int getNegotiatedSessionTimeoutMs()
-            {
-                return (zooKeeperHandle != null) ? zooKeeperHandle.getSessionTimeout() : 0;
             }
         };
     }
 
-    private void internalClose() throws Exception
-    {
-        try
-        {
+    private void internalClose(int waitForShutdownTimeoutMs) throws Exception {
+        try {
             ZooKeeper zooKeeper = (helper != null) ? helper.getZooKeeper() : null;
-            if ( zooKeeper != null )
-            {
-                Watcher dummyWatcher = new Watcher()
-                {
+            if (zooKeeper != null) {
+                Watcher dummyWatcher = new Watcher() {
                     @Override
-                    public void process(WatchedEvent event)
-                    {
-                    }
+                    public void process(WatchedEvent event) {}
                 };
-                zooKeeper.register(dummyWatcher);   // clear the default watcher so that no new events get processed by mistake
-                zooKeeper.close();
+                zooKeeper.register(
+                        dummyWatcher); // clear the default watcher so that no new events get processed by mistake
+                if (waitForShutdownTimeoutMs == 0) {
+                    zooKeeper.close(); // coming from closeAndReset() which is executed in ZK's event thread. Cannot use
+                    // zooKeeper.close(n) otherwise we'd get a dead lock
+                } else {
+                    zooKeeper.close(waitForShutdownTimeoutMs);
+                }
             }
-        }
-        catch ( InterruptedException dummy )
-        {
+        } catch (InterruptedException dummy) {
             Thread.currentThread().interrupt();
         }
     }

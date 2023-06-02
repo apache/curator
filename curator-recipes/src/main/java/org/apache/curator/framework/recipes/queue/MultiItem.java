@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.queue;
 
 /**
@@ -23,8 +24,7 @@ package org.apache.curator.framework.recipes.queue;
  * @see DistributedQueue#putMulti(MultiItem)
  * @see DistributedPriorityQueue#putMulti(MultiItem, int)
  */
-public interface MultiItem<T>
-{
+public interface MultiItem<T> {
     /**
      * Called repeatedly to get the items to add to the queue. This method
      * should return <code>null</code> when there are no more items to add.
@@ -32,5 +32,5 @@ public interface MultiItem<T>
      * @return item or null
      * @throws Exception any errors
      */
-    public T    nextItem() throws Exception;
+    public T nextItem() throws Exception;
 }

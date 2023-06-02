@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,10 +16,10 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.api;
 
-public interface Pathable<T>
-{
+public interface Pathable<T> {
     /**
      * Commit the currently building operation using the given path
      *
@@ -27,5 +27,5 @@ public interface Pathable<T>
      * @return operation result if any
      * @throws Exception errors
      */
-    public T       forPath(String path) throws Exception;
+    public T forPath(String path) throws Exception;
 }

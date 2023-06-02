@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator;
 
 import java.util.concurrent.TimeUnit;
@@ -23,8 +24,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Abstraction for retry policies to sleep
  */
-public interface RetrySleeper
-{
+public interface RetrySleeper {
     /**
      * Sleep for the given time
      *
@@ -32,5 +32,5 @@ public interface RetrySleeper
      * @param unit time unit
      * @throws InterruptedException if the sleep is interrupted
      */
-    public void     sleepFor(long time, TimeUnit unit) throws InterruptedException;
+    public void sleepFor(long time, TimeUnit unit) throws InterruptedException;
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.leader;
 
 import org.apache.curator.framework.CuratorFramework;
@@ -25,13 +26,10 @@ import org.apache.curator.framework.state.ConnectionState;
  * An implementation of {@link LeaderSelectorListener} that adds the recommended handling
  * for connection state problems
  */
-public abstract class LeaderSelectorListenerAdapter implements LeaderSelectorListener
-{
+public abstract class LeaderSelectorListenerAdapter implements LeaderSelectorListener {
     @Override
-    public void stateChanged(CuratorFramework client, ConnectionState newState)
-    {
-        if ( client.getConnectionStateErrorPolicy().isErrorState(newState) )
-        {
+    public void stateChanged(CuratorFramework client, ConnectionState newState) {
+        if (client.getConnectionStateErrorPolicy().isErrorState(newState)) {
             throw new CancelLeadershipException();
         }
     }

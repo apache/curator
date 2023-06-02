@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,55 +16,47 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package modeled;
 
 import java.util.Objects;
 
-public class PersonId
-{
+public class PersonId {
     private final String id;
 
-    public PersonId()
-    {
+    public PersonId() {
         this("");
     }
 
-    public PersonId(String id)
-    {
+    public PersonId(String id) {
         this.id = Objects.requireNonNull(id, "id cannot be null");
     }
 
-    public String getId()
-    {
+    public String getId() {
         return id;
     }
 
     @Override
-    public boolean equals(Object o)
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
-        PersonId personId = (PersonId)o;
+        PersonId personId = (PersonId) o;
 
         return id.equals(personId.id);
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return id.hashCode();
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "PersonId{" + "id='" + id + '\'' + '}';
     }
 }

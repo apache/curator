@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,22 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async;
 
+import java.util.function.UnaryOperator;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.x.async.api.AsyncCuratorFrameworkDsl;
 import org.apache.curator.x.async.details.AsyncCuratorFrameworkImpl;
 import org.apache.zookeeper.WatchedEvent;
-import java.util.function.UnaryOperator;
 
 /**
  * Zookeeper framework-style client that returns composable async operations
  * that implement {@link java.util.concurrent.CompletionStage}
  */
-public interface AsyncCuratorFramework extends AsyncCuratorFrameworkDsl
-{
+public interface AsyncCuratorFramework extends AsyncCuratorFrameworkDsl {
     /**
      * Takes an old-style Curator instance and returns a new async instance that
      * wraps it. Note: the instance must have been created through a chain that
@@ -42,8 +42,7 @@ public interface AsyncCuratorFramework extends AsyncCuratorFrameworkDsl
      * @param client instance to wrap
      * @return wrapped instance
      */
-    static AsyncCuratorFramework wrap(CuratorFramework client)
-    {
+    static AsyncCuratorFramework wrap(CuratorFramework client) {
         return new AsyncCuratorFrameworkImpl(client);
     }
 
@@ -92,7 +91,10 @@ public interface AsyncCuratorFramework extends AsyncCuratorFrameworkDsl
      * @see #with(org.apache.curator.framework.api.UnhandledErrorListener)
      * @return facade
      */
-    AsyncCuratorFrameworkDsl with(UnhandledErrorListener listener, UnaryOperator<CuratorEvent> resultFilter, UnaryOperator<WatchedEvent> watcherFilter);
+    AsyncCuratorFrameworkDsl with(
+            UnhandledErrorListener listener,
+            UnaryOperator<CuratorEvent> resultFilter,
+            UnaryOperator<WatchedEvent> watcherFilter);
 
     /**
      * Set any combination of listener, filters or watch mode
@@ -106,5 +108,9 @@ public interface AsyncCuratorFramework extends AsyncCuratorFrameworkDsl
      * @see #with(org.apache.curator.framework.api.UnhandledErrorListener)
      * @return facade
      */
-    AsyncCuratorFrameworkDsl with(WatchMode mode, UnhandledErrorListener listener, UnaryOperator<CuratorEvent> resultFilter, UnaryOperator<WatchedEvent> watcherFilter);
+    AsyncCuratorFrameworkDsl with(
+            WatchMode mode,
+            UnhandledErrorListener listener,
+            UnaryOperator<CuratorEvent> resultFilter,
+            UnaryOperator<WatchedEvent> watcherFilter);
 }

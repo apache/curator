@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,16 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.discovery;
 
+import java.io.Closeable;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.x.discovery.details.InstanceProvider;
 import org.apache.curator.x.discovery.details.ServiceCacheListener;
-import java.io.Closeable;
-import java.util.List;
 
-public interface ServiceCache<T> extends Closeable, Listenable<ServiceCacheListener>, InstanceProvider<T>
-{
+public interface ServiceCache<T> extends Closeable, Listenable<ServiceCacheListener>, InstanceProvider<T> {
     /**
      * Return the current list of instances. NOTE: there is no guarantee of freshness. This is
      * merely the last known list of instances. However, the list is updated via a ZooKeeper watcher
@@ -41,4 +42,6 @@ public interface ServiceCache<T> extends Closeable, Listenable<ServiceCacheListe
      * @throws Exception errors
      */
     public void start() throws Exception;
+
+    CountDownLatch startImmediate() throws Exception;
 }

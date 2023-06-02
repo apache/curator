@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,26 +16,23 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.locks;
 
-public class PredicateResults
-{
-    private final boolean   getsTheLock;
-    private final String    pathToWatch;
+public class PredicateResults {
+    private final boolean getsTheLock;
+    private final String pathToWatch;
 
-    public PredicateResults(String pathToWatch, boolean getsTheLock)
-    {
+    public PredicateResults(String pathToWatch, boolean getsTheLock) {
         this.pathToWatch = pathToWatch;
         this.getsTheLock = getsTheLock;
     }
 
-    public String getPathToWatch()
-    {
+    public String getPathToWatch() {
         return pathToWatch;
     }
 
-    public boolean getsTheLock()
-    {
+    public boolean getsTheLock() {
         return getsTheLock;
     }
 }

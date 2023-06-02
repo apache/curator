@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,40 +16,38 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.leader;
 
-import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.utils.CloseableUtils;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.framework.state.ConnectionState;
-import org.apache.curator.retry.ExponentialBackoffRetry;
-import org.apache.curator.test.Timing;
-import org.apache.curator.utils.ThreadUtils;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.state.ConnectionState;
+import org.apache.curator.retry.ExponentialBackoffRetry;
+import org.apache.curator.test.BaseClassForTests;
+import org.apache.curator.test.Timing;
+import org.apache.curator.utils.CloseableUtils;
+import org.apache.curator.utils.ThreadUtils;
+import org.junit.jupiter.api.Test;
 
-public class TestLeaderSelectorWithExecutor extends BaseClassForTests
-{
+public class TestLeaderSelectorWithExecutor extends BaseClassForTests {
     private static final ThreadFactory threadFactory = ThreadUtils.newThreadFactory("FeedGenerator");
 
     @Test
-    public void test() throws Exception
-    {
+    public void test() throws Exception {
         Timing timing = new Timing();
         LeaderSelector leaderSelector = null;
         CuratorFramework client = CuratorFrameworkFactory.builder()
-            .retryPolicy(new ExponentialBackoffRetry(100, 3))
-            .connectString(server.getConnectString())
-            .sessionTimeoutMs(timing.session())
-            .connectionTimeoutMs(timing.connection())
-            .build();
-        try
-        {
+                .retryPolicy(new ExponentialBackoffRetry(100, 3))
+                .connectString(server.getConnectString())
+                .sessionTimeoutMs(timing.session())
+                .connectionTimeoutMs(timing.connection())
+                .build();
+        try {
             client.start();
 
             MyLeaderSelectorListener listener = new MyLeaderSelectorListener();
@@ -61,54 +59,40 @@ public class TestLeaderSelectorWithExecutor extends BaseClassForTests
 
             timing.sleepABit();
 
-            Assert.assertEquals(listener.getLeaderCount(), 1);
-        }
-        finally
-        {
+            assertEquals(listener.getLeaderCount(), 1);
+        } finally {
             CloseableUtils.closeQuietly(leaderSelector);
             CloseableUtils.closeQuietly(client);
         }
     }
 
-    private class MyLeaderSelectorListener implements LeaderSelectorListener
-    {
+    private class MyLeaderSelectorListener implements LeaderSelectorListener {
         private volatile Thread ourThread;
         private final AtomicInteger leaderCount = new AtomicInteger(0);
 
-        public int getLeaderCount()
-        {
+        public int getLeaderCount() {
             return leaderCount.get();
         }
 
         @Override
-        public void takeLeadership(CuratorFramework curatorFramework) throws Exception
-        {
+        public void takeLeadership(CuratorFramework curatorFramework) throws Exception {
             ourThread = Thread.currentThread();
-            try
-            {
+            try {
                 leaderCount.incrementAndGet();
-                while ( !Thread.currentThread().isInterrupted() )
-                {
+                while (!Thread.currentThread().isInterrupted()) {
                     Thread.sleep(1000);
                 }
-            }
-            catch ( InterruptedException e )
-            {
+            } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-            }
-            finally
-            {
+            } finally {
                 leaderCount.decrementAndGet();
             }
         }
 
         @Override
-        public void stateChanged(CuratorFramework curatorFramework, ConnectionState newState)
-        {
-            if ( (newState == ConnectionState.LOST) || (newState == ConnectionState.SUSPENDED) )
-            {
-                if ( ourThread != null )
-                {
+        public void stateChanged(CuratorFramework curatorFramework, ConnectionState newState) {
+            if ((newState == ConnectionState.LOST) || (newState == ConnectionState.SUSPENDED)) {
+                if (ourThread != null) {
                     ourThread.interrupt();
                 }
             }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,29 +16,26 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.queue;
 
 import java.util.concurrent.Callable;
 
-public class QueueTestProducer implements Callable<Void>
-{
+public class QueueTestProducer implements Callable<Void> {
     private final DistributedQueue<TestQueueItem> queue;
     private final int itemQty;
     private final int startIndex;
 
-    public QueueTestProducer(DistributedQueue<TestQueueItem> queue, int itemQty, int startIndex)
-    {
+    public QueueTestProducer(DistributedQueue<TestQueueItem> queue, int itemQty, int startIndex) {
         this.queue = queue;
         this.itemQty = itemQty;
         this.startIndex = startIndex;
     }
 
     @Override
-    public Void call() throws Exception
-    {
-        int     count = 0;
-        while ( !Thread.currentThread().isInterrupted() && (count < itemQty) )
-        {
+    public Void call() throws Exception {
+        int count = 0;
+        while (!Thread.currentThread().isInterrupted() && (count < itemQty)) {
             queue.put(new TestQueueItem(Integer.toString(count + startIndex)));
             ++count;
         }

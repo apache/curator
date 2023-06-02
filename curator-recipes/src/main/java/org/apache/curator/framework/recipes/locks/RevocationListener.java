@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,15 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.locks;
 
-public interface RevocationListener<T>
-{
+public interface RevocationListener<T> {
     /**
      * Called when a revocation request has been received. You should release the lock as soon
      * as possible. Revocation is cooperative.
      *
      * @param forLock the lock that should release
      */
-    public void         revocationRequested(T forLock);
+    public void revocationRequested(T forLock);
 }

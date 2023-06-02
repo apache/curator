@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,52 +16,45 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package pubsub.models;
 
-import org.apache.curator.x.async.modeled.NodeName;
 import java.util.Objects;
 import java.util.UUID;
+import org.apache.curator.x.async.modeled.NodeName;
 
-public abstract class Message implements NodeName
-{
+public abstract class Message implements NodeName {
     private final String id;
     private final Priority priority;
 
-    protected Message()
-    {
+    protected Message() {
         this(UUID.randomUUID().toString(), Priority.low);
     }
 
-    protected Message(Priority priority)
-    {
+    protected Message(Priority priority) {
         this(UUID.randomUUID().toString(), priority);
     }
 
-    protected Message(String id, Priority priority)
-    {
+    protected Message(String id, Priority priority) {
         this.id = Objects.requireNonNull(id, "id cannot be null");
         this.priority = Objects.requireNonNull(priority, "messageType cannot be null");
     }
 
-    public String getId()
-    {
+    public String getId() {
         return id;
     }
 
-    public Priority getPriority()
-    {
+    public Priority getPriority() {
         return priority;
     }
 
     @Override
-    public String nodeName()
-    {
+    public String nodeName() {
         return id;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "Message{" + "id='" + id + '\'' + ", priority=" + priority + '}';
     }
 }

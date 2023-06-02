@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -17,13 +17,12 @@
  * under the License.
  */
 
-
 package org.apache.curator.test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.HashMap;
 import java.util.Map;
-import static org.testng.AssertJUnit.assertEquals;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test QuorumConfigBuilder
@@ -32,14 +31,16 @@ public class TestQuorumConfigBuilder {
 
     @Test
     public void testCustomProperties() throws Exception {
-        Map<String,Object> customProperties = new HashMap<String,Object>();
+        Map<String, Object> customProperties = new HashMap<String, Object>();
         customProperties.put("authProvider.1", "org.apache.zookeeper.server.auth.SASLAuthenticationProvider");
         customProperties.put("kerberos.removeHostFromPrincipal", "true");
         customProperties.put("kerberos.removeRealmFromPrincipal", "true");
-        InstanceSpec spec = new InstanceSpec(null, -1, -1, -1, true, 1,-1, -1,customProperties);
+        InstanceSpec spec = new InstanceSpec(null, -1, -1, -1, true, 1, -1, -1, customProperties);
         TestingServer server = new TestingServer(spec, true);
         try {
-            assertEquals("org.apache.zookeeper.server.auth.SASLAuthenticationProvider", System.getProperty("zookeeper.authProvider.1"));
+            assertEquals(
+                    "org.apache.zookeeper.server.auth.SASLAuthenticationProvider",
+                    System.getProperty("zookeeper.authProvider.1"));
             assertEquals("true", System.getProperty("zookeeper.kerberos.removeHostFromPrincipal"));
             assertEquals("true", System.getProperty("zookeeper.kerberos.removeRealmFromPrincipal"));
         } finally {

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.api.transaction;
 
 import org.apache.curator.framework.api.ACLCreateModePathAndBytesable;
@@ -24,11 +25,9 @@ import org.apache.curator.framework.api.Compressible;
 import org.apache.curator.framework.api.CreateModable;
 import org.apache.curator.framework.api.PathAndBytesable;
 
-public interface TransactionCreateBuilder2<T> extends
-    PathAndBytesable<T>,
-    CreateModable<ACLPathAndBytesable<T>>,
-    ACLPathAndBytesable<T>,
-    ACLCreateModePathAndBytesable<T>,
-    Compressible<ACLCreateModePathAndBytesable<T>>
-{
-}
+public interface TransactionCreateBuilder2<T>
+        extends PathAndBytesable<T>,
+                CreateModable<ACLPathAndBytesable<T>>,
+                ACLPathAndBytesable<T>,
+                ACLCreateModePathAndBytesable<T>,
+                Compressible<ACLCreateModePathAndBytesable<T>> {}

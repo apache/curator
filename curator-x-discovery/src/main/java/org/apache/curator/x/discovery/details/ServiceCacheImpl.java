@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,105 +16,119 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.discovery.details;
 
-import com.google.common.base.Function;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.apache.curator.utils.CloseableExecutorService;
-import org.apache.curator.utils.CloseableUtils;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.listen.ListenerContainer;
-import org.apache.curator.framework.recipes.cache.ChildData;
-import org.apache.curator.framework.recipes.cache.PathChildrenCache;
-import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
-import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
-import org.apache.curator.utils.ZKPaths;
-import org.apache.curator.x.discovery.ServiceCache;
-import org.apache.curator.x.discovery.ServiceInstance;
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.EnsureContainers;
+import org.apache.curator.framework.listen.StandardListenerManager;
+import org.apache.curator.framework.recipes.cache.ChildData;
+import org.apache.curator.framework.recipes.cache.CuratorCache;
+import org.apache.curator.framework.recipes.cache.CuratorCacheBridge;
+import org.apache.curator.framework.recipes.cache.CuratorCacheListener;
+import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
+import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
+import org.apache.curator.utils.CloseableUtils;
+import org.apache.curator.utils.ZKPaths;
+import org.apache.curator.x.discovery.ServiceCache;
+import org.apache.curator.x.discovery.ServiceInstance;
 
-public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheListener
-{
-    private final ListenerContainer<ServiceCacheListener>           listenerContainer = new ListenerContainer<ServiceCacheListener>();
-    private final ServiceDiscoveryImpl<T>                           discovery;
-    private final AtomicReference<State>                            state = new AtomicReference<State>(State.LATENT);
-    private final PathChildrenCache                                 cache;
-    private final ConcurrentMap<String, ServiceInstance<T>>         instances = Maps.newConcurrentMap();
+public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheListener {
+    private final StandardListenerManager<ServiceCacheListener> listenerContainer = StandardListenerManager.standard();
+    private final ServiceDiscoveryImpl<T> discovery;
+    private final AtomicReference<State> state = new AtomicReference<>(State.LATENT);
+    private final CuratorCacheBridge cache;
+    private final ConcurrentMap<String, ServiceInstance<T>> instances = Maps.newConcurrentMap();
+    private final EnsureContainers ensureContainers;
+    private final CountDownLatch initializedLatch = new CountDownLatch(1);
 
-    private enum State
-    {
+    private enum State {
         LATENT,
         STARTED,
         STOPPED
     }
 
-    private static CloseableExecutorService convertThreadFactory(ThreadFactory threadFactory)
-    {
+    private static ExecutorService convertThreadFactory(ThreadFactory threadFactory) {
         Preconditions.checkNotNull(threadFactory, "threadFactory cannot be null");
-        return new CloseableExecutorService(Executors.newSingleThreadExecutor(threadFactory));
+        return Executors.newSingleThreadExecutor(threadFactory);
     }
 
-    ServiceCacheImpl(ServiceDiscoveryImpl<T> discovery, String name, ThreadFactory threadFactory)
-    {
+    ServiceCacheImpl(ServiceDiscoveryImpl<T> discovery, String name, ThreadFactory threadFactory) {
         this(discovery, name, convertThreadFactory(threadFactory));
     }
 
-    ServiceCacheImpl(ServiceDiscoveryImpl<T> discovery, String name, CloseableExecutorService executorService)
-    {
+    ServiceCacheImpl(ServiceDiscoveryImpl<T> discovery, String name, ExecutorService executorService) {
         Preconditions.checkNotNull(discovery, "discovery cannot be null");
         Preconditions.checkNotNull(name, "name cannot be null");
-        Preconditions.checkNotNull(executorService, "executorService cannot be null");
 
         this.discovery = discovery;
 
-        cache = new PathChildrenCache(discovery.getClient(), discovery.pathForName(name), true, false, executorService);
-        cache.getListenable().addListener(this);
+        String path = discovery.pathForName(name);
+        cache = CuratorCache.bridgeBuilder(discovery.getClient(), path)
+                .withExecutorService(executorService)
+                .withDataNotCached()
+                .build();
+        CuratorCacheListener listener = CuratorCacheListener.builder()
+                .forPathChildrenCache(path, discovery.getClient(), this)
+                .forInitialized(this::initialized)
+                .build();
+        cache.listenable().addListener(listener);
+        ensureContainers = new EnsureContainers(discovery.getClient(), path);
     }
 
     @Override
-    public List<ServiceInstance<T>> getInstances()
-    {
+    public List<ServiceInstance<T>> getInstances() {
         return Lists.newArrayList(instances.values());
     }
 
-    @Override
-    public void start() throws Exception
-    {
-        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
+    @VisibleForTesting
+    volatile CountDownLatch debugStartLatch = null;
 
-        cache.start(true);
-        for ( ChildData childData : cache.getCurrentData() )
-        {
-            addInstance(childData, true);
-        }
-        discovery.cacheOpened(this);
+    volatile CountDownLatch debugStartWaitLatch = null;
+
+    @Override
+    public void start() throws Exception {
+        startImmediate().await();
     }
 
     @Override
-    public void close() throws IOException
-    {
-        Preconditions.checkState(state.compareAndSet(State.STARTED, State.STOPPED), "Already closed or has not been started");
+    public CountDownLatch startImmediate() throws Exception {
+        Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
 
-        listenerContainer.forEach
-            (
-                new Function<ServiceCacheListener, Void>()
-                {
-                    @Override
-                    public Void apply(ServiceCacheListener listener)
-                    {
-                        discovery.getClient().getConnectionStateListenable().removeListener(listener);
-                        return null;
-                    }
-                }
-            );
+        ensureContainers.ensure();
+        cache.start();
+        if (debugStartLatch != null) {
+            initializedLatch.await();
+            debugStartLatch.countDown();
+            debugStartLatch = null;
+        }
+        if (debugStartWaitLatch != null) {
+            debugStartWaitLatch.await();
+            debugStartWaitLatch = null;
+        }
+
+        return initializedLatch;
+    }
+
+    @Override
+    public void close() {
+        Preconditions.checkState(
+                state.compareAndSet(State.STARTED, State.STOPPED), "Already closed or has not been started");
+
+        listenerContainer.forEach(
+                l -> discovery.getClient().getConnectionStateListenable().removeListener(l));
         listenerContainer.clear();
 
         CloseableUtils.closeQuietly(cache);
@@ -123,82 +137,62 @@ public class ServiceCacheImpl<T> implements ServiceCache<T>, PathChildrenCacheLi
     }
 
     @Override
-    public void addListener(ServiceCacheListener listener)
-    {
+    public void addListener(ServiceCacheListener listener) {
         listenerContainer.addListener(listener);
         discovery.getClient().getConnectionStateListenable().addListener(listener);
     }
 
     @Override
-    public void addListener(ServiceCacheListener listener, Executor executor)
-    {
+    public void addListener(ServiceCacheListener listener, Executor executor) {
         listenerContainer.addListener(listener, executor);
         discovery.getClient().getConnectionStateListenable().addListener(listener, executor);
     }
 
     @Override
-    public void removeListener(ServiceCacheListener listener)
-    {
+    public void removeListener(ServiceCacheListener listener) {
         listenerContainer.removeListener(listener);
         discovery.getClient().getConnectionStateListenable().removeListener(listener);
     }
 
     @Override
-    public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception
-    {
-        boolean         notifyListeners = false;
-        switch ( event.getType() )
-        {
+    public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) {
+        boolean notifyListeners = false;
+        switch (event.getType()) {
             case CHILD_ADDED:
-            case CHILD_UPDATED:
-            {
-                addInstance(event.getData(), false);
+            case CHILD_UPDATED: {
+                addInstance(event.getData());
                 notifyListeners = true;
                 break;
             }
 
-            case CHILD_REMOVED:
-            {
+            case CHILD_REMOVED: {
                 instances.remove(instanceIdFromData(event.getData()));
                 notifyListeners = true;
                 break;
             }
         }
 
-        if ( notifyListeners )
-        {
-            listenerContainer.forEach
-            (
-                new Function<ServiceCacheListener, Void>()
-                {
-                    @Override
-                    public Void apply(ServiceCacheListener listener)
-                    {
-                        listener.cacheChanged();
-                        return null;
-                    }
-                }
-            );
+        if (notifyListeners && (initializedLatch.getCount() == 0)) {
+            listenerContainer.forEach(ServiceCacheListener::cacheChanged);
         }
     }
 
-    private String instanceIdFromData(ChildData childData)
-    {
+    private String instanceIdFromData(ChildData childData) {
         return ZKPaths.getNodeFromPath(childData.getPath());
     }
 
-    private void addInstance(ChildData childData, boolean onlyIfAbsent) throws Exception
-    {
-        String                  instanceId = instanceIdFromData(childData);
-        ServiceInstance<T>      serviceInstance = discovery.getSerializer().deserialize(childData.getData());
-        if ( onlyIfAbsent )
-        {
-            instances.putIfAbsent(instanceId, serviceInstance);
-        }
-        else
-        {
+    private void addInstance(ChildData childData) {
+        try {
+            String instanceId = instanceIdFromData(childData);
+            ServiceInstance<T> serviceInstance = discovery.getSerializer().deserialize(childData.getData());
             instances.put(instanceId, serviceInstance);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
-        cache.clearDataBytes(childData.getPath(), childData.getStat().getVersion());
+    }
+
+    private void initialized() {
+        discovery.cacheOpened(this);
+        initializedLatch.countDown();
     }
 }

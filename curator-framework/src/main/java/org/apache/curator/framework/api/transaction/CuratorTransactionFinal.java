@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.api.transaction;
 
 import java.util.Collection;
@@ -23,8 +24,7 @@ import java.util.Collection;
 /**
  * Adds commit to the transaction interface
  */
-public interface CuratorTransactionFinal extends CuratorTransaction
-{
+public interface CuratorTransactionFinal extends CuratorTransaction {
     /**
      * Commit all added operations as an atomic unit and return results
      * for the operations. One result is returned for each operation added.

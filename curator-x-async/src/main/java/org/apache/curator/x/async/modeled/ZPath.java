@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,21 +16,20 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async.modeled;
 
-import org.apache.curator.x.async.modeled.details.ZPathImpl;
+import static org.apache.curator.utils.ZKPaths.PATH_SEPARATOR;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
-
-import static org.apache.curator.utils.ZKPaths.PATH_SEPARATOR;
+import org.apache.curator.x.async.modeled.details.ZPathImpl;
 
 /**
  * Abstracts a ZooKeeper ZNode path
  */
-public interface ZPath extends Resolvable
-{
+public interface ZPath extends Resolvable {
     /**
      * The root path: "/"
      */
@@ -40,8 +39,7 @@ public interface ZPath extends Resolvable
      * Returns the special node name that can be used for replacements at runtime
      * via {@link #resolved(Object...)} when passed via the various <code>from()</code> methods
      */
-    static String parameter()
-    {
+    static String parameter() {
         return parameter("id");
     }
 
@@ -50,20 +48,21 @@ public interface ZPath extends Resolvable
      * has no effect and is only for debugging purposes. When <code>toString()</code> is called
      * on ZPaths, this code shows.
      */
-    static String parameter(String name)
-    {
+    static String parameter(String name) {
         return PATH_SEPARATOR + "{" + name + "}";
     }
 
     /**
-     * Take a string path and return a ZPath
+     * Take a string path and return a ZPath.
+     * <p>
+     * Note: This method always produces a fully resolved path despite the presence of any parameter-like elements (i.e, {@code {one}}).
+     * For substituting parameter elements and for proper parameter resolution status checks, use {@code parseWithIds()} instead.
      *
      * @param fullPath the path to parse
      * @return ZPath
      * @throws IllegalArgumentException if the path is invalid
      */
-    static ZPath parse(String fullPath)
-    {
+    static ZPath parse(String fullPath) {
         return ZPathImpl.parse(fullPath, s -> s);
     }
 
@@ -77,9 +76,8 @@ public interface ZPath extends Resolvable
      * @return ZPath
      * @throws IllegalArgumentException if the path is invalid
      */
-    static ZPath parseWithIds(String fullPath)
-    {
-        return ZPathImpl.parse(fullPath, s -> isId(s) ? (PATH_SEPARATOR + s) : s); // TODO
+    static ZPath parseWithIds(String fullPath) {
+        return ZPathImpl.parse(fullPath, s -> isId(s) ? (PATH_SEPARATOR + s) : s);
     }
 
     /**
@@ -88,8 +86,7 @@ public interface ZPath extends Resolvable
      * @param s string to check
      * @return true/false
      */
-    static boolean isId(String s)
-    {
+    static boolean isId(String s) {
         return s.startsWith("{") && s.endsWith("}");
     }
 
@@ -101,8 +98,7 @@ public interface ZPath extends Resolvable
      * @return ZPath
      * @throws IllegalArgumentException if the path is invalid
      */
-    static ZPath parse(String fullPath, UnaryOperator<String> nameFilter)
-    {
+    static ZPath parse(String fullPath, UnaryOperator<String> nameFilter) {
         return ZPathImpl.parse(fullPath, nameFilter);
     }
 
@@ -116,8 +112,7 @@ public interface ZPath extends Resolvable
      * @return ZPath
      * @throws IllegalArgumentException if any of the names is invalid
      */
-    static ZPath from(String... names)
-    {
+    static ZPath from(String... names) {
         return ZPathImpl.from(names);
     }
 
@@ -130,8 +125,7 @@ public interface ZPath extends Resolvable
      * @return ZPath
      * @throws IllegalArgumentException if any of the names is invalid
      */
-    static ZPath from(List<String> names)
-    {
+    static ZPath from(List<String> names) {
         return ZPathImpl.from(names);
     }
 
@@ -147,8 +141,7 @@ public interface ZPath extends Resolvable
      * @return ZPath
      * @throws IllegalArgumentException if any of the names is invalid
      */
-    static ZPath from(ZPath base, String... names)
-    {
+    static ZPath from(ZPath base, String... names) {
         return ZPathImpl.from(base, names);
     }
 
@@ -162,8 +155,7 @@ public interface ZPath extends Resolvable
      * @return ZPath
      * @throws IllegalArgumentException if any of the names is invalid
      */
-    static ZPath from(ZPath base, List<String> names)
-    {
+    static ZPath from(ZPath base, List<String> names) {
         return ZPathImpl.from(base, names);
     }
 
@@ -184,8 +176,7 @@ public interface ZPath extends Resolvable
      * @return new resolved ZPath
      */
     @Override
-    default ZPath resolved(Object... parameters)
-    {
+    default ZPath resolved(Object... parameters) {
         return resolved(Arrays.asList(parameters));
     }
 
@@ -241,7 +232,13 @@ public interface ZPath extends Resolvable
     boolean isRoot();
 
     /**
-     * Return true if this path is fully resolved (i.e. has no unresoled parameters)
+     * Return true if this path is fully resolved (i.e. has no unresolved parameters).
+     * <p>
+     * Note: ZPath's returned by the {@code parse()} method are always considered fully resolved, despite if there are
+     * remaining elements in the path which appear to be parameters (but are not, i.e. {@code {one}}).
+     * <p>
+     * When working with parameters, use the {@code parseWithIds()} method, which returns a ZPath with a
+     * resolved state based on the presence of unresolved parameter elements in the ZPath.
      *
      * @return true/false
      */

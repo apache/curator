@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,14 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.barriers;
 
+import java.util.concurrent.TimeUnit;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.utils.PathUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import java.util.concurrent.TimeUnit;
-import org.apache.curator.utils.PathUtils;
 
 /**
  * <p>
@@ -35,16 +36,13 @@ import org.apache.curator.utils.PathUtils;
  *     until a condition is met at which time all the nodes are allowed to proceed
  * </blockquote>
  */
-public class DistributedBarrier
-{
+public class DistributedBarrier {
     private final CuratorFramework client;
     private final String barrierPath;
-    private final Watcher watcher = new Watcher()
-    {
+    private final Watcher watcher = new Watcher() {
         @Override
-        public void process(WatchedEvent event)
-        {
-            notifyFromWatcher();
+        public void process(WatchedEvent event) {
+            client.postSafeNotify(DistributedBarrier.this);
         }
     };
 
@@ -52,8 +50,7 @@ public class DistributedBarrier
      * @param client client
      * @param barrierPath path to use as the barrier
      */
-    public DistributedBarrier(CuratorFramework client, String barrierPath)
-    {
+    public DistributedBarrier(CuratorFramework client, String barrierPath) {
         this.client = client;
         this.barrierPath = PathUtils.validatePath(barrierPath);
     }
@@ -63,14 +60,10 @@ public class DistributedBarrier
      *
      * @throws Exception errors
      */
-    public synchronized void         setBarrier() throws Exception
-    {
-        try
-        {
+    public synchronized void setBarrier() throws Exception {
+        try {
             client.create().creatingParentContainersIfNeeded().forPath(barrierPath);
-        }
-        catch ( KeeperException.NodeExistsException ignore )
-        {
+        } catch (KeeperException.NodeExistsException ignore) {
             // ignore
         }
     }
@@ -80,14 +73,10 @@ public class DistributedBarrier
      *
      * @throws Exception errors
      */
-    public synchronized void      removeBarrier() throws Exception
-    {
-        try
-        {
+    public synchronized void removeBarrier() throws Exception {
+        try {
             client.delete().forPath(barrierPath);
-        }
-        catch ( KeeperException.NoNodeException ignore )
-        {
+        } catch (KeeperException.NoNodeException ignore) {
             // ignore
         }
     }
@@ -97,8 +86,7 @@ public class DistributedBarrier
      *
      * @throws Exception errors
      */
-    public synchronized void      waitOnBarrier() throws Exception
-    {
+    public synchronized void waitOnBarrier() throws Exception {
         waitOnBarrier(-1, null);
     }
 
@@ -110,41 +98,29 @@ public class DistributedBarrier
      * @return true if the wait was successful, false if the timeout elapsed first
      * @throws Exception errors
      */
-    public synchronized boolean      waitOnBarrier(long maxWait, TimeUnit unit) throws Exception
-    {
-        long            startMs = System.currentTimeMillis();
-        boolean         hasMaxWait = (unit != null);
-        long            maxWaitMs = hasMaxWait ? TimeUnit.MILLISECONDS.convert(maxWait, unit) : Long.MAX_VALUE;
+    public synchronized boolean waitOnBarrier(long maxWait, TimeUnit unit) throws Exception {
+        long startMs = System.currentTimeMillis();
+        boolean hasMaxWait = (unit != null);
+        long maxWaitMs = hasMaxWait ? TimeUnit.MILLISECONDS.convert(maxWait, unit) : Long.MAX_VALUE;
 
-        boolean         result;
-        for(;;)
-        {
+        boolean result;
+        for (; ; ) {
             result = (client.checkExists().usingWatcher(watcher).forPath(barrierPath) == null);
-            if ( result )
-            {
+            if (result) {
                 break;
             }
 
-            if ( hasMaxWait )
-            {
-                long        elapsed = System.currentTimeMillis() - startMs;
-                long        thisWaitMs = maxWaitMs - elapsed;
-                if ( thisWaitMs <= 0 )
-                {
+            if (hasMaxWait) {
+                long elapsed = System.currentTimeMillis() - startMs;
+                long thisWaitMs = maxWaitMs - elapsed;
+                if (thisWaitMs <= 0) {
                     break;
                 }
                 wait(thisWaitMs);
-            }
-            else
-            {
+            } else {
                 wait();
             }
         }
         return result;
-    }
-
-    private synchronized void notifyFromWatcher()
-    {
-        notifyAll();
     }
 }

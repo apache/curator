@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -22,6 +22,13 @@ package org.apache.curator.framework.imps;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
+import java.io.ByteArrayInputStream;
+import java.io.Closeable;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.util.Properties;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.curator.ensemble.EnsembleProvider;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.WatcherRemoveCuratorFramework;
@@ -31,6 +38,7 @@ import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
+import org.apache.curator.utils.Compatibility;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -40,75 +48,61 @@ import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
-import java.io.Closeable;
-import java.util.Properties;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-
 @VisibleForTesting
-public class EnsembleTracker implements Closeable, CuratorWatcher
-{
+public class EnsembleTracker implements Closeable, CuratorWatcher {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final WatcherRemoveCuratorFramework client;
     private final EnsembleProvider ensembleProvider;
     private final AtomicReference<State> state = new AtomicReference<>(State.LATENT);
     private final AtomicInteger outstanding = new AtomicInteger(0);
-    private final AtomicReference<QuorumMaj> currentConfig = new AtomicReference<>(new QuorumMaj(Maps.<Long, QuorumPeer.QuorumServer>newHashMap()));
-    private final ConnectionStateListener connectionStateListener = new ConnectionStateListener()
-    {
+    private final AtomicReference<QuorumMaj> currentConfig =
+            new AtomicReference<>(new QuorumMaj(Maps.<Long, QuorumPeer.QuorumServer>newHashMap()));
+    private final ConnectionStateListener connectionStateListener = new ConnectionStateListener() {
         @Override
-        public void stateChanged(CuratorFramework client, ConnectionState newState)
-        {
-            if ( (newState == ConnectionState.CONNECTED) || (newState == ConnectionState.RECONNECTED) )
-            {
-                try
-                {
+        public void stateChanged(CuratorFramework client, ConnectionState newState) {
+            if ((newState == ConnectionState.CONNECTED) || (newState == ConnectionState.RECONNECTED)) {
+                try {
                     reset();
-                }
-                catch ( Exception e )
-                {
+                } catch (Exception e) {
                     log.error("Trying to reset after reconnection", e);
                 }
             }
         }
+
+        @Override
+        public boolean doNotProxy() {
+            return true;
+        }
     };
 
-    private enum State
-    {
+    private enum State {
         LATENT,
         STARTED,
         CLOSED
     }
 
-    EnsembleTracker(CuratorFramework client, EnsembleProvider ensembleProvider)
-    {
+    EnsembleTracker(CuratorFramework client, EnsembleProvider ensembleProvider) {
         this.client = client.newWatcherRemoveCuratorFramework();
         this.ensembleProvider = ensembleProvider;
     }
 
-    public void start() throws Exception
-    {
+    public void start() throws Exception {
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
         client.getConnectionStateListenable().addListener(connectionStateListener);
         reset();
     }
 
     @Override
-    public void close()
-    {
-        if ( state.compareAndSet(State.STARTED, State.CLOSED) )
-        {
+    public void close() {
+        if (state.compareAndSet(State.STARTED, State.CLOSED)) {
             client.removeWatchers();
             client.getConnectionStateListenable().removeListener(connectionStateListener);
         }
     }
 
     @Override
-    public void process(WatchedEvent event) throws Exception
-    {
-        if ( event.getType() == Watcher.Event.EventType.NodeDataChanged )
-        {
+    public void process(WatchedEvent event) throws Exception {
+        if (event.getType() == Watcher.Event.EventType.NodeDataChanged) {
             reset();
         }
     }
@@ -118,98 +112,88 @@ public class EnsembleTracker implements Closeable, CuratorWatcher
      *
      * @return config
      */
-    public QuorumVerifier getCurrentConfig()
-    {
+    public QuorumVerifier getCurrentConfig() {
         return currentConfig.get();
     }
 
     @VisibleForTesting
-    public boolean hasOutstanding()
-    {
+    public boolean hasOutstanding() {
         return outstanding.get() > 0;
     }
 
-    private void reset() throws Exception
-    {
-        if ( (client.getState() == CuratorFrameworkState.STARTED) && (state.get() == State.STARTED) )
-        {
-            BackgroundCallback backgroundCallback = new BackgroundCallback()
-            {
+    private void reset() throws Exception {
+        if ((client.getState() == CuratorFrameworkState.STARTED) && (state.get() == State.STARTED)) {
+            BackgroundCallback backgroundCallback = new BackgroundCallback() {
                 @Override
-                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
-                {
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
                     outstanding.decrementAndGet();
-                    if ( (event.getType() == CuratorEventType.GET_CONFIG) && (event.getResultCode() == KeeperException.Code.OK.intValue()) )
-                    {
+                    if ((event.getType() == CuratorEventType.GET_CONFIG)
+                            && (event.getResultCode() == KeeperException.Code.OK.intValue())) {
                         processConfigData(event.getData());
                     }
                 }
             };
             outstanding.incrementAndGet();
-            try
-            {
-                client.getConfig().usingWatcher(this).inBackground(backgroundCallback).forEnsemble();
-                outstanding.incrementAndGet();  // finally block will decrement
-            }
-            finally
-            {
+            try {
+                client.getConfig()
+                        .usingWatcher(this)
+                        .inBackground(backgroundCallback)
+                        .forEnsemble();
+                outstanding.incrementAndGet(); // finally block will decrement
+            } finally {
                 outstanding.decrementAndGet();
             }
         }
     }
 
     @VisibleForTesting
-    public static String configToConnectionString(QuorumVerifier data) throws Exception
-    {
+    public static String configToConnectionString(QuorumVerifier data) throws Exception {
         StringBuilder sb = new StringBuilder();
-        for ( QuorumPeer.QuorumServer server : data.getAllMembers().values() )
-        {
-            if ( server.clientAddr == null )
-            {
+        for (QuorumPeer.QuorumServer server : data.getAllMembers().values()) {
+            if (server.clientAddr == null) {
                 // Invalid client address configuration in zoo.cfg
                 continue;
             }
-            if ( sb.length() != 0 )
-            {
+            if (sb.length() != 0) {
                 sb.append(",");
             }
-            String hostAddress;
-            if ( server.clientAddr.getAddress().isAnyLocalAddress() )
-            {
-                hostAddress = server.addr.getAddress().getHostAddress();
-            }
-            else
-            {
-                hostAddress = server.clientAddr.getAddress().getHostAddress();
-            }
-            sb.append(hostAddress).append(":").append(server.clientAddr.getPort());
+            sb.append(getHostString(server)).append(":").append(server.clientAddr.getPort());
         }
 
         return sb.toString();
     }
 
-    private void processConfigData(byte[] data) throws Exception
-    {
+    private static String getHostString(QuorumPeer.QuorumServer server) {
+        InetSocketAddress clientAddr = server.clientAddr;
+        InetAddress clientIpAddr = clientAddr.getAddress();
+        if (clientIpAddr != null && clientIpAddr.isAnyLocalAddress()) {
+            return Compatibility.getHostString(server);
+        } else {
+            return clientAddr.getHostString();
+        }
+    }
+
+    private void processConfigData(byte[] data) throws Exception {
         Properties properties = new Properties();
         properties.load(new ByteArrayInputStream(data));
         log.info("New config event received: {}", properties);
 
-        if (!properties.isEmpty())
-        {
+        if (!properties.isEmpty()) {
             QuorumMaj newConfig = new QuorumMaj(properties);
-            String connectionString = configToConnectionString(newConfig);
-            if (connectionString.trim().length() > 0)
-            {
+            String connectionString = configToConnectionString(newConfig).trim();
+            if (!connectionString.isEmpty()) {
                 currentConfig.set(newConfig);
+                String oldConnectionString = ensembleProvider.getConnectionString();
+                int i = oldConnectionString.indexOf('/');
+                if (i >= 0) {
+                    String chroot = oldConnectionString.substring(i);
+                    connectionString += chroot;
+                }
                 ensembleProvider.setConnectionString(connectionString);
+            } else {
+                log.debug("Invalid config event received: {}", properties);
             }
-            else
-            {
-                log.error("Invalid config event received: {}", properties);
-            }
-        }
-        else
-        {
+        } else {
             log.debug("Ignoring new config as it is empty");
         }
     }

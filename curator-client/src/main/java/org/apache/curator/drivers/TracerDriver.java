@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.drivers;
 
 import java.util.concurrent.TimeUnit;
@@ -23,8 +24,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Mechanism for timing methods and recording counters
  */
-public interface TracerDriver
-{
+public interface TracerDriver {
     /**
      * Record the given trace event
      *
@@ -32,7 +32,7 @@ public interface TracerDriver
      * @param time time event took
      * @param unit time unit
      */
-    public void     addTrace(String name, long time, TimeUnit unit);
+    public void addTrace(String name, long time, TimeUnit unit);
 
     /**
      * Add to a named counter
@@ -40,5 +40,5 @@ public interface TracerDriver
      * @param name name of the counter
      * @param increment amount to increment
      */
-    public void     addCount(String name, int increment);
+    public void addCount(String name, int increment);
 }

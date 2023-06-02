@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async.modeled.versioned;
 
 /**
@@ -23,8 +24,7 @@ package org.apache.curator.x.async.modeled.versioned;
  * {@link org.apache.curator.x.async.modeled.ModeledFramework#versioned()} APIs
  */
 @FunctionalInterface
-public interface Versioned<T>
-{
+public interface Versioned<T> {
     /**
      * Returns the contained model
      *
@@ -37,8 +37,7 @@ public interface Versioned<T>
      *
      * @return version
      */
-    default int version()
-    {
+    default int version() {
         return -1;
     }
 
@@ -49,19 +48,15 @@ public interface Versioned<T>
      * @param version version
      * @return new Versioned wrapper
      */
-    static <T> Versioned<T> from(T model, int version)
-    {
-        return new Versioned<T>()
-        {
+    static <T> Versioned<T> from(T model, int version) {
+        return new Versioned<T>() {
             @Override
-            public int version()
-            {
+            public int version() {
                 return version;
             }
 
             @Override
-            public T model()
-            {
+            public T model() {
                 return model;
             }
         };

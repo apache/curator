@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,13 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.locks;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.KeeperException;
 
-public class Revoker
-{
+public class Revoker {
     /**
      * Utility to mark a lock for revocation. Assuming that the lock has been registered with
      * a {@link RevocationListener}, it will get called and the lock should be released. Note,
@@ -33,19 +33,13 @@ public class Revoker
      * {@link InterProcessMutex#getParticipantNodes()}
      * @throws Exception errors
      */
-    public static void  attemptRevoke(CuratorFramework client, String path) throws Exception
-    {
-        try
-        {
+    public static void attemptRevoke(CuratorFramework client, String path) throws Exception {
+        try {
             client.setData().forPath(path, LockInternals.REVOKE_MESSAGE);
-        }
-        catch ( KeeperException.NoNodeException ignore )
-        {
+        } catch (KeeperException.NoNodeException ignore) {
             // ignore
         }
     }
 
-    private Revoker()
-    {
-    }
+    private Revoker() {}
 }

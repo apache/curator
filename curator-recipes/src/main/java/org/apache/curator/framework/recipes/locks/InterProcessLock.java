@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,12 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.locks;
 
 import java.util.concurrent.TimeUnit;
 
-public interface InterProcessLock
-{
+/**
+ * NOTE: depending on its implementation, {@link #release()} may throw an exception if the current thread does not own the lock
+ */
+public interface InterProcessLock {
     /**
      * Acquire the mutex - blocking until it's available. Each call to acquire must be balanced by a call
      * to {@link #release()}
@@ -44,7 +47,7 @@ public interface InterProcessLock
     /**
      * Perform one release of the mutex.
      *
-     * @throws Exception ZK errors, interruptions, current thread does not own the lock
+     * @throws Exception ZK errors, interruptions
      */
     public void release() throws Exception;
 

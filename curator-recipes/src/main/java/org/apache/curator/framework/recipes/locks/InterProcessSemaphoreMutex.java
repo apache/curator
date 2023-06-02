@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,19 +16,19 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.locks;
 
 import com.google.common.base.Preconditions;
+import java.util.concurrent.TimeUnit;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.WatcherRemoveCuratorFramework;
-import java.util.concurrent.TimeUnit;
 
 /**
  * A NON re-entrant mutex that works across JVMs. Uses Zookeeper to hold the lock. All processes in all JVMs that
  * use the same lock path will achieve an inter-process critical section.
  */
-public class InterProcessSemaphoreMutex implements InterProcessLock
-{
+public class InterProcessSemaphoreMutex implements InterProcessLock {
     private final InterProcessSemaphoreV2 semaphore;
     private final WatcherRemoveCuratorFramework watcherRemoveClient;
     private volatile Lease lease;
@@ -37,33 +37,35 @@ public class InterProcessSemaphoreMutex implements InterProcessLock
      * @param client the client
      * @param path path for the lock
      */
-    public InterProcessSemaphoreMutex(CuratorFramework client, String path)
-    {
+    public InterProcessSemaphoreMutex(CuratorFramework client, String path) {
         watcherRemoveClient = client.newWatcherRemoveCuratorFramework();
         this.semaphore = new InterProcessSemaphoreV2(watcherRemoveClient, path, 1);
     }
 
     @Override
-    public void acquire() throws Exception
-    {
+    public void acquire() throws Exception {
         lease = semaphore.acquire();
     }
 
     @Override
-    public boolean acquire(long time, TimeUnit unit) throws Exception
-    {
+    public boolean acquire(long time, TimeUnit unit) throws Exception {
         Lease acquiredLease = semaphore.acquire(time, unit);
-        if ( acquiredLease == null )
-        {
-            return false;   // important - don't overwrite lease field if couldn't be acquired
+        if (acquiredLease == null) {
+            return false; // important - don't overwrite lease field if couldn't be acquired
         }
         lease = acquiredLease;
         return true;
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>NOTE: Unlike other implementations of {@link org.apache.curator.framework.recipes.locks.InterProcessLock#release()},
+     * this method will NOT throw an exception if it is called on a different thread than the one which acquired the lock.</p>
+     *
+     */
     @Override
-    public void release() throws Exception
-    {
+    public void release() throws Exception {
         Lease lease = this.lease;
         Preconditions.checkState(lease != null, "Not acquired");
 
@@ -73,8 +75,7 @@ public class InterProcessSemaphoreMutex implements InterProcessLock
     }
 
     @Override
-    public boolean isAcquiredInThisProcess()
-    {
+    public boolean isAcquiredInThisProcess() {
         return (lease != null);
     }
 }

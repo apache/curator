@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.discovery;
 
 import org.apache.curator.x.discovery.details.InstanceProvider;
@@ -23,8 +24,7 @@ import org.apache.curator.x.discovery.details.InstanceProvider;
 /**
  * A strategy for picking one from a set of instances
  */
-public interface ProviderStrategy<T>
-{
+public interface ProviderStrategy<T> {
     /**
      * Given a source of instances, return one of them for a single use.
      *
@@ -32,5 +32,5 @@ public interface ProviderStrategy<T>
      * @return the instance to use
      * @throws Exception any errors
      */
-    public ServiceInstance<T>       getInstance(InstanceProvider<T> instanceProvider) throws Exception;
+    public ServiceInstance<T> getInstance(InstanceProvider<T> instanceProvider) throws Exception;
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.state;
 
 /**
@@ -24,8 +25,7 @@ package org.apache.curator.framework.state;
  *
  * @since 3.0.0
  */
-public interface ConnectionStateErrorPolicy
-{
+public interface ConnectionStateErrorPolicy {
     /**
      * Returns true if the given state should cause the recipe to
      * act as though the connection has been lost. i.e. locks should

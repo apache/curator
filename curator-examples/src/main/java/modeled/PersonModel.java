@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,25 +16,23 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package modeled;
 
 import java.util.Objects;
 
-public class PersonModel
-{
+public class PersonModel {
     private final PersonId id;
     private final ContainerType containerType;
     private final String firstName;
     private final String lastName;
     private final int age;
 
-    public PersonModel()
-    {
+    public PersonModel() {
         this(new PersonId(), new ContainerType(), null, null, 0);
     }
 
-    public PersonModel(PersonId id, ContainerType containerType, String firstName, String lastName, int age)
-    {
+    public PersonModel(PersonId id, ContainerType containerType, String firstName, String lastName, int age) {
         this.id = Objects.requireNonNull(id, "id cannot be null");
         this.containerType = Objects.requireNonNull(containerType, "containerType cannot be null");
         this.firstName = Objects.requireNonNull(firstName, "firstName cannot be null");
@@ -42,68 +40,55 @@ public class PersonModel
         this.age = age;
     }
 
-    public PersonId getId()
-    {
+    public PersonId getId() {
         return id;
     }
 
-    public ContainerType getContainerType()
-    {
+    public ContainerType getContainerType() {
         return containerType;
     }
 
-    public String getFirstName()
-    {
+    public String getFirstName() {
         return firstName;
     }
 
-    public String getLastName()
-    {
+    public String getLastName() {
         return lastName;
     }
 
-    public int getAge()
-    {
+    public int getAge() {
         return age;
     }
 
     @Override
-    public boolean equals(Object o)
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
-        PersonModel that = (PersonModel)o;
+        PersonModel that = (PersonModel) o;
 
-        if ( age != that.age )
-        {
+        if (age != that.age) {
             return false;
         }
-        if ( !id.equals(that.id) )
-        {
+        if (!id.equals(that.id)) {
             return false;
         }
-        if ( !containerType.equals(that.containerType) )
-        {
+        if (!containerType.equals(that.containerType)) {
             return false;
         }
         //noinspection SimplifiableIfStatement
-        if ( !firstName.equals(that.firstName) )
-        {
+        if (!firstName.equals(that.firstName)) {
             return false;
         }
         return lastName.equals(that.lastName);
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         int result = id.hashCode();
         result = 31 * result + containerType.hashCode();
         result = 31 * result + firstName.hashCode();
@@ -113,8 +98,8 @@ public class PersonModel
     }
 
     @Override
-    public String toString()
-    {
-        return "PersonModel{" + "id=" + id + ", containerType=" + containerType + ", firstName='" + firstName + '\'' + ", lastName='" + lastName + '\'' + ", age=" + age + '}';
+    public String toString() {
+        return "PersonModel{" + "id=" + id + ", containerType=" + containerType + ", firstName='" + firstName + '\''
+                + ", lastName='" + lastName + '\'' + ", age=" + age + '}';
     }
 }

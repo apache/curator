@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -21,9 +21,7 @@ package org.apache.curator.framework.api;
 
 import org.apache.zookeeper.CreateMode;
 
-public interface ExistsBuilder extends
-    ExistsBuilderMain
-{
+public interface ExistsBuilder extends ExistsBuilderMain {
     /**
      * Causes any parent nodes to get created if they haven't already been
      *

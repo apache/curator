@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.cache;
 
 /**
@@ -44,8 +45,7 @@ package org.apache.curator.framework.recipes.cache;
  *     false from acceptChild("/root/n1-c").
  * </p>
  */
-public interface TreeCacheSelector
-{
+public interface TreeCacheSelector {
     /**
      * Return true if children of this path should be cached.
      * i.e. if false is returned, this node is not queried to

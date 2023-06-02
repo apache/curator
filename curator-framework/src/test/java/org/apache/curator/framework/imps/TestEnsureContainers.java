@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,57 +16,50 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.imps;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.EnsureContainers;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
-public class TestEnsureContainers extends BaseClassForTests
-{
+public class TestEnsureContainers extends BaseClassForTests {
     @Test
-    public void testBasic() throws Exception
-    {
+    public void testBasic() throws Exception {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+        try {
             client.start();
 
             EnsureContainers ensureContainers = new EnsureContainers(client, "/one/two/three");
             ensureContainers.ensure();
 
-            Assert.assertNotNull(client.checkExists().forPath("/one/two/three"));
-        }
-        finally
-        {
+            assertNotNull(client.checkExists().forPath("/one/two/three"));
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
 
     @Test
-    public void testSingleExecution() throws Exception
-    {
+    public void testSingleExecution() throws Exception {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+        try {
             client.start();
 
             EnsureContainers ensureContainers = new EnsureContainers(client, "/one/two/three");
             ensureContainers.ensure();
 
-            Assert.assertNotNull(client.checkExists().forPath("/one/two/three"));
+            assertNotNull(client.checkExists().forPath("/one/two/three"));
 
             client.delete().forPath("/one/two/three");
             ensureContainers.ensure();
-            Assert.assertNull(client.checkExists().forPath("/one/two/three"));
-        }
-        finally
-        {
+            assertNull(client.checkExists().forPath("/one/two/three"));
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }

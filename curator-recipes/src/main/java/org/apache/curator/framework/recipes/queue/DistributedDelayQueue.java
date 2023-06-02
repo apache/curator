@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,12 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.queue;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.listen.ListenerContainer;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collections;
@@ -30,6 +29,8 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.listen.Listenable;
 
 /**
  * <p>
@@ -38,14 +39,12 @@ import java.util.concurrent.TimeUnit;
  *     until the time elapses.
  * </p>
  */
-public class DistributedDelayQueue<T> implements Closeable, QueueBase<T>
-{
-    private final DistributedQueue<T>      queue;
+public class DistributedDelayQueue<T> implements Closeable, QueueBase<T> {
+    private final DistributedQueue<T> queue;
 
-    private static final String            SEPARATOR = "|";
+    private static final char SEPARATOR = '|';
 
-    DistributedDelayQueue
-        (
+    DistributedDelayQueue(
             CuratorFramework client,
             QueueConsumer<T> consumer,
             QueueSerializer<T> serializer,
@@ -56,58 +55,45 @@ public class DistributedDelayQueue<T> implements Closeable, QueueBase<T>
             String lockPath,
             int maxItems,
             boolean putInBackground,
-            int finalFlushMs
-        )
-    {
+            int finalFlushMs) {
         Preconditions.checkArgument(minItemsBeforeRefresh >= 0, "minItemsBeforeRefresh cannot be negative");
 
-        queue = new DistributedQueue<T>
-        (
-            client,
-            consumer, 
-            serializer,
-            queuePath,
-            threadFactory,
-            executor,
-            minItemsBeforeRefresh,
-            true,
-            lockPath,
-            maxItems,
-            putInBackground,
-            finalFlushMs
-        )
-        {
-            @Override
-            protected long getDelay(String itemNode)
-            {
-                return getDelay(itemNode, System.currentTimeMillis());
-            }
-            
-            private long getDelay(String itemNode, long sortTime)
-            {               
-                long epoch = getEpoch(itemNode);
-                return epoch - sortTime;
-            }
-
-            @Override
-            protected void sortChildren(List<String> children)
-            {
-                final long sortTime = System.currentTimeMillis();
-                Collections.sort
-                (
-                    children,
-                    new Comparator<String>()
-                    {
-                        @Override
-                        public int compare(String o1, String o2)
-                        {
-                            long        diff = getDelay(o1, sortTime) - getDelay(o2, sortTime);
-                            return (diff < 0) ? -1 : ((diff > 0) ? 1 : 0);
-                        }
+        queue =
+                new DistributedQueue<T>(
+                        client,
+                        consumer,
+                        serializer,
+                        queuePath,
+                        threadFactory,
+                        executor,
+                        minItemsBeforeRefresh,
+                        true,
+                        lockPath,
+                        maxItems,
+                        putInBackground,
+                        finalFlushMs) {
+                    @Override
+                    protected long getDelay(String itemNode) {
+                        return getDelay(itemNode, System.currentTimeMillis());
                     }
-                );
-            }
-        };
+
+                    private long getDelay(String itemNode, long sortTime) {
+                        long epoch = getEpoch(itemNode);
+                        return epoch - sortTime;
+                    }
+
+                    @Override
+                    protected void sortChildren(List<String> children) {
+                        final long sortTime = System.currentTimeMillis();
+                        Collections.sort(children, new Comparator<String>() {
+                            @Override
+                            public int compare(String o1, String o2) {
+                                long diff = getDelay(o1, sortTime) - getDelay(o2, sortTime);
+                                return (diff < 0) ? -1 : ((diff > 0) ? 1 : 0);
+                            }
+                        });
+                    }
+                };
     }
 
     /**
@@ -116,14 +102,12 @@ public class DistributedDelayQueue<T> implements Closeable, QueueBase<T>
      * @throws Exception startup errors
      */
     @Override
-    public void     start() throws Exception
-    {
+    public void start() throws Exception {
         queue.start();
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         queue.close();
     }
 
@@ -137,8 +121,7 @@ public class DistributedDelayQueue<T> implements Closeable, QueueBase<T>
      * @param delayUntilEpoch future epoch (milliseconds) when this item will be available to consumers
      * @throws Exception connection issues
      */
-    public void     put(T item, long delayUntilEpoch) throws Exception
-    {
+    public void put(T item, long delayUntilEpoch) throws Exception {
         put(item, delayUntilEpoch, 0, null);
     }
 
@@ -153,8 +136,7 @@ public class DistributedDelayQueue<T> implements Closeable, QueueBase<T>
      * @return true if items was added, false if timed out
      * @throws Exception
      */
-    public boolean      put(T item, long delayUntilEpoch, int maxWait, TimeUnit unit) throws Exception
-    {
+    public boolean put(T item, long delayUntilEpoch, int maxWait, TimeUnit unit) throws Exception {
         Preconditions.checkArgument(delayUntilEpoch > 0, "delayUntilEpoch cannot be negative");
 
         queue.checkState();
@@ -172,8 +154,7 @@ public class DistributedDelayQueue<T> implements Closeable, QueueBase<T>
      * @param delayUntilEpoch future epoch (milliseconds) when this item will be available to consumers
      * @throws Exception connection issues
      */
-    public void     putMulti(MultiItem<T> items, long delayUntilEpoch) throws Exception
-    {
+    public void putMulti(MultiItem<T> items, long delayUntilEpoch) throws Exception {
         putMulti(items, delayUntilEpoch, 0, null);
     }
 
@@ -188,8 +169,7 @@ public class DistributedDelayQueue<T> implements Closeable, QueueBase<T>
      * @return true if items was added, false if timed out
      * @throws Exception
      */
-    public boolean      putMulti(MultiItem<T> items, long delayUntilEpoch, int maxWait, TimeUnit unit) throws Exception
-    {
+    public boolean putMulti(MultiItem<T> items, long delayUntilEpoch, int maxWait, TimeUnit unit) throws Exception {
         Preconditions.checkArgument(delayUntilEpoch > 0, "delayUntilEpoch cannot be negative");
 
         queue.checkState();
@@ -198,14 +178,12 @@ public class DistributedDelayQueue<T> implements Closeable, QueueBase<T>
     }
 
     @Override
-    public void setErrorMode(ErrorMode newErrorMode)
-    {
+    public void setErrorMode(ErrorMode newErrorMode) {
         queue.setErrorMode(newErrorMode);
     }
 
     @Override
-    public boolean flushPuts(long waitTime, TimeUnit timeUnit) throws InterruptedException
-    {
+    public boolean flushPuts(long waitTime, TimeUnit timeUnit) throws InterruptedException {
         return queue.flushPuts(waitTime, timeUnit);
     }
 
@@ -215,8 +193,7 @@ public class DistributedDelayQueue<T> implements Closeable, QueueBase<T>
      * @return put listener container
      */
     @Override
-    public ListenerContainer<QueuePutListener<T>> getPutListenerContainer()
-    {
+    public Listenable<QueuePutListener<T>> getPutListenerContainer() {
         return queue.getPutListenerContainer();
     }
 
@@ -227,30 +204,23 @@ public class DistributedDelayQueue<T> implements Closeable, QueueBase<T>
      * @return count (can be 0)
      */
     @Override
-    public int getLastMessageCount()
-    {
+    public int getLastMessageCount() {
         return queue.getLastMessageCount();
     }
 
     @VisibleForTesting
-    static String epochToString(long epoch)
-    {
+    static String epochToString(long epoch) {
         return SEPARATOR + String.format("%08X", epoch) + SEPARATOR;
     }
 
-    private static long getEpoch(String itemNode)
-    {
-        int     index2 = itemNode.lastIndexOf(SEPARATOR);
-        int     index1 = (index2 > 0) ? itemNode.lastIndexOf(SEPARATOR, index2 - 1) : -1;
-        if ( (index1 > 0) && (index2 > (index1 + 1)) )
-        {
-            try
-            {
-                String  epochStr = itemNode.substring(index1 + 1, index2);
+    private static long getEpoch(String itemNode) {
+        int index2 = itemNode.lastIndexOf(SEPARATOR);
+        int index1 = (index2 > 0) ? itemNode.lastIndexOf(SEPARATOR, index2 - 1) : -1;
+        if ((index1 > 0) && (index2 > (index1 + 1))) {
+            try {
+                String epochStr = itemNode.substring(index1 + 1, index2);
                 return Long.parseLong(epochStr, 16);
-            }
-            catch ( NumberFormatException ignore )
-            {
+            } catch (NumberFormatException ignore) {
                 // ignore
             }
         }

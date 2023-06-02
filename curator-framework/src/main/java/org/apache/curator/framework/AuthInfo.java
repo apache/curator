@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -21,13 +21,11 @@ package org.apache.curator.framework;
 
 import java.util.Arrays;
 
-public class AuthInfo
-{
-    final String    scheme;
-    final byte[]    auth;
+public class AuthInfo {
+    final String scheme;
+    final byte[] auth;
 
-    public AuthInfo(String scheme, byte[] auth)
-    {
+    public AuthInfo(String scheme, byte[] auth) {
         this.scheme = scheme;
         this.auth = auth;
     }
@@ -41,11 +39,7 @@ public class AuthInfo
     }
 
     @Override
-    public String toString()
-    {
-        return "AuthInfo{" +
-            "scheme='" + scheme + '\'' +
-            ", auth=" + Arrays.toString(auth) +
-            '}';
+    public String toString() {
+        return "AuthInfo{" + "scheme='" + scheme + '\'' + ", auth=" + Arrays.toString(auth) + '}';
     }
 }

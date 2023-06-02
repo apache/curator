@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,17 +16,20 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.api;
 
+import java.util.UUID;
+import org.apache.curator.framework.imps.ProtectedUtils;
 import org.apache.zookeeper.CreateMode;
 
-public interface CreateBuilderMain extends
-    BackgroundPathAndBytesable<String>,
-    CreateModable<ACLBackgroundPathAndBytesable<String>>,
-    ACLCreateModeBackgroundPathAndBytesable<String>,
-    Compressible<CreateBackgroundModeStatACLable>,
-    Statable<CreateProtectACLCreateModePathAndBytesable<String>>
-{
+public interface CreateBuilderMain
+        extends BackgroundPathAndBytesable<String>,
+                CreateModable<ACLBackgroundPathAndBytesable<String>>,
+                ACLCreateModeBackgroundPathAndBytesable<String>,
+                Compressible<CreateBackgroundModeStatACLable>,
+                Statable<CreateProtectACLCreateModePathAndBytesable<String>> {
+
     /**
      * Causes any parent nodes to get created if they haven't already been
      *
@@ -52,7 +55,7 @@ public interface CreateBuilderMain extends
      * @return this
      */
     @Deprecated
-    public ACLPathAndBytesable<String>              withProtectedEphemeralSequential();
+    public ACLPathAndBytesable<String> withProtectedEphemeralSequential();
 
     /**
      * <p>
@@ -74,13 +77,18 @@ public interface CreateBuilderMain extends
      *
      * <p>
      *     Putting the create builder into protection mode works around this.
-     *     The name of the node that is created is prefixed with a GUID. If node creation fails
-     *     the normal retry mechanism will occur. On the retry, the parent path is first searched
-     *     for a node that has the GUID in it. If that node is found, it is assumed to be the lost
+     *     The name of the node that is created is prefixed with a 40 characters string that is the concatenation of
+     *     <ul>
+     *         <li>{@value ProtectedUtils#PROTECTED_PREFIX}
+     *         <li>Canonical text representation of a random generated UUID as produced by {@link UUID#toString()}
+     *         <li>{@value ProtectedUtils#PROTECTED_SEPARATOR}
+     *     </ul>
+     *     If node creation fails the normal retry mechanism will occur. On the retry, the parent path is first searched
+     *     for a node that has previous described prefix in it. If that node is found, it is assumed to be the lost
      *     node that was successfully created on the first try and is returned to the caller.
      * </p>
      *
      * @return this
      */
-    public ACLCreateModeStatBackgroundPathAndBytesable<String>    withProtection();
+    public ACLCreateModeStatBackgroundPathAndBytesable<String> withProtection();
 }

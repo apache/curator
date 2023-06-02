@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,22 +16,20 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.cache;
 
 /**
  * Default TreeCache selector - returns true for all methods
  */
-public class DefaultTreeCacheSelector implements TreeCacheSelector
-{
+public class DefaultTreeCacheSelector implements TreeCacheSelector {
     @Override
-    public boolean traverseChildren(String fullPath)
-    {
+    public boolean traverseChildren(String fullPath) {
         return true;
     }
 
     @Override
-    public boolean acceptChild(String fullPath)
-    {
+    public boolean acceptChild(String fullPath) {
         return true;
     }
 }

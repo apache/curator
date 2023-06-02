@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,9 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.leader;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 
 /**
@@ -26,14 +28,22 @@ import org.apache.curator.framework.state.ConnectionStateListener;
  *
  * @see LeaderSelector
  */
-public interface LeaderSelectorListener extends ConnectionStateListener
-{
+public interface LeaderSelectorListener extends ConnectionStateListener {
     /**
      * Called when your instance has been granted leadership. This method
-     * should not return until you wish to release leadership
+     * should not return until you wish to release leadership.
+     *
+     * <p>It is guaranteed that there is no concurrent executions of this
+     * method.</p>
+     *
+     * <p>It is guaranteed that this method will be interrupted if
+     * {@link #stateChanged(CuratorFramework, ConnectionState)}
+     * throws {@link CancelLeadershipException}. After interrupted, this
+     * method should exit(either return or throw) promptly, otherwise it
+     * will block following elections.</p>
      *
      * @param client the client
      * @throws Exception any errors
      */
-    public void         takeLeadership(CuratorFramework client) throws Exception;
+    public void takeLeadership(CuratorFramework client) throws Exception;
 }

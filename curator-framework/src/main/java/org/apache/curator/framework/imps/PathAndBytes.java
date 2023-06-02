@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,26 +16,23 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.imps;
 
-class PathAndBytes
-{
-    private final String    path;
-    private final byte[]    data;
+class PathAndBytes {
+    private final String path;
+    private final byte[] data;
 
-    PathAndBytes(String path, byte[] data)
-    {
+    PathAndBytes(String path, byte[] data) {
         this.path = path;
         this.data = data;
     }
 
-    String getPath()
-    {
+    String getPath() {
         return path;
     }
 
-    byte[] getData()
-    {
+    byte[] getData() {
         return data;
     }
 }

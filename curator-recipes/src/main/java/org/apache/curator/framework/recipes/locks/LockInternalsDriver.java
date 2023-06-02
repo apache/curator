@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,14 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.locks;
 
-import org.apache.curator.framework.CuratorFramework;
 import java.util.List;
+import org.apache.curator.framework.CuratorFramework;
 
-public interface LockInternalsDriver extends LockInternalsSorter
-{
-    public PredicateResults getsTheLock(CuratorFramework client, List<String> children, String sequenceNodeName, int maxLeases) throws Exception;
+public interface LockInternalsDriver extends LockInternalsSorter {
+    public PredicateResults getsTheLock(
+            CuratorFramework client, List<String> children, String sequenceNodeName, int maxLeases) throws Exception;
 
-    public String createsTheLock(CuratorFramework client,  String path, byte[] lockNodeBytes) throws Exception;
+    public String createsTheLock(CuratorFramework client, String path, byte[] lockNodeBytes) throws Exception;
 }

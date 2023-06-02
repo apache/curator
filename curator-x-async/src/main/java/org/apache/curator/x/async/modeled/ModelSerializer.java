@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,13 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async.modeled;
 
 /**
  * Serializing interface for models
  */
-public interface ModelSerializer<T>
-{
+public interface ModelSerializer<T> {
     /**
      * Given a model return the serialized bytes
      *
@@ -44,17 +44,14 @@ public interface ModelSerializer<T>
     /**
      * A pass through serializer
      */
-    ModelSerializer<byte[]> raw = new ModelSerializer<byte[]>()
-    {
+    ModelSerializer<byte[]> raw = new ModelSerializer<byte[]>() {
         @Override
-        public byte[] serialize(byte[] model)
-        {
+        public byte[] serialize(byte[] model) {
             return model;
         }
 
         @Override
-        public byte[] deserialize(byte[] bytes)
-        {
+        public byte[] deserialize(byte[] bytes) {
             return bytes;
         }
     };

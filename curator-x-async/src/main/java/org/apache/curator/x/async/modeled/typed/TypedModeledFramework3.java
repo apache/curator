@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async.modeled.typed;
 
 import org.apache.curator.x.async.AsyncCuratorFramework;
@@ -27,8 +28,7 @@ import org.apache.curator.x.async.modeled.ModeledFrameworkBuilder;
  * Same as {@link org.apache.curator.x.async.modeled.typed.TypedModeledFramework}, but with 3 parameters
  */
 @FunctionalInterface
-public interface TypedModeledFramework3<M, P1, P2, P3>
-{
+public interface TypedModeledFramework3<M, P1, P2, P3> {
     ModeledFramework<M> resolved(AsyncCuratorFramework client, P1 p1, P2 p2, P3 p3);
 
     /**
@@ -40,9 +40,12 @@ public interface TypedModeledFramework3<M, P1, P2, P3>
      * @param modelSpec TypedModelSpec
      * @return new TypedModeledFramework
      */
-    static <M, P1, P2, P3> TypedModeledFramework3<M, P1, P2, P3> from(ModeledFrameworkBuilder<M> frameworkBuilder, TypedModelSpec3<M, P1, P2, P3> modelSpec)
-    {
-        return (client, p1, p2, p3) -> frameworkBuilder.withClient(client).withModelSpec(modelSpec.resolved(p1, p2, p3)).build();
+    static <M, P1, P2, P3> TypedModeledFramework3<M, P1, P2, P3> from(
+            ModeledFrameworkBuilder<M> frameworkBuilder, TypedModelSpec3<M, P1, P2, P3> modelSpec) {
+        return (client, p1, p2, p3) -> frameworkBuilder
+                .withClient(client)
+                .withModelSpec(modelSpec.resolved(p1, p2, p3))
+                .build();
     }
 
     /**
@@ -55,9 +58,12 @@ public interface TypedModeledFramework3<M, P1, P2, P3>
      * @param pathWithIds path with {XXXX} parameters
      * @return new TypedModeledFramework
      */
-    static <M, P1, P2, P3> TypedModeledFramework3<M, P1, P2, P3> from(ModeledFrameworkBuilder<M> frameworkBuilder, ModelSpecBuilder<M> modelSpecBuilder, String pathWithIds)
-    {
+    static <M, P1, P2, P3> TypedModeledFramework3<M, P1, P2, P3> from(
+            ModeledFrameworkBuilder<M> frameworkBuilder, ModelSpecBuilder<M> modelSpecBuilder, String pathWithIds) {
         TypedModelSpec3<M, P1, P2, P3> typedModelSpec = TypedModelSpec3.from(modelSpecBuilder, pathWithIds);
-        return (client, p1, p2, p3) -> frameworkBuilder.withClient(client).withModelSpec(typedModelSpec.resolved(p1, p2, p3)).build();
+        return (client, p1, p2, p3) -> frameworkBuilder
+                .withClient(client)
+                .withModelSpec(typedModelSpec.resolved(p1, p2, p3))
+                .build();
     }
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,15 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package modeled;
 
-import org.apache.curator.x.async.modeled.ModeledFramework;
 import java.util.function.Consumer;
+import org.apache.curator.x.async.modeled.ModeledFramework;
 
-public class ModeledCuratorExamplesAlt
-{
-    public static void createOrUpdate(PersonModelSpec modelSpec, PersonModel model)
-    {
+public class ModeledCuratorExamplesAlt {
+    public static void createOrUpdate(PersonModelSpec modelSpec, PersonModel model) {
         // change the affected path to be modeled's base path plus id: i.e. "/example/path/{id}"
         ModeledFramework<PersonModel> resolved = modelSpec.resolved(model.getContainerType(), model.getId());
 
@@ -33,18 +32,15 @@ public class ModeledCuratorExamplesAlt
         resolved.set(model); // note - this is async
     }
 
-    public static void readPerson(PersonModelSpec modelSpec, ContainerType containerType, PersonId id, Consumer<PersonModel> receiver)
-    {
+    public static void readPerson(
+            PersonModelSpec modelSpec, ContainerType containerType, PersonId id, Consumer<PersonModel> receiver) {
         ModeledFramework<PersonModel> resolved = modelSpec.resolved(containerType, id);
 
         // read the person with the given ID and asynchronously call the receiver after it is read
         resolved.read().whenComplete((person, exception) -> {
-            if ( exception != null )
-            {
-                exception.printStackTrace();    // handle the error
-            }
-            else
-            {
+            if (exception != null) {
+                exception.printStackTrace(); // handle the error
+            } else {
                 receiver.accept(person);
             }
         });

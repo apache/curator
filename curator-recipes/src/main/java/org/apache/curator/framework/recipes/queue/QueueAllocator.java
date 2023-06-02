@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,11 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.queue;
 
 import org.apache.curator.framework.CuratorFramework;
 
-public interface QueueAllocator<U, T extends QueueBase<U>>
-{
-    public T    allocateQueue(CuratorFramework client, String queuePath);
+public interface QueueAllocator<U, T extends QueueBase<U>> {
+    public T allocateQueue(CuratorFramework client, String queuePath);
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,38 +16,37 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.async.details;
 
+import java.util.function.UnaryOperator;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.zookeeper.WatchedEvent;
-import java.util.function.UnaryOperator;
 
-public class Filters
-{
+public class Filters {
     private final UnhandledErrorListener listener;
     private final UnaryOperator<CuratorEvent> resultFilter;
     private final UnaryOperator<WatchedEvent> watcherFilter;
 
-    public Filters(UnhandledErrorListener listener, UnaryOperator<CuratorEvent> resultFilter, UnaryOperator<WatchedEvent> watcherFilter)
-    {
+    public Filters(
+            UnhandledErrorListener listener,
+            UnaryOperator<CuratorEvent> resultFilter,
+            UnaryOperator<WatchedEvent> watcherFilter) {
         this.listener = listener;
         this.resultFilter = resultFilter;
         this.watcherFilter = watcherFilter;
     }
 
-    public UnhandledErrorListener getListener()
-    {
+    public UnhandledErrorListener getListener() {
         return listener;
     }
 
-    public UnaryOperator<CuratorEvent> getResultFilter()
-    {
+    public UnaryOperator<CuratorEvent> getResultFilter() {
         return resultFilter;
     }
 
-    public UnaryOperator<WatchedEvent> getWatcherFilter()
-    {
+    public UnaryOperator<WatchedEvent> getWatcherFilter() {
         return watcherFilter;
     }
 }

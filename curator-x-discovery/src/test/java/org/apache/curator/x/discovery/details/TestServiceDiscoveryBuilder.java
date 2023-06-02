@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,52 +16,56 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.discovery.details;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
+import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.x.discovery.ServiceDiscoveryBuilder;
 import org.apache.curator.x.discovery.ServiceInstance;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
-public class TestServiceDiscoveryBuilder extends BaseClassForTests
-{
+@Tag(CuratorTestBase.zk35TestCompatibilityGroup)
+public class TestServiceDiscoveryBuilder extends BaseClassForTests {
     @Test
-    public void testDefaultSerializer() throws Exception
-    {        
+    public void testDefaultSerializer() {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        ServiceDiscoveryBuilder<Object> builder = ServiceDiscoveryBuilder.builder(Object.class).client(client);
-        ServiceDiscoveryImpl<?> discovery = (ServiceDiscoveryImpl<?>) builder.basePath("/path").build();
+        ServiceDiscoveryBuilder<Object> builder =
+                ServiceDiscoveryBuilder.builder(Object.class).client(client);
+        ServiceDiscoveryImpl<?> discovery =
+                (ServiceDiscoveryImpl<?>) builder.basePath("/path").build();
 
-        Assert.assertNotNull(discovery.getSerializer(), "default serializer not set");
-        Assert.assertTrue(discovery.getSerializer() instanceof JsonInstanceSerializer, "default serializer not JSON");
+        assertNotNull(discovery.getSerializer(), "default serializer not set");
+        assertTrue(discovery.getSerializer() instanceof JsonInstanceSerializer, "default serializer not JSON");
     }
 
     @Test
-    public void testSetSerializer() throws Exception
-    {
+    public void testSetSerializer() {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        ServiceDiscoveryBuilder<Object> builder = ServiceDiscoveryBuilder.builder(Object.class).client(client);
-        builder.serializer(new InstanceSerializer<Object>()
-        {
+        ServiceDiscoveryBuilder<Object> builder =
+                ServiceDiscoveryBuilder.builder(Object.class).client(client);
+        builder.serializer(new InstanceSerializer<Object>() {
             @Override
-            public byte[] serialize(ServiceInstance<Object> instance)
-            {
+            public byte[] serialize(ServiceInstance<Object> instance) {
                 return null;
             }
 
             @Override
-            public ServiceInstance<Object> deserialize(byte[] bytes)
-            {
+            public ServiceInstance<Object> deserialize(byte[] bytes) {
                 return null;
             }
         });
 
-        ServiceDiscoveryImpl<?> discovery = (ServiceDiscoveryImpl<?>) builder.basePath("/path").build();
-        Assert.assertNotNull(discovery.getSerializer(), "default serializer not set");
-        Assert.assertFalse(discovery.getSerializer() instanceof JsonInstanceSerializer, "set serializer is JSON");
+        ServiceDiscoveryImpl<?> discovery =
+                (ServiceDiscoveryImpl<?>) builder.basePath("/path").build();
+        assertNotNull(discovery.getSerializer(), "default serializer not set");
+        assertFalse(discovery.getSerializer() instanceof JsonInstanceSerializer, "set serializer is JSON");
     }
 }

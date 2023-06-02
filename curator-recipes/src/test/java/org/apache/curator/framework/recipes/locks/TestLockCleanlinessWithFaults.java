@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,58 +16,49 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.locks;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+import java.util.List;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.imps.TestCleanState;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.KeeperException;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-import java.util.List;
+import org.junit.jupiter.api.Test;
 
-public class TestLockCleanlinessWithFaults extends BaseClassForTests
-{
+public class TestLockCleanlinessWithFaults extends BaseClassForTests {
     @Test
-    public void     testNodeDeleted() throws Exception
-    {
+    public void testNodeDeleted() throws Exception {
         final String PATH = "/foo/bar";
 
-        CuratorFramework        client = null;
-        try
-        {
+        CuratorFramework client = null;
+        try {
             client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryNTimes(0, 0));
             client.start();
 
             client.create().creatingParentsIfNeeded().forPath(PATH);
-            Assert.assertEquals(client.checkExists().forPath(PATH).getNumChildren(), 0);
+            assertEquals(client.checkExists().forPath(PATH).getNumChildren(), 0);
 
-            LockInternals       internals = new LockInternals(client, new StandardLockInternalsDriver(), PATH, "lock-", 1)
-            {
+            LockInternals internals = new LockInternals(client, new StandardLockInternalsDriver(), PATH, "lock-", 1) {
                 @Override
-                List<String> getSortedChildren() throws Exception
-                {
+                List<String> getSortedChildren() throws Exception {
                     throw new KeeperException.NoNodeException();
                 }
             };
-            try
-            {
+            try {
                 internals.attemptLock(0, null, null);
-                Assert.fail();
-            }
-            catch ( KeeperException.NoNodeException dummy )
-            {
+                fail();
+            } catch (KeeperException.NoNodeException dummy) {
                 // expected
             }
 
             // make sure no nodes are left lying around
-            Assert.assertEquals(client.checkExists().forPath(PATH).getNumChildren(), 0);
-        }
-        finally
-        {
+            assertEquals(client.checkExists().forPath(PATH).getNumChildren(), 0);
+        } finally {
             TestCleanState.closeAndTestClean(client);
         }
     }

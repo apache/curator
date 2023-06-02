@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.retry;
 
 import org.apache.curator.RetrySleeper;
@@ -23,28 +24,23 @@ import org.apache.curator.RetrySleeper;
 /**
  * A retry policy that retries until a given amount of time elapses
  */
-public class RetryUntilElapsed extends SleepingRetry
-{
+public class RetryUntilElapsed extends SleepingRetry {
     private final int maxElapsedTimeMs;
     private final int sleepMsBetweenRetries;
 
-    public RetryUntilElapsed(int maxElapsedTimeMs, int sleepMsBetweenRetries)
-    {
+    public RetryUntilElapsed(int maxElapsedTimeMs, int sleepMsBetweenRetries) {
         super(Integer.MAX_VALUE);
         this.maxElapsedTimeMs = maxElapsedTimeMs;
         this.sleepMsBetweenRetries = sleepMsBetweenRetries;
     }
 
     @Override
-    public boolean allowRetry(int retryCount, long elapsedTimeMs, RetrySleeper sleeper)
-    {
+    public boolean allowRetry(int retryCount, long elapsedTimeMs, RetrySleeper sleeper) {
         return super.allowRetry(retryCount, elapsedTimeMs, sleeper) && (elapsedTimeMs < maxElapsedTimeMs);
     }
 
     @Override
-    protected long getSleepTimeMs(int retryCount, long elapsedTimeMs)
-    {
+    protected long getSleepTimeMs(int retryCount, long elapsedTimeMs) {
         return sleepMsBetweenRetries;
     }
 }
-

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.locks;
 
 import java.io.Closeable;
@@ -26,8 +27,7 @@ import java.io.IOException;
  * to close this lease when it is no longer needed so that other blocked clients can use it. If the
  * client crashes (or its session expires, etc.) the lease will automatically be closed.
  */
-public interface Lease extends Closeable
-{
+public interface Lease extends Closeable {
     /**
      * Releases the lease so that other clients/processes can acquire it
      *
@@ -42,7 +42,7 @@ public interface Lease extends Closeable
      * @return data
      * @throws Exception errors
      */
-    public byte[]   getData() throws Exception;
+    public byte[] getData() throws Exception;
 
     /**
      * Return the the node for this lease

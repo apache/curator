@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,27 +16,26 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.x.discovery.server.jetty_resteasy;
 
-import org.apache.curator.x.discovery.server.rest.DiscoveryContext;
-import org.apache.curator.x.discovery.server.rest.DiscoveryResource;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.Providers;
+import org.apache.curator.x.discovery.server.rest.DiscoveryContext;
+import org.apache.curator.x.discovery.server.rest.DiscoveryResource;
 
 @Path("/")
-public class StringDiscoveryResource extends DiscoveryResource<String>
-{
-    public StringDiscoveryResource(@Context Providers providers)
-    {
+public class StringDiscoveryResource extends DiscoveryResource<String> {
+    public StringDiscoveryResource(@Context Providers providers) {
         super(getContextFromProvider(providers));
     }
 
-    private static DiscoveryContext<String> getContextFromProvider(Providers providers)
-    {
-        ContextResolver<DiscoveryContext> contextResolver = providers.getContextResolver(DiscoveryContext.class, MediaType.WILDCARD_TYPE);
+    private static DiscoveryContext<String> getContextFromProvider(Providers providers) {
+        ContextResolver<DiscoveryContext> contextResolver =
+                providers.getContextResolver(DiscoveryContext.class, MediaType.WILDCARD_TYPE);
         //noinspection unchecked
         return contextResolver.getContext(DiscoveryContext.class);
     }

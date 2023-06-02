@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,61 +16,84 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.utils;
 
-import org.apache.zookeeper.ZooKeeper;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.net.InetSocketAddress;
+import org.apache.zookeeper.server.quorum.QuorumPeer;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Utils to help with ZK 3.4.x compatibility
+ * Utils to help with ZK version compatibility
  */
-public class Compatibility
-{
-    private static final boolean hasZooKeeperAdmin;
-    static
-    {
-        boolean hasIt;
-        try
-        {
-            Class.forName("org.apache.zookeeper.admin.ZooKeeperAdmin");
-            hasIt = true;
+public class Compatibility {
+    private static final Logger log = LoggerFactory.getLogger(Compatibility.class);
+
+    private static final Method getReachableOrOneMethod;
+    private static final Field addrField;
+    private static final boolean hasPersistentWatchers;
+
+    static {
+        Method localGetReachableOrOneMethod;
+        try {
+            Class<?> multipleAddressesClass = Class.forName("org.apache.zookeeper.server.quorum.MultipleAddresses");
+            localGetReachableOrOneMethod = multipleAddressesClass.getMethod("getReachableOrOne");
+            log.info("Using org.apache.zookeeper.server.quorum.MultipleAddresses");
+        } catch (ReflectiveOperationException ignore) {
+            localGetReachableOrOneMethod = null;
         }
-        catch ( ClassNotFoundException e )
-        {
-            hasIt = false;
-            LoggerFactory.getLogger(Compatibility.class).info("Running in ZooKeeper 3.4.x compatibility mode");
+        getReachableOrOneMethod = localGetReachableOrOneMethod;
+
+        Field localAddrField;
+        try {
+            localAddrField = QuorumPeer.QuorumServer.class.getField("addr");
+        } catch (NoSuchFieldException e) {
+            localAddrField = null;
+            log.error("Could not get addr field! Reconfiguration fail!");
         }
-        hasZooKeeperAdmin = hasIt;
+        addrField = localAddrField;
+
+        boolean localHasPersistentWatchers;
+        try {
+            Class.forName("org.apache.zookeeper.AddWatchMode");
+            localHasPersistentWatchers = true;
+        } catch (ClassNotFoundException e) {
+            localHasPersistentWatchers = false;
+            log.info("Persistent Watchers are not available in the version of the ZooKeeper library being used");
+        }
+        hasPersistentWatchers = localHasPersistentWatchers;
     }
 
-    /**
-     * Return true if the classpath ZooKeeper library is 3.4.x
-     *
-     * @return true/false
-     */
-    public static boolean isZK34()
-    {
-        return !hasZooKeeperAdmin;
+    public static boolean hasGetReachableOrOneMethod() {
+        return (getReachableOrOneMethod != null);
     }
 
-    /**
-     * For ZooKeeper 3.5.x, use the supported <code>zooKeeper.getTestable().injectSessionExpiration()</code>.
-     * For ZooKeeper 3.4.x do the equivalent via reflection
-     *
-     * @param zooKeeper client
-     */
-    public static void injectSessionExpiration(ZooKeeper zooKeeper)
-    {
-        if ( isZK34() )
-        {
-            InjectSessionExpiration.injectSessionExpiration(zooKeeper);
+    public static boolean hasAddrField() {
+        return (addrField != null);
+    }
+
+    public static String getHostString(QuorumPeer.QuorumServer server) {
+        InetSocketAddress address = null;
+        if (getReachableOrOneMethod != null) {
+            try {
+                address = (InetSocketAddress) getReachableOrOneMethod.invoke(server.addr);
+            } catch (Exception e) {
+                log.error("Could not call getReachableOrOneMethod.invoke({})", server.addr, e);
+            }
+        } else if (addrField != null) {
+            try {
+                address = (InetSocketAddress) addrField.get(server);
+            } catch (Exception e) {
+                log.error("Could not call addrField.get({})", server, e);
+            }
         }
-        else
-        {
-            // LOL - this method was proposed by me (JZ) in 2013 for totally unrelated reasons
-            // it got added to ZK 3.5 and now does exactly what we need
-            // https://issues.apache.org/jira/browse/ZOOKEEPER-1730
-            zooKeeper.getTestable().injectSessionExpiration();
-        }
+        return address != null ? address.getHostString() : "unknown";
+    }
+
+    public static boolean hasPersistentWatchers() {
+        return hasPersistentWatchers;
     }
 }

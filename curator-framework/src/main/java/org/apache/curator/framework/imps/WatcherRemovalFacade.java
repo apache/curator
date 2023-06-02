@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -29,162 +29,135 @@ import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.EnsurePath;
-import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
 
-class WatcherRemovalFacade extends CuratorFrameworkImpl implements WatcherRemoveCuratorFramework
-{
+class WatcherRemovalFacade extends CuratorFrameworkImpl implements WatcherRemoveCuratorFramework {
     private final CuratorFrameworkImpl client;
     private final WatcherRemovalManager removalManager;
 
-    WatcherRemovalFacade(CuratorFrameworkImpl client)
-    {
+    WatcherRemovalFacade(CuratorFrameworkImpl client) {
         super(client);
         this.client = client;
         removalManager = new WatcherRemovalManager(client);
     }
 
     @Override
-    public WatcherRemoveCuratorFramework newWatcherRemoveCuratorFramework()
-    {
+    public WatcherRemoveCuratorFramework newWatcherRemoveCuratorFramework() {
         return client.newWatcherRemoveCuratorFramework();
     }
 
-    WatcherRemovalManager getRemovalManager()
-    {
+    WatcherRemovalManager getRemovalManager() {
         return removalManager;
     }
 
     @Override
-    public QuorumVerifier getCurrentConfig()
-    {
+    public QuorumVerifier getCurrentConfig() {
         return client.getCurrentConfig();
     }
 
     @Override
-    public void removeWatchers()
-    {
+    public void removeWatchers() {
         removalManager.removeWatchers();
     }
 
     @Override
-    WatcherRemovalManager getWatcherRemovalManager()
-    {
+    WatcherRemovalManager getWatcherRemovalManager() {
         return removalManager;
     }
 
     @Override
-    public CuratorFramework nonNamespaceView()
-    {
+    public CuratorFramework nonNamespaceView() {
         return client.nonNamespaceView();
     }
 
     @Override
-    public CuratorFramework usingNamespace(String newNamespace)
-    {
+    public CuratorFramework usingNamespace(String newNamespace) {
         return client.usingNamespace(newNamespace);
     }
 
     @Override
-    public String getNamespace()
-    {
+    public String getNamespace() {
         return client.getNamespace();
     }
 
     @Override
-    public void start()
-    {
+    public void start() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Listenable<ConnectionStateListener> getConnectionStateListenable()
-    {
+    public Listenable<ConnectionStateListener> getConnectionStateListenable() {
         return client.getConnectionStateListenable();
     }
 
     @Override
-    public Listenable<CuratorListener> getCuratorListenable()
-    {
+    public Listenable<CuratorListener> getCuratorListenable() {
         return client.getCuratorListenable();
     }
 
     @Override
-    public Listenable<UnhandledErrorListener> getUnhandledErrorListenable()
-    {
+    public Listenable<UnhandledErrorListener> getUnhandledErrorListenable() {
         return client.getUnhandledErrorListenable();
     }
 
     @Override
-    public void sync(String path, Object context)
-    {
+    public void sync(String path, Object context) {
         client.sync(path, context);
     }
 
     @Override
-    public CuratorZookeeperClient getZookeeperClient()
-    {
+    public CuratorZookeeperClient getZookeeperClient() {
         return client.getZookeeperClient();
     }
 
     @Override
-    RetryLoop newRetryLoop()
-    {
+    RetryLoop newRetryLoop() {
         return client.newRetryLoop();
     }
 
     @Override
-    ZooKeeper getZooKeeper() throws Exception
-    {
+    ZooKeeper getZooKeeper() throws Exception {
         return client.getZooKeeper();
     }
 
     @Override
-    <DATA_TYPE> void processBackgroundOperation(OperationAndData<DATA_TYPE> operationAndData, CuratorEvent event)
-    {
+    <DATA_TYPE> void processBackgroundOperation(OperationAndData<DATA_TYPE> operationAndData, CuratorEvent event) {
         client.processBackgroundOperation(operationAndData, event);
     }
 
     @Override
-    void logError(String reason, Throwable e)
-    {
+    void logError(String reason, Throwable e) {
         client.logError(reason, e);
     }
 
     @Override
-    String unfixForNamespace(String path)
-    {
+    String unfixForNamespace(String path) {
         return client.unfixForNamespace(path);
     }
 
     @Override
-    String fixForNamespace(String path)
-    {
+    String fixForNamespace(String path) {
         return client.fixForNamespace(path);
-    }
-    
-    @Override
-    String fixForNamespace(String path, boolean isSequential)
-    {
-    	return client.fixForNamespace(path, isSequential);
     }
 
     @Override
-    public EnsurePath newNamespaceAwareEnsurePath(String path)
-    {
+    String fixForNamespace(String path, boolean isSequential) {
+        return client.fixForNamespace(path, isSequential);
+    }
+
+    @Override
+    public EnsurePath newNamespaceAwareEnsurePath(String path) {
         return client.newNamespaceAwareEnsurePath(path);
     }
 
     @Override
-    FailedDeleteManager getFailedDeleteManager()
-    {
+    FailedDeleteManager getFailedDeleteManager() {
         return client.getFailedDeleteManager();
     }
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,10 +16,10 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.api;
 
-public interface ErrorListenerEnsembleable<T> extends Ensembleable<T>
-{
+public interface ErrorListenerEnsembleable<T> extends Ensembleable<T> {
     /**
      * Set an error listener for this background operation. If an exception
      * occurs while processing the call in the background, this listener will

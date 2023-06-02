@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,22 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.curator.framework.recipes.locks;
 
-import org.apache.curator.utils.CloseableUtils;
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.test.Timing;
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicReference;
+import org.apache.curator.utils.CloseableUtils;
 
-class SemaphoreClient implements Callable<Void>, ConnectionStateListener, Closeable
-{
+class SemaphoreClient implements Callable<Void>, ConnectionStateListener, Closeable {
     private final CuratorFramework client;
     private final String semaphorePath;
     private final Callable<Void> operation;
@@ -42,12 +42,12 @@ class SemaphoreClient implements Callable<Void>, ConnectionStateListener, Closea
     private static final int CLIENT_EXCEPTION_HANDLER_SLEEP_TIME_SECS = 10;
     private static final int MAX_SEMAPHORE_LEASES = 1;
 
-    private static final AtomicReference<SemaphoreClient>       activeClient = new AtomicReference<SemaphoreClient>(null);
+    private static final AtomicReference<SemaphoreClient> activeClient = new AtomicReference<SemaphoreClient>(null);
 
-    SemaphoreClient(String connectionString, String semaphorePath, Callable<Void> operation) throws IOException
-    {
+    SemaphoreClient(String connectionString, String semaphorePath, Callable<Void> operation) throws IOException {
         Timing timing = new Timing();
-        this.client = CuratorFrameworkFactory.newClient(connectionString, timing.session(), timing.connection(), new ExponentialBackoffRetry(100, 3));
+        this.client = CuratorFrameworkFactory.newClient(
+                connectionString, timing.session(), timing.connection(), new ExponentialBackoffRetry(100, 3));
         client.start();
 
         this.semaphorePath = semaphorePath;
@@ -55,95 +55,69 @@ class SemaphoreClient implements Callable<Void>, ConnectionStateListener, Closea
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         shouldRun = false;
     }
 
-    boolean hasAcquired()
-    {
+    boolean hasAcquired() {
         return hasAcquired;
     }
 
     @Override
-    public void stateChanged(CuratorFramework client, ConnectionState newState)
-    {
+    public void stateChanged(CuratorFramework client, ConnectionState newState) {
         hasAcquired = false;
     }
 
-    static SemaphoreClient getActiveClient()
-    {
+    static SemaphoreClient getActiveClient() {
         return activeClient.get();
     }
 
     @Override
-    public Void call() throws Exception
-    {
+    public Void call() throws Exception {
         shouldRun = true;
         client.getConnectionStateListenable().addListener(this);
-        try
-        {
-            while ( shouldRun )
-            {
-                try
-                {
+        try {
+            while (shouldRun) {
+                try {
                     acquireAndRun();
-                }
-                catch ( InterruptedException e )
-                {
+                } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     // propagate up, don't sleep
                     throw e;
 
-                }
-                catch ( Exception e )
-                {
+                } catch (Exception e) {
                     Thread.sleep(CLIENT_EXCEPTION_HANDLER_SLEEP_TIME_SECS * 1000L);
                 }
             }
 
-        }
-        catch ( InterruptedException e )
-        {
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
         return null;
     }
 
-    private void acquireAndRun() throws Exception
-    {
+    private void acquireAndRun() throws Exception {
         InterProcessSemaphoreV2 semaphore = new InterProcessSemaphoreV2(client, semaphorePath, MAX_SEMAPHORE_LEASES);
         Lease lease = semaphore.acquire();
-        try
-        {
+        try {
             hasAcquired = true;
-            if ( activeClient.compareAndSet(null, this) )
-            {
+            if (activeClient.compareAndSet(null, this)) {
                 throw new Exception("Multiple acquirers");
             }
 
-            try
-            {
-                while ( hasAcquired && shouldRun )
-                {
+            try {
+                while (hasAcquired && shouldRun) {
                     operation.call();
                 }
-            }
-            finally
-            {
-                if ( activeClient.compareAndSet(this, null) )
-                {
+            } finally {
+                if (activeClient.compareAndSet(this, null)) {
                     //noinspection ThrowFromFinallyBlock
                     throw new Exception("Bad release");
                 }
             }
-        }
-        finally
-        {
+        } finally {
             semaphore.returnLease(lease);
         }
     }
