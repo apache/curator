@@ -27,7 +27,9 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.CuratorCache;
@@ -39,6 +41,7 @@ import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.ExceptionAccumulator;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
+import org.apache.curator.x.discovery.DiscoveryPathConstructor;
 import org.apache.curator.x.discovery.ServiceCache;
 import org.apache.curator.x.discovery.ServiceCacheBuilder;
 import org.apache.curator.x.discovery.ServiceDiscovery;
@@ -59,13 +62,11 @@ import org.slf4j.LoggerFactory;
 public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T> {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorFramework client;
-    private final String basePath;
+    private final DiscoveryPathConstructor pathConstructor;
     private final InstanceSerializer<T> serializer;
-    private final ConcurrentMap<String, Entry<T>> services = Maps.newConcurrentMap();
-    private final Collection<ServiceCache<T>> caches =
-            Sets.newSetFromMap(Maps.<ServiceCache<T>, Boolean>newConcurrentMap());
-    private final Collection<ServiceProvider<T>> providers =
-            Sets.newSetFromMap(Maps.<ServiceProvider<T>, Boolean>newConcurrentMap());
+    private final ConcurrentMap<String, Entry<T>> services = new ConcurrentHashMap<>();
+    private final Collection<ServiceCache<T>> caches = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private final Collection<ServiceProvider<T>> providers = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final boolean watchInstances;
     private final ConnectionStateListener connectionStateListener = new ConnectionStateListener() {
         @Override
@@ -105,12 +106,28 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T> {
             InstanceSerializer<T> serializer,
             ServiceInstance<T> thisInstance,
             boolean watchInstances) {
+        this(client, new DiscoveryPathConstructorImpl(basePath), serializer, thisInstance, watchInstances);
+    }
+
+    /**
+     * @param client the client
+     * @param pathConstructor constructor for instance paths
+     * @param serializer serializer for instances (e.g. {@link JsonInstanceSerializer})
+     * @param thisInstance instance that represents the service that is running. The instance will get auto-registered
+     * @param watchInstances if true, watches for changes to locally registered instances
+     */
+    public ServiceDiscoveryImpl(
+            CuratorFramework client,
+            DiscoveryPathConstructor pathConstructor,
+            InstanceSerializer<T> serializer,
+            ServiceInstance<T> thisInstance,
+            boolean watchInstances) {
         this.watchInstances = watchInstances;
         this.client = Preconditions.checkNotNull(client, "client cannot be null");
-        this.basePath = Preconditions.checkNotNull(basePath, "basePath cannot be null");
+        this.pathConstructor = Preconditions.checkNotNull(pathConstructor, "pathConstructor cannot be null");
         this.serializer = Preconditions.checkNotNull(serializer, "serializer cannot be null");
         if (thisInstance != null) {
-            Entry<T> entry = new Entry<T>(thisInstance);
+            Entry<T> entry = new Entry<>(thisInstance);
             entry.cache = makeNodeCache(thisInstance);
             services.put(thisInstance.getId(), entry);
         }
@@ -261,7 +278,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T> {
      */
     @Override
     public Collection<String> queryForNames() throws Exception {
-        List<String> names = client.getChildren().forPath(basePath);
+        List<String> names = client.getChildren().forPath(pathConstructor.getBasePath());
         return ImmutableList.copyOf(names);
     }
 
@@ -317,8 +334,8 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T> {
         return client;
     }
 
-    String pathForName(String name) {
-        return ZKPaths.makePath(basePath, name);
+    String pathForName(String serviceName) {
+        return pathConstructor.getPathForInstances(serviceName);
     }
 
     InstanceSerializer<T> getSerializer() {
@@ -374,8 +391,8 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T> {
     }
 
     @VisibleForTesting
-    String pathForInstance(String name, String id) {
-        return ZKPaths.makePath(pathForName(name), id);
+    String pathForInstance(String serviceName, String instanceId) {
+        return pathConstructor.getPathForInstance(serviceName, instanceId);
     }
 
     @VisibleForTesting
