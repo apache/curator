@@ -31,11 +31,11 @@ public class DiscoveryPathConstructorImplTest {
 
     @Test
     public void testGetBasePath() {
-        assertThat(new DiscoveryPathConstructorImpl("/foo/bar").getBasePath()).isEqualTo( "/foo/bar");
-        assertThat(new DiscoveryPathConstructorImpl("foo/bar").getBasePath()).isEqualTo( "/foo/bar");
-        assertThat(new DiscoveryPathConstructorImpl("foo/bar/").getBasePath()).isEqualTo( "/foo/bar");
-        assertThat(new DiscoveryPathConstructorImpl("/").getBasePath()).isEqualTo( "/");
-        assertThat(new DiscoveryPathConstructorImpl("").getBasePath()).isEqualTo( "/");
+        assertThat(new DiscoveryPathConstructorImpl("/foo/bar").getBasePath()).isEqualTo("/foo/bar");
+        assertThat(new DiscoveryPathConstructorImpl("foo/bar").getBasePath()).isEqualTo("/foo/bar");
+        assertThat(new DiscoveryPathConstructorImpl("foo/bar/").getBasePath()).isEqualTo("/foo/bar");
+        assertThat(new DiscoveryPathConstructorImpl("/").getBasePath()).isEqualTo("/");
+        assertThat(new DiscoveryPathConstructorImpl("").getBasePath()).isEqualTo("/");
     }
 
     @Test
