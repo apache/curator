@@ -33,7 +33,7 @@ import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.ExceptionAccumulator;
 import org.apache.curator.utils.ThreadUtils;
-import org.apache.curator.x.discovery.DiscoveryPathConstructor;
+import org.apache.curator.utils.ZKPaths;
 import org.apache.curator.x.discovery.ServiceCache;
 import org.apache.curator.x.discovery.ServiceCacheBuilder;
 import org.apache.curator.x.discovery.ServiceDiscovery;
@@ -59,7 +59,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
 {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorFramework client;
-    private final DiscoveryPathConstructor pathConstructor;
+    private final String basePath;
     private final InstanceSerializer<T> serializer;
     private final ConcurrentMap<String, Entry<T>> services = Maps.newConcurrentMap();
     private final Collection<ServiceCache<T>> caches = Sets.newSetFromMap(Maps.<ServiceCache<T>, Boolean>newConcurrentMap());
@@ -107,26 +107,12 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
      * @param thisInstance instance that represents the service that is running. The instance will get auto-registered
      * @param watchInstances if true, watches for changes to locally registered instances
      */
-    public ServiceDiscoveryImpl(CuratorFramework client, String basePath, InstanceSerializer<T> serializer,
-                                ServiceInstance<T> thisInstance, boolean watchInstances)
-    {
-        this(client, new DiscoveryPathConstructorImpl(basePath), serializer, thisInstance, watchInstances);
-    }
-
-    /**
-     * @param client the client
-     * @param pathConstructor constructor for instance paths
-     * @param serializer serializer for instances (e.g. {@link JsonInstanceSerializer})
-     * @param thisInstance instance that represents the service that is running. The instance will get auto-registered
-     * @param watchInstances if true, watches for changes to locally registered instances
-     */
-    public ServiceDiscoveryImpl(CuratorFramework client, DiscoveryPathConstructor pathConstructor, InstanceSerializer<T> serializer,
-                                ServiceInstance<T> thisInstance, boolean watchInstances)
+    public ServiceDiscoveryImpl(CuratorFramework client, String basePath, InstanceSerializer<T> serializer, ServiceInstance<T> thisInstance, boolean watchInstances)
     {
         this.watchInstances = watchInstances;
         this.client = Preconditions.checkNotNull(client, "client cannot be null");
+        this.basePath = Preconditions.checkNotNull(basePath, "basePath cannot be null");
         this.serializer = Preconditions.checkNotNull(serializer, "serializer cannot be null");
-        this.pathConstructor = Preconditions.checkNotNull(pathConstructor, "pathConstructor cannot be null");
         if ( thisInstance != null )
         {
             Entry<T> entry = new Entry<T>(thisInstance);
@@ -304,7 +290,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     @Override
     public Collection<String> queryForNames() throws Exception
     {
-        List<String> names = client.getChildren().forPath(pathConstructor.getBasePath());
+        List<String> names = client.getChildren().forPath(basePath);
         return ImmutableList.copyOf(names);
     }
 
@@ -372,7 +358,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
 
     String pathForName(String name)
     {
-        return pathConstructor.getPathForInstances(name);
+        return ZKPaths.makePath(basePath, name);
     }
 
     InstanceSerializer<T> getSerializer()
@@ -451,7 +437,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T>
     @VisibleForTesting
     String pathForInstance(String name, String id)
     {
-        return pathConstructor.getPathForInstance(name, id);
+        return ZKPaths.makePath(pathForName(name), id);
     }
 
     @VisibleForTesting
