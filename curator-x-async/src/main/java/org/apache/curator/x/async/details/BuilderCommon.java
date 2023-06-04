@@ -19,6 +19,7 @@
 
 package org.apache.curator.x.async.details;
 
+import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.imps.Backgrounding;
 import org.apache.curator.x.async.WatchMode;
 
@@ -34,6 +35,14 @@ class BuilderCommon<T> {
     BuilderCommon(Filters filters, WatchMode watchMode, BackgroundProc<T> proc) {
         watcher = (watchMode != null) ? new InternalWatcher(watchMode, filters.getWatcherFilter()) : null;
         internalCallback = new InternalCallback<>(proc, watcher, filters.getResultFilter());
-        backgrounding = new Backgrounding(internalCallback, filters.getListener());
+        UnhandledErrorListener listener = filters.getListener();
+        if (listener != null) {
+            UnhandledErrorListener wrappedListener = listener;
+            listener = (message, e) -> {
+                wrappedListener.unhandledError(message, e);
+                internalCallback.completeExceptionally(e);
+            };
+        }
+        backgrounding = new Backgrounding(internalCallback, listener);
     }
 }
