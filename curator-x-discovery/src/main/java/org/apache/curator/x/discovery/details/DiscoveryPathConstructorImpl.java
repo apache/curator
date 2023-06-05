@@ -20,6 +20,7 @@
 package org.apache.curator.x.discovery.details;
 
 import com.google.common.base.Preconditions;
+import org.apache.curator.utils.PathUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.curator.x.discovery.DiscoveryPathConstructor;
 
@@ -31,12 +32,7 @@ public class DiscoveryPathConstructorImpl implements DiscoveryPathConstructor {
 
     public DiscoveryPathConstructorImpl(String basePath) {
         Preconditions.checkArgument(basePath != null, "basePath cannot be null");
-        if (basePath.endsWith(ZKPaths.PATH_SEPARATOR)) {
-            basePath = basePath.substring(0, basePath.length() - 1);
-        }
-        if (!basePath.startsWith(ZKPaths.PATH_SEPARATOR)) {
-            basePath = ZKPaths.PATH_SEPARATOR + basePath;
-        }
+        PathUtils.validatePath(basePath);
         this.basePath = basePath;
     }
 

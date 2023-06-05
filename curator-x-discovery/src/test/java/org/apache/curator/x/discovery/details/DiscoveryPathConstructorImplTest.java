@@ -27,31 +27,27 @@ public class DiscoveryPathConstructorImplTest {
     @Test
     public void testCanonicalDiscoveryPathConstructor() {
         assertThatThrownBy(() -> new DiscoveryPathConstructorImpl(null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new DiscoveryPathConstructorImpl("")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new DiscoveryPathConstructorImpl("foo/bar"))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new DiscoveryPathConstructorImpl("foo/bar/"))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new DiscoveryPathConstructorImpl("/foo/bar/"))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     public void testGetBasePath() {
         assertThat(new DiscoveryPathConstructorImpl("/foo/bar").getBasePath()).isEqualTo("/foo/bar");
-        assertThat(new DiscoveryPathConstructorImpl("foo/bar").getBasePath()).isEqualTo("/foo/bar");
-        assertThat(new DiscoveryPathConstructorImpl("foo/bar/").getBasePath()).isEqualTo("/foo/bar");
         assertThat(new DiscoveryPathConstructorImpl("/").getBasePath()).isEqualTo("/");
-        assertThat(new DiscoveryPathConstructorImpl("").getBasePath()).isEqualTo("/");
     }
 
     @Test
-    public void testGetPathForInstances() throws Exception {
-        {
-            DiscoveryPathConstructorImpl constructor = new DiscoveryPathConstructorImpl("/foo/bar");
-            assertThat(constructor.getPathForInstances("baz")).isEqualTo("/foo/bar/baz");
-            assertThat(constructor.getPathForInstances("")).isEqualTo("/foo/bar");
-            assertThat(constructor.getPathForInstances(null)).isEqualTo("/foo/bar");
-        }
-        {
-            DiscoveryPathConstructorImpl constructor = new DiscoveryPathConstructorImpl("foo/bar");
-            assertThat(constructor.getPathForInstances("baz")).isEqualTo("/foo/bar/baz");
-            assertThat(constructor.getPathForInstances("")).isEqualTo("/foo/bar");
-            assertThat(constructor.getPathForInstances(null)).isEqualTo("/foo/bar");
-        }
+    public void testGetPathForInstances() {
+        DiscoveryPathConstructorImpl constructor = new DiscoveryPathConstructorImpl("/foo/bar");
+        assertThat(constructor.getPathForInstances("baz")).isEqualTo("/foo/bar/baz");
+        assertThat(constructor.getPathForInstances("")).isEqualTo("/foo/bar");
+        assertThat(constructor.getPathForInstances(null)).isEqualTo("/foo/bar");
     }
 
     @Test
