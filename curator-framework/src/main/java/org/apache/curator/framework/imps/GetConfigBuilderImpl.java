@@ -206,6 +206,11 @@ public class GetConfigBuilderImpl implements GetConfigBuilder, BackgroundOperati
     }
 
     @Override
+    public CuratorEventType getBackgroundEventType() {
+        return CuratorEventType.GET_CONFIG;
+    }
+
+    @Override
     public void performBackgroundOperation(final OperationAndData<Void> operationAndData) throws Exception
     {
         try

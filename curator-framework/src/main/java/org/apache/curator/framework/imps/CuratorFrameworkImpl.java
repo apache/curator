@@ -448,9 +448,9 @@ public class CuratorFrameworkImpl implements CuratorFramework
             {
                 ensembleTracker.close();
             }
-            Collection<OperationAndData<?>> droppedOperations = new ArrayList<>(backgroundOperations.size());
-            backgroundOperations.drainTo(droppedOperations);
-            droppedOperations.forEach(this::closeOperation);
+            OperationAndData<?>[] droppedOperations = backgroundOperations.toArray(new OperationAndData<?>[0]);
+            Arrays.stream(droppedOperations).forEach(this::closeOperation);
+            backgroundOperations.clear();
             listeners.clear();
             unhandledErrorListeners.clear();
             connectionStateManager.close();
@@ -715,11 +715,32 @@ public class CuratorFrameworkImpl implements CuratorFramework
         }
     }
 
+    private void abortOperation(OperationAndData<?> operation, Throwable e)
+    {
+        if (operation.getCallback() == null) {
+            return;
+        }
+        CuratorEvent event;
+        if (e instanceof KeeperException)
+        {
+            event = new CuratorEventImpl(this, operation.getEventType(), ((KeeperException) e).code().intValue(), ((KeeperException) e).getPath(), null, operation.getContext(), null, null, null, null, null, null);
+        }
+        else if (getState() == CuratorFrameworkState.STARTED)
+        {
+            event = new CuratorEventImpl(this, operation.getEventType(), KeeperException.Code.SYSTEMERROR.intValue(), null, null, operation.getContext(), null, null, null, null, null, null);
+        }
+        else
+        {
+            event = new CuratorEventImpl(this, operation.getEventType(), KeeperException.Code.SESSIONEXPIRED.intValue(), null, null, operation.getContext(), null, null, null, null, null, null);
+        }
+        sendToBackgroundCallback(operation, event);
+    }
+
     private void closeOperation(OperationAndData<?> operation) {
         if (operation.getCallback() == null) {
             return;
         }
-        CuratorEvent event = new CuratorEventImpl(this, CuratorEventType.CLOSING, KeeperException.Code.SESSIONEXPIRED.intValue(), null, null, operation.getContext(), null, null, null, null, null, null);
+        CuratorEvent event = new CuratorEventImpl(this, operation.getEventType(), KeeperException.Code.SESSIONEXPIRED.intValue(), null, null, operation.getContext(), null, null, null, null, null, null);
         sendToBackgroundCallback(operation, event);
     }
 
@@ -1015,6 +1036,11 @@ public class CuratorFrameworkImpl implements CuratorFramework
                 }
             }
 
+            if (operationAndData != null)
+            {
+                abortOperation(operationAndData, e);
+            }
+
             logError("Background exception was not retry-able or retry gave up", e);
         }
         while ( false );
@@ -1071,8 +1097,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
              * Fix edge case reported as CURATOR-52. Connection timeout is detected when the initial (or previously failed) connection
              * cannot be re-established. This needs to be run through the retry policy and callbacks need to get invoked, etc.
              */
-            WatchedEvent watchedEvent = new WatchedEvent(Watcher.Event.EventType.None, Watcher.Event.KeeperState.Disconnected, null);
-            CuratorEvent event = new CuratorEventImpl(this, CuratorEventType.WATCHED, KeeperException.Code.CONNECTIONLOSS.intValue(), null, null, operationAndData.getContext(), null, null, null, watchedEvent, null, null);
+            CuratorEvent event = new CuratorEventImpl(this, operationAndData.getEventType(), KeeperException.Code.CONNECTIONLOSS.intValue(), null, null, operationAndData.getContext(), null, null, null, null, null, null);
             if ( checkBackgroundRetry(operationAndData, event) )
             {
                 queueOperation(operationAndData);

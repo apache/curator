@@ -65,6 +65,11 @@ class FindAndDeleteProtectedNodeInBackground implements BackgroundOperation<Void
     static final AtomicBoolean debugInsertError = new AtomicBoolean(false);
 
     @Override
+    public CuratorEventType getBackgroundEventType() {
+        return CuratorEventType.CHILDREN;
+    }
+
+    @Override
     public void performBackgroundOperation(final OperationAndData<Void> operationAndData) throws Exception
     {
         final OperationTrace trace = client.getZookeeperClient().startAdvancedTracer("FindAndDeleteProtectedNodeInBackground");

@@ -97,6 +97,11 @@ public class SyncBuilderImpl implements SyncBuilder, BackgroundOperation<String>
     }
 
     @Override
+    public CuratorEventType getBackgroundEventType() {
+        return CuratorEventType.SYNC;
+    }
+
+    @Override
     public void performBackgroundOperation(final OperationAndData<String> operationAndData) throws Exception
     {
         try

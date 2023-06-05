@@ -267,8 +267,18 @@ public class SetDataBuilderImpl implements SetDataBuilder, BackgroundOperation<P
                     client.logError("Unexpected exception in async idempotent check for, ignoring: " + path, e);
                 }
             }
+
+            @Override
+            public CuratorEventType getBackgroundEventType() {
+                return CuratorEventType.SET_DATA;
+            }
         };
         client.queueOperation(new OperationAndData<>(operation, null, null, null, null, null));
+    }
+
+    @Override
+    public CuratorEventType getBackgroundEventType() {
+        return CuratorEventType.SET_DATA;
     }
 
     @Override

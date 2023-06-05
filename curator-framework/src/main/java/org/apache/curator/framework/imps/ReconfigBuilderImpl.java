@@ -250,6 +250,11 @@ public class ReconfigBuilderImpl implements ReconfigBuilder, BackgroundOperation
     }
 
     @Override
+    public CuratorEventType getBackgroundEventType() {
+        return CuratorEventType.RECONFIG;
+    }
+
+    @Override
     public void performBackgroundOperation(final OperationAndData<Void> data) throws Exception
     {
         try

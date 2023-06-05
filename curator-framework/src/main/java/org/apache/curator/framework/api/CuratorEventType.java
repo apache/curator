@@ -100,7 +100,7 @@ public enum CuratorEventType
     CLOSING,
 
     /**
-     * Corresponds to {@link CuratorFramework#watches()}
+     * Corresponds to {@link CuratorFramework#watchers()}
      */
     ADD_WATCH
 }

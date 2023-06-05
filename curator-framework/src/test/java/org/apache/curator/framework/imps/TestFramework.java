@@ -37,16 +37,30 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.RetrySleeper;
 import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.api.AddWatchBuilder;
 import org.apache.curator.framework.api.BackgroundCallback;
+import org.apache.curator.framework.api.CreateBuilder;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.CuratorListener;
+import org.apache.curator.framework.api.DeleteBuilder;
+import org.apache.curator.framework.api.ExistsBuilder;
+import org.apache.curator.framework.api.GetACLBuilder;
+import org.apache.curator.framework.api.GetChildrenBuilder;
+import org.apache.curator.framework.api.GetDataBuilder;
+import org.apache.curator.framework.api.RemoveWatchesBuilder;
+import org.apache.curator.framework.api.SetACLBuilder;
+import org.apache.curator.framework.api.SetDataBuilder;
+import org.apache.curator.framework.api.transaction.CuratorMultiTransaction;
+import org.apache.curator.framework.api.transaction.CuratorOp;
+import org.apache.curator.framework.api.transaction.TransactionOp;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryOneTime;
@@ -58,6 +72,7 @@ import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.curator.utils.ZookeeperFactory;
+import org.apache.zookeeper.AddWatchMode;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -958,7 +973,7 @@ public class TestFramework extends BaseClassForTests
 
         @Override
         public boolean allowRetry(Throwable exception) {
-            return true;
+            return exception instanceof KeeperException;
         }
 
         @Override
@@ -972,8 +987,43 @@ public class TestFramework extends BaseClassForTests
         }
     }
 
-    @Test
-    public void testBackgroundClosing() throws Exception
+    /**
+     * Block until curator fully stopped to test operations initiated before stopped but running after fully stopped.
+     */
+    private static class BlockUntilFullyStopped implements CuratorFrameworkImpl.DebugBackgroundListener {
+        private final CuratorFramework client;
+        private final BackgroundOperation<?> operation;
+        private final long maxRuns;
+        private long runs = 0;
+
+        public BlockUntilFullyStopped(CuratorFramework client, BackgroundOperation<?> operation, long maxRuns) {
+            this.client = client;
+            this.operation = operation;
+            this.maxRuns = maxRuns;
+        }
+
+        @Override
+        public void listen(OperationAndData<?> data) {
+            if (operation != data.getOperation()) {
+                return;
+            }
+            runs++;
+            if (runs > maxRuns) {
+                while (!(client.getState() == CuratorFrameworkState.STOPPED && !client.getZookeeperClient().isConnected())) {
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException ignored) {
+                    }
+                }
+            }
+        }
+    }
+
+    private interface BackgroundOperationFactory {
+        BackgroundOperation<?> create(CuratorFramework client, CompletableFuture<CuratorEvent> future) throws Exception;
+    }
+
+    private void testBackgroundOperationWithConcurrentCloseAndChaosStalls(BackgroundOperationFactory operationFactory, long maxRuns, long[] millisStalls) throws Exception
     {
         AlwaysRetry alwaysRetry = new AlwaysRetry(2);
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), alwaysRetry);
@@ -981,13 +1031,21 @@ public class TestFramework extends BaseClassForTests
         try {
             // given: error background request with always-retry policy
             CompletableFuture<CuratorEvent> future = new CompletableFuture<>();
-            client.delete().inBackground((ignored, event) -> future.complete(event)).forPath("/test");
+            BackgroundOperation<?> operation = operationFactory.create(client, future);
 
             // These chaos steps create chances to run into concurrent contentions.
             // They could fail this test given enough runs if there are bugs.
-            Thread.sleep(20);
-            restartServer();
-            Thread.sleep(5);
+            if (maxRuns > 0) {
+                ((CuratorFrameworkImpl) client).debugListener = new BlockUntilFullyStopped(client, operation, maxRuns);
+            }
+            for (long ms : millisStalls)
+            {
+                if (ms >= 0) {
+                    Thread.sleep(ms);
+                } else {
+                    restartServer();
+                }
+            }
 
             // when: close client while operation is queuing, retrying or awaking from sleep
             client.close();
@@ -995,10 +1053,116 @@ public class TestFramework extends BaseClassForTests
             // then: get closing event with session expired error
             CuratorEvent event = future.get(10, TimeUnit.SECONDS);
             assertThat(event.getResultCode()).isEqualTo(KeeperException.Code.SESSIONEXPIRED.intValue());
-            assertThat(event.getType()).isSameAs(CuratorEventType.CLOSING);
+            assertThat(event.getType()).isSameAs(operation.getBackgroundEventType());
+            assertThat(event.getContext()).isSameAs(future);
         } finally {
             CloseableUtils.closeQuietly(client);
         }
+    }
+
+    private void testBackgroundOperationWithConcurrentClose(BackgroundOperationFactory operationFactory) throws Exception {
+        testBackgroundOperationWithConcurrentCloseAndChaosStalls(operationFactory, -1, new long[]{20, -1, 5});
+        testBackgroundOperationWithConcurrentCloseAndChaosStalls(operationFactory, -1, new long[]{10});
+        testBackgroundOperationWithConcurrentCloseAndChaosStalls(operationFactory, 2, new long[]{20});
+    }
+
+    @Test
+    public void testBackgroundCreateWithConcurrentClose() throws Exception {
+        AtomicBoolean retry = new AtomicBoolean();
+        testBackgroundOperationWithConcurrentClose((client, future) -> {
+            if (retry.compareAndSet(false, true)) {
+                try {
+                    client.create().forPath("/exist-path");
+                } catch (KeeperException ex) {
+                    throw new IllegalStateException(ex);
+                }
+            }
+            CreateBuilder create = client.create();
+            create.inBackground((ignored, event) -> future.complete(event), future).forPath("/exist-path");
+            return (BackgroundOperation<?>) create;
+        });
+    }
+
+    @Test
+    public void testBackgroundDeleteWithConcurrentClose() throws Exception {
+        testBackgroundOperationWithConcurrentClose((client, future) -> {
+            DeleteBuilder delete= client.delete();
+            delete.inBackground((ignored, event) -> future.complete(event), future).forPath("/not-exist-path");
+            return (BackgroundOperation<?>) delete;
+        });
+    }
+
+    @Test
+    public void testBackgroundExistsWithConcurrentClose() throws Exception {
+        testBackgroundOperationWithConcurrentClose((client, future) -> {
+            ExistsBuilder exists = client.checkExists();
+            exists.inBackground((ignored, event) -> future.complete(event), future).forPath("/not-exist-path");
+            return (BackgroundOperation<?>) exists;
+        });
+    }
+
+    @Test
+    public void testBackgroundGetDataWithConcurrentClose() throws Exception {
+        testBackgroundOperationWithConcurrentClose((client, future) -> {
+            GetDataBuilder getData = client.getData();
+            getData.inBackground((ignored, event) -> future.complete(event), future).forPath("/not-exist-path");
+            return (BackgroundOperation<?>) getData;
+        });
+    }
+
+    @Test
+    public void testBackgroundSetDataWithConcurrentClose() throws Exception {
+        testBackgroundOperationWithConcurrentClose((client, future) -> {
+            SetDataBuilder setData = client.setData();
+            setData.inBackground((ignored, event) -> future.complete(event), future).forPath("/not-exist-path");
+            return (BackgroundOperation<?>) setData;
+        });
+    }
+
+    @Test
+    public void testBackgroundChildrenWithConcurrentClose() throws Exception {
+        testBackgroundOperationWithConcurrentClose((client, future) -> {
+            GetChildrenBuilder children = client.getChildren();
+            children.inBackground((ignored, event) -> future.complete(event), future).forPath("/not-exist-path");
+            return (BackgroundOperation<?>) children;
+        });
+    }
+
+    @Test
+    public void testBackgroundGetACLWithConcurrentClose() throws Exception {
+        testBackgroundOperationWithConcurrentClose((client, future) -> {
+            GetACLBuilder getACL = client.getACL();
+            getACL.inBackground((ignored, event) -> future.complete(event), future).forPath("/not-exist-path");
+            return (BackgroundOperation<?>) getACL;
+        });
+    }
+
+    @Test
+    public void testBackgroundSetACLWithConcurrentClose() throws Exception {
+        testBackgroundOperationWithConcurrentClose((client, future) -> {
+            SetACLBuilder setACL = client.setACL();
+            setACL.withACL(ZooDefs.Ids.OPEN_ACL_UNSAFE).inBackground((ignored, event) -> future.complete(event), future).forPath("/not-exist-path");
+            return (BackgroundOperation<?>) setACL;
+        });
+    }
+
+    @Test
+    public void testBackgroundTransactionWithConcurrentClose() throws Exception {
+        testBackgroundOperationWithConcurrentClose((client, future) -> {
+            CuratorOp delete = client.transactionOp().delete().forPath("/not-exist-path");
+            CuratorMultiTransaction transaction = client.transaction();
+            transaction.inBackground((ignored, event) -> future.complete(event), future).forOperations(delete);
+            return (BackgroundOperation<?>) transaction;
+        });
+    }
+
+    @Test
+    public void testBackgroundRemoveWatchesWithConcurrentClose() throws Exception {
+        testBackgroundOperationWithConcurrentClose((client, future) -> {
+            RemoveWatchesBuilderImpl removeWatches = (RemoveWatchesBuilderImpl) client.watches().removeAll();
+            removeWatches.inBackground((ignored, event) -> future.complete(event), future).forPath("/not-exist-path");
+            return removeWatches;
+        });
     }
 
     @Test

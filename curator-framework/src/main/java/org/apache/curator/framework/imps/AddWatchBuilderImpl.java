@@ -132,6 +132,11 @@ public class AddWatchBuilderImpl implements AddWatchBuilder, Pathable<Void>, Bac
     }
 
     @Override
+    public CuratorEventType getBackgroundEventType() {
+        return CuratorEventType.ADD_WATCH;
+    }
+
+    @Override
     public void performBackgroundOperation(final OperationAndData<String> data) throws Exception
     {
         String path = data.getData();

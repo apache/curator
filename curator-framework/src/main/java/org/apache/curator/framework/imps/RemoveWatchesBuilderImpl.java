@@ -316,6 +316,11 @@ public class RemoveWatchesBuilderImpl implements RemoveWatchesBuilder, RemoveWat
     }
 
     @Override
+    public CuratorEventType getBackgroundEventType() {
+        return CuratorEventType.REMOVE_WATCHES;
+    }
+
+    @Override
     public void performBackgroundOperation(final OperationAndData<String> operationAndData)
             throws Exception
     {

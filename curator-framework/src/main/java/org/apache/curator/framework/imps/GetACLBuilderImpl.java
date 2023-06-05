@@ -112,6 +112,11 @@ public class GetACLBuilderImpl implements GetACLBuilder, BackgroundOperation<Str
     }
 
     @Override
+    public CuratorEventType getBackgroundEventType() {
+        return CuratorEventType.GET_ACL;
+    }
+
+    @Override
     public void performBackgroundOperation(final OperationAndData<String> operationAndData) throws Exception
     {
         try

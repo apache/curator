@@ -140,6 +140,11 @@ public class SetACLBuilderImpl implements SetACLBuilder, BackgroundPathable<Stat
     }
 
     @Override
+    public CuratorEventType getBackgroundEventType() {
+        return CuratorEventType.SET_ACL;
+    }
+
+    @Override
     public void performBackgroundOperation(final OperationAndData<String> operationAndData) throws Exception
     {
         try

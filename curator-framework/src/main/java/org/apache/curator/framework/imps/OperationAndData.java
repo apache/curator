@@ -22,6 +22,8 @@ package org.apache.curator.framework.imps;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.curator.RetrySleeper;
 import org.apache.curator.framework.api.BackgroundCallback;
+import org.apache.curator.framework.api.CuratorEventType;
+
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -113,6 +115,10 @@ class OperationAndData<T> implements Delayed, RetrySleeper
     BackgroundOperation<T> getOperation()
     {
         return operation;
+    }
+
+    CuratorEventType getEventType() {
+        return operation.getBackgroundEventType();
     }
 
     void clearSleep()

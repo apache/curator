@@ -168,6 +168,11 @@ public class GetChildrenBuilderImpl implements GetChildrenBuilder, BackgroundOpe
     }
 
     @Override
+    public CuratorEventType getBackgroundEventType() {
+        return CuratorEventType.CHILDREN;
+    }
+
+    @Override
     public void performBackgroundOperation(final OperationAndData<String> operationAndData) throws Exception
     {
         try

@@ -151,6 +151,11 @@ public class ExistsBuilderImpl implements ExistsBuilder, BackgroundOperation<Str
     }
 
     @Override
+    public CuratorEventType getBackgroundEventType() {
+        return CuratorEventType.EXISTS;
+    }
+
+    @Override
     public void performBackgroundOperation(final OperationAndData<String> operationAndData) throws Exception
     {
         try
