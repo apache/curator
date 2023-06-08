@@ -183,6 +183,11 @@ public class GetConfigBuilderImpl
     }
 
     @Override
+    public CuratorEventType getBackgroundEventType() {
+        return CuratorEventType.GET_CONFIG;
+    }
+
+    @Override
     public void performBackgroundOperation(final OperationAndData<Void> operationAndData) throws Exception {
         try {
             final TimeTrace trace = client.getZookeeperClient().startTracer("GetDataBuilderImpl-Background");

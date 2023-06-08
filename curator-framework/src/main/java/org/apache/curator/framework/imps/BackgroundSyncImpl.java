@@ -33,6 +33,11 @@ class BackgroundSyncImpl implements BackgroundOperation<String> {
     }
 
     @Override
+    public CuratorEventType getBackgroundEventType() {
+        return CuratorEventType.SYNC;
+    }
+
+    @Override
     public void performBackgroundOperation(final OperationAndData<String> operationAndData) throws Exception {
         final OperationTrace trace = client.getZookeeperClient().startAdvancedTracer("BackgroundSyncImpl");
         final String data = operationAndData.getData();

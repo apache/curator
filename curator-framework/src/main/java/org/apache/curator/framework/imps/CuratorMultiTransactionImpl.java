@@ -152,6 +152,11 @@ public class CuratorMultiTransactionImpl
     }
 
     @Override
+    public CuratorEventType getBackgroundEventType() {
+        return CuratorEventType.TRANSACTION;
+    }
+
+    @Override
     public void performBackgroundOperation(final OperationAndData<CuratorMultiTransactionRecord> operationAndData)
             throws Exception {
         try {

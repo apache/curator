@@ -226,6 +226,11 @@ public class ReconfigBuilderImpl
     }
 
     @Override
+    public CuratorEventType getBackgroundEventType() {
+        return CuratorEventType.RECONFIG;
+    }
+
+    @Override
     public void performBackgroundOperation(final OperationAndData<Void> data) throws Exception {
         try {
             final TimeTrace trace = client.getZookeeperClient().startTracer("ReconfigBuilderImpl-Background");

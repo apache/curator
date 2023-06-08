@@ -214,6 +214,11 @@ public class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<S
     }
 
     @Override
+    public CuratorEventType getBackgroundEventType() {
+        return CuratorEventType.GET_DATA;
+    }
+
+    @Override
     public void performBackgroundOperation(final OperationAndData<String> operationAndData) throws Exception {
         try {
             final OperationTrace trace =

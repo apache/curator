@@ -118,6 +118,12 @@ public class BaseClassForTests {
         }
     }
 
+    protected void restartServer() throws Exception {
+        if (server != null) {
+            server.restart();
+        }
+    }
+
     @AfterEach
     public void teardown() throws Exception {
         System.clearProperty(INTERNAL_PROPERTY_VALIDATE_NAMESPACE_WATCHER_MAP_EMPTY);

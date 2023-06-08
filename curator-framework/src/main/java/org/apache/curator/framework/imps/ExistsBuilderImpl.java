@@ -140,6 +140,11 @@ public class ExistsBuilderImpl
     }
 
     @Override
+    public CuratorEventType getBackgroundEventType() {
+        return CuratorEventType.EXISTS;
+    }
+
+    @Override
     public void performBackgroundOperation(final OperationAndData<String> operationAndData) throws Exception {
         try {
             final OperationTrace trace =

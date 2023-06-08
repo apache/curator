@@ -580,6 +580,11 @@ public class CreateBuilderImpl
     }
 
     @Override
+    public CuratorEventType getBackgroundEventType() {
+        return CuratorEventType.CREATE;
+    }
+
+    @Override
     public void performBackgroundOperation(final OperationAndData<PathAndBytes> operationAndData) throws Exception {
         try {
             final OperationTrace trace =
@@ -739,6 +744,11 @@ public class CreateBuilderImpl
                 }
                 client.queueOperation(mainOperationAndData);
             }
+
+            @Override
+            public CuratorEventType getBackgroundEventType() {
+                return CuratorEventType.CREATE;
+            }
         };
         OperationAndData<T> parentOperation = new OperationAndData<>(
                 operation, mainOperationAndData.getData(), null, null, backgrounding.getContext(), null);
@@ -774,6 +784,11 @@ public class CreateBuilderImpl
                 } catch (KeeperException e) {
                     // ignore
                 }
+            }
+
+            @Override
+            public CuratorEventType getBackgroundEventType() {
+                return CuratorEventType.CREATE;
             }
         };
         client.queueOperation(new OperationAndData<>(operation, null, null, null, null, null));
@@ -812,6 +827,11 @@ public class CreateBuilderImpl
                     // ignore
                     client.logError("Unexpected exception in async idempotent check for, ignoring: " + path, e);
                 }
+            }
+
+            @Override
+            public CuratorEventType getBackgroundEventType() {
+                return CuratorEventType.CREATE;
             }
         };
         client.queueOperation(new OperationAndData<>(operation, null, null, null, null, null));

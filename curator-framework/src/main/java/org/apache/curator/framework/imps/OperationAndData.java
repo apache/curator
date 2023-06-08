@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.curator.RetrySleeper;
 import org.apache.curator.framework.api.BackgroundCallback;
+import org.apache.curator.framework.api.CuratorEventType;
 
 class OperationAndData<T> implements Delayed, RetrySleeper {
     private static final AtomicLong nextOrdinal = new AtomicLong();
@@ -111,6 +112,10 @@ class OperationAndData<T> implements Delayed, RetrySleeper {
     @VisibleForTesting
     BackgroundOperation<T> getOperation() {
         return operation;
+    }
+
+    CuratorEventType getEventType() {
+        return operation.getBackgroundEventType();
     }
 
     void clearSleep() {

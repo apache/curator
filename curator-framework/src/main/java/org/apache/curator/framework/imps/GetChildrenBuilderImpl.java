@@ -152,6 +152,11 @@ public class GetChildrenBuilderImpl
     }
 
     @Override
+    public CuratorEventType getBackgroundEventType() {
+        return CuratorEventType.CHILDREN;
+    }
+
+    @Override
     public void performBackgroundOperation(final OperationAndData<String> operationAndData) throws Exception {
         try {
             final OperationTrace trace =

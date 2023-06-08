@@ -135,6 +135,8 @@ public class CuratorFrameworkImpl implements CuratorFramework {
 
     private final AtomicReference<CuratorFrameworkState> state;
 
+    private final Object closeLock = new Object();
+
     public CuratorFrameworkImpl(CuratorFrameworkFactory.Builder builder) {
         ZookeeperFactory localZookeeperFactory =
                 makeZookeeperFactory(builder.getZookeeperFactory(), builder.getZkClientConfig());
@@ -376,10 +378,24 @@ public class CuratorFrameworkImpl implements CuratorFramework {
         }
     }
 
+    /**
+     * Change state from {@link CuratorFrameworkState#STARTED} to {@link CuratorFrameworkState#STOPPED}
+     * in {@link #closeLock}.
+     *
+     * <p>This gives us synchronized view of {@link #state} and other components in closing.</p>
+     *
+     * @return true if state changed by this call
+     */
+    private boolean closeWithLock() {
+        synchronized (closeLock) {
+            return state.compareAndSet(CuratorFrameworkState.STARTED, CuratorFrameworkState.STOPPED);
+        }
+    }
+
     @Override
     public void close() {
         log.debug("Closing");
-        if (state.compareAndSet(CuratorFrameworkState.STARTED, CuratorFrameworkState.STOPPED)) {
+        if (closeWithLock()) {
             listeners.forEach(listener -> {
                 CuratorEvent event = new CuratorEventImpl(
                         CuratorFrameworkImpl.this,
@@ -415,6 +431,9 @@ public class CuratorFrameworkImpl implements CuratorFramework {
             if (ensembleTracker != null) {
                 ensembleTracker.close();
             }
+            OperationAndData<?>[] droppedOperations = backgroundOperations.toArray(new OperationAndData<?>[0]);
+            backgroundOperations.clear();
+            Arrays.stream(droppedOperations).forEach(this::closeOperation);
             listeners.clear();
             unhandledErrorListeners.clear();
             connectionStateManager.close();
@@ -644,15 +663,103 @@ public class CuratorFrameworkImpl implements CuratorFramework {
         }
     }
 
+    private void abortOperation(OperationAndData<?> operation, Throwable e) {
+        if (operation.getCallback() == null) {
+            return;
+        }
+        CuratorEvent event;
+        if (e instanceof KeeperException) {
+            event = new CuratorEventImpl(
+                    this,
+                    operation.getEventType(),
+                    ((KeeperException) e).code().intValue(),
+                    ((KeeperException) e).getPath(),
+                    null,
+                    operation.getContext(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null);
+        } else if (getState() == CuratorFrameworkState.STARTED) {
+            event = new CuratorEventImpl(
+                    this,
+                    operation.getEventType(),
+                    KeeperException.Code.SYSTEMERROR.intValue(),
+                    null,
+                    null,
+                    operation.getContext(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null);
+        } else {
+            event = new CuratorEventImpl(
+                    this,
+                    operation.getEventType(),
+                    KeeperException.Code.SESSIONEXPIRED.intValue(),
+                    null,
+                    null,
+                    operation.getContext(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null);
+        }
+        sendToBackgroundCallback(operation, event);
+    }
+
+    private void closeOperation(OperationAndData<?> operation) {
+        if (operation.getCallback() == null) {
+            return;
+        }
+        CuratorEvent event = new CuratorEventImpl(
+                this,
+                operation.getEventType(),
+                KeeperException.Code.SESSIONEXPIRED.intValue(),
+                null,
+                null,
+                operation.getContext(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
+        sendToBackgroundCallback(operation, event);
+    }
+
+    private void requeueSleepOperation(OperationAndData<?> operationAndData) {
+        operationAndData.clearSleep();
+        synchronized (closeLock) {
+            if (getState() == CuratorFrameworkState.STARTED) {
+                if (backgroundOperations.remove(operationAndData)) {
+                    // due to the internals of DelayQueue, operation must be removed/re-added so that re-sorting occurs
+                    backgroundOperations.offer(operationAndData);
+                } // This operation has been taken over by background thread.
+                return;
+            }
+        }
+        closeOperation(operationAndData);
+    }
+
     /**
      * @param operationAndData operation entry
      * @return true if the operation was actually queued, false if not
      */
     <DATA_TYPE> boolean queueOperation(OperationAndData<DATA_TYPE> operationAndData) {
-        if (getState() == CuratorFrameworkState.STARTED) {
-            backgroundOperations.offer(operationAndData);
-            return true;
+        synchronized (closeLock) {
+            if (getState() == CuratorFrameworkState.STARTED) {
+                backgroundOperations.offer(operationAndData);
+                return true;
+            }
         }
+        closeOperation(operationAndData);
         return false;
     }
 
@@ -831,7 +938,8 @@ public class CuratorFrameworkImpl implements CuratorFramework {
             operationAndData.getCallback().processResult(this, event);
         } catch (Exception e) {
             ThreadUtils.checkInterrupted(e);
-            handleBackgroundOperationException(operationAndData, e);
+            // This operation is already completed, and we don't retry a completed operation.
+            handleBackgroundOperationException(null, e);
         }
     }
 
@@ -851,7 +959,7 @@ public class CuratorFrameworkImpl implements CuratorFramework {
                     if (!Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES)) {
                         log.debug("Retrying operation");
                     }
-                    backgroundOperations.offer(operationAndData);
+                    queueOperation(operationAndData);
                     break;
                 } else {
                     if (!Boolean.getBoolean(DebugUtils.PROPERTY_DONT_LOG_CONNECTION_ISSUES)) {
@@ -861,6 +969,10 @@ public class CuratorFrameworkImpl implements CuratorFramework {
                         operationAndData.getErrorCallback().retriesExhausted(operationAndData);
                     }
                 }
+            }
+
+            if (operationAndData != null) {
+                abortOperation(operationAndData, e);
             }
 
             logError("Background exception was not retry-able or retry gave up", e);
@@ -905,11 +1017,9 @@ public class CuratorFrameworkImpl implements CuratorFramework {
              * Fix edge case reported as CURATOR-52. Connection timeout is detected when the initial (or previously failed) connection
              * cannot be re-established. This needs to be run through the retry policy and callbacks need to get invoked, etc.
              */
-            WatchedEvent watchedEvent =
-                    new WatchedEvent(Watcher.Event.EventType.None, Watcher.Event.KeeperState.Disconnected, null);
             CuratorEvent event = new CuratorEventImpl(
                     this,
-                    CuratorEventType.WATCHED,
+                    operationAndData.getEventType(),
                     KeeperException.Code.CONNECTIONLOSS.intValue(),
                     null,
                     null,
@@ -917,7 +1027,7 @@ public class CuratorFrameworkImpl implements CuratorFramework {
                     null,
                     null,
                     null,
-                    watchedEvent,
+                    null,
                     null,
                     null);
             if (checkBackgroundRetry(operationAndData, event)) {
@@ -945,15 +1055,7 @@ public class CuratorFrameworkImpl implements CuratorFramework {
         Collection<OperationAndData<?>> drain = new ArrayList<>(forcedSleepOperations.size());
         forcedSleepOperations.drainTo(drain);
         log.debug("Clearing sleep for {} operations", drain.size());
-        for (OperationAndData<?> operation : drain) {
-            operation.clearSleep();
-            if (backgroundOperations.remove(
-                    operation)) // due to the internals of DelayQueue, operation must be removed/re-added so that
-            // re-sorting occurs
-            {
-                backgroundOperations.offer(operation);
-            }
-        }
+        drain.forEach(this::requeueSleepOperation);
     }
 
     private void processEvent(final CuratorEvent curatorEvent) {

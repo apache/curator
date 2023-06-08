@@ -19,6 +19,15 @@
 
 package org.apache.curator.framework.imps;
 
+import org.apache.curator.framework.api.CuratorEventType;
+
 interface BackgroundOperation<T> {
     public void performBackgroundOperation(OperationAndData<T> data) throws Exception;
+
+    /**
+     * Most events are delivered by operations themselves, so they know their event types.
+     * But in occasional cases(says, closing or background exception), events are delivered
+     * by curator framework.
+     */
+    CuratorEventType getBackgroundEventType();
 }

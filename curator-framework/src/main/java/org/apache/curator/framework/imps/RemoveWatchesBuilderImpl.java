@@ -276,6 +276,11 @@ public class RemoveWatchesBuilderImpl
     }
 
     @Override
+    public CuratorEventType getBackgroundEventType() {
+        return CuratorEventType.REMOVE_WATCHES;
+    }
+
+    @Override
     public void performBackgroundOperation(final OperationAndData<String> operationAndData) throws Exception {
         try {
             final TimeTrace trace = client.getZookeeperClient().startTracer("RemoteWatches-Background");

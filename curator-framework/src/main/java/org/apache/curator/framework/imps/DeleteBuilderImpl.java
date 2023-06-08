@@ -162,6 +162,11 @@ public class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<Str
     }
 
     @Override
+    public CuratorEventType getBackgroundEventType() {
+        return CuratorEventType.DELETE;
+    }
+
+    @Override
     public void performBackgroundOperation(final OperationAndData<String> operationAndData) throws Exception {
         try {
             final OperationTrace trace =
@@ -218,6 +223,11 @@ public class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<Str
                     // ignore
                 }
                 client.queueOperation(mainOperationAndData);
+            }
+
+            @Override
+            public CuratorEventType getBackgroundEventType() {
+                return CuratorEventType.DELETE;
             }
         };
         OperationAndData<String> parentOperation = new OperationAndData<String>(
