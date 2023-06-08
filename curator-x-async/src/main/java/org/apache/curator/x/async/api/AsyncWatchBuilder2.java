@@ -22,8 +22,5 @@ package org.apache.curator.x.async.api;
 import org.apache.curator.framework.api.WatchableBase;
 import org.apache.curator.x.async.AsyncStage;
 
-public interface AsyncWatchBuilder2 extends
-    WatchableBase<AsyncPathable<AsyncStage<Void>>>,
-    AsyncPathable<AsyncStage<Void>>
-{
-}
+public interface AsyncWatchBuilder2
+        extends WatchableBase<AsyncPathable<AsyncStage<Void>>>, AsyncPathable<AsyncStage<Void>> {}

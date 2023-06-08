@@ -19,8 +19,4 @@
 
 package org.apache.curator.framework.api;
 
-public interface WatchPathable<T> extends
-    Watchable<Pathable<T>>,
-    Pathable<T>
-{
-}
+public interface WatchPathable<T> extends Watchable<Pathable<T>>, Pathable<T> {}

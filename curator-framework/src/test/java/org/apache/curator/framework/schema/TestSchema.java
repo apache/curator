@@ -28,6 +28,9 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Maps;
 import com.google.common.io.Resources;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.transaction.CuratorOp;
@@ -38,15 +41,9 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.ACL;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-
-public class TestSchema extends BaseClassForTests
-{
+public class TestSchema extends BaseClassForTests {
     @Test
-    public void testBasics() throws Exception
-    {
+    public void testBasics() throws Exception {
         SchemaSet schemaSet = loadSchemaSet("schema1.json", null);
         Schema schema = schemaSet.getNamedSchema("test");
         assertNotNull(schema);
@@ -56,193 +53,154 @@ public class TestSchema extends BaseClassForTests
         assertEquals(schema.getMetadata(), expectedMetadata);
 
         CuratorFramework client = newClient(schemaSet);
-        try
-        {
+        try {
             client.start();
 
-            try
-            {
+            try {
                 String rawPath = schema.getRawPath();
                 assertEquals(rawPath, "/a/b/c");
                 client.create().creatingParentsIfNeeded().forPath(rawPath);
                 fail("Should've violated schema");
-            }
-            catch ( SchemaViolation dummy )
-            {
+            } catch (SchemaViolation dummy) {
                 // expected
             }
 
-            client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath("/a/b/c");
-        }
-        finally
-        {
+            client.create()
+                    .creatingParentsIfNeeded()
+                    .withMode(CreateMode.EPHEMERAL)
+                    .forPath("/a/b/c");
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
 
     @Test
-    public void testSchemaValidator() throws Exception
-    {
-        final SchemaValidator schemaValidator = new SchemaValidator()
-        {
+    public void testSchemaValidator() throws Exception {
+        final SchemaValidator schemaValidator = new SchemaValidator() {
             @Override
-            public boolean isValid(Schema schema, String path, byte[] data, List<ACL> acl)
-            {
+            public boolean isValid(Schema schema, String path, byte[] data, List<ACL> acl) {
                 return data.length > 0;
             }
         };
-        SchemaSetLoader.SchemaValidatorMapper schemaValidatorMapper = new SchemaSetLoader.SchemaValidatorMapper()
-        {
+        SchemaSetLoader.SchemaValidatorMapper schemaValidatorMapper = new SchemaSetLoader.SchemaValidatorMapper() {
             @Override
-            public SchemaValidator getSchemaValidator(String name)
-            {
+            public SchemaValidator getSchemaValidator(String name) {
                 return schemaValidator;
             }
         };
         SchemaSet schemaSet = loadSchemaSet("schema3.json", schemaValidatorMapper);
         CuratorFramework client = newClient(schemaSet);
-        try
-        {
+        try {
             client.start();
 
-            try
-            {
+            try {
                 client.create().forPath("/test", new byte[0]);
                 fail("Should've violated schema");
-            }
-            catch ( SchemaViolation dummy )
-            {
+            } catch (SchemaViolation dummy) {
                 // expected
             }
 
             client.create().forPath("/test", "good".getBytes());
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
 
     @Test
-    public void testMulti() throws Exception
-    {
+    public void testMulti() throws Exception {
         SchemaSet schemaSet = loadSchemaSet("schema2.json", null);
         CuratorFramework client = newClient(schemaSet);
-        try
-        {
+        try {
             client.start();
 
-            try
-            {
+            try {
                 client.create().creatingParentsIfNeeded().forPath("/a/b/c");
                 fail("Should've violated schema: test");
-            }
-            catch ( SchemaViolation dummy )
-            {
+            } catch (SchemaViolation dummy) {
                 // expected
             }
 
-            try
-            {
-                client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath("/a/b/c/d/e");
+            try {
+                client.create()
+                        .creatingParentsIfNeeded()
+                        .withMode(CreateMode.EPHEMERAL)
+                        .forPath("/a/b/c/d/e");
                 fail("Should've violated schema: test2");
-            }
-            catch ( SchemaViolation dummy )
-            {
+            } catch (SchemaViolation dummy) {
                 // expected
             }
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
 
     @Test
-    public void testTransaction() throws Exception
-    {
-        final SchemaValidator schemaValidator = new SchemaValidator()
-        {
+    public void testTransaction() throws Exception {
+        final SchemaValidator schemaValidator = new SchemaValidator() {
             @Override
-            public boolean isValid(Schema schema, String path, byte[] data, List<ACL> acl)
-            {
+            public boolean isValid(Schema schema, String path, byte[] data, List<ACL> acl) {
                 return data.length > 0;
             }
         };
-        SchemaSetLoader.SchemaValidatorMapper schemaValidatorMapper = new SchemaSetLoader.SchemaValidatorMapper()
-        {
+        SchemaSetLoader.SchemaValidatorMapper schemaValidatorMapper = new SchemaSetLoader.SchemaValidatorMapper() {
             @Override
-            public SchemaValidator getSchemaValidator(String name)
-            {
+            public SchemaValidator getSchemaValidator(String name) {
                 return schemaValidator;
             }
         };
         SchemaSet schemaSet = loadSchemaSet("schema4.json", schemaValidatorMapper);
         CuratorFramework client = newClient(schemaSet);
-        try
-        {
+        try {
             client.start();
 
             CuratorOp createAPersistent = client.transactionOp().create().forPath("/a");
-            CuratorOp createAEphemeral = client.transactionOp().create().withMode(CreateMode.EPHEMERAL).forPath("/a");
+            CuratorOp createAEphemeral = client.transactionOp()
+                    .create()
+                    .withMode(CreateMode.EPHEMERAL)
+                    .forPath("/a");
             CuratorOp deleteA = client.transactionOp().delete().forPath("/a");
             CuratorOp createBEmptyData = client.transactionOp().create().forPath("/b", new byte[0]);
             CuratorOp createBWithData = client.transactionOp().create().forPath("/b", new byte[10]);
             CuratorOp setBEmptyData = client.transactionOp().setData().forPath("/b", new byte[0]);
             CuratorOp setBWithData = client.transactionOp().setData().forPath("/b", new byte[10]);
 
-            try
-            {
+            try {
                 client.transaction().forOperations(createAPersistent, createAEphemeral);
                 fail("Should've violated schema");
-            }
-            catch ( SchemaViolation dummy )
-            {
+            } catch (SchemaViolation dummy) {
                 // expected
             }
             client.transaction().forOperations(createAEphemeral);
 
-            try
-            {
+            try {
                 client.transaction().forOperations(deleteA);
                 fail("Should've violated schema");
-            }
-            catch ( SchemaViolation dummy )
-            {
+            } catch (SchemaViolation dummy) {
                 // expected
             }
 
-            try
-            {
+            try {
                 client.transaction().forOperations(createBEmptyData);
                 fail("Should've violated schema");
-            }
-            catch ( SchemaViolation dummy )
-            {
+            } catch (SchemaViolation dummy) {
                 // expected
             }
             client.transaction().forOperations(createBWithData);
 
-            try
-            {
+            try {
                 client.transaction().forOperations(setBEmptyData);
                 fail("Should've violated schema");
-            }
-            catch ( SchemaViolation dummy )
-            {
+            } catch (SchemaViolation dummy) {
                 // expected
             }
             client.transaction().forOperations(setBWithData);
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
 
     @Test
-    public void testYaml() throws Exception
-    {
+    public void testYaml() throws Exception {
         String yaml = Resources.toString(Resources.getResource("schema.yaml"), Charsets.UTF_8);
         JsonNode root = new ObjectMapper(new YAMLFactory()).readTree(yaml);
         List<Schema> schemas = new SchemaSetLoader(root, null).getSchemas();
@@ -255,65 +213,69 @@ public class TestSchema extends BaseClassForTests
     }
 
     @Test
-    public void testOrdering() throws Exception
-    {
+    public void testOrdering() throws Exception {
         SchemaSet schemaSet = loadSchemaSet("schema5.json", null);
         CuratorFramework client = newClient(schemaSet);
-        try
-        {
+        try {
             client.start();
 
-            try
-            {
-                client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath("/exact/match");
+            try {
+                client.create()
+                        .creatingParentsIfNeeded()
+                        .withMode(CreateMode.EPHEMERAL)
+                        .forPath("/exact/match");
                 fail("Should've violated schema");
-            }
-            catch ( SchemaViolation dummy )
-            {
+            } catch (SchemaViolation dummy) {
                 // expected
             }
 
-            try
-            {
-                client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath("/exact/foo/bar");
+            try {
+                client.create()
+                        .creatingParentsIfNeeded()
+                        .withMode(CreateMode.EPHEMERAL_SEQUENTIAL)
+                        .forPath("/exact/foo/bar");
                 fail("Should've violated schema");
-            }
-            catch ( SchemaViolation dummy )
-            {
+            } catch (SchemaViolation dummy) {
                 // expected
             }
 
-            try
-            {
-                client.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT_SEQUENTIAL).forPath("/exact/other/bar");
+            try {
+                client.create()
+                        .creatingParentsIfNeeded()
+                        .withMode(CreateMode.PERSISTENT_SEQUENTIAL)
+                        .forPath("/exact/other/bar");
                 fail("Should've violated schema");
-            }
-            catch ( SchemaViolation dummy )
-            {
+            } catch (SchemaViolation dummy) {
                 // expected
             }
 
-            client.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT_SEQUENTIAL).forPath("/exact/match");   // schema "1"
-            client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath("/exact/other/thing");   // schema "2"
-            client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath("/exact/foo/bar");   // schema "3"
-        }
-        finally
-        {
+            client.create()
+                    .creatingParentsIfNeeded()
+                    .withMode(CreateMode.PERSISTENT_SEQUENTIAL)
+                    .forPath("/exact/match"); // schema "1"
+            client.create()
+                    .creatingParentsIfNeeded()
+                    .withMode(CreateMode.EPHEMERAL_SEQUENTIAL)
+                    .forPath("/exact/other/thing"); // schema "2"
+            client.create()
+                    .creatingParentsIfNeeded()
+                    .withMode(CreateMode.EPHEMERAL)
+                    .forPath("/exact/foo/bar"); // schema "3"
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
 
-    private CuratorFramework newClient(SchemaSet schemaSet)
-    {
+    private CuratorFramework newClient(SchemaSet schemaSet) {
         return CuratorFrameworkFactory.builder()
-            .connectString(server.getConnectString())
-            .retryPolicy(new RetryOneTime(1))
-            .schemaSet(schemaSet)
-            .build();
+                .connectString(server.getConnectString())
+                .retryPolicy(new RetryOneTime(1))
+                .schemaSet(schemaSet)
+                .build();
     }
 
-    private SchemaSet loadSchemaSet(String name, SchemaSetLoader.SchemaValidatorMapper schemaValidatorMapper) throws IOException
-    {
+    private SchemaSet loadSchemaSet(String name, SchemaSetLoader.SchemaValidatorMapper schemaValidatorMapper)
+            throws IOException {
         String json = Resources.toString(Resources.getResource(name), Charsets.UTF_8);
         return new SchemaSetLoader(json, schemaValidatorMapper).toSchemaSet(true);
     }

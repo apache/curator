@@ -23,8 +23,7 @@ package org.apache.curator.x.async.api;
  * Builds operations that can be committed as a transaction
  * via {@link org.apache.curator.x.async.AsyncCuratorFramework#transaction()}
  */
-public interface AsyncTransactionOp
-{
+public interface AsyncTransactionOp {
     /**
      * Start a create builder in the transaction
      *

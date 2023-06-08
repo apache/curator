@@ -31,8 +31,7 @@ import org.apache.zookeeper.data.ACL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ZKPaths
-{
+public class ZKPaths {
     /**
      * Zookeeper's path separator character.
      */
@@ -45,8 +44,7 @@ public class ZKPaths
     /**
      * @return {@link CreateMode#CONTAINER} if the ZK JAR supports it. Otherwise {@link CreateMode#PERSISTENT}
      */
-    public static CreateMode getContainerCreateMode()
-    {
+    public static CreateMode getContainerCreateMode() {
         return CreateModeHolder.containerCreateMode;
     }
 
@@ -55,27 +53,22 @@ public class ZKPaths
      *
      * @return true/false
      */
-    public static boolean hasContainerSupport()
-    {
+    public static boolean hasContainerSupport() {
         return getContainerCreateMode() != NON_CONTAINER_MODE;
     }
 
-    private static class CreateModeHolder
-    {
+    private static class CreateModeHolder {
         private static final Logger log = LoggerFactory.getLogger(ZKPaths.class);
         private static final CreateMode containerCreateMode;
 
-        static
-        {
+        static {
             CreateMode localCreateMode;
-            try
-            {
+            try {
                 localCreateMode = CreateMode.valueOf("CONTAINER");
-            }
-            catch ( IllegalArgumentException ignore )
-            {
+            } catch (IllegalArgumentException ignore) {
                 localCreateMode = NON_CONTAINER_MODE;
-                log.warn("The version of ZooKeeper being used doesn't support Container nodes. CreateMode.PERSISTENT will be used instead.");
+                log.warn(
+                        "The version of ZooKeeper being used doesn't support Container nodes. CreateMode.PERSISTENT will be used instead.");
             }
             containerCreateMode = localCreateMode;
         }
@@ -88,8 +81,7 @@ public class ZKPaths
      * @param path      path
      * @return adjusted path
      */
-    public static String fixForNamespace(String namespace, String path)
-    {
+    public static String fixForNamespace(String namespace, String path) {
         return fixForNamespace(namespace, path, false);
     }
 
@@ -101,13 +93,11 @@ public class ZKPaths
      * @param isSequential if the path is being created with a sequential flag
      * @return adjusted path
      */
-    public static String fixForNamespace(String namespace, String path, boolean isSequential)
-    {
+    public static String fixForNamespace(String namespace, String path, boolean isSequential) {
         // Child path must be valid in and of itself.
         PathUtils.validatePath(path, isSequential);
 
-        if ( namespace != null )
-        {
+        if (namespace != null) {
             return makePath(namespace, path);
         }
         return path;
@@ -119,45 +109,37 @@ public class ZKPaths
      * @param path the path
      * @return the node
      */
-    public static String getNodeFromPath(String path)
-    {
+    public static String getNodeFromPath(String path) {
         PathUtils.validatePath(path);
         int i = path.lastIndexOf(PATH_SEPARATOR_CHAR);
-        if ( i < 0 )
-        {
+        if (i < 0) {
             return path;
         }
-        if ( (i + 1) >= path.length() )
-        {
+        if ((i + 1) >= path.length()) {
             return "";
         }
         return path.substring(i + 1);
     }
 
-    public static class PathAndNode
-    {
+    public static class PathAndNode {
         private final String path;
         private final String node;
 
-        public PathAndNode(String path, String node)
-        {
+        public PathAndNode(String path, String node) {
             this.path = path;
             this.node = node;
         }
 
-        public String getPath()
-        {
+        public String getPath() {
             return path;
         }
 
-        public String getNode()
-        {
+        public String getNode() {
             return node;
         }
 
         @Override
-        public int hashCode()
-        {
+        public int hashCode() {
             final int prime = 31;
             int result = 1;
             result = prime * result + node.hashCode();
@@ -166,35 +148,28 @@ public class ZKPaths
         }
 
         @Override
-        public boolean equals(Object obj)
-        {
-            if (this == obj)
-            {
-              return true;
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
             }
-            if (obj == null)
-            {
-              return false;
+            if (obj == null) {
+                return false;
             }
-            if (getClass() != obj.getClass())
-            {
-              return false;
+            if (getClass() != obj.getClass()) {
+                return false;
             }
             PathAndNode other = (PathAndNode) obj;
-            if (!node.equals(other.node))
-            {
-              return false;
+            if (!node.equals(other.node)) {
+                return false;
             }
-            if (!path.equals(other.path))
-            {
-              return false;
+            if (!path.equals(other.path)) {
+                return false;
             }
             return true;
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return "PathAndNode [path=" + path + ", node=" + node + "]";
         }
     }
@@ -205,16 +180,13 @@ public class ZKPaths
      * @param path the path
      * @return the node
      */
-    public static PathAndNode getPathAndNode(String path)
-    {
+    public static PathAndNode getPathAndNode(String path) {
         PathUtils.validatePath(path);
         int i = path.lastIndexOf(PATH_SEPARATOR_CHAR);
-        if ( i < 0 )
-        {
+        if (i < 0) {
             return new PathAndNode(path, "");
         }
-        if ( (i + 1) >= path.length() )
-        {
+        if ((i + 1) >= path.length()) {
             return new PathAndNode(PATH_SEPARATOR, "");
         }
         String node = path.substring(i + 1);
@@ -237,7 +209,8 @@ public class ZKPaths
         return length > SEQUENTIAL_SUFFIX_DIGITS ? path.substring(length - SEQUENTIAL_SUFFIX_DIGITS) : path;
     }
 
-    private static final Splitter PATH_SPLITTER = Splitter.on(PATH_SEPARATOR_CHAR).omitEmptyStrings();
+    private static final Splitter PATH_SPLITTER =
+            Splitter.on(PATH_SEPARATOR_CHAR).omitEmptyStrings();
 
     /**
      * Given a full path, return the the individual parts, without slashes.
@@ -246,8 +219,7 @@ public class ZKPaths
      * @param path the path
      * @return an array of parts
      */
-    public static List<String> split(String path)
-    {
+    public static List<String> split(String path) {
         PathUtils.validatePath(path);
         return PATH_SPLITTER.splitToList(path);
     }
@@ -261,8 +233,7 @@ public class ZKPaths
      * @throws InterruptedException                 thread interruption
      * @throws org.apache.zookeeper.KeeperException Zookeeper errors
      */
-    public static void mkdirs(ZooKeeper zookeeper, String path) throws InterruptedException, KeeperException
-    {
+    public static void mkdirs(ZooKeeper zookeeper, String path) throws InterruptedException, KeeperException {
         mkdirs(zookeeper, path, true, null, false);
     }
 
@@ -276,8 +247,8 @@ public class ZKPaths
      * @throws InterruptedException                 thread interruption
      * @throws org.apache.zookeeper.KeeperException Zookeeper errors
      */
-    public static void mkdirs(ZooKeeper zookeeper, String path, boolean makeLastNode) throws InterruptedException, KeeperException
-    {
+    public static void mkdirs(ZooKeeper zookeeper, String path, boolean makeLastNode)
+            throws InterruptedException, KeeperException {
         mkdirs(zookeeper, path, makeLastNode, null, false);
     }
 
@@ -292,8 +263,8 @@ public class ZKPaths
      * @throws InterruptedException                 thread interruption
      * @throws org.apache.zookeeper.KeeperException Zookeeper errors
      */
-    public static void mkdirs(ZooKeeper zookeeper, String path, boolean makeLastNode, InternalACLProvider aclProvider) throws InterruptedException, KeeperException
-    {
+    public static void mkdirs(ZooKeeper zookeeper, String path, boolean makeLastNode, InternalACLProvider aclProvider)
+            throws InterruptedException, KeeperException {
         mkdirs(zookeeper, path, makeLastNode, aclProvider, false);
     }
 
@@ -309,55 +280,47 @@ public class ZKPaths
      * @throws InterruptedException                 thread interruption
      * @throws org.apache.zookeeper.KeeperException Zookeeper errors
      */
-    public static void mkdirs(ZooKeeper zookeeper, String path, boolean makeLastNode, InternalACLProvider aclProvider, boolean asContainers) throws InterruptedException, KeeperException
-    {
+    public static void mkdirs(
+            ZooKeeper zookeeper,
+            String path,
+            boolean makeLastNode,
+            InternalACLProvider aclProvider,
+            boolean asContainers)
+            throws InterruptedException, KeeperException {
         PathUtils.validatePath(path);
 
         int pos = 1; // skip first slash, root is guaranteed to exist
-        do
-        {
+        do {
             pos = path.indexOf(PATH_SEPARATOR_CHAR, pos + 1);
 
-            if ( pos == -1 )
-            {
-                if ( makeLastNode )
-                {
+            if (pos == -1) {
+                if (makeLastNode) {
                     pos = path.length();
-                }
-                else
-                {
+                } else {
                     break;
                 }
             }
 
             String subPath = path.substring(0, pos);
-            if ( zookeeper.exists(subPath, false) == null )
-            {
-                try
-                {
+            if (zookeeper.exists(subPath, false) == null) {
+                try {
                     List<ACL> acl = null;
-                    if ( aclProvider != null )
-                    {
+                    if (aclProvider != null) {
                         acl = aclProvider.getAclForPath(subPath);
-                        if ( acl == null )
-                        {
+                        if (acl == null) {
                             acl = aclProvider.getDefaultAcl();
                         }
                     }
-                    if ( acl == null )
-                    {
+                    if (acl == null) {
                         acl = ZooDefs.Ids.OPEN_ACL_UNSAFE;
                     }
                     zookeeper.create(subPath, new byte[0], acl, getCreateMode(asContainers));
-                }
-                catch (KeeperException.NodeExistsException ignore)
-                {
+                } catch (KeeperException.NodeExistsException ignore) {
                     // ignore... someone else has created it since we checked
                 }
             }
 
-        }
-        while ( pos < path.length() );
+        } while (pos < path.length());
     }
 
     /**
@@ -369,39 +332,29 @@ public class ZKPaths
      * @throws InterruptedException
      * @throws KeeperException
      */
-    public static void deleteChildren(ZooKeeper zookeeper, String path, boolean deleteSelf) throws InterruptedException, KeeperException
-    {
+    public static void deleteChildren(ZooKeeper zookeeper, String path, boolean deleteSelf)
+            throws InterruptedException, KeeperException {
         PathUtils.validatePath(path);
 
         List<String> children;
-        try
-        {
+        try {
             children = zookeeper.getChildren(path, null);
-        }
-        catch (KeeperException.NoNodeException e)
-        {
+        } catch (KeeperException.NoNodeException e) {
             // someone else has deleted the node since we checked
             return;
         }
-        for ( String child : children )
-        {
+        for (String child : children) {
             String fullPath = makePath(path, child);
             deleteChildren(zookeeper, fullPath, true);
         }
 
-        if ( deleteSelf )
-        {
-            try
-            {
+        if (deleteSelf) {
+            try {
                 zookeeper.delete(path, -1);
-            }
-            catch ( KeeperException.NotEmptyException e )
-            {
-                //someone has created a new child since we checked ... delete again.
+            } catch (KeeperException.NotEmptyException e) {
+                // someone has created a new child since we checked ... delete again.
                 deleteChildren(zookeeper, path, true);
-            }
-            catch ( KeeperException.NoNodeException e )
-            {
+            } catch (KeeperException.NoNodeException e) {
                 // ignore... someone else has deleted the node since we checked
             }
         }
@@ -416,8 +369,8 @@ public class ZKPaths
      * @throws InterruptedException                 thread interruption
      * @throws org.apache.zookeeper.KeeperException zookeeper errors
      */
-    public static List<String> getSortedChildren(ZooKeeper zookeeper, String path) throws InterruptedException, KeeperException
-    {
+    public static List<String> getSortedChildren(ZooKeeper zookeeper, String path)
+            throws InterruptedException, KeeperException {
         List<String> children = zookeeper.getChildren(path, false);
         List<String> sortedList = Lists.newArrayList(children);
         Collections.sort(sortedList);
@@ -431,8 +384,7 @@ public class ZKPaths
      * @param child  the child
      * @return full path
      */
-    public static String makePath(String parent, String child)
-    {
+    public static String makePath(String parent, String child) {
         // 2 is the maximum number of additional path separators inserted
         int maxPathLength = nullableStringLength(parent) + nullableStringLength(child) + 2;
         // Avoid internal StringBuilder's buffer reallocation by specifying the max path length
@@ -451,14 +403,11 @@ public class ZKPaths
      * @param restChildren the rest of the children in the path
      * @return full path
      */
-    public static String makePath(String parent, String firstChild, String... restChildren)
-    {
+    public static String makePath(String parent, String firstChild, String... restChildren) {
         // 2 is the maximum number of additional path separators inserted
         int maxPathLength = nullableStringLength(parent) + nullableStringLength(firstChild) + 2;
-        if ( restChildren != null )
-        {
-            for ( String child : restChildren )
-            {
+        if (restChildren != null) {
+            for (String child : restChildren) {
                 // 1 is for possible additional separator
                 maxPathLength += nullableStringLength(child) + 1;
             }
@@ -468,14 +417,10 @@ public class ZKPaths
 
         joinPath(path, parent, firstChild);
 
-        if ( restChildren == null )
-        {
+        if (restChildren == null) {
             return path.toString();
-        }
-        else
-        {
-            for ( String child : restChildren )
-            {
+        } else {
+            for (String child : restChildren) {
                 joinPath(path, "", child);
             }
 
@@ -483,8 +428,7 @@ public class ZKPaths
         }
     }
 
-    private static int nullableStringLength(String s)
-    {
+    private static int nullableStringLength(String s) {
         return s != null ? s.length() : 0;
     }
 
@@ -495,31 +439,24 @@ public class ZKPaths
      * @param parent the parent
      * @param child  the child
      */
-    private static void joinPath(StringBuilder path, String parent, String child)
-    {
+    private static void joinPath(StringBuilder path, String parent, String child) {
         // Add parent piece, with no trailing slash.
-        if ( (parent != null) && (parent.length() > 0) )
-        {
-            if ( parent.charAt(0) != PATH_SEPARATOR_CHAR )
-            {
+        if ((parent != null) && (parent.length() > 0)) {
+            if (parent.charAt(0) != PATH_SEPARATOR_CHAR) {
                 path.append(PATH_SEPARATOR_CHAR);
             }
-            if ( parent.charAt(parent.length() - 1) == PATH_SEPARATOR_CHAR )
-            {
+            if (parent.charAt(parent.length() - 1) == PATH_SEPARATOR_CHAR) {
                 path.append(parent, 0, parent.length() - 1);
-            }
-            else
-            {
+            } else {
                 path.append(parent);
             }
         }
 
-        if ( (child == null) || (child.length() == 0) ||
-                (child.length() == 1 && child.charAt(0) == PATH_SEPARATOR_CHAR) )
-        {
+        if ((child == null)
+                || (child.length() == 0)
+                || (child.length() == 1 && child.charAt(0) == PATH_SEPARATOR_CHAR)) {
             // Special case, empty parent and child
-            if ( path.length() == 0 )
-            {
+            if (path.length() == 0) {
                 path.append(PATH_SEPARATOR_CHAR);
             }
             return;
@@ -529,22 +466,16 @@ public class ZKPaths
         path.append(PATH_SEPARATOR_CHAR);
 
         int childAppendBeginIndex;
-        if ( child.charAt(0) == PATH_SEPARATOR_CHAR )
-        {
+        if (child.charAt(0) == PATH_SEPARATOR_CHAR) {
             childAppendBeginIndex = 1;
-        }
-        else
-        {
+        } else {
             childAppendBeginIndex = 0;
         }
 
         int childAppendEndIndex;
-        if ( child.charAt(child.length() - 1) == PATH_SEPARATOR_CHAR )
-        {
+        if (child.charAt(child.length() - 1) == PATH_SEPARATOR_CHAR) {
             childAppendEndIndex = child.length() - 1;
-        }
-        else
-        {
+        } else {
             childAppendEndIndex = child.length();
         }
 
@@ -552,12 +483,9 @@ public class ZKPaths
         path.append(child, childAppendBeginIndex, childAppendEndIndex);
     }
 
-    private ZKPaths()
-    {
-    }
+    private ZKPaths() {}
 
-    private static CreateMode getCreateMode(boolean asContainers)
-    {
+    private static CreateMode getCreateMode(boolean asContainers) {
         return asContainers ? getContainerCreateMode() : CreateMode.PERSISTENT;
     }
 }

@@ -19,54 +19,48 @@
 
 package org.apache.curator.test;
 
+import java.lang.reflect.Method;
 import org.apache.zookeeper.server.ServerCnxn;
 import org.apache.zookeeper.server.ServerCnxnFactory;
-import java.lang.reflect.Method;
 
 @SuppressWarnings({"unchecked", "rawtypes"})
-public class Compatibility
-{
+public class Compatibility {
     private static final Method closeAllWithReasonMethod;
     private static final Method closeAllMethod;
     private static final Method closeWithReasonMethod;
     private static final Method closeMethod;
     private static final Object disconnectReasonObj;
 
-    static
-    {
+    static {
         Object localDisconnectReasonObj;
         Method localCloseAllWithReasonMethod;
         Method localCloseAllMethod;
         Method localCloseWithReasonMethod;
         Method localCloseMethod;
-        try
-        {
+        try {
             Class disconnectReasonClass = Class.forName("org.apache.zookeeper.server.ServerCnxn$DisconnectReason");
             localDisconnectReasonObj = Enum.valueOf(disconnectReasonClass, "UNKNOWN");
-            localCloseAllWithReasonMethod = ServerCnxnFactory.class.getDeclaredMethod("closeAll", disconnectReasonClass);
+            localCloseAllWithReasonMethod =
+                    ServerCnxnFactory.class.getDeclaredMethod("closeAll", disconnectReasonClass);
             localCloseWithReasonMethod = ServerCnxn.class.getDeclaredMethod("close", disconnectReasonClass);
             localCloseAllMethod = null;
             localCloseMethod = null;
 
             localCloseAllWithReasonMethod.setAccessible(true);
             localCloseWithReasonMethod.setAccessible(true);
-        }
-        catch ( Throwable e )
-        {
+        } catch (Throwable e) {
             localDisconnectReasonObj = null;
             localCloseAllWithReasonMethod = null;
             localCloseWithReasonMethod = null;
-            try
-            {
+            try {
                 localCloseAllMethod = ServerCnxnFactory.class.getDeclaredMethod("closeAll");
                 localCloseMethod = ServerCnxn.class.getDeclaredMethod("close");
 
                 localCloseAllMethod.setAccessible(true);
                 localCloseMethod.setAccessible(true);
-            }
-            catch ( Throwable ex )
-            {
-                throw new IllegalStateException("Could not reflectively find ServerCnxnFactory/ServerCnxn close methods");
+            } catch (Throwable ex) {
+                throw new IllegalStateException(
+                        "Could not reflectively find ServerCnxnFactory/ServerCnxn close methods");
             }
         }
         disconnectReasonObj = localDisconnectReasonObj;
@@ -76,40 +70,26 @@ public class Compatibility
         closeWithReasonMethod = localCloseWithReasonMethod;
     }
 
-    public static void serverCnxnFactoryCloseAll(ServerCnxnFactory factory)
-    {
-        try
-        {
-            if ( closeAllMethod != null )
-            {
+    public static void serverCnxnFactoryCloseAll(ServerCnxnFactory factory) {
+        try {
+            if (closeAllMethod != null) {
                 closeAllMethod.invoke(factory);
-            }
-            else
-            {
+            } else {
                 closeAllWithReasonMethod.invoke(factory, disconnectReasonObj);
             }
-        }
-        catch ( Exception e )
-        {
+        } catch (Exception e) {
             throw new RuntimeException("Could not close factory", e);
         }
     }
 
-    public static void serverCnxnClose(ServerCnxn cnxn)
-    {
-        try
-        {
-            if ( closeMethod != null )
-            {
+    public static void serverCnxnClose(ServerCnxn cnxn) {
+        try {
+            if (closeMethod != null) {
                 closeMethod.invoke(cnxn);
-            }
-            else
-            {
+            } else {
                 closeWithReasonMethod.invoke(cnxn, disconnectReasonObj);
             }
-        }
-        catch ( Exception e )
-        {
+        } catch (Exception e) {
             throw new RuntimeException("Could not close connection", e);
         }
     }

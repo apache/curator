@@ -26,6 +26,18 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import com.google.common.base.Throwables;
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.transaction.CuratorOp;
@@ -46,21 +58,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.time.Duration;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-
-public class TestMigrationManager extends CompletableBaseClassForTests
-{
+public class TestMigrationManager extends CompletableBaseClassForTests {
     private static final String LOCK_PATH = "/migrations/locks";
     private static final String META_DATA_PATH = "/migrations/metadata";
     private AsyncCuratorFramework client;
@@ -78,44 +76,45 @@ public class TestMigrationManager extends CompletableBaseClassForTests
 
     @BeforeEach
     @Override
-    public void setup() throws Exception
-    {
+    public void setup() throws Exception {
         super.setup();
 
         filterIsSetLatch = new CountDownLatch(1);
 
-        CuratorFramework rawClient = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(100));
+        CuratorFramework rawClient = CuratorFrameworkFactory.newClient(
+                server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(100));
         rawClient.start();
 
         this.client = AsyncCuratorFramework.wrap(rawClient);
 
         ZPath modelPath = ZPath.parse("/test/it");
 
-        v1Spec = ModelSpec.builder(modelPath, JacksonModelSerializer.build(ModelV1.class)).build();
-        v2Spec = ModelSpec.builder(modelPath, JacksonModelSerializer.build(ModelV2.class)).build();
-        v3Spec = ModelSpec.builder(modelPath, JacksonModelSerializer.build(ModelV3.class)).build();
+        v1Spec = ModelSpec.builder(modelPath, JacksonModelSerializer.build(ModelV1.class))
+                .build();
+        v2Spec = ModelSpec.builder(modelPath, JacksonModelSerializer.build(ModelV2.class))
+                .build();
+        v3Spec = ModelSpec.builder(modelPath, JacksonModelSerializer.build(ModelV3.class))
+                .build();
 
-        v1opA = client.unwrap().transactionOp().create().forPath(v1Spec.path().parent().fullPath());
+        v1opA = client.unwrap()
+                .transactionOp()
+                .create()
+                .forPath(v1Spec.path().parent().fullPath());
         v1opB = ModeledFramework.wrap(client, v1Spec).createOp(new ModelV1("Test"));
         v2op = ModeledFramework.wrap(client, v2Spec).updateOp(new ModelV2("Test 2", 10));
         v3op = ModeledFramework.wrap(client, v3Spec).updateOp(new ModelV3("One", "Two", 30));
 
         executor = Executors.newCachedThreadPool();
-        manager = new MigrationManager(client, LOCK_PATH, META_DATA_PATH, executor, Duration.ofMinutes(10))
-        {
+        manager = new MigrationManager(client, LOCK_PATH, META_DATA_PATH, executor, Duration.ofMinutes(10)) {
             @Override
-            protected List<Migration> filter(MigrationSet set, List<byte[]> operationHashesInOrder) throws MigrationException
-            {
+            protected List<Migration> filter(MigrationSet set, List<byte[]> operationHashesInOrder)
+                    throws MigrationException {
                 CountDownLatch localLatch = filterLatch.getAndSet(null);
-                if ( localLatch != null )
-                {
+                if (localLatch != null) {
                     filterIsSetLatch.countDown();
-                    try
-                    {
+                    try {
                         localLatch.await();
-                    }
-                    catch ( InterruptedException e )
-                    {
+                    } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                         Throwables.propagate(e);
                     }
@@ -128,16 +127,14 @@ public class TestMigrationManager extends CompletableBaseClassForTests
 
     @AfterEach
     @Override
-    public void teardown() throws Exception
-    {
+    public void teardown() throws Exception {
         CloseableUtils.closeQuietly(client.unwrap());
         executor.shutdownNow();
         super.teardown();
     }
 
     @Test
-    public void testBasic()
-    {
+    public void testBasic() {
         Migration m1 = () -> Arrays.asList(v1opA, v1opB);
         Migration m2 = () -> Collections.singletonList(v2op);
         Migration m3 = () -> Collections.singletonList(v3op);
@@ -154,12 +151,11 @@ public class TestMigrationManager extends CompletableBaseClassForTests
 
         int count = manager.debugCount.get();
         complete(manager.migrate(migrationSet));
-        assertEquals(manager.debugCount.get(), count);   // second call should do nothing
+        assertEquals(manager.debugCount.get(), count); // second call should do nothing
     }
 
     @Test
-    public void testStaged()
-    {
+    public void testStaged() {
         Migration m1 = () -> Arrays.asList(v1opA, v1opB);
         MigrationSet migrationSet = MigrationSet.build("1", Collections.singletonList(m1));
         complete(manager.migrate(migrationSet));
@@ -190,8 +186,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
     }
 
     @Test
-    public void testDocExample() throws Exception
-    {
+    public void testDocExample() throws Exception {
         CuratorOp op1 = client.transactionOp().create().forPath("/parent");
         CuratorOp op2 = client.transactionOp().create().forPath("/parent/one");
         CuratorOp op3 = client.transactionOp().create().forPath("/parent/two");
@@ -206,7 +201,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
         assertArrayEquals(client.unwrap().getData().forPath("/main"), "hey".getBytes());
 
         CuratorOp newOp1 = client.transactionOp().create().forPath("/new");
-        CuratorOp newOp2 = client.transactionOp().delete().forPath("/main");    // maybe this is no longer needed
+        CuratorOp newOp2 = client.transactionOp().delete().forPath("/main"); // maybe this is no longer needed
 
         Migration newMigration = () -> Arrays.asList(newOp1, newOp2);
         migrationSet = MigrationSet.build("main", Arrays.asList(initialMigration, newMigration));
@@ -216,8 +211,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
     }
 
     @Test
-    public void testChecksumDataError()
-    {
+    public void testChecksumDataError() {
         CuratorOp op1 = client.transactionOp().create().forPath("/test");
         CuratorOp op2 = client.transactionOp().create().forPath("/test/bar", "first".getBytes());
         Migration migration = () -> Arrays.asList(op1, op2);
@@ -227,20 +221,16 @@ public class TestMigrationManager extends CompletableBaseClassForTests
         CuratorOp op2Changed = client.transactionOp().create().forPath("/test/bar", "second".getBytes());
         migration = () -> Arrays.asList(op1, op2Changed);
         migrationSet = MigrationSet.build("1", Collections.singletonList(migration));
-        try
-        {
+        try {
             complete(manager.migrate(migrationSet));
             fail("Should throw");
-        }
-        catch ( Throwable e )
-        {
+        } catch (Throwable e) {
             assertTrue(Throwables.getRootCause(e) instanceof MigrationException);
         }
     }
 
     @Test
-    public void testChecksumPathError()
-    {
+    public void testChecksumPathError() {
         CuratorOp op1 = client.transactionOp().create().forPath("/test2");
         CuratorOp op2 = client.transactionOp().create().forPath("/test2/bar");
         Migration migration = () -> Arrays.asList(op1, op2);
@@ -250,52 +240,41 @@ public class TestMigrationManager extends CompletableBaseClassForTests
         CuratorOp op2Changed = client.transactionOp().create().forPath("/test/bar");
         migration = () -> Arrays.asList(op1, op2Changed);
         migrationSet = MigrationSet.build("1", Collections.singletonList(migration));
-        try
-        {
+        try {
             complete(manager.migrate(migrationSet));
             fail("Should throw");
-        }
-        catch ( Throwable e )
-        {
+        } catch (Throwable e) {
             assertTrue(Throwables.getRootCause(e) instanceof MigrationException);
         }
     }
 
     @Test
-    public void testPartialApplyForBadOps() throws Exception
-    {
+    public void testPartialApplyForBadOps() throws Exception {
         CuratorOp op1 = client.transactionOp().create().forPath("/test", "something".getBytes());
         CuratorOp op2 = client.transactionOp().create().forPath("/a/b/c");
         Migration m1 = () -> Collections.singletonList(op1);
         Migration m2 = () -> Collections.singletonList(op2);
         MigrationSet migrationSet = MigrationSet.build("1", Arrays.asList(m1, m2));
-        try
-        {
+        try {
             complete(manager.migrate(migrationSet));
             fail("Should throw");
-        }
-        catch ( Throwable e )
-        {
+        } catch (Throwable e) {
             assertTrue(Throwables.getRootCause(e) instanceof KeeperException.NoNodeException);
         }
 
-        assertNull(client.unwrap().checkExists().forPath("/test"));  // should be all or nothing
+        assertNull(client.unwrap().checkExists().forPath("/test")); // should be all or nothing
     }
 
     @Test
-    public void testTransactionForBadOps() throws Exception
-    {
+    public void testTransactionForBadOps() throws Exception {
         CuratorOp op1 = client.transactionOp().create().forPath("/test2", "something".getBytes());
         CuratorOp op2 = client.transactionOp().create().forPath("/a/b/c/d");
         Migration migration = () -> Arrays.asList(op1, op2);
         MigrationSet migrationSet = MigrationSet.build("1", Collections.singletonList(migration));
-        try
-        {
+        try {
             complete(manager.migrate(migrationSet));
             fail("Should throw");
-        }
-        catch ( Throwable e )
-        {
+        } catch (Throwable e) {
             assertTrue(Throwables.getRootCause(e) instanceof KeeperException.NoNodeException);
         }
 
@@ -303,8 +282,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
     }
 
     @Test
-    public void testConcurrency1() throws Exception
-    {
+    public void testConcurrency1() throws Exception {
         CuratorOp op1 = client.transactionOp().create().forPath("/test");
         CuratorOp op2 = client.transactionOp().create().forPath("/test/bar", "first".getBytes());
         Migration migration = () -> Arrays.asList(op1, op2);
@@ -314,15 +292,20 @@ public class TestMigrationManager extends CompletableBaseClassForTests
         CompletionStage<Void> first = manager.migrate(migrationSet);
         assertTrue(timing.awaitLatch(filterIsSetLatch));
 
-        MigrationManager manager2 = new MigrationManager(client, LOCK_PATH, META_DATA_PATH, executor, Duration.ofMillis(timing.forSleepingABit().milliseconds()));
-        try
-        {
+        MigrationManager manager2 = new MigrationManager(
+                client,
+                LOCK_PATH,
+                META_DATA_PATH,
+                executor,
+                Duration.ofMillis(timing.forSleepingABit().milliseconds()));
+        try {
             complete(manager2.migrate(migrationSet));
             fail("Should throw");
-        }
-        catch ( Throwable e )
-        {
-            assertTrue(Throwables.getRootCause(e) instanceof AsyncWrappers.TimeoutException, "Should throw AsyncWrappers.TimeoutException, was: " + Throwables.getStackTraceAsString(Throwables.getRootCause(e)));
+        } catch (Throwable e) {
+            assertTrue(
+                    Throwables.getRootCause(e) instanceof AsyncWrappers.TimeoutException,
+                    "Should throw AsyncWrappers.TimeoutException, was: "
+                            + Throwables.getStackTraceAsString(Throwables.getRootCause(e)));
         }
 
         latch.countDown();
@@ -331,8 +314,7 @@ public class TestMigrationManager extends CompletableBaseClassForTests
     }
 
     @Test
-    public void testConcurrency2() throws Exception
-    {
+    public void testConcurrency2() throws Exception {
         CuratorOp op1 = client.transactionOp().create().forPath("/test");
         CuratorOp op2 = client.transactionOp().create().forPath("/test/bar", "first".getBytes());
         Migration migration = () -> Arrays.asList(op1, op2);
@@ -343,14 +325,14 @@ public class TestMigrationManager extends CompletableBaseClassForTests
         assertTrue(timing.awaitLatch(filterIsSetLatch));
 
         CompletionStage<Void> second = manager.migrate(migrationSet);
-        try
-        {
+        try {
             second.toCompletableFuture().get(timing.forSleepingABit().milliseconds(), TimeUnit.MILLISECONDS);
             fail("Should throw");
-        }
-        catch ( Throwable e )
-        {
-            assertTrue(Throwables.getRootCause(e) instanceof TimeoutException, "Should throw TimeoutException, was: " + Throwables.getStackTraceAsString(Throwables.getRootCause(e)));
+        } catch (Throwable e) {
+            assertTrue(
+                    Throwables.getRootCause(e) instanceof TimeoutException,
+                    "Should throw TimeoutException, was: "
+                            + Throwables.getStackTraceAsString(Throwables.getRootCause(e)));
         }
 
         latch.countDown();

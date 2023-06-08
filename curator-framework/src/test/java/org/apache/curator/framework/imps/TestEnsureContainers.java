@@ -21,7 +21,6 @@ package org.apache.curator.framework.imps;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.EnsureContainers;
@@ -30,33 +29,26 @@ import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.junit.jupiter.api.Test;
 
-public class TestEnsureContainers extends BaseClassForTests
-{
+public class TestEnsureContainers extends BaseClassForTests {
     @Test
-    public void testBasic() throws Exception
-    {
+    public void testBasic() throws Exception {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+        try {
             client.start();
 
             EnsureContainers ensureContainers = new EnsureContainers(client, "/one/two/three");
             ensureContainers.ensure();
 
             assertNotNull(client.checkExists().forPath("/one/two/three"));
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
 
     @Test
-    public void testSingleExecution() throws Exception
-    {
+    public void testSingleExecution() throws Exception {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+        try {
             client.start();
 
             EnsureContainers ensureContainers = new EnsureContainers(client, "/one/two/three");
@@ -67,9 +59,7 @@ public class TestEnsureContainers extends BaseClassForTests
             client.delete().forPath("/one/two/three");
             ensureContainers.ensure();
             assertNull(client.checkExists().forPath("/one/two/three"));
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }

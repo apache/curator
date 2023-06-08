@@ -19,7 +19,6 @@
 
 package org.apache.curator.framework.recipes.atomic;
 
-interface MakeValue
-{
-    public byte[]       makeFrom(byte[] previous);
+interface MakeValue {
+    public byte[] makeFrom(byte[] previous);
 }

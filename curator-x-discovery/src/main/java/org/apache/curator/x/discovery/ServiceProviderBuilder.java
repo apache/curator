@@ -19,12 +19,11 @@
 
 package org.apache.curator.x.discovery;
 
-import org.apache.curator.x.discovery.strategies.RoundRobinStrategy;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
+import org.apache.curator.x.discovery.strategies.RoundRobinStrategy;
 
-public interface ServiceProviderBuilder<T>
-{
+public interface ServiceProviderBuilder<T> {
     /**
      * Allocate a new service provider based on the current builder settings
      *

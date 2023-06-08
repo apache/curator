@@ -25,13 +25,11 @@ import java.util.concurrent.Executor;
  * Generic holder POJO for a listener and its executor
  * @param <T> the listener type
  */
-public class ListenerEntry<T>
-{
-    public final T        listener;
+public class ListenerEntry<T> {
+    public final T listener;
     public final Executor executor;
 
-    public ListenerEntry(T listener, Executor executor)
-    {
+    public ListenerEntry(T listener, Executor executor) {
         this.listener = listener;
         this.executor = executor;
     }

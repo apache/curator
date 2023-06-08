@@ -25,8 +25,7 @@ package org.apache.curator.framework.recipes.cache;
  * otherwise
  */
 @SuppressWarnings("deprecation")
-public interface CuratorCacheBridge extends CuratorCache
-{
+public interface CuratorCacheBridge extends CuratorCache {
     /**
      * Returns true if the underlying cache is {@link org.apache.curator.framework.recipes.cache.CuratorCache} (i.e. ZooKeeper 3.6+).
      * Otherwise it is {@link org.apache.curator.framework.recipes.cache.TreeCache} (i.e. ZooKeeper 3.5.x)

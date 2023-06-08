@@ -19,8 +19,7 @@
 
 package org.apache.curator.framework.api;
 
-public interface Compressible<T>
-{
+public interface Compressible<T> {
     /**
      * Cause the data to be compressed using the configured compression provider
      *

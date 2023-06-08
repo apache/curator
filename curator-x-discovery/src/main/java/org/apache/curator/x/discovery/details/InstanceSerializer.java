@@ -24,8 +24,7 @@ import org.apache.curator.x.discovery.ServiceInstance;
 /**
  * Injectable serializer for service instances
  */
-public interface InstanceSerializer<T>
-{
+public interface InstanceSerializer<T> {
     /**
      * Serialize an instance into bytes
      *
@@ -33,7 +32,7 @@ public interface InstanceSerializer<T>
      * @return byte array representing the instance
      * @throws Exception any errors
      */
-    public byte[]             serialize(ServiceInstance<T> instance) throws Exception;
+    public byte[] serialize(ServiceInstance<T> instance) throws Exception;
 
     /**
      * Deserialize a byte array into an instance

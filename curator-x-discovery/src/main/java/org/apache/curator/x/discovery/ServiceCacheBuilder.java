@@ -22,8 +22,7 @@ package org.apache.curator.x.discovery;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 
-public interface ServiceCacheBuilder<T>
-{
+public interface ServiceCacheBuilder<T> {
     /**
      * Return a new service cache with the current settings
      *

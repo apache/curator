@@ -21,19 +21,18 @@ package org.apache.curator.framework.recipes.queue;
 
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.MoreExecutors;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.utils.ThreadUtils;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.PathUtils;
+import org.apache.curator.utils.ThreadUtils;
 
 /**
  * The builder for both {@link DistributedQueue} and {@link DistributedPriorityQueue}
  */
-public class QueueBuilder<T>
-{
+public class QueueBuilder<T> {
     private final CuratorFramework client;
     private final QueueConsumer<T> consumer;
     private final QueueSerializer<T> serializer;
@@ -46,7 +45,7 @@ public class QueueBuilder<T>
     private boolean putInBackground = true;
     private int finalFlushMs = 5000;
 
-    static final ThreadFactory  defaultThreadFactory = ThreadUtils.newThreadFactory("QueueBuilder");
+    static final ThreadFactory defaultThreadFactory = ThreadUtils.newThreadFactory("QueueBuilder");
 
     static final int NOT_SET = Integer.MAX_VALUE;
 
@@ -60,8 +59,8 @@ public class QueueBuilder<T>
      * @param queuePath path to store queue
      * @return builder
      */
-    public static<T> QueueBuilder<T>        builder(CuratorFramework client, QueueConsumer<T> consumer, QueueSerializer<T> serializer, String queuePath)
-    {
+    public static <T> QueueBuilder<T> builder(
+            CuratorFramework client, QueueConsumer<T> consumer, QueueSerializer<T> serializer, String queuePath) {
         return new QueueBuilder<T>(client, consumer, serializer, queuePath);
     }
 
@@ -70,23 +69,20 @@ public class QueueBuilder<T>
      *
      * @return distributed queue
      */
-    public DistributedQueue<T>      buildQueue()
-    {
-        return new DistributedQueue<T>
-        (
-            client,
-            consumer,
-            serializer,
-            queuePath,
-            factory,
-            executor,
-            Integer.MAX_VALUE,
-            false,
-            lockPath,
-            maxItems,
-            putInBackground,
-            finalFlushMs
-        );
+    public DistributedQueue<T> buildQueue() {
+        return new DistributedQueue<T>(
+                client,
+                consumer,
+                serializer,
+                queuePath,
+                factory,
+                executor,
+                Integer.MAX_VALUE,
+                false,
+                lockPath,
+                maxItems,
+                putInBackground,
+                finalFlushMs);
     }
 
     /**
@@ -94,23 +90,20 @@ public class QueueBuilder<T>
      *
      * @return distributed id queue
      */
-    public DistributedIdQueue<T>      buildIdQueue()
-    {
-        return new DistributedIdQueue<T>
-        (
-            client,
-            consumer,
-            serializer,
-            queuePath,
-            factory,
-            executor,
-            Integer.MAX_VALUE,
-            false,
-            lockPath,
-            maxItems,
-            putInBackground,
-            finalFlushMs
-        );
+    public DistributedIdQueue<T> buildIdQueue() {
+        return new DistributedIdQueue<T>(
+                client,
+                consumer,
+                serializer,
+                queuePath,
+                factory,
+                executor,
+                Integer.MAX_VALUE,
+                false,
+                lockPath,
+                maxItems,
+                putInBackground,
+                finalFlushMs);
     }
 
     /**
@@ -132,22 +125,19 @@ public class QueueBuilder<T>
      * @param minItemsBeforeRefresh minimum items to process before refreshing the item list
      * @return distributed priority queue
      */
-    public DistributedPriorityQueue<T>      buildPriorityQueue(int minItemsBeforeRefresh)
-    {
-        return new DistributedPriorityQueue<T>
-        (
-            client,
-            consumer,
-            serializer,
-            queuePath,
-            factory,
-            executor,
-            minItemsBeforeRefresh,
-            lockPath,
-            maxItems,
-            putInBackground,
-            finalFlushMs
-        );
+    public DistributedPriorityQueue<T> buildPriorityQueue(int minItemsBeforeRefresh) {
+        return new DistributedPriorityQueue<T>(
+                client,
+                consumer,
+                serializer,
+                queuePath,
+                factory,
+                executor,
+                minItemsBeforeRefresh,
+                lockPath,
+                maxItems,
+                putInBackground,
+                finalFlushMs);
     }
 
     /**
@@ -155,22 +145,19 @@ public class QueueBuilder<T>
      *
      * @return distributed delay queue
      */
-    public DistributedDelayQueue<T>      buildDelayQueue()
-    {
-        return new DistributedDelayQueue<T>
-        (
-            client,
-            consumer,
-            serializer,
-            queuePath,
-            factory,
-            executor,
-            Integer.MAX_VALUE,
-            lockPath,
-            maxItems,
-            putInBackground,
-            finalFlushMs
-        );
+    public DistributedDelayQueue<T> buildDelayQueue() {
+        return new DistributedDelayQueue<T>(
+                client,
+                consumer,
+                serializer,
+                queuePath,
+                factory,
+                executor,
+                Integer.MAX_VALUE,
+                lockPath,
+                maxItems,
+                putInBackground,
+                finalFlushMs);
     }
 
     /**
@@ -179,8 +166,7 @@ public class QueueBuilder<T>
      * @param factory new thread factory to use
      * @return this
      */
-    public QueueBuilder<T>  threadFactory(ThreadFactory factory)
-    {
+    public QueueBuilder<T> threadFactory(ThreadFactory factory) {
         Preconditions.checkNotNull(factory, "factory cannot be null");
 
         this.factory = factory;
@@ -193,8 +179,7 @@ public class QueueBuilder<T>
      * @param executor new executor to use
      * @return this
      */
-    public QueueBuilder<T>  executor(Executor executor)
-    {
+    public QueueBuilder<T> executor(Executor executor) {
         Preconditions.checkNotNull(executor, "executor cannot be null");
 
         this.executor = executor;
@@ -213,8 +198,7 @@ public class QueueBuilder<T>
      * @param path path for the lock
      * @return this
      */
-    public QueueBuilder<T>  lockPath(String path)
-    {
+    public QueueBuilder<T> lockPath(String path) {
         lockPath = PathUtils.validatePath(path);
         return this;
     }
@@ -229,8 +213,7 @@ public class QueueBuilder<T>
      * @param maxItems the upper bound for the queue
      * @return this
      */
-    public QueueBuilder<T>  maxItems(int maxItems)
-    {
+    public QueueBuilder<T> maxItems(int maxItems) {
         this.maxItems = maxItems;
         putInBackground = false;
         return this;
@@ -242,8 +225,7 @@ public class QueueBuilder<T>
      * @param putInBackground true to put in the background (default). false to put in the foreground.
      * @return this
      */
-    public QueueBuilder<T>  putInBackground(boolean putInBackground)
-    {
+    public QueueBuilder<T> putInBackground(boolean putInBackground) {
         this.putInBackground = putInBackground;
         return this;
     }
@@ -256,14 +238,13 @@ public class QueueBuilder<T>
      * @param unit the unit
      * @return this
      */
-    public QueueBuilder<T>  finalFlushTime(int time, TimeUnit unit)
-    {
-        finalFlushMs = (int)unit.toMillis(time);
+    public QueueBuilder<T> finalFlushTime(int time, TimeUnit unit) {
+        finalFlushMs = (int) unit.toMillis(time);
         return this;
     }
 
-    private QueueBuilder(CuratorFramework client, QueueConsumer<T> consumer, QueueSerializer<T> serializer, String queuePath)
-    {
+    private QueueBuilder(
+            CuratorFramework client, QueueConsumer<T> consumer, QueueSerializer<T> serializer, String queuePath) {
         this.client = client;
         this.consumer = consumer;
         this.serializer = serializer;

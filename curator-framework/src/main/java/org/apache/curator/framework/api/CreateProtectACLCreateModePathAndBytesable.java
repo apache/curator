@@ -21,9 +21,7 @@ package org.apache.curator.framework.api;
 
 import org.apache.zookeeper.CreateMode;
 
-public interface CreateProtectACLCreateModePathAndBytesable<T> extends
-    ProtectACLCreateModePathAndBytesable<T>
-{
+public interface CreateProtectACLCreateModePathAndBytesable<T> extends ProtectACLCreateModePathAndBytesable<T> {
     /**
      * Causes any parent nodes to get created if they haven't already been
      *
@@ -69,5 +67,5 @@ public interface CreateProtectACLCreateModePathAndBytesable<T> extends
      *
      * @return this
      */
-    public ACLCreateModeBackgroundPathAndBytesable<String>    withProtection();
+    public ACLCreateModeBackgroundPathAndBytesable<String> withProtection();
 }

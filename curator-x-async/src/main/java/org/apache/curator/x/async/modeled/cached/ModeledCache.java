@@ -19,13 +19,12 @@
 
 package org.apache.curator.x.async.modeled.cached;
 
-import org.apache.curator.x.async.modeled.ZNode;
-import org.apache.curator.x.async.modeled.ZPath;
 import java.util.Map;
 import java.util.Optional;
+import org.apache.curator.x.async.modeled.ZNode;
+import org.apache.curator.x.async.modeled.ZPath;
 
-public interface ModeledCache<T>
-{
+public interface ModeledCache<T> {
     /**
      * Return the modeled current data for the given path. There are no guarantees of accuracy. This is
      * merely the most recent view of the data. If there is no node at the given path,

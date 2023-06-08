@@ -25,8 +25,7 @@ import org.apache.zookeeper.data.Stat;
 /**
  * Builder for getConfig()
  */
-public interface AsyncGetConfigBuilder extends AsyncEnsemblable<AsyncStage<byte[]>>
-{
+public interface AsyncGetConfigBuilder extends AsyncEnsemblable<AsyncStage<byte[]>> {
     /**
      * Have the operation fill the provided stat object
      *

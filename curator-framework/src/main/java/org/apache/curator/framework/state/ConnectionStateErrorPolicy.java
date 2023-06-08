@@ -25,8 +25,7 @@ package org.apache.curator.framework.state;
  *
  * @since 3.0.0
  */
-public interface ConnectionStateErrorPolicy
-{
+public interface ConnectionStateErrorPolicy {
     /**
      * Returns true if the given state should cause the recipe to
      * act as though the connection has been lost. i.e. locks should

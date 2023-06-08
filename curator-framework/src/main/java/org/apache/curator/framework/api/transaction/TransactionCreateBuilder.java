@@ -19,8 +19,7 @@
 
 package org.apache.curator.framework.api.transaction;
 
-public interface TransactionCreateBuilder<T> extends TransactionCreateBuilder2<T>
-{
+public interface TransactionCreateBuilder<T> extends TransactionCreateBuilder2<T> {
     /**
      * Specify a TTL when mode is {@link org.apache.zookeeper.CreateMode#PERSISTENT_WITH_TTL} or
      * {@link org.apache.zookeeper.CreateMode#PERSISTENT_SEQUENTIAL_WITH_TTL}. If

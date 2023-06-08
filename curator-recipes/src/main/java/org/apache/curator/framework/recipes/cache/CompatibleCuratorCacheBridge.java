@@ -19,124 +19,107 @@
 
 package org.apache.curator.framework.recipes.cache;
 
+import static org.apache.curator.framework.recipes.cache.CuratorCacheListener.Type.*;
 import com.google.common.collect.Sets;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.listen.Listenable;
-import org.apache.curator.framework.listen.StandardListenerManager;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-
-import static org.apache.curator.framework.recipes.cache.CuratorCacheListener.Type.*;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.listen.Listenable;
+import org.apache.curator.framework.listen.StandardListenerManager;
 
 /**
  * Version of CuratorCacheBridge for pre-ZK 3.6 - uses TreeCache instead of CuratorCache
  */
 @SuppressWarnings("deprecation")
-class CompatibleCuratorCacheBridge implements CuratorCacheBridge, TreeCacheListener
-{
+class CompatibleCuratorCacheBridge implements CuratorCacheBridge, TreeCacheListener {
     private final TreeCache cache;
     private final StandardListenerManager<CuratorCacheListener> listenerManager = StandardListenerManager.standard();
 
-    CompatibleCuratorCacheBridge(CuratorFramework client, String path, CuratorCache.Options[] optionsArg, ExecutorService executorService, boolean cacheData)
-    {
+    CompatibleCuratorCacheBridge(
+            CuratorFramework client,
+            String path,
+            CuratorCache.Options[] optionsArg,
+            ExecutorService executorService,
+            boolean cacheData) {
         Set<CuratorCache.Options> options = (optionsArg != null) ? Sets.newHashSet(optionsArg) : Collections.emptySet();
         TreeCache.Builder builder = TreeCache.newBuilder(client, path).setCacheData(cacheData);
-        if ( options.contains(CuratorCache.Options.SINGLE_NODE_CACHE) )
-        {
+        if (options.contains(CuratorCache.Options.SINGLE_NODE_CACHE)) {
             builder.setMaxDepth(0);
         }
-        if ( options.contains(CuratorCache.Options.COMPRESSED_DATA) )
-        {
+        if (options.contains(CuratorCache.Options.COMPRESSED_DATA)) {
             builder.setDataIsCompressed(true);
         }
-        if ( executorService != null )
-        {
+        if (executorService != null) {
             builder.setExecutor(executorService);
         }
         cache = builder.build();
     }
 
     @Override
-    public void start()
-    {
-        try
-        {
+    public void start() {
+        try {
             cache.getListenable().addListener(this);
 
             cache.start();
-        }
-        catch ( Exception e )
-        {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         cache.close();
     }
 
     @Override
-    public boolean isCuratorCache()
-    {
+    public boolean isCuratorCache() {
         return false;
     }
 
     @Override
-    public Listenable<CuratorCacheListener> listenable()
-    {
+    public Listenable<CuratorCacheListener> listenable() {
         return listenerManager;
     }
 
     @Override
-    public Optional<ChildData> get(String path)
-    {
+    public Optional<ChildData> get(String path) {
         return Optional.ofNullable(cache.getCurrentData(path));
     }
 
     @Override
-    public int size()
-    {
+    public int size() {
         return cache.size();
     }
 
     @Override
-    public Stream<ChildData> stream()
-    {
+    public Stream<ChildData> stream() {
         Iterable<ChildData> iterable = cache::iterator;
         return StreamSupport.stream(iterable.spliterator(), false);
     }
 
     @Override
-    public void childEvent(CuratorFramework client, TreeCacheEvent event) throws Exception
-    {
-        switch ( event.getType() )
-        {
-            case NODE_ADDED:
-            {
+    public void childEvent(CuratorFramework client, TreeCacheEvent event) throws Exception {
+        switch (event.getType()) {
+            case NODE_ADDED: {
                 listenerManager.forEach(listener -> listener.event(NODE_CREATED, null, event.getData()));
                 break;
             }
 
-            case NODE_REMOVED:
-            {
+            case NODE_REMOVED: {
                 listenerManager.forEach(listener -> listener.event(NODE_DELETED, event.getData(), null));
                 break;
             }
 
-            case NODE_UPDATED:
-            {
+            case NODE_UPDATED: {
                 listenerManager.forEach(listener -> listener.event(NODE_CHANGED, event.getOldData(), event.getData()));
                 break;
             }
 
-            case INITIALIZED:
-            {
+            case INITIALIZED: {
                 listenerManager.forEach(CuratorCacheListener::initialized);
                 break;
             }

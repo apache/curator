@@ -23,8 +23,7 @@ import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.x.async.AsyncStage;
 import org.apache.zookeeper.data.Stat;
 
-public interface VersionedModeledFramework<T>
-{
+public interface VersionedModeledFramework<T> {
     /**
      * @see org.apache.curator.x.async.modeled.ModeledFramework#set(Object)
      */

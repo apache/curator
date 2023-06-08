@@ -21,8 +21,7 @@ package org.apache.curator.test;
 
 import java.io.Closeable;
 
-interface ZooKeeperMainFace extends Closeable
-{
+interface ZooKeeperMainFace extends Closeable {
     void start(QuorumPeerConfigBuilder configBuilder);
 
     void kill();

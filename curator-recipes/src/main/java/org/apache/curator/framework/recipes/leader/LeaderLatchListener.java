@@ -27,21 +27,20 @@ package org.apache.curator.framework.recipes.leader;
  * before these methods get called.  The contract is that if that happens, you should see another call to the other
  * method pretty quickly.
  */
-public interface LeaderLatchListener
-{
-  /**
-   * This is called when the LeaderLatch's state goes from hasLeadership = false to hasLeadership = true.
-   *
-   * Note that it is possible that by the time this method call happens, hasLeadership has fallen back to false.  If
-   * this occurs, you can expect {@link #notLeader()} to also be called.
-   */
-  public void isLeader();
+public interface LeaderLatchListener {
+    /**
+     * This is called when the LeaderLatch's state goes from hasLeadership = false to hasLeadership = true.
+     *
+     * Note that it is possible that by the time this method call happens, hasLeadership has fallen back to false.  If
+     * this occurs, you can expect {@link #notLeader()} to also be called.
+     */
+    public void isLeader();
 
-  /**
-   * This is called when the LeaderLatch's state goes from hasLeadership = true to hasLeadership = false.
-   *
-   * Note that it is possible that by the time this method call happens, hasLeadership has become true.  If
-   * this occurs, you can expect {@link #isLeader()} to also be called.
-   */
-  public void notLeader();
+    /**
+     * This is called when the LeaderLatch's state goes from hasLeadership = true to hasLeadership = false.
+     *
+     * Note that it is possible that by the time this method call happens, hasLeadership has become true.  If
+     * this occurs, you can expect {@link #isLeader()} to also be called.
+     */
+    public void notLeader();
 }

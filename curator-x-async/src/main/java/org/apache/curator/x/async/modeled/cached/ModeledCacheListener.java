@@ -24,10 +24,8 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.LoggerFactory;
 
 @FunctionalInterface
-public interface ModeledCacheListener<T>
-{
-    enum Type
-    {
+public interface ModeledCacheListener<T> {
+    enum Type {
         /**
          * A child was added to the path
          */
@@ -57,8 +55,7 @@ public interface ModeledCacheListener<T>
     /**
      * The cache has finished initializing
      */
-    default void initialized()
-    {
+    default void initialized() {
         // NOP
     }
 
@@ -68,8 +65,7 @@ public interface ModeledCacheListener<T>
      *
      * @param e the exception
      */
-    default void handleException(Exception e)
-    {
+    default void handleException(Exception e) {
         LoggerFactory.getLogger(getClass()).error("Could not process cache message", e);
     }
 
@@ -81,24 +77,19 @@ public interface ModeledCacheListener<T>
      *
      * @return wrapped listener
      */
-    default ModeledCacheListener<T> postInitializedOnly()
-    {
-        return new ModeledCacheListener<T>()
-        {
+    default ModeledCacheListener<T> postInitializedOnly() {
+        return new ModeledCacheListener<T>() {
             private volatile boolean isInitialized = false;
 
             @Override
-            public void accept(Type type, ZPath path, Stat stat, T model)
-            {
-                if ( isInitialized )
-                {
+            public void accept(Type type, ZPath path, Stat stat, T model) {
+                if (isInitialized) {
                     ModeledCacheListener.this.accept(type, path, stat, model);
                 }
             }
 
             @Override
-            public void initialized()
-            {
+            public void initialized() {
                 isInitialized = true;
                 ModeledCacheListener.this.initialized();
             }

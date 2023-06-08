@@ -19,11 +19,7 @@
 
 package org.apache.curator.framework.api;
 
-import org.apache.zookeeper.data.ACL;
 import java.util.List;
+import org.apache.zookeeper.data.ACL;
 
-public interface GetACLBuilder extends
-    BackgroundPathable<List<ACL>>,
-    Statable<Pathable<List<ACL>>>
-{
-}
+public interface GetACLBuilder extends BackgroundPathable<List<ACL>>, Statable<Pathable<List<ACL>>> {}

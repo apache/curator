@@ -22,8 +22,7 @@ package org.apache.curator.x.async.api;
 /**
  * Terminal operation for config/reconfig builders
  */
-public interface AsyncEnsemblable<T>
-{
+public interface AsyncEnsemblable<T> {
     /**
      * Commit the currently building operation and invoke ZooKeeper
      *

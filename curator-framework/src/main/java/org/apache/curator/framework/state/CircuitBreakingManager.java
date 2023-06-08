@@ -19,73 +19,61 @@
 
 package org.apache.curator.framework.state;
 
+import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.listen.StandardListenerManager;
 import org.apache.curator.framework.listen.UnaryListenerManager;
-import java.util.concurrent.Executor;
-import java.util.function.Consumer;
 
-class CircuitBreakingManager implements UnaryListenerManager<ConnectionStateListener>
-{
+class CircuitBreakingManager implements UnaryListenerManager<ConnectionStateListener> {
     private final StandardListenerManager<ConnectionStateListener> mainContainer = StandardListenerManager.standard();
-    private final StandardListenerManager<ConnectionStateListener> doNotProxyContainer = StandardListenerManager.standard();
+    private final StandardListenerManager<ConnectionStateListener> doNotProxyContainer =
+            StandardListenerManager.standard();
     private final CircuitBreakingConnectionStateListener masterListener;
 
-    CircuitBreakingManager(CuratorFramework client, CircuitBreaker circuitBreaker)
-    {
-        ConnectionStateListener masterStateChanged = (__, newState) -> mainContainer.forEach(listener -> listener.stateChanged(client, newState));
+    CircuitBreakingManager(CuratorFramework client, CircuitBreaker circuitBreaker) {
+        ConnectionStateListener masterStateChanged =
+                (__, newState) -> mainContainer.forEach(listener -> listener.stateChanged(client, newState));
         masterListener = new CircuitBreakingConnectionStateListener(client, masterStateChanged, circuitBreaker);
     }
 
     @Override
-    public void clear()
-    {
+    public void clear() {
         doNotProxyContainer.clear();
         mainContainer.clear();
     }
 
     @Override
-    public int size()
-    {
+    public int size() {
         return mainContainer.size() + doNotProxyContainer.size();
     }
 
     @Override
-    public void forEach(Consumer<ConnectionStateListener> function)
-    {
+    public void forEach(Consumer<ConnectionStateListener> function) {
         doNotProxyContainer.forEach(function);
         function.accept(masterListener);
     }
 
     @Override
-    public void addListener(ConnectionStateListener listener)
-    {
-        if ( listener.doNotProxy() )
-        {
+    public void addListener(ConnectionStateListener listener) {
+        if (listener.doNotProxy()) {
             doNotProxyContainer.addListener(listener);
-        }
-        else
-        {
+        } else {
             mainContainer.addListener(listener);
         }
     }
 
     @Override
-    public void addListener(ConnectionStateListener listener, Executor executor)
-    {
-        if ( listener.doNotProxy() )
-        {
+    public void addListener(ConnectionStateListener listener, Executor executor) {
+        if (listener.doNotProxy()) {
             doNotProxyContainer.addListener(listener, executor);
-        }
-        else
-        {
+        } else {
             mainContainer.addListener(listener, executor);
         }
     }
 
     @Override
-    public void removeListener(ConnectionStateListener listener)
-    {
+    public void removeListener(ConnectionStateListener listener) {
         mainContainer.removeListener(listener);
         doNotProxyContainer.removeListener(listener);
     }

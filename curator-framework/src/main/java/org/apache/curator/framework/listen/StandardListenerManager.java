@@ -27,8 +27,7 @@ import java.util.function.UnaryOperator;
 /**
  * Non mapping version of a listener container
  */
-public class StandardListenerManager<T> implements UnaryListenerManager<T>
-{
+public class StandardListenerManager<T> implements UnaryListenerManager<T> {
     private final ListenerManager<T, T> container;
 
     /**
@@ -36,8 +35,7 @@ public class StandardListenerManager<T> implements UnaryListenerManager<T>
      *
      * @return new container
      */
-    public static <T> StandardListenerManager<T> standard()
-    {
+    public static <T> StandardListenerManager<T> standard() {
         MappingListenerManager<T, T> container = new MappingListenerManager<>(Function.identity());
         return new StandardListenerManager<>(container);
     }
@@ -48,50 +46,42 @@ public class StandardListenerManager<T> implements UnaryListenerManager<T>
      * @param mapper listener mapper/wrapper
      * @return new container
      */
-    public static <T> StandardListenerManager<T> mappingStandard(UnaryOperator<T> mapper)
-    {
+    public static <T> StandardListenerManager<T> mappingStandard(UnaryOperator<T> mapper) {
         MappingListenerManager<T, T> container = new MappingListenerManager<>(mapper);
         return new StandardListenerManager<>(container);
     }
 
     @Override
-    public void addListener(T listener)
-    {
+    public void addListener(T listener) {
         container.addListener(listener);
     }
 
     @Override
-    public void addListener(T listener, Executor executor)
-    {
+    public void addListener(T listener, Executor executor) {
         container.addListener(listener, executor);
     }
 
     @Override
-    public void removeListener(T listener)
-    {
+    public void removeListener(T listener) {
         container.removeListener(listener);
     }
 
     @Override
-    public void clear()
-    {
+    public void clear() {
         container.clear();
     }
 
     @Override
-    public int size()
-    {
+    public int size() {
         return container.size();
     }
 
     @Override
-    public void forEach(Consumer<T> function)
-    {
+    public void forEach(Consumer<T> function) {
         container.forEach(function);
     }
 
-    private StandardListenerManager(ListenerManager<T, T> container)
-    {
+    private StandardListenerManager(ListenerManager<T, T> container) {
         this.container = container;
     }
 }

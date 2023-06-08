@@ -19,12 +19,12 @@
 
 package org.apache.curator.framework.state;
 
+import java.util.Objects;
+import java.util.concurrent.ScheduledExecutorService;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.Objects;
-import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * <p>
@@ -73,8 +73,7 @@ import java.util.concurrent.ScheduledExecutorService;
  * </pre></code>
  * </p>
  */
-public class CircuitBreakingConnectionStateListener implements ConnectionStateListener
-{
+public class CircuitBreakingConnectionStateListener implements ConnectionStateListener {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorFramework client;
     private final ConnectionStateListener listener;
@@ -92,8 +91,8 @@ public class CircuitBreakingConnectionStateListener implements ConnectionStateLi
      * @param listener listener to manage
      * @param retryPolicy breaking policy to use
      */
-    public CircuitBreakingConnectionStateListener(CuratorFramework client, ConnectionStateListener listener, RetryPolicy retryPolicy)
-    {
+    public CircuitBreakingConnectionStateListener(
+            CuratorFramework client, ConnectionStateListener listener, RetryPolicy retryPolicy) {
         this(client, listener, CircuitBreaker.build(retryPolicy));
     }
 
@@ -103,13 +102,16 @@ public class CircuitBreakingConnectionStateListener implements ConnectionStateLi
      * @param retryPolicy breaking policy to use
      * @param service scheduler to use
      */
-    public CircuitBreakingConnectionStateListener(CuratorFramework client, ConnectionStateListener listener, RetryPolicy retryPolicy, ScheduledExecutorService service)
-    {
+    public CircuitBreakingConnectionStateListener(
+            CuratorFramework client,
+            ConnectionStateListener listener,
+            RetryPolicy retryPolicy,
+            ScheduledExecutorService service) {
         this(client, listener, CircuitBreaker.build(retryPolicy, service));
     }
 
-    CircuitBreakingConnectionStateListener(CuratorFramework client, ConnectionStateListener listener, CircuitBreaker circuitBreaker)
-    {
+    CircuitBreakingConnectionStateListener(
+            CuratorFramework client, ConnectionStateListener listener, CircuitBreaker circuitBreaker) {
         this.client = Objects.requireNonNull(client, "client cannot be null");
         this.listener = Objects.requireNonNull(listener, "listener cannot be null");
         this.circuitBreaker = Objects.requireNonNull(circuitBreaker, "circuitBreaker cannot be null");
@@ -117,14 +119,10 @@ public class CircuitBreakingConnectionStateListener implements ConnectionStateLi
     }
 
     @Override
-    public synchronized void stateChanged(CuratorFramework client, ConnectionState newState)
-    {
-        if ( circuitBreaker.isOpen() )
-        {
+    public synchronized void stateChanged(CuratorFramework client, ConnectionState newState) {
+        if (circuitBreaker.isOpen()) {
             handleOpenStateChange(newState);
-        }
-        else
-        {
+        } else {
             handleClosedStateChange(newState);
         }
     }
@@ -134,38 +132,28 @@ public class CircuitBreakingConnectionStateListener implements ConnectionStateLi
      *
      * @return true/false
      */
-    public synchronized boolean isOpen()
-    {
+    public synchronized boolean isOpen() {
         return circuitBreaker.isOpen();
     }
 
-    private synchronized void handleClosedStateChange(ConnectionState newState)
-    {
-        if ( !newState.isConnected() )
-        {
-            if ( circuitBreaker.tryToOpen(this::checkCloseCircuit) )
-            {
+    private synchronized void handleClosedStateChange(ConnectionState newState) {
+        if (!newState.isConnected()) {
+            if (circuitBreaker.tryToOpen(this::checkCloseCircuit)) {
                 log.info("Circuit is opening. State: {} post-retryCount: {}", newState, circuitBreaker.getRetryCount());
                 circuitLastState = circuitInitialState = newState;
                 circuitLostHasBeenSent = (newState == ConnectionState.LOST);
-            }
-            else
-            {
+            } else {
                 log.debug("Could not open circuit breaker. State: {}", newState);
             }
         }
         callListener(newState);
     }
 
-    private synchronized void handleOpenStateChange(ConnectionState newState)
-    {
-        if ( circuitLostHasBeenSent || (newState != ConnectionState.LOST) )
-        {
+    private synchronized void handleOpenStateChange(ConnectionState newState) {
+        if (circuitLostHasBeenSent || (newState != ConnectionState.LOST)) {
             log.debug("Circuit is open. Ignoring state change: {}", newState);
             circuitLastState = newState;
-        }
-        else
-        {
+        } else {
             log.debug("Circuit is open. State changed to LOST. Sending to listener.");
             circuitLostHasBeenSent = true;
             circuitLastState = circuitInitialState = ConnectionState.LOST;
@@ -173,41 +161,37 @@ public class CircuitBreakingConnectionStateListener implements ConnectionStateLi
         }
     }
 
-    private synchronized void checkCloseCircuit()
-    {
-        if ( (circuitLastState == null) || circuitLastState.isConnected() )
-        {
+    private synchronized void checkCloseCircuit() {
+        if ((circuitLastState == null) || circuitLastState.isConnected()) {
             log.info("Circuit is closing. Initial state: {} - Last state: {}", circuitInitialState, circuitLastState);
             closeCircuit();
-        }
-        else if ( circuitBreaker.tryToRetry(this::checkCloseCircuit) )
-        {
-            log.debug("Circuit open is continuing due to retry. State: {} post-retryCount: {}", circuitLastState, circuitBreaker.getRetryCount());
-        }
-        else
-        {
-            log.info("Circuit is closing due to retries exhausted. Initial state: {} - Last state: {}", circuitInitialState, circuitLastState);
+        } else if (circuitBreaker.tryToRetry(this::checkCloseCircuit)) {
+            log.debug(
+                    "Circuit open is continuing due to retry. State: {} post-retryCount: {}",
+                    circuitLastState,
+                    circuitBreaker.getRetryCount());
+        } else {
+            log.info(
+                    "Circuit is closing due to retries exhausted. Initial state: {} - Last state: {}",
+                    circuitInitialState,
+                    circuitLastState);
             closeCircuit();
         }
     }
 
-    private synchronized void callListener(ConnectionState newState)
-    {
-        if ( newState != null )
-        {
+    private synchronized void callListener(ConnectionState newState) {
+        if (newState != null) {
             listener.stateChanged(client, newState);
         }
     }
 
-    private synchronized void closeCircuit()
-    {
+    private synchronized void closeCircuit() {
         ConnectionState stateToSend = (circuitLastState == circuitInitialState) ? null : circuitLastState;
         reset();
         callListener(stateToSend);
     }
 
-    private synchronized void reset()
-    {
+    private synchronized void reset() {
         circuitLastState = null;
         circuitInitialState = null;
         circuitLostHasBeenSent = false;

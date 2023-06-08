@@ -19,15 +19,14 @@
 
 package org.apache.curator.x.async.api;
 
+import java.util.List;
 import org.apache.curator.x.async.AsyncStage;
 import org.apache.zookeeper.data.Stat;
-import java.util.List;
 
 /**
  * Builder for getChildren()
  */
-public interface AsyncGetChildrenBuilder extends AsyncPathable<AsyncStage<List<String>>>
-{
+public interface AsyncGetChildrenBuilder extends AsyncPathable<AsyncStage<List<String>>> {
     /**
      * Have the operation fill the provided stat object
      *

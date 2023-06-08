@@ -20,6 +20,12 @@
 package org.apache.curator.x.discovery.details;
 
 import com.google.common.collect.Lists;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadFactory;
 import org.apache.curator.x.discovery.DownInstancePolicy;
 import org.apache.curator.x.discovery.InstanceFilter;
 import org.apache.curator.x.discovery.ProviderStrategy;
@@ -27,42 +33,44 @@ import org.apache.curator.x.discovery.ServiceCache;
 import org.apache.curator.x.discovery.ServiceCacheBuilder;
 import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.discovery.ServiceProvider;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadFactory;
 
 /**
  * The main interface for Service Discovery. Encapsulates the discovery service for a particular
  * named service along with a provider strategy.
  */
-public class ServiceProviderImpl<T> implements ServiceProvider<T>
-{
+public class ServiceProviderImpl<T> implements ServiceProvider<T> {
     private final ServiceCache<T> cache;
     private final InstanceProvider<T> instanceProvider;
     private final ServiceDiscoveryImpl<T> discovery;
     private final ProviderStrategy<T> providerStrategy;
     private final DownInstanceManager<T> downInstanceManager;
 
-    public ServiceProviderImpl(ServiceDiscoveryImpl<T> discovery, String serviceName, ProviderStrategy<T> providerStrategy, ThreadFactory threadFactory, List<InstanceFilter<T>> filters, DownInstancePolicy downInstancePolicy)
-    {
+    public ServiceProviderImpl(
+            ServiceDiscoveryImpl<T> discovery,
+            String serviceName,
+            ProviderStrategy<T> providerStrategy,
+            ThreadFactory threadFactory,
+            List<InstanceFilter<T>> filters,
+            DownInstancePolicy downInstancePolicy) {
         this(discovery, serviceName, providerStrategy, threadFactory, null, filters, downInstancePolicy);
     }
 
-    protected ServiceProviderImpl(ServiceDiscoveryImpl<T> discovery, String serviceName, ProviderStrategy<T> providerStrategy, ThreadFactory threadFactory, ExecutorService executorService, List<InstanceFilter<T>> filters, DownInstancePolicy downInstancePolicy)
-    {
+    protected ServiceProviderImpl(
+            ServiceDiscoveryImpl<T> discovery,
+            String serviceName,
+            ProviderStrategy<T> providerStrategy,
+            ThreadFactory threadFactory,
+            ExecutorService executorService,
+            List<InstanceFilter<T>> filters,
+            DownInstancePolicy downInstancePolicy) {
         this.discovery = discovery;
         this.providerStrategy = providerStrategy;
 
         downInstanceManager = new DownInstanceManager<>(downInstancePolicy);
         final ServiceCacheBuilder<T> builder = discovery.serviceCacheBuilder().name(serviceName);
-        if (executorService != null)
-        {
+        if (executorService != null) {
             builder.executorService(executorService);
-        } else
-        {
+        } else {
             //noinspection deprecation
             builder.threadFactory(threadFactory);
         }
@@ -80,8 +88,7 @@ public class ServiceProviderImpl<T> implements ServiceProvider<T>
      * @throws Exception any errors
      */
     @Override
-    public void start() throws Exception
-    {
+    public void start() throws Exception {
         cache.start();
         discovery.providerOpened(this);
     }
@@ -90,8 +97,7 @@ public class ServiceProviderImpl<T> implements ServiceProvider<T>
      * {@inheritDoc}
      */
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         discovery.providerClosed(this);
         cache.close();
     }
@@ -104,8 +110,7 @@ public class ServiceProviderImpl<T> implements ServiceProvider<T>
      * @throws Exception any errors
      */
     @Override
-    public Collection<ServiceInstance<T>> getAllInstances() throws Exception
-    {
+    public Collection<ServiceInstance<T>> getAllInstances() throws Exception {
         return instanceProvider.getInstances();
     }
 
@@ -117,14 +122,12 @@ public class ServiceProviderImpl<T> implements ServiceProvider<T>
      * @throws Exception any errors
      */
     @Override
-    public ServiceInstance<T> getInstance() throws Exception
-    {
+    public ServiceInstance<T> getInstance() throws Exception {
         return providerStrategy.getInstance(instanceProvider);
     }
 
     @Override
-    public void noteError(ServiceInstance<T> instance)
-    {
+    public void noteError(ServiceInstance<T> instance) {
         downInstanceManager.add(instance);
     }
 }

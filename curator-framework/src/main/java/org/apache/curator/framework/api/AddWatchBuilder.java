@@ -21,8 +21,7 @@ package org.apache.curator.framework.api;
 
 import org.apache.zookeeper.AddWatchMode;
 
-public interface AddWatchBuilder extends AddWatchBuilder2
-{
+public interface AddWatchBuilder extends AddWatchBuilder2 {
     /**
      * The mode to use. By default, {@link org.apache.zookeeper.AddWatchMode#PERSISTENT_RECURSIVE} is used
      *

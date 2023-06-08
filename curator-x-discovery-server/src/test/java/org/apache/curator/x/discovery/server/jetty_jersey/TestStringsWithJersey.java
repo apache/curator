@@ -29,6 +29,9 @@ import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
 import com.sun.jersey.api.core.DefaultResourceConfig;
 import com.sun.jersey.spi.container.servlet.ServletContainer;
+import java.util.Set;
+import javax.ws.rs.core.Application;
+import javax.ws.rs.core.MediaType;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.discovery.ServiceType;
@@ -46,12 +49,8 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.MediaType;
-import java.util.Set;
 
-public class TestStringsWithJersey
-{
+public class TestStringsWithJersey {
     private static final String HOST = "127.0.0.1";
     private Server server;
     private JsonServiceNamesMarshaller serviceNamesMarshaller;
@@ -61,27 +60,23 @@ public class TestStringsWithJersey
     private int port;
 
     @BeforeEach
-    public void         setup() throws Exception
-    {
+    public void setup() throws Exception {
         context = new StringDiscoveryContext(new MockServiceDiscovery<String>(), new RandomStrategy<String>(), 1000);
         serviceNamesMarshaller = new JsonServiceNamesMarshaller();
         serviceInstanceMarshaller = new JsonServiceInstanceMarshaller<String>(context);
         serviceInstancesMarshaller = new JsonServiceInstancesMarshaller<String>(context);
 
-        Application                                     application = new DefaultResourceConfig()
-        {
+        Application application = new DefaultResourceConfig() {
             @Override
-            public Set<Class<?>> getClasses()
-            {
-                Set<Class<?>>       classes = Sets.newHashSet();
+            public Set<Class<?>> getClasses() {
+                Set<Class<?>> classes = Sets.newHashSet();
                 classes.add(StringDiscoveryResource.class);
                 return classes;
             }
 
             @Override
-            public Set<Object> getSingletons()
-            {
-                Set<Object>     singletons = Sets.newHashSet();
+            public Set<Object> getSingletons() {
+                Set<Object> singletons = Sets.newHashSet();
                 singletons.add(context);
                 singletons.add(serviceNamesMarshaller);
                 singletons.add(serviceInstanceMarshaller);
@@ -101,29 +96,25 @@ public class TestStringsWithJersey
         server.setHandler(root);
         server.start();
     }
-    
+
     @AfterEach
-    public void         teardown() throws Exception
-    {
+    public void teardown() throws Exception {
         server.stop();
         server.join();
     }
 
     @Test
-    public void     testRegisterService() throws Exception
-    {
+    public void testRegisterService() throws Exception {
         ServiceInstance<String> service = ServiceInstance.<String>builder()
-            .name("test")
-            .payload("From Test")
-            .serviceType(ServiceType.STATIC)
-            .build();
+                .name("test")
+                .payload("From Test")
+                .serviceType(ServiceType.STATIC)
+                .build();
 
-        ClientConfig    config = new DefaultClientConfig()
-        {
+        ClientConfig config = new DefaultClientConfig() {
             @Override
-            public Set<Object> getSingletons()
-            {
-                Set<Object>     singletons = Sets.newHashSet();
+            public Set<Object> getSingletons() {
+                Set<Object> singletons = Sets.newHashSet();
                 singletons.add(context);
                 singletons.add(serviceNamesMarshaller);
                 singletons.add(serviceInstanceMarshaller);
@@ -131,33 +122,33 @@ public class TestStringsWithJersey
                 return singletons;
             }
         };
-        Client          client = Client.create(config);
-        WebResource     resource = client.resource("http://" + HOST + ":" + port);
-        resource.path("/v1/service/test/" + service.getId()).type(MediaType.APPLICATION_JSON_TYPE).put(service);
+        Client client = Client.create(config);
+        WebResource resource = client.resource("http://" + HOST + ":" + port);
+        resource.path("/v1/service/test/" + service.getId())
+                .type(MediaType.APPLICATION_JSON_TYPE)
+                .put(service);
 
         ServiceNames names = resource.path("/v1/service").get(ServiceNames.class);
         assertEquals(names.getNames(), Lists.newArrayList("test"));
 
-        GenericType<ServiceInstances<String>> type = new GenericType<ServiceInstances<String>>(){};
+        GenericType<ServiceInstances<String>> type = new GenericType<ServiceInstances<String>>() {};
         ServiceInstances<String> instances = resource.path("/v1/service/test").get(type);
         assertEquals(instances.getServices().size(), 1);
         assertEquals(instances.getServices().get(0), service);
 
         // Retrieve a single instance
-        GenericType<ServiceInstance<String>> singleInstanceType = new GenericType<ServiceInstance<String>>(){};
-        ServiceInstance<String>    instance = resource.path("/v1/service/test/" + service.getId()).get(singleInstanceType);
+        GenericType<ServiceInstance<String>> singleInstanceType = new GenericType<ServiceInstance<String>>() {};
+        ServiceInstance<String> instance =
+                resource.path("/v1/service/test/" + service.getId()).get(singleInstanceType);
         assertEquals(instance, service);
     }
 
     @Test
-    public void     testEmptyServiceNames()
-    {
-        ClientConfig    config = new DefaultClientConfig()
-        {
+    public void testEmptyServiceNames() {
+        ClientConfig config = new DefaultClientConfig() {
             @Override
-            public Set<Object> getSingletons()
-            {
-                Set<Object>     singletons = Sets.newHashSet();
+            public Set<Object> getSingletons() {
+                Set<Object> singletons = Sets.newHashSet();
                 singletons.add(context);
                 singletons.add(serviceNamesMarshaller);
                 singletons.add(serviceInstanceMarshaller);
@@ -165,8 +156,8 @@ public class TestStringsWithJersey
                 return singletons;
             }
         };
-        Client          client = Client.create(config);
-        WebResource     resource = client.resource("http://" + HOST + ":" + port);
+        Client client = Client.create(config);
+        WebResource resource = client.resource("http://" + HOST + ":" + port);
         ServiceNames names = resource.path("/v1/service").get(ServiceNames.class);
         assertEquals(names.getNames(), Lists.<String>newArrayList());
     }

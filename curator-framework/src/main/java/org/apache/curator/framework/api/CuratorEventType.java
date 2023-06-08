@@ -22,8 +22,7 @@ package org.apache.curator.framework.api;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.Watcher;
 
-public enum CuratorEventType
-{
+public enum CuratorEventType {
     /**
      * Corresponds to {@link CuratorFramework#create()}
      */

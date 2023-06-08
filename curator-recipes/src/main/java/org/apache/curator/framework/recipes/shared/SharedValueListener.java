@@ -24,8 +24,7 @@ import org.apache.curator.framework.state.ConnectionStateListener;
 /**
  * Listener for changes to a shared value
  */
-public interface SharedValueListener extends ConnectionStateListener
-{
+public interface SharedValueListener extends ConnectionStateListener {
     /**
      * Called when the shared value has changed
      *

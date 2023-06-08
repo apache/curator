@@ -19,8 +19,7 @@
 
 package org.apache.curator.framework.api;
 
-public interface Pathable<T>
-{
+public interface Pathable<T> {
     /**
      * Commit the currently building operation using the given path
      *
@@ -28,5 +27,5 @@ public interface Pathable<T>
      * @return operation result if any
      * @throws Exception errors
      */
-    public T       forPath(String path) throws Exception;
+    public T forPath(String path) throws Exception;
 }

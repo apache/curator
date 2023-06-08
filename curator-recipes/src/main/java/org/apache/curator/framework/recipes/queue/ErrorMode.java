@@ -23,8 +23,7 @@ package org.apache.curator.framework.recipes.queue;
  * Used when the queue is created with a {@link QueueBuilder#lockPath(String)}. Determines
  * the behavior when the queue consumer throws an exception
  */
-public enum ErrorMode
-{
+public enum ErrorMode {
     /**
      * If the consumer throws an exception, requeue the message. This is the default.
      */

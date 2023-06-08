@@ -19,16 +19,15 @@
 
 package org.apache.curator.x.async.api;
 
+import java.util.List;
 import org.apache.curator.x.async.AsyncStage;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
-import java.util.List;
 
 /**
  * Builder for getAcls
  */
-public interface AsyncGetACLBuilder extends AsyncPathable<AsyncStage<List<ACL>>>
-{
+public interface AsyncGetACLBuilder extends AsyncPathable<AsyncStage<List<ACL>>> {
     /**
      * Have the operation fill the provided stat object
      *

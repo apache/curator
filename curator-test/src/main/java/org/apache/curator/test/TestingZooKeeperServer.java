@@ -23,16 +23,13 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicReference;
-
-import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Thanks to Jeremie BORDIER (ahfeel) for this code
  */
-public class TestingZooKeeperServer implements Closeable
-{
+public class TestingZooKeeperServer implements Closeable {
     private static final Logger log = LoggerFactory.getLogger(TestingZooKeeperServer.class);
     static boolean hasZooKeeperServerEmbedded;
 
@@ -58,19 +55,19 @@ public class TestingZooKeeperServer implements Closeable
         return main;
     }
 
-    private enum State
-    {
-        LATENT, STARTED, STOPPED, CLOSED
+    private enum State {
+        LATENT,
+        STARTED,
+        STOPPED,
+        CLOSED
     }
 
-    public TestingZooKeeperServer(QuorumConfigBuilder configBuilder)
-    {
+    public TestingZooKeeperServer(QuorumConfigBuilder configBuilder) {
         this(configBuilder, 0);
     }
 
-    public TestingZooKeeperServer(QuorumConfigBuilder configBuilder, int thisInstanceIndex)
-    {
-        System.setProperty("zookeeper.jmx.log4j.disable", "true");  // disable JMX logging
+    public TestingZooKeeperServer(QuorumConfigBuilder configBuilder, int thisInstanceIndex) {
+        System.setProperty("zookeeper.jmx.log4j.disable", "true"); // disable JMX logging
 
         this.configBuilder = configBuilder;
         this.thisInstanceIndex = thisInstanceIndex;
@@ -92,13 +89,11 @@ public class TestingZooKeeperServer implements Closeable
         return configBuilder.size() > 1;
     }
 
-    public Collection<InstanceSpec> getInstanceSpecs()
-    {
+    public Collection<InstanceSpec> getInstanceSpecs() {
         return configBuilder.getInstanceSpecs();
     }
 
-    public void kill()
-    {
+    public void kill() {
         main.kill();
         state.set(State.STOPPED);
     }
@@ -109,17 +104,14 @@ public class TestingZooKeeperServer implements Closeable
      * it will be restarted. If it is in a CLOSED state then an exception will
      * be thrown.
      */
-    public void restart() throws Exception
-    {
+    public void restart() throws Exception {
         // Can't restart from a closed state as all the temporary data is gone
-        if ( state.get() == State.CLOSED )
-        {
+        if (state.get() == State.CLOSED) {
             throw new IllegalStateException("Cannot restart a closed instance");
         }
 
         // If the server's currently running then stop it.
-        if ( state.get() == State.STARTED )
-        {
+        if (state.get() == State.STARTED) {
             stop();
         }
 
@@ -130,40 +122,32 @@ public class TestingZooKeeperServer implements Closeable
         start();
     }
 
-    public void stop() throws IOException
-    {
-        if ( state.compareAndSet(State.STARTED, State.STOPPED) )
-        {
+    public void stop() throws IOException {
+        if (state.compareAndSet(State.STARTED, State.STOPPED)) {
             main.close();
         }
     }
 
-    public InstanceSpec getInstanceSpec()
-    {
+    public InstanceSpec getInstanceSpec() {
         return configBuilder.getInstanceSpec(thisInstanceIndex);
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         stop();
 
-        if ( state.compareAndSet(State.STOPPED, State.CLOSED) )
-        {
+        if (state.compareAndSet(State.STOPPED, State.CLOSED)) {
             configBuilder.close();
 
             InstanceSpec spec = getInstanceSpec();
-            if ( spec.deleteDataDirectoryOnClose() )
-            {
+            if (spec.deleteDataDirectoryOnClose()) {
                 DirectoryUtils.deleteRecursively(spec.getDataDirectory());
             }
         }
     }
 
-    public void start() throws Exception
-    {
-        if ( !state.compareAndSet(State.LATENT, State.STARTED) )
-        {
+    public void start() throws Exception {
+        if (!state.compareAndSet(State.LATENT, State.STARTED)) {
             return;
         }
 

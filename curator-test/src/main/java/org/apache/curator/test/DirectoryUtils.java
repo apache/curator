@@ -20,19 +20,18 @@
 package org.apache.curator.test;
 
 import com.google.common.base.Preconditions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 // copied from Google Guava as these methods are now deprecated
 // NOTE: removed the line of code documented: Symbolic links will have different canonical and absolute paths
 // Update May 28, 2017 - change exception into logs
-public class DirectoryUtils
-{
+public class DirectoryUtils {
     private static final Logger log = LoggerFactory.getLogger(DirectoryUtils.class);
 
     public static File createTempDirectory() {
@@ -44,8 +43,7 @@ public class DirectoryUtils
         }
     }
 
-    public static void deleteRecursively(File file) throws IOException
-    {
+    public static void deleteRecursively(File file) throws IOException {
         if (file.isDirectory()) {
             deleteDirectoryContents(file);
         }
@@ -54,10 +52,8 @@ public class DirectoryUtils
         }
     }
 
-    public static void deleteDirectoryContents(File directory)
-        throws IOException {
-        Preconditions.checkArgument(directory.isDirectory(),
-            "Not a directory: %s", directory);
+    public static void deleteDirectoryContents(File directory) throws IOException {
+        Preconditions.checkArgument(directory.isDirectory(), "Not a directory: %s", directory);
         File[] files = directory.listFiles();
         if (files == null) {
             log.warn("directory.listFiles() returned null for: " + directory);

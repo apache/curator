@@ -20,12 +20,6 @@
 package org.apache.curator.framework.state;
 
 import com.google.common.base.Preconditions;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.listen.Listenable;
-import org.apache.curator.framework.listen.UnaryListenerManager;
-import org.apache.curator.utils.ThreadUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -36,26 +30,26 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.listen.Listenable;
+import org.apache.curator.framework.listen.UnaryListenerManager;
+import org.apache.curator.utils.ThreadUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Used internally to manage connection state
  */
-public class ConnectionStateManager implements Closeable
-{
+public class ConnectionStateManager implements Closeable {
     private static final int QUEUE_SIZE;
 
-    static
-    {
+    static {
         int size = 25;
         String property = System.getProperty("ConnectionStateManagerSize", null);
-        if ( property != null )
-        {
-            try
-            {
+        if (property != null) {
+            try {
                 size = Integer.parseInt(property);
-            }
-            catch ( NumberFormatException ignore )
-            {
+            } catch (NumberFormatException ignore) {
                 // ignore
             }
         }
@@ -79,8 +73,7 @@ public class ConnectionStateManager implements Closeable
 
     private volatile long lastExpiredInstanceIndex = -1;
 
-    private enum State
-    {
+    private enum State {
         LATENT,
         STARTED,
         CLOSED
@@ -92,9 +85,14 @@ public class ConnectionStateManager implements Closeable
      * @param sessionTimeoutMs the ZK session timeout in milliseconds
      * @param sessionExpirationPercent percentage of negotiated session timeout to use when simulating a session timeout. 0 means don't simulate at all
      */
-    public ConnectionStateManager(CuratorFramework client, ThreadFactory threadFactory, int sessionTimeoutMs, int sessionExpirationPercent)
-    {
-        this(client, threadFactory, sessionTimeoutMs, sessionExpirationPercent, ConnectionStateListenerManagerFactory.standard);
+    public ConnectionStateManager(
+            CuratorFramework client, ThreadFactory threadFactory, int sessionTimeoutMs, int sessionExpirationPercent) {
+        this(
+                client,
+                threadFactory,
+                sessionTimeoutMs,
+                sessionExpirationPercent,
+                ConnectionStateListenerManagerFactory.standard);
     }
 
     /**
@@ -104,13 +102,16 @@ public class ConnectionStateManager implements Closeable
      * @param sessionExpirationPercent percentage of negotiated session timeout to use when simulating a session timeout. 0 means don't simulate at all
      * @param managerFactory manager factory to use
      */
-    public ConnectionStateManager(CuratorFramework client, ThreadFactory threadFactory, int sessionTimeoutMs, int sessionExpirationPercent, ConnectionStateListenerManagerFactory managerFactory)
-    {
+    public ConnectionStateManager(
+            CuratorFramework client,
+            ThreadFactory threadFactory,
+            int sessionTimeoutMs,
+            int sessionExpirationPercent,
+            ConnectionStateListenerManagerFactory managerFactory) {
         this.client = client;
         this.sessionTimeoutMs = sessionTimeoutMs;
         this.sessionExpirationPercent = sessionExpirationPercent;
-        if ( threadFactory == null )
-        {
+        if (threadFactory == null) {
             threadFactory = ThreadUtils.newThreadFactory("ConnectionStateManager");
         }
         service = Executors.newSingleThreadExecutor(threadFactory);
@@ -120,29 +121,21 @@ public class ConnectionStateManager implements Closeable
     /**
      * Start the manager
      */
-    public void start()
-    {
+    public void start() {
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
 
-        service.submit
-            (
-                new Callable<Object>()
-                {
-                    @Override
-                    public Object call() throws Exception
-                    {
-                        processEvents();
-                        return null;
-                    }
-                }
-            );
+        service.submit(new Callable<Object>() {
+            @Override
+            public Object call() throws Exception {
+                processEvents();
+                return null;
+            }
+        });
     }
 
     @Override
-    public void close()
-    {
-        if ( state.compareAndSet(State.STARTED, State.CLOSED) )
-        {
+    public void close() {
+        if (state.compareAndSet(State.STARTED, State.CLOSED)) {
             service.shutdownNow();
             listeners.clear();
         }
@@ -154,8 +147,7 @@ public class ConnectionStateManager implements Closeable
      * @return listenable
      * @since 4.2.0 return type has changed from ListenerContainer to Listenable
      */
-    public Listenable<ConnectionStateListener> getListenable()
-    {
+    public Listenable<ConnectionStateListener> getListenable() {
         return listeners;
     }
 
@@ -164,15 +156,12 @@ public class ConnectionStateManager implements Closeable
      *
      * @return true if connection is set to SUSPENDED
      */
-    public synchronized boolean setToSuspended()
-    {
-        if ( state.get() != State.STARTED )
-        {
+    public synchronized boolean setToSuspended() {
+        if (state.get() != State.STARTED) {
             return false;
         }
 
-        if ( (currentConnectionState == ConnectionState.LOST) || (currentConnectionState == ConnectionState.SUSPENDED) )
-        {
+        if ((currentConnectionState == ConnectionState.LOST) || (currentConnectionState == ConnectionState.SUSPENDED)) {
             return false;
         }
 
@@ -189,24 +178,22 @@ public class ConnectionStateManager implements Closeable
      * @param newConnectionState new state
      * @return true if the state actually changed, false if it was already at that state
      */
-    public synchronized boolean addStateChange(ConnectionState newConnectionState)
-    {
-        if ( state.get() != State.STARTED )
-        {
+    public synchronized boolean addStateChange(ConnectionState newConnectionState) {
+        if (state.get() != State.STARTED) {
             return false;
         }
 
         ConnectionState previousState = currentConnectionState;
-        if ( previousState == newConnectionState )
-        {
+        if (previousState == newConnectionState) {
             return false;
         }
         setCurrentConnectionState(newConnectionState);
 
         ConnectionState localState = newConnectionState;
-        boolean isNegativeMessage = ((newConnectionState == ConnectionState.LOST) || (newConnectionState == ConnectionState.SUSPENDED) || (newConnectionState == ConnectionState.READ_ONLY));
-        if ( !isNegativeMessage && initialConnectMessageSent.compareAndSet(false, true) )
-        {
+        boolean isNegativeMessage = ((newConnectionState == ConnectionState.LOST)
+                || (newConnectionState == ConnectionState.SUSPENDED)
+                || (newConnectionState == ConnectionState.READ_ONLY));
+        if (!isNegativeMessage && initialConnectMessageSent.compareAndSet(false, true)) {
             localState = ConnectionState.CONNECTED;
         }
 
@@ -215,92 +202,75 @@ public class ConnectionStateManager implements Closeable
         return true;
     }
 
-    public synchronized boolean blockUntilConnected(int maxWaitTime, TimeUnit units) throws InterruptedException
-    {
+    public synchronized boolean blockUntilConnected(int maxWaitTime, TimeUnit units) throws InterruptedException {
         long startTime = System.currentTimeMillis();
 
         boolean hasMaxWait = (units != null);
         long maxWaitTimeMs = hasMaxWait ? TimeUnit.MILLISECONDS.convert(maxWaitTime, units) : 0;
 
-        while ( !isConnected() )
-        {
-            if ( hasMaxWait )
-            {
+        while (!isConnected()) {
+            if (hasMaxWait) {
                 long waitTime = maxWaitTimeMs - (System.currentTimeMillis() - startTime);
-                if ( waitTime <= 0 )
-                {
+                if (waitTime <= 0) {
                     return isConnected();
                 }
 
                 wait(waitTime);
-            }
-            else
-            {
+            } else {
                 wait();
             }
         }
         return isConnected();
     }
 
-    public synchronized boolean isConnected()
-    {
+    public synchronized boolean isConnected() {
         return (currentConnectionState != null) && currentConnectionState.isConnected();
     }
 
-    private void postState(ConnectionState state)
-    {
+    private void postState(ConnectionState state) {
         log.info("State change: " + state);
 
         notifyAll();
 
-        while ( !eventQueue.offer(state) )
-        {
+        while (!eventQueue.offer(state)) {
             eventQueue.poll();
             log.warn("ConnectionStateManager queue full - dropping events to make room");
         }
     }
 
-    private void processEvents()
-    {
-        while ( state.get() == State.STARTED )
-        {
-            try
-            {
+    private void processEvents() {
+        while (state.get() == State.STARTED) {
+            try {
                 int useSessionTimeoutMs = getUseSessionTimeoutMs();
-                long elapsedMs = startOfSuspendedEpoch == 0 ? useSessionTimeoutMs / 2 : System.currentTimeMillis() - startOfSuspendedEpoch;
+                long elapsedMs = startOfSuspendedEpoch == 0
+                        ? useSessionTimeoutMs / 2
+                        : System.currentTimeMillis() - startOfSuspendedEpoch;
                 long pollMaxMs = useSessionTimeoutMs - elapsedMs;
 
                 final ConnectionState newState = eventQueue.poll(pollMaxMs, TimeUnit.MILLISECONDS);
-                if ( newState != null )
-                {
-                    if ( listeners.isEmpty() )
-                    {
+                if (newState != null) {
+                    if (listeners.isEmpty()) {
                         log.warn("There are no ConnectionStateListeners registered.");
                     }
 
                     listeners.forEach(listener -> listener.stateChanged(client, newState));
-                }
-                else if ( sessionExpirationPercent > 0 )
-                {
-                    synchronized(this)
-                    {
+                } else if (sessionExpirationPercent > 0) {
+                    synchronized (this) {
                         checkSessionExpiration();
                     }
                 }
 
-                synchronized(this)
-                {
-                    if ( (currentConnectionState == ConnectionState.LOST) && client.getZookeeperClient().isConnected() )
-                    {
-                        // CURATOR-525 - there is a race whereby LOST is sometimes set after the connection has been repaired
+                synchronized (this) {
+                    if ((currentConnectionState == ConnectionState.LOST)
+                            && client.getZookeeperClient().isConnected()) {
+                        // CURATOR-525 - there is a race whereby LOST is sometimes set after the connection has been
+                        // repaired
                         // this "hack" fixes it by forcing the state to RECONNECTED
                         log.warn("ConnectionState is LOST but isConnected() is true. Forcing RECONNECTED.");
                         addStateChange(ConnectionState.RECONNECTED);
                     }
                 }
-            }
-            catch ( InterruptedException e )
-            {
+            } catch (InterruptedException e) {
                 // swallow the interrupt as it's only possible from either a background
                 // operation and, thus, doesn't apply to this loop or the instance
                 // is being closed in which case the while test will get it
@@ -308,57 +278,52 @@ public class ConnectionStateManager implements Closeable
         }
     }
 
-    private void checkSessionExpiration()
-    {
-        if ( (currentConnectionState == ConnectionState.SUSPENDED) && (startOfSuspendedEpoch != 0) )
-        {
+    private void checkSessionExpiration() {
+        if ((currentConnectionState == ConnectionState.SUSPENDED) && (startOfSuspendedEpoch != 0)) {
             long elapsedMs = System.currentTimeMillis() - startOfSuspendedEpoch;
             int useSessionTimeoutMs = getUseSessionTimeoutMs();
-            if ( elapsedMs >= useSessionTimeoutMs )
-            {
-                startOfSuspendedEpoch = System.currentTimeMillis(); // reset startOfSuspendedEpoch to avoid spinning on this session expiration injection CURATOR-405
-                log.warn(String.format("Session timeout has elapsed while SUSPENDED. Injecting a session expiration. Elapsed ms: %d. Adjusted session timeout ms: %d", elapsedMs, useSessionTimeoutMs));
-                try
-                {
+            if (elapsedMs >= useSessionTimeoutMs) {
+                startOfSuspendedEpoch =
+                        System.currentTimeMillis(); // reset startOfSuspendedEpoch to avoid spinning on this session
+                // expiration injection CURATOR-405
+                log.warn(String.format(
+                        "Session timeout has elapsed while SUSPENDED. Injecting a session expiration. Elapsed ms: %d. Adjusted session timeout ms: %d",
+                        elapsedMs, useSessionTimeoutMs));
+                try {
                     if (lastExpiredInstanceIndex == client.getZookeeperClient().getInstanceIndex()) {
-                        // last expiration didn't work for this instance, so event thread is dead and a reset is needed. CURATOR-561
+                        // last expiration didn't work for this instance, so event thread is dead and a reset is needed.
+                        // CURATOR-561
                         client.getZookeeperClient().reset();
                     } else {
                         lastExpiredInstanceIndex = client.getZookeeperClient().getInstanceIndex();
                         client.getZookeeperClient().getZooKeeper().getTestable().injectSessionExpiration();
                     }
-                }
-                catch ( Exception e )
-                {
+                } catch (Exception e) {
                     log.error("Could not inject session expiration", e);
                 }
             }
-        }
-        else if ( currentConnectionState == ConnectionState.LOST )
-        {
-            try
-            {
+        } else if (currentConnectionState == ConnectionState.LOST) {
+            try {
                 // give ConnectionState.checkTimeouts() a chance to run, reset ensemble providers, etc.
                 client.getZookeeperClient().getZooKeeper();
-            }
-            catch ( Exception e )
-            {
+            } catch (Exception e) {
                 log.error("Could not get ZooKeeper", e);
             }
         }
     }
 
-    private void setCurrentConnectionState(ConnectionState newConnectionState)
-    {
+    private void setCurrentConnectionState(ConnectionState newConnectionState) {
         currentConnectionState = newConnectionState;
         startOfSuspendedEpoch = (currentConnectionState == ConnectionState.SUSPENDED) ? System.currentTimeMillis() : 0;
     }
 
     private int getUseSessionTimeoutMs() {
         int lastNegotiatedSessionTimeoutMs = client.getZookeeperClient().getLastNegotiatedSessionTimeoutMs();
-        int useSessionTimeoutMs = (lastNegotiatedSessionTimeoutMs > 0) ? lastNegotiatedSessionTimeoutMs : sessionTimeoutMs;
-        useSessionTimeoutMs = sessionExpirationPercent > 0 && startOfSuspendedEpoch != 0 ? (useSessionTimeoutMs * sessionExpirationPercent) / 100 : useSessionTimeoutMs;
+        int useSessionTimeoutMs =
+                (lastNegotiatedSessionTimeoutMs > 0) ? lastNegotiatedSessionTimeoutMs : sessionTimeoutMs;
+        useSessionTimeoutMs = sessionExpirationPercent > 0 && startOfSuspendedEpoch != 0
+                ? (useSessionTimeoutMs * sessionExpirationPercent) / 100
+                : useSessionTimeoutMs;
         return useSessionTimeoutMs;
     }
-
 }

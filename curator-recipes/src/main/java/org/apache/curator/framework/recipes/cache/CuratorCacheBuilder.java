@@ -21,8 +21,7 @@ package org.apache.curator.framework.recipes.cache;
 
 import java.util.function.Consumer;
 
-public interface CuratorCacheBuilder
-{
+public interface CuratorCacheBuilder {
     /**
      * @param options any options
      * @return this

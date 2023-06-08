@@ -23,13 +23,11 @@ import org.apache.curator.drivers.OperationTrace;
 import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.zookeeper.AsyncCallback;
 
-class BackgroundSyncImpl implements BackgroundOperation<String>
-{
+class BackgroundSyncImpl implements BackgroundOperation<String> {
     private final CuratorFrameworkImpl client;
     private final Object context;
 
-    BackgroundSyncImpl(CuratorFrameworkImpl client, Object context)
-    {
+    BackgroundSyncImpl(CuratorFrameworkImpl client, Object context) {
         this.client = client;
         this.context = context;
     }
@@ -40,24 +38,34 @@ class BackgroundSyncImpl implements BackgroundOperation<String>
     }
 
     @Override
-    public void performBackgroundOperation(final OperationAndData<String> operationAndData) throws Exception
-    {
+    public void performBackgroundOperation(final OperationAndData<String> operationAndData) throws Exception {
         final OperationTrace trace = client.getZookeeperClient().startAdvancedTracer("BackgroundSyncImpl");
         final String data = operationAndData.getData();
-        client.getZooKeeper().sync
-        (
-            data,
-            new AsyncCallback.VoidCallback()
-            {
-                @Override
-                public void processResult(int rc, String path, Object ctx)
-                {
-                    trace.setReturnCode(rc).setRequestBytesLength(data).commit();
-                    CuratorEventImpl event = new CuratorEventImpl(client, CuratorEventType.SYNC, rc, path, null, ctx, null, null, null, null, null, null);
-                    client.processBackgroundOperation(operationAndData, event);
-                }
-            },
-            context
-        );
+        client.getZooKeeper()
+                .sync(
+                        data,
+                        new AsyncCallback.VoidCallback() {
+                            @Override
+                            public void processResult(int rc, String path, Object ctx) {
+                                trace.setReturnCode(rc)
+                                        .setRequestBytesLength(data)
+                                        .commit();
+                                CuratorEventImpl event = new CuratorEventImpl(
+                                        client,
+                                        CuratorEventType.SYNC,
+                                        rc,
+                                        path,
+                                        null,
+                                        ctx,
+                                        null,
+                                        null,
+                                        null,
+                                        null,
+                                        null,
+                                        null);
+                                client.processBackgroundOperation(operationAndData, event);
+                            }
+                        },
+                        context);
     }
 }

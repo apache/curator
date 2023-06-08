@@ -22,15 +22,14 @@ package org.apache.curator.framework.recipes.queue;
 /**
  * Helper to serialize/deserialize queue items
  */
-public interface QueueSerializer<T>
-{
+public interface QueueSerializer<T> {
     /**
      * Turn a queue item into bytes
      *
      * @param item the item
      * @return byte representation
      */
-    public byte[]       serialize(T item);
+    public byte[] serialize(T item);
 
     /**
      * Deserialize bytes into a queue item
@@ -38,5 +37,5 @@ public interface QueueSerializer<T>
      * @param bytes byte representation
      * @return item
      */
-    public T            deserialize(byte[] bytes);
+    public T deserialize(byte[] bytes);
 }

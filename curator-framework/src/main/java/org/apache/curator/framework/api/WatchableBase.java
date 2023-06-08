@@ -21,8 +21,7 @@ package org.apache.curator.framework.api;
 
 import org.apache.zookeeper.Watcher;
 
-public interface WatchableBase<T>
-{
+public interface WatchableBase<T> {
     /**
      * Set a watcher for the operation
      *

@@ -19,15 +19,14 @@
 
 package org.apache.curator.framework.state;
 
+import java.util.concurrent.ScheduledExecutorService;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.listen.StandardListenerManager;
 import org.apache.curator.framework.listen.UnaryListenerManager;
-import java.util.concurrent.ScheduledExecutorService;
 
 @FunctionalInterface
-public interface ConnectionStateListenerManagerFactory
-{
+public interface ConnectionStateListenerManagerFactory {
     /**
      * Create a new listener manager
      *
@@ -49,8 +48,7 @@ public interface ConnectionStateListenerManagerFactory
      * @param retryPolicy the circuit breaking policy to use
      * @return new listener manager factory
      */
-    static ConnectionStateListenerManagerFactory circuitBreaking(RetryPolicy retryPolicy)
-    {
+    static ConnectionStateListenerManagerFactory circuitBreaking(RetryPolicy retryPolicy) {
         return client -> new CircuitBreakingManager(client, CircuitBreaker.build(retryPolicy));
     }
 
@@ -63,8 +61,8 @@ public interface ConnectionStateListenerManagerFactory
      * @param service the scheduler to use
      * @return new listener manager factory
      */
-    static ConnectionStateListenerManagerFactory circuitBreaking(RetryPolicy retryPolicy, ScheduledExecutorService service)
-    {
+    static ConnectionStateListenerManagerFactory circuitBreaking(
+            RetryPolicy retryPolicy, ScheduledExecutorService service) {
         return client -> new CircuitBreakingManager(client, CircuitBreaker.build(retryPolicy, service));
     }
 }

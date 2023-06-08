@@ -27,63 +27,49 @@ import org.apache.zookeeper.server.quorum.QuorumPeerMain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-class TestingQuorumPeerMain extends QuorumPeerMain implements ZooKeeperMainFace
-{
+class TestingQuorumPeerMain extends QuorumPeerMain implements ZooKeeperMainFace {
     private static final Logger log = LoggerFactory.getLogger(TestingQuorumPeerMain.class);
     private volatile boolean isClosed = false;
 
     @Override
-    public void kill()
-    {
-        try
-        {
-            if ( quorumPeer != null )
-            {
-                Field               cnxnFactoryField = QuorumPeer.class.getDeclaredField("cnxnFactory");
+    public void kill() {
+        try {
+            if (quorumPeer != null) {
+                Field cnxnFactoryField = QuorumPeer.class.getDeclaredField("cnxnFactory");
                 cnxnFactoryField.setAccessible(true);
-                ServerCnxnFactory   cnxnFactory = (ServerCnxnFactory)cnxnFactoryField.get(quorumPeer);
+                ServerCnxnFactory cnxnFactory = (ServerCnxnFactory) cnxnFactoryField.get(quorumPeer);
                 Compatibility.serverCnxnFactoryCloseAll(cnxnFactory);
 
-                Field               ssField = cnxnFactory.getClass().getDeclaredField("ss");
+                Field ssField = cnxnFactory.getClass().getDeclaredField("ss");
                 ssField.setAccessible(true);
-                ServerSocketChannel ss = (ServerSocketChannel)ssField.get(cnxnFactory);
+                ServerSocketChannel ss = (ServerSocketChannel) ssField.get(cnxnFactory);
                 ss.close();
             }
             close();
-        }
-        catch ( Exception e )
-        {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
     @Override
-    public void close()
-    {
-        if ( (quorumPeer != null) && !isClosed )
-        {
+    public void close() {
+        if ((quorumPeer != null) && !isClosed) {
             isClosed = true;
             quorumPeer.shutdown();
         }
     }
 
-    private void blockUntilStarted()
-    {
+    private void blockUntilStarted() {
         long startTime = System.currentTimeMillis();
-        while ( (quorumPeer == null) && ((System.currentTimeMillis() - startTime) <= TestingZooKeeperMain.MAX_WAIT_MS) )
-        {
-            try
-            {
+        while ((quorumPeer == null) && ((System.currentTimeMillis() - startTime) <= TestingZooKeeperMain.MAX_WAIT_MS)) {
+            try {
                 Thread.sleep(10);
-            }
-            catch ( InterruptedException e )
-            {
+            } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;
             }
         }
-        if ( quorumPeer == null )
-        {
+        if (quorumPeer == null) {
             throw new FailedServerStartException("quorumPeer never got set");
         }
     }
@@ -91,12 +77,17 @@ class TestingQuorumPeerMain extends QuorumPeerMain implements ZooKeeperMainFace
     @Override
     public void start(QuorumPeerConfigBuilder configBuilder) {
         new Thread(() -> {
-            try {
-                runFromConfig(configBuilder.buildConfig());
-            } catch (Exception e) {
-                log.error("From testing server (random state: {}) for instance: {}", configBuilder.isFromRandom(), configBuilder.getInstanceSpec(), e);
-            }
-        }).start();
+                    try {
+                        runFromConfig(configBuilder.buildConfig());
+                    } catch (Exception e) {
+                        log.error(
+                                "From testing server (random state: {}) for instance: {}",
+                                configBuilder.isFromRandom(),
+                                configBuilder.getInstanceSpec(),
+                                e);
+                    }
+                })
+                .start();
 
         blockUntilStarted();
     }

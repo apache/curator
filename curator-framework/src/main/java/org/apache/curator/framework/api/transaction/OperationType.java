@@ -22,8 +22,7 @@ package org.apache.curator.framework.api.transaction;
 /**
  * Transaction operation types
  */
-public enum OperationType
-{
+public enum OperationType {
     /**
      * {@link TransactionOp#create()}
      */

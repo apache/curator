@@ -19,17 +19,14 @@
 
 package org.apache.curator.framework.imps;
 
-class StandardInternalConnectionHandler implements InternalConnectionHandler
-{
+class StandardInternalConnectionHandler implements InternalConnectionHandler {
     @Override
-    public void suspendConnection(CuratorFrameworkImpl client)
-    {
+    public void suspendConnection(CuratorFrameworkImpl client) {
         client.setToSuspended();
     }
 
     @Override
-    public void checkNewConnection(CuratorFrameworkImpl client)
-    {
+    public void checkNewConnection(CuratorFrameworkImpl client) {
         client.checkInstanceIndex();
     }
 }

@@ -24,10 +24,8 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 
-public class CreateClientExamples
-{
-    public static CuratorFramework createSimple(String connectionString)
-    {
+public class CreateClientExamples {
+    public static CuratorFramework createSimple(String connectionString) {
         // these are reasonable arguments for the ExponentialBackoffRetry. The first
         // retry will wait 1 second - the second will wait up to 2 seconds - the
         // third will wait up to 4 seconds.
@@ -38,17 +36,17 @@ public class CreateClientExamples
         return CuratorFrameworkFactory.newClient(connectionString, retryPolicy);
     }
 
-    public static CuratorFramework  createWithOptions(String connectionString, RetryPolicy retryPolicy, int connectionTimeoutMs, int sessionTimeoutMs)
-    {
+    public static CuratorFramework createWithOptions(
+            String connectionString, RetryPolicy retryPolicy, int connectionTimeoutMs, int sessionTimeoutMs) {
         // using the CuratorFrameworkFactory.builder() gives fine grained control
         // over creation options. See the CuratorFrameworkFactory.Builder javadoc
         // details
         return CuratorFrameworkFactory.builder()
-            .connectString(connectionString)
-            .retryPolicy(retryPolicy)
-            .connectionTimeoutMs(connectionTimeoutMs)
-            .sessionTimeoutMs(sessionTimeoutMs)
-            // etc. etc.
-            .build();
+                .connectString(connectionString)
+                .retryPolicy(retryPolicy)
+                .connectionTimeoutMs(connectionTimeoutMs)
+                .sessionTimeoutMs(sessionTimeoutMs)
+                // etc. etc.
+                .build();
     }
 }

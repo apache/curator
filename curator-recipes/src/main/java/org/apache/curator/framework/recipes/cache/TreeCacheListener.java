@@ -24,8 +24,7 @@ import org.apache.curator.framework.CuratorFramework;
 /**
  * Listener for {@link TreeCache} changes
  */
-public interface TreeCacheListener
-{
+public interface TreeCacheListener {
     /**
      * Called when a change has occurred
      *

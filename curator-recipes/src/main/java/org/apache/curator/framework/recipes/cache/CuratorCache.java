@@ -19,11 +19,11 @@
 
 package org.apache.curator.framework.recipes.cache;
 
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.listen.Listenable;
 import java.io.Closeable;
 import java.util.Optional;
 import java.util.stream.Stream;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.listen.Listenable;
 
 /**
  * <p>
@@ -47,13 +47,11 @@ import java.util.stream.Stream;
  *     numbers when updating nodes.
  * </p>
  */
-public interface CuratorCache extends Closeable, CuratorCacheAccessor
-{
+public interface CuratorCache extends Closeable, CuratorCacheAccessor {
     /**
      * cache build options
      */
-    enum Options
-    {
+    enum Options {
         /**
          * Normally the entire tree of nodes starting at the given node are cached. This option
          * causes only the given node to be cached (i.e. a single node cache)
@@ -80,8 +78,7 @@ public interface CuratorCache extends Closeable, CuratorCacheAccessor
      * @param options any options
      * @return cache (note it must be started via {@link #start()}
      */
-    static CuratorCache build(CuratorFramework client, String path, Options... options)
-    {
+    static CuratorCache build(CuratorFramework client, String path, Options... options) {
         return builder(client, path).withOptions(options).build();
     }
 
@@ -92,8 +89,7 @@ public interface CuratorCache extends Closeable, CuratorCacheAccessor
      * @param path path to cache
      * @return builder
      */
-    static CuratorCacheBuilder builder(CuratorFramework client, String path)
-    {
+    static CuratorCacheBuilder builder(CuratorFramework client, String path) {
         return new CuratorCacheBuilderImpl(client, path);
     }
 
@@ -107,8 +103,7 @@ public interface CuratorCache extends Closeable, CuratorCacheAccessor
      * @param path path to cache
      * @return bridge builder
      */
-    static CuratorCacheBridgeBuilder bridgeBuilder(CuratorFramework client, String path)
-    {
+    static CuratorCacheBridgeBuilder bridgeBuilder(CuratorFramework client, String path) {
         return new CuratorCacheBridgeBuilderImpl(client, path);
     }
 

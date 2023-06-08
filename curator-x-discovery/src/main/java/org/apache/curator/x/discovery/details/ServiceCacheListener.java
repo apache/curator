@@ -24,8 +24,7 @@ import org.apache.curator.framework.state.ConnectionStateListener;
 /**
  * Listener for changes to a service cache
  */
-public interface ServiceCacheListener extends ConnectionStateListener
-{
+public interface ServiceCacheListener extends ConnectionStateListener {
     /**
      * Called when the cache has changed (instances added/deleted, etc.)
      */

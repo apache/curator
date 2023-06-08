@@ -59,11 +59,9 @@ import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.server.auth.DigestAuthenticationProvider;
 import org.junit.jupiter.api.Test;
 
-public class TestModeledFramework extends TestModeledFrameworkBase
-{
+public class TestModeledFramework extends TestModeledFrameworkBase {
     @Test
-    public void testCrud()
-    {
+    public void testCrud() {
         TestModel rawModel = new TestModel("John", "Galt", "1 Galt's Gulch", 42, BigInteger.valueOf(1));
         TestModel rawModel2 = new TestModel("Wayne", "Rooney", "Old Trafford", 10, BigInteger.valueOf(1));
         ModeledFramework<TestModel> client = ModeledFramework.wrap(async, modelSpec);
@@ -78,9 +76,9 @@ public class TestModeledFramework extends TestModeledFrameworkBase
     }
 
     @Test
-    public void testBackwardCompatibility()
-    {
-        TestNewerModel rawNewModel = new TestNewerModel("John", "Galt", "1 Galt's Gulch", 42, BigInteger.valueOf(1), 100);
+    public void testBackwardCompatibility() {
+        TestNewerModel rawNewModel =
+                new TestNewerModel("John", "Galt", "1 Galt's Gulch", 42, BigInteger.valueOf(1), 100);
         ModeledFramework<TestNewerModel> clientForNew = ModeledFramework.wrap(async, newModelSpec);
         complete(clientForNew.set(rawNewModel), (s, e) -> assertNotNull(s));
 
@@ -89,10 +87,10 @@ public class TestModeledFramework extends TestModeledFrameworkBase
     }
 
     @Test
-    public void testWatched() throws InterruptedException
-    {
+    public void testWatched() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
-        ModeledFramework<TestModel> client = ModeledFramework.builder(async, modelSpec).watched().build();
+        ModeledFramework<TestModel> client =
+                ModeledFramework.builder(async, modelSpec).watched().build();
         client.checkExists().event().whenComplete((event, ex) -> latch.countDown());
         timing.sleepABit();
         assertEquals(latch.getCount(), 1);
@@ -101,10 +99,10 @@ public class TestModeledFramework extends TestModeledFrameworkBase
     }
 
     @Test
-    public void testGetChildren()
-    {
+    public void testGetChildren() {
         TestModel model = new TestModel("John", "Galt", "1 Galt's Gulch", 42, BigInteger.valueOf(1));
-        ModeledFramework<TestModel> client = ModeledFramework.builder(async, modelSpec).build();
+        ModeledFramework<TestModel> client =
+                ModeledFramework.builder(async, modelSpec).build();
         complete(client.child("one").set(model));
         complete(client.child("two").set(model));
         complete(client.child("three").set(model));
@@ -114,8 +112,7 @@ public class TestModeledFramework extends TestModeledFrameworkBase
     }
 
     @Test
-    public void testDelete()
-    {
+    public void testDelete() {
         ModeledFramework<TestModel> client = ModeledFramework.wrap(async, modelSpec);
         complete(client.set(new TestModel()));
 
@@ -131,8 +128,7 @@ public class TestModeledFramework extends TestModeledFrameworkBase
 
         exceptional(client.delete(), KeeperException.NotEmptyException.class);
 
-        ModelSpec<TestModel> deleteChildren = ModelSpec
-                .builder(modelSpec.path(), modelSpec.serializer())
+        ModelSpec<TestModel> deleteChildren = ModelSpec.builder(modelSpec.path(), modelSpec.serializer())
                 .withDeleteOptions(Collections.singleton(DeleteOption.deletingChildrenIfNeeded))
                 .build();
 
@@ -140,59 +136,63 @@ public class TestModeledFramework extends TestModeledFrameworkBase
         exceptional(ModeledFramework.wrap(async, deleteChildren).delete(), KeeperException.NoNodeException.class);
         exceptional(client.read(), KeeperException.NoNodeException.class);
 
-        ModelSpec<TestModel> quietly = ModelSpec
-                .builder(modelSpec.path(), modelSpec.serializer())
+        ModelSpec<TestModel> quietly = ModelSpec.builder(modelSpec.path(), modelSpec.serializer())
                 .withDeleteOptions(Collections.singleton(DeleteOption.quietly))
                 .build();
         complete(ModeledFramework.wrap(async, quietly).delete());
     }
 
     @Test
-    public void testBadNode()
-    {
-        complete(async.create().forPath(modelSpec.path().fullPath(), "fubar".getBytes()), (v, e) -> {
-        });    // ignore error
+    public void testBadNode() {
+        complete(async.create().forPath(modelSpec.path().fullPath(), "fubar".getBytes()), (v, e) -> {}); // ignore error
 
-        ModeledFramework<TestModel> client = ModeledFramework.builder(async, modelSpec).watched().build();
+        ModeledFramework<TestModel> client =
+                ModeledFramework.builder(async, modelSpec).watched().build();
         complete(client.read(), (model, e) -> assertTrue(e instanceof KeeperException.NoNodeException));
     }
 
     @Test
-    public void testSchema() throws Exception
-    {
+    public void testSchema() throws Exception {
         Schema schema = modelSpec.schema();
-        try (CuratorFramework schemaClient = CuratorFrameworkFactory.builder().connectString(server.getConnectString()).retryPolicy(new RetryOneTime(1)).schemaSet(new SchemaSet(Collections.singletonList(schema), false)).build())
-        {
+        try (CuratorFramework schemaClient = CuratorFrameworkFactory.builder()
+                .connectString(server.getConnectString())
+                .retryPolicy(new RetryOneTime(1))
+                .schemaSet(new SchemaSet(Collections.singletonList(schema), false))
+                .build()) {
             schemaClient.start();
 
-            try
-            {
+            try {
                 schemaClient.create().forPath(modelSpec.path().fullPath(), "asflasfas".getBytes());
                 fail("Should've thrown SchemaViolation");
-            }
-            catch ( SchemaViolation dummy )
-            {
+            } catch (SchemaViolation dummy) {
                 // expected
             }
 
-            ModeledFramework<TestModel> modeledSchemaClient = ModeledFramework.wrap(AsyncCuratorFramework.wrap(schemaClient), modelSpec);
-            complete(modeledSchemaClient.set(new TestModel("one", "two", "three", 4, BigInteger.ONE)), (dummy, e) -> assertNull(e));
+            ModeledFramework<TestModel> modeledSchemaClient =
+                    ModeledFramework.wrap(AsyncCuratorFramework.wrap(schemaClient), modelSpec);
+            complete(
+                    modeledSchemaClient.set(new TestModel("one", "two", "three", 4, BigInteger.ONE)),
+                    (dummy, e) -> assertNull(e));
         }
     }
 
     @Test
-    public void testVersioned()
-    {
+    public void testVersioned() {
         ModeledFramework<TestModel> client = ModeledFramework.wrap(async, modelSpec);
         TestModel model = new TestModel("John", "Galt", "Galt's Gulch", 21, BigInteger.valueOf(1010101));
         complete(client.set(model));
-        complete(client.set(model));   // so that version goes to 1
+        complete(client.set(model)); // so that version goes to 1
 
         VersionedModeledFramework<TestModel> versioned = client.versioned();
-        complete(versioned.read().whenComplete((v, e) -> {
-            assertNull(e);
-            assertTrue(v.version() > 0);
-        }).thenCompose(versioned::set), (s, e) -> assertNull(e)); // read version is correct; set moves version to 2
+        complete(
+                versioned
+                        .read()
+                        .whenComplete((v, e) -> {
+                            assertNull(e);
+                            assertTrue(v.version() > 0);
+                        })
+                        .thenCompose(versioned::set),
+                (s, e) -> assertNull(e)); // read version is correct; set moves version to 2
 
         Versioned<TestModel> badVersion = Versioned.from(model, 100000);
         complete(versioned.set(badVersion), (v, e) -> assertTrue(e instanceof KeeperException.BadVersionException));
@@ -207,41 +207,54 @@ public class TestModeledFramework extends TestModeledFrameworkBase
         final Stat stat = new Stat();
         complete(client.read(stat));
         // wrong version, needs to fail
-        complete(client.delete(stat.getVersion() + 1), (v, e) -> assertTrue(e instanceof KeeperException.BadVersionException));
+        complete(
+                client.delete(stat.getVersion() + 1),
+                (v, e) -> assertTrue(e instanceof KeeperException.BadVersionException));
         // correct version
         complete(client.delete(stat.getVersion()));
     }
 
     @Test
-    public void testAcl() throws NoSuchAlgorithmException
-    {
-        List<ACL> aclList = Collections.singletonList(new ACL(ZooDefs.Perms.WRITE, new Id("digest", DigestAuthenticationProvider.generateDigest("test:test"))));
-        ModelSpec<TestModel> aclModelSpec = ModelSpec.builder(modelSpec.path(), modelSpec.serializer()).withAclList(aclList).build();
+    public void testAcl() throws NoSuchAlgorithmException {
+        List<ACL> aclList = Collections.singletonList(new ACL(
+                ZooDefs.Perms.WRITE, new Id("digest", DigestAuthenticationProvider.generateDigest("test:test"))));
+        ModelSpec<TestModel> aclModelSpec = ModelSpec.builder(modelSpec.path(), modelSpec.serializer())
+                .withAclList(aclList)
+                .build();
         ModeledFramework<TestModel> client = ModeledFramework.wrap(async, aclModelSpec);
         complete(client.set(new TestModel("John", "Galt", "Galt's Gulch", 21, BigInteger.valueOf(1010101))));
-        complete(client.update(new TestModel("John", "Galt", "Galt's Gulch", 54, BigInteger.valueOf(88))), (__, e) -> assertNotNull(e, "Should've gotten an auth failure"));
+        complete(
+                client.update(new TestModel("John", "Galt", "Galt's Gulch", 54, BigInteger.valueOf(88))),
+                (__, e) -> assertNotNull(e, "Should've gotten an auth failure"));
 
-        try (CuratorFramework authCurator = CuratorFrameworkFactory.builder().connectString(server.getConnectString()).retryPolicy(new RetryOneTime(1)).authorization("digest", "test:test".getBytes()).build())
-        {
+        try (CuratorFramework authCurator = CuratorFrameworkFactory.builder()
+                .connectString(server.getConnectString())
+                .retryPolicy(new RetryOneTime(1))
+                .authorization("digest", "test:test".getBytes())
+                .build()) {
             authCurator.start();
-            ModeledFramework<TestModel> authClient = ModeledFramework.wrap(AsyncCuratorFramework.wrap(authCurator), aclModelSpec);
-            complete(authClient.update(new TestModel("John", "Galt", "Galt's Gulch", 42, BigInteger.valueOf(66))), (__, e) -> assertNull(e, "Should've succeeded"));
+            ModeledFramework<TestModel> authClient =
+                    ModeledFramework.wrap(AsyncCuratorFramework.wrap(authCurator), aclModelSpec);
+            complete(
+                    authClient.update(new TestModel("John", "Galt", "Galt's Gulch", 42, BigInteger.valueOf(66))),
+                    (__, e) -> assertNull(e, "Should've succeeded"));
         }
     }
 
     @Test
-    public void testExceptionHandling() throws Exception
-    {
-        final List<ACL> writeAcl = Collections.singletonList(new ACL(ZooDefs.Perms.WRITE, new Id("digest", DigestAuthenticationProvider.generateDigest("test:test"))));
+    public void testExceptionHandling() throws Exception {
+        final List<ACL> writeAcl = Collections.singletonList(new ACL(
+                ZooDefs.Perms.WRITE, new Id("digest", DigestAuthenticationProvider.generateDigest("test:test"))));
 
         // An ACLProvider is used to get the Write ACL (for the test user) for any path "/test/**".
         final ACLProvider aclProvider = new ACLProvider() {
             @Override
-            public List<ACL> getDefaultAcl() { return ZooDefs.Ids.READ_ACL_UNSAFE; }
+            public List<ACL> getDefaultAcl() {
+                return ZooDefs.Ids.READ_ACL_UNSAFE;
+            }
 
             @Override
-            public List<ACL> getAclForPath(String path)
-            {
+            public List<ACL> getAclForPath(String path) {
                 // Any sub-path "/test/**" should only be writeable by the test user.
                 return path.startsWith("/test") ? writeAcl : getDefaultAcl();
             }
@@ -271,19 +284,20 @@ public class TestModeledFramework extends TestModeledFrameworkBase
             // I overrode the TestModel provided path with a multi-component path under the "/test" parent path
             // (which was previously created with ACL protection).
             ModelSpec<TestModel> aclModelSpec = ModelSpec.builder(ZPath.parse("/test/foo/bar"), modelSpec.serializer())
-                    .withCreateOptions(EnumSet.of(CreateOption.createParentsIfNeeded, CreateOption.createParentsAsContainers))
+                    .withCreateOptions(
+                            EnumSet.of(CreateOption.createParentsIfNeeded, CreateOption.createParentsAsContainers))
                     .build();
 
-            ModeledFramework<TestModel> noAuthClient = ModeledFramework.wrap(AsyncCuratorFramework.wrap(unauthorizedFramework), aclModelSpec);
+            ModeledFramework<TestModel> noAuthClient =
+                    ModeledFramework.wrap(AsyncCuratorFramework.wrap(unauthorizedFramework), aclModelSpec);
 
-            noAuthClient.set(new TestModel("John", "Galt", "Galt's Gulch", 42, BigInteger.valueOf(66)))
+            noAuthClient
+                    .set(new TestModel("John", "Galt", "Galt's Gulch", 42, BigInteger.valueOf(66)))
                     .toCompletableFuture()
                     .get(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS);
             fail("expect to throw a NoAuth KeeperException");
-        }
-        catch (ExecutionException | CompletionException e)
-        {
-             assertTrue(e.getCause() instanceof KeeperException.NoAuthException);
+        } catch (ExecutionException | CompletionException e) {
+            assertTrue(e.getCause() instanceof KeeperException.NoAuthException);
         }
     }
 }

@@ -24,7 +24,4 @@ import org.apache.curator.x.async.AsyncStage;
 /**
  * Builder for syncs
  */
-public interface AsyncSyncBuilder extends
-    AsyncPathable<AsyncStage<Void>>
-{
-}
+public interface AsyncSyncBuilder extends AsyncPathable<AsyncStage<Void>> {}
