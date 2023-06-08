@@ -432,8 +432,8 @@ public class CuratorFrameworkImpl implements CuratorFramework {
                 ensembleTracker.close();
             }
             OperationAndData<?>[] droppedOperations = backgroundOperations.toArray(new OperationAndData<?>[0]);
-            Arrays.stream(droppedOperations).forEach(this::closeOperation);
             backgroundOperations.clear();
+            Arrays.stream(droppedOperations).forEach(this::closeOperation);
             listeners.clear();
             unhandledErrorListeners.clear();
             connectionStateManager.close();
