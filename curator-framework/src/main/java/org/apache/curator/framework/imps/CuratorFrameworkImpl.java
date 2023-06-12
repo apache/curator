@@ -431,9 +431,13 @@ public class CuratorFrameworkImpl implements CuratorFramework {
             if (ensembleTracker != null) {
                 ensembleTracker.close();
             }
-            OperationAndData<?>[] droppedOperations = backgroundOperations.toArray(new OperationAndData<?>[0]);
-            backgroundOperations.clear();
-            Arrays.stream(droppedOperations).forEach(this::closeOperation);
+            // Operations are forbidden to queue after closing, but there are still other concurrent mutations,
+            // say, un-sleeping and not fully terminated background thread. So we have to drain the queue atomically
+            // to avoid duplicated close. But DelayQueue counts Delayed::getDelay, so we have to clear it up front.
+            backgroundOperations.forEach(OperationAndData::clearSleep);
+            Collection<OperationAndData<?>> droppedOperations = new ArrayList<>(backgroundOperations.size());
+            backgroundOperations.drainTo(droppedOperations);
+            droppedOperations.forEach(this::closeOperation);
             listeners.clear();
             unhandledErrorListeners.clear();
             connectionStateManager.close();
@@ -745,7 +749,10 @@ public class CuratorFrameworkImpl implements CuratorFramework {
                 return;
             }
         }
-        closeOperation(operationAndData);
+        // Sleeping operations are queued with delay, it could have been pulled out for execution or cancellation.
+        if (backgroundOperations.remove(operationAndData)) {
+            closeOperation(operationAndData);
+        }
     }
 
     /**

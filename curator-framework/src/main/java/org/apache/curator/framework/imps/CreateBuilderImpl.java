@@ -608,7 +608,6 @@ public class CreateBuilderImpl
                                 client,
                                 operationAndData,
                                 operationAndData.getData().getPath(),
-                                backgrounding,
                                 acling.getACLProviderForParents(),
                                 createParentsAsContainers);
                     } else if ((rc == KeeperException.Code.NODEEXISTS.intValue()) && setDataIfExists) {
@@ -726,7 +725,6 @@ public class CreateBuilderImpl
             final CuratorFrameworkImpl client,
             final OperationAndData<T> mainOperationAndData,
             final String path,
-            Backgrounding backgrounding,
             final InternalACLProvider aclProvider,
             final boolean createParentsAsContainers) {
         BackgroundOperation<T> operation = new BackgroundOperation<T>() {
@@ -736,8 +734,6 @@ public class CreateBuilderImpl
                     ZKPaths.mkdirs(client.getZooKeeper(), path, false, aclProvider, createParentsAsContainers);
                 } catch (KeeperException e) {
                     if (!client.getZookeeperClient().getRetryPolicy().allowRetry(e)) {
-                        sendBackgroundResponse(
-                                client, e.code().intValue(), e.getPath(), null, null, null, mainOperationAndData);
                         throw e;
                     }
                     // otherwise safe to ignore as it will get retried
@@ -750,8 +746,7 @@ public class CreateBuilderImpl
                 return CuratorEventType.CREATE;
             }
         };
-        OperationAndData<T> parentOperation = new OperationAndData<>(
-                operation, mainOperationAndData.getData(), null, null, backgrounding.getContext(), null);
+        OperationAndData<T> parentOperation = new OperationAndData<>(operation, mainOperationAndData);
         client.queueOperation(parentOperation);
     }
 
@@ -773,17 +768,13 @@ public class CreateBuilderImpl
         BackgroundOperation<PathAndBytes> operation = new BackgroundOperation<PathAndBytes>() {
             @Override
             public void performBackgroundOperation(OperationAndData<PathAndBytes> op) throws Exception {
-                try {
-                    client.getZooKeeper()
-                            .setData(
-                                    path,
-                                    mainOperationAndData.getData().getData(),
-                                    setDataIfExistsVersion,
-                                    statCallback,
-                                    backgrounding.getContext());
-                } catch (KeeperException e) {
-                    // ignore
-                }
+                client.getZooKeeper()
+                        .setData(
+                                path,
+                                mainOperationAndData.getData().getData(),
+                                setDataIfExistsVersion,
+                                statCallback,
+                                backgrounding.getContext());
             }
 
             @Override
@@ -791,7 +782,7 @@ public class CreateBuilderImpl
                 return CuratorEventType.CREATE;
             }
         };
-        client.queueOperation(new OperationAndData<>(operation, null, null, null, null, null));
+        client.queueOperation(new OperationAndData<>(operation, mainOperationAndData));
     }
 
     private void backgroundCheckIdempotent(
@@ -821,12 +812,7 @@ public class CreateBuilderImpl
         BackgroundOperation<PathAndBytes> operation = new BackgroundOperation<PathAndBytes>() {
             @Override
             public void performBackgroundOperation(OperationAndData<PathAndBytes> op) throws Exception {
-                try {
-                    client.getZooKeeper().getData(path, false, dataCallback, backgrounding.getContext());
-                } catch (KeeperException e) {
-                    // ignore
-                    client.logError("Unexpected exception in async idempotent check for, ignoring: " + path, e);
-                }
+                client.getZooKeeper().getData(path, false, dataCallback, backgrounding.getContext());
             }
 
             @Override
@@ -834,7 +820,7 @@ public class CreateBuilderImpl
                 return CuratorEventType.CREATE;
             }
         };
-        client.queueOperation(new OperationAndData<>(operation, null, null, null, null, null));
+        client.queueOperation(new OperationAndData<>(operation, mainOperationAndData));
     }
 
     private void sendBackgroundResponse(

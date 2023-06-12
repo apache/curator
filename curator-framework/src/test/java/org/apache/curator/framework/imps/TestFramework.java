@@ -39,6 +39,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.RetrySleeper;
 import org.apache.curator.framework.AuthInfo;
@@ -877,6 +878,16 @@ public class TestFramework extends BaseClassForTests {
         BackgroundOperation<?> create(CuratorFramework client, CompletableFuture<CuratorEvent> future) throws Exception;
     }
 
+    private static class CountingCompletableFuture<T> extends CompletableFuture<T> {
+        private final AtomicInteger completes = new AtomicInteger();
+
+        @Override
+        public boolean complete(T value) {
+            completes.incrementAndGet();
+            return super.complete(value);
+        }
+    }
+
     private void testBackgroundOperationWithConcurrentCloseAndChaosStalls(
             BackgroundOperationFactory operationFactory, long maxRuns, long[] millisStalls) throws Exception {
         AlwaysRetry alwaysRetry = new AlwaysRetry(2);
@@ -884,7 +895,7 @@ public class TestFramework extends BaseClassForTests {
         client.start();
         try {
             // given: error background request with always-retry policy
-            CompletableFuture<CuratorEvent> future = new CompletableFuture<>();
+            CountingCompletableFuture<CuratorEvent> future = new CountingCompletableFuture<>();
             BackgroundOperation<?> operation = operationFactory.create(client, future);
 
             // These chaos steps create chances to run into concurrent contentions.
@@ -908,6 +919,7 @@ public class TestFramework extends BaseClassForTests {
             assertThat(event.getResultCode()).isEqualTo(KeeperException.Code.SESSIONEXPIRED.intValue());
             assertThat(event.getType()).isSameAs(operation.getBackgroundEventType());
             assertThat(event.getContext()).isSameAs(future);
+            assertThat(future.completes.get()).isEqualTo(1);
         } finally {
             CloseableUtils.closeQuietly(client);
         }
