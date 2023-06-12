@@ -30,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import com.google.common.collect.Lists;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -59,6 +60,7 @@ import org.apache.curator.framework.api.transaction.CuratorMultiTransaction;
 import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
+import org.apache.curator.retry.RetryForever;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
@@ -915,6 +917,7 @@ public class TestFramework extends BaseClassForTests {
             throws Exception {
         testBackgroundOperationWithConcurrentCloseAndChaosStalls(operationFactory, -1, new long[] {20, -1, 5});
         testBackgroundOperationWithConcurrentCloseAndChaosStalls(operationFactory, -1, new long[] {10});
+        testBackgroundOperationWithConcurrentCloseAndChaosStalls(operationFactory, -1, new long[] {200});
         testBackgroundOperationWithConcurrentCloseAndChaosStalls(operationFactory, 2, new long[] {20});
     }
 
@@ -937,11 +940,97 @@ public class TestFramework extends BaseClassForTests {
     }
 
     @Test
+    public void testBackgroundCreateSetDataIfExistsWithConcurrentClose() throws Exception {
+        AtomicBoolean retry = new AtomicBoolean();
+        testBackgroundOperationWithConcurrentClose((client, future) -> {
+            if (retry.compareAndSet(false, true)) {
+                try {
+                    client.create().forPath("/exist-path");
+                } catch (KeeperException ex) {
+                    throw new IllegalStateException(ex);
+                }
+            }
+            CreateBuilder create = client.create();
+            create.orSetData(Integer.MAX_VALUE)
+                    .inBackground((ignored, event) -> future.complete(event), future)
+                    .forPath("/exist-path");
+            return (BackgroundOperation<?>) create;
+        });
+    }
+
+    @Test
+    public void testBackgroundCreateIdempotentWithConcurrentClose() throws Exception {
+        AtomicBoolean retry = new AtomicBoolean();
+        testBackgroundOperationWithConcurrentClose((client, future) -> {
+            if (retry.compareAndSet(false, true)) {
+                try {
+                    client.create().forPath("/exist-path", "some-data".getBytes());
+                } catch (KeeperException ex) {
+                    throw new IllegalStateException(ex);
+                }
+            }
+            CreateBuilder create = client.create();
+            create.idempotent()
+                    .inBackground((ignored, event) -> future.complete(event), future)
+                    .forPath("/exist-path", "different-data".getBytes());
+            return (BackgroundOperation<?>) create;
+        });
+    }
+
+    @Test
+    public void testBackgroundCreateParentsIfNeedWithConcurrentClose() throws Exception {
+        AtomicBoolean retry = new AtomicBoolean();
+        testBackgroundOperationWithConcurrentClose((client, future) -> {
+            if (retry.compareAndSet(false, true)) {
+                try {
+                    // Disable CREATE child permission for grandparent path.
+                    client.create()
+                            .withACL(Collections.singletonList(
+                                    new ACL(ZooDefs.Perms.READ, ZooDefs.Ids.ANYONE_ID_UNSAFE)))
+                            .forPath("/grandparent");
+                } catch (KeeperException ex) {
+                    throw new IllegalStateException(ex);
+                }
+            }
+            CreateBuilder create = client.create();
+            create.creatingParentsIfNeeded()
+                    .inBackground((ignored, event) -> future.complete(event), future)
+                    .forPath("/grandparent/parent/child");
+            return (BackgroundOperation<?>) create;
+        });
+    }
+
+    @Test
     public void testBackgroundDeleteWithConcurrentClose() throws Exception {
         testBackgroundOperationWithConcurrentClose((client, future) -> {
             DeleteBuilder delete = client.delete();
             delete.inBackground((ignored, event) -> future.complete(event), future)
                     .forPath("/not-exist-path");
+            return (BackgroundOperation<?>) delete;
+        });
+    }
+
+    @Test
+    public void testBackgroundDeleteNotEmptyAndACLWithConcurrentClose() throws Exception {
+        AtomicBoolean retry = new AtomicBoolean();
+        testBackgroundOperationWithConcurrentClose((client, future) -> {
+            if (retry.compareAndSet(false, true)) {
+                try (CuratorFramework authedClient = CuratorFrameworkFactory.builder()
+                        .connectString(server.getConnectString())
+                        .authorization("digest", "me1:pass1".getBytes())
+                        .retryPolicy(new RetryForever(2))
+                        .build()) {
+                    client.create().forPath("/not-empty-path");
+                    authedClient.start();
+                    authedClient.create().withACL(ZooDefs.Ids.CREATOR_ALL_ACL).forPath("/not-empty-path/child");
+                } catch (KeeperException ex) {
+                    throw new IllegalStateException(ex);
+                }
+            }
+            DeleteBuilder delete = client.delete();
+            delete.deletingChildrenIfNeeded()
+                    .inBackground((ignored, event) -> future.complete(event), future)
+                    .forPath("/not-empty-path");
             return (BackgroundOperation<?>) delete;
         });
     }
@@ -972,6 +1061,22 @@ public class TestFramework extends BaseClassForTests {
             SetDataBuilder setData = client.setData();
             setData.inBackground((ignored, event) -> future.complete(event), future)
                     .forPath("/not-exist-path");
+            return (BackgroundOperation<?>) setData;
+        });
+    }
+
+    @Test
+    public void testBackgroundSetDataIdempotentWithConcurrentClose() throws Exception {
+        AtomicBoolean retry = new AtomicBoolean();
+        testBackgroundOperationWithConcurrentClose((client, future) -> {
+            if (retry.compareAndSet(false, true)) {
+                client.create().forPath("/bad-version-path", "version1".getBytes());
+            }
+            SetDataBuilder setData = client.setData();
+            setData.idempotent()
+                    .withVersion(333)
+                    .inBackground((ignored, event) -> future.complete(event), future)
+                    .forPath("/bad-version-path");
             return (BackgroundOperation<?>) setData;
         });
     }
