@@ -30,9 +30,9 @@ import org.apache.curator.test.BaseClassForTests;
 import org.apache.zookeeper.KeeperException;
 import org.junit.jupiter.api.Test;
 
-public class TestLockCleanlinessWithFaults extends BaseClassForTests {
+public class TestLockInternals extends BaseClassForTests {
     @Test
-    public void testNodeDeleted() throws Exception {
+    public void testNodeDeletedCleanlyWithFaults() throws Exception {
         final String PATH = "/foo/bar";
 
         CuratorFramework client = null;
@@ -60,6 +60,40 @@ public class TestLockCleanlinessWithFaults extends BaseClassForTests {
             assertEquals(client.checkExists().forPath(PATH).getNumChildren(), 0);
         } finally {
             TestCleanState.closeAndTestClean(client);
+        }
+    }
+
+    @Test
+    public void testAttemptLockFailedException() throws Exception {
+        final String PATH = "/foo/bar";
+        try (CuratorFramework client = CuratorFrameworkFactory.builder()
+                .connectString(server.getConnectString())
+                .connectionTimeoutMs(1000)
+                .retryPolicy(new RetryNTimes(0, 0))
+                .build()) {
+            client.start();
+
+            client.create().creatingParentsIfNeeded().forPath(PATH);
+            assertEquals(client.checkExists().forPath(PATH).getNumChildren(), 0);
+
+            LockInternals internals = new LockInternals(client, new StandardLockInternalsDriver(), PATH, "lock-", 1) {
+                @Override
+                List<String> getSortedChildren() throws Exception {
+                    closeServer();
+                    getClient()
+                            .getZookeeperClient()
+                            .getZooKeeper()
+                            .getTestable()
+                            .injectSessionExpiration();
+                    throw new KeeperException.NoNodeException();
+                }
+            };
+            try {
+                internals.attemptLock(0, null, null);
+                fail("expect no node");
+            } catch (KeeperException.NoNodeException ex) {
+                // expected
+            }
         }
     }
 }

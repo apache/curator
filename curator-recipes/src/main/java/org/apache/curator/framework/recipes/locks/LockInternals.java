@@ -222,7 +222,6 @@ public class LockInternals {
 
     private boolean internalLockLoop(long startMillis, Long millisToWait, String ourPath) throws Exception {
         boolean haveTheLock = false;
-        boolean doDelete = false;
         try {
             if (revocable.get() != null) {
                 client.getData().usingWatcher(revocableWatcher).forPath(ourPath);
@@ -247,7 +246,6 @@ public class LockInternals {
                                 millisToWait -= (System.currentTimeMillis() - startMillis);
                                 startMillis = System.currentTimeMillis();
                                 if (millisToWait <= 0) {
-                                    doDelete = true; // timed out - delete our node
                                     break;
                                 }
 
@@ -263,14 +261,21 @@ public class LockInternals {
             }
         } catch (Exception e) {
             ThreadUtils.checkInterrupted(e);
-            doDelete = true;
+            deleteOurPathQuietly(ourPath, e);
             throw e;
-        } finally {
-            if (doDelete) {
-                deleteOurPath(ourPath);
-            }
+        }
+        if (!haveTheLock) {
+            deleteOurPath(ourPath);
         }
         return haveTheLock;
+    }
+
+    private void deleteOurPathQuietly(String ourPath, Exception ex) {
+        try {
+            deleteOurPath(ourPath);
+        } catch (Exception suppressed) {
+            ex.addSuppressed(suppressed);
+        }
     }
 
     private void deleteOurPath(String ourPath) throws Exception {

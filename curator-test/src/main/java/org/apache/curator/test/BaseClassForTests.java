@@ -131,7 +131,7 @@ public class BaseClassForTests {
         closeServer();
     }
 
-    private void closeServer() {
+    protected void closeServer() {
         if (server != null) {
             try {
                 server.close();
