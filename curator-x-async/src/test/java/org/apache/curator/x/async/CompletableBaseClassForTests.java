@@ -35,7 +35,7 @@ public abstract class CompletableBaseClassForTests extends BaseClassForTests {
 
     protected void joinThrowable(CompletionStage<?> stage) throws Throwable {
         try {
-            stage.toCompletableFuture().get();
+            timing.getFuture(stage.toCompletableFuture());
         } catch (Exception ex) {
             throw Throwables.getRootCause(ex);
         }

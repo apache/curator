@@ -20,7 +20,9 @@
 package org.apache.curator.test.compatibility;
 
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -104,6 +106,12 @@ public class Timing2 {
      */
     public int seconds() {
         return (int) value;
+    }
+
+    public <T> T getFuture(CompletableFuture<T> future)
+            throws InterruptedException, ExecutionException, TimeoutException {
+        Timing2 m = forWaiting();
+        return future.get(m.value, m.unit);
     }
 
     /**

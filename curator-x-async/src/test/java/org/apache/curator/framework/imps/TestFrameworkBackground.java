@@ -37,17 +37,18 @@ import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.retry.RetryOneTime;
-import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.x.async.AsyncCuratorFramework;
+import org.apache.curator.x.async.AsyncStage;
+import org.apache.curator.x.async.CompletableBaseClassForTests;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.ACL;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TestFrameworkBackground extends BaseClassForTests {
+public class TestFrameworkBackground extends CompletableBaseClassForTests {
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     @Test
@@ -91,8 +92,9 @@ public class TestFrameworkBackground extends BaseClassForTests {
                     errorLatch.countDown();
                 }
             };
-            async.with(listener).create().forPath("/foo");
-            assertTrue(new Timing().awaitLatch(errorLatch));
+            AsyncStage<String> stage = async.with(listener).create().forPath("/foo");
+            assertTrue(timing.awaitLatch(errorLatch));
+            exceptional(stage, UnsupportedOperationException.class);
         } finally {
             CloseableUtils.closeQuietly(client);
         }
