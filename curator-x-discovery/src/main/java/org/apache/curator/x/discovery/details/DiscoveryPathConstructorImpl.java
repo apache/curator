@@ -45,9 +45,4 @@ public class DiscoveryPathConstructorImpl implements DiscoveryPathConstructor {
     public String getPathForInstances(String serviceName) {
         return ZKPaths.makePath(basePath, serviceName);
     }
-
-    @Override
-    public String getPathForInstance(String serviceName, String instanceId) {
-        return ZKPaths.makePath(getPathForInstances(serviceName), instanceId);
-    }
 }

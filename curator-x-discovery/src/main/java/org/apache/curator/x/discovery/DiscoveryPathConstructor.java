@@ -24,26 +24,17 @@ package org.apache.curator.x.discovery;
  */
 public interface DiscoveryPathConstructor {
     /**
-     * Return the path where all service names registered.
+     * Return the parent path where all service names registered.
      *
      * @return the base path of all services
      */
     String getBasePath();
 
     /**
-     * Return the path where all instances of the service registered.
+     * Return the parent path where all instances of the service registered.
      *
      * @param serviceName service name
      * @return  path to service instances
      */
     String getPathForInstances(String serviceName);
-
-    /**
-     * Return the path where specified instance registered.
-     *
-     * @param serviceName service name
-     * @param instanceId instance id
-     * @return path to concrete instance
-     */
-    String getPathForInstance(String serviceName, String instanceId);
 }

@@ -20,13 +20,14 @@
 package org.apache.curator.x.discovery;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.x.discovery.details.DiscoveryPathConstructorImpl;
 import org.apache.curator.x.discovery.details.InstanceSerializer;
 import org.apache.curator.x.discovery.details.JsonInstanceSerializer;
 import org.apache.curator.x.discovery.details.ServiceDiscoveryImpl;
 
 public class ServiceDiscoveryBuilder<T> {
     private CuratorFramework client;
-    private String basePath;
+    private DiscoveryPathConstructor pathConstructor;
     private InstanceSerializer<T> serializer;
     private ServiceInstance<T> thisInstance;
     private Class<T> payloadClass;
@@ -53,7 +54,7 @@ public class ServiceDiscoveryBuilder<T> {
         if (serializer == null) {
             serializer(new JsonInstanceSerializer<T>(payloadClass));
         }
-        return new ServiceDiscoveryImpl<T>(client, basePath, serializer, thisInstance, watchInstances);
+        return new ServiceDiscoveryImpl<T>(client, pathConstructor, serializer, thisInstance, watchInstances);
     }
 
     /**
@@ -68,13 +69,25 @@ public class ServiceDiscoveryBuilder<T> {
     }
 
     /**
-     * Required - set the base path to store in ZK
+     * Required - set the base path to store in ZK, see {@link #pathConstructor(DiscoveryPathConstructor)}
+     * for alternative
      *
      * @param basePath base path
      * @return this
      */
     public ServiceDiscoveryBuilder<T> basePath(String basePath) {
-        this.basePath = basePath;
+        this.pathConstructor = new DiscoveryPathConstructorImpl(basePath);
+        return this;
+    }
+
+    /**
+     * Required - shape the service tree in ZK, see {@link #basePath(String)} for alternative
+     *
+     * @param pathConstructor custom service tree
+     * @return this
+     */
+    public ServiceDiscoveryBuilder<T> pathConstructor(DiscoveryPathConstructor pathConstructor) {
+        this.pathConstructor = pathConstructor;
         return this;
     }
 

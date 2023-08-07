@@ -36,6 +36,7 @@ import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.CloseableUtils;
+import org.apache.curator.x.discovery.DiscoveryPathConstructor;
 import org.apache.curator.x.discovery.ServiceDiscovery;
 import org.apache.curator.x.discovery.ServiceDiscoveryBuilder;
 import org.apache.curator.x.discovery.ServiceInstance;
@@ -245,6 +246,49 @@ public class TestServiceDiscovery extends BaseClassForTests {
                     .build();
             discovery = ServiceDiscoveryBuilder.builder(String.class)
                     .basePath("/test")
+                    .client(client)
+                    .thisInstance(instance)
+                    .build();
+            discovery.start();
+
+            assertEquals(discovery.queryForNames(), Collections.singletonList("test"));
+
+            List<ServiceInstance<String>> list = Lists.newArrayList();
+            list.add(instance);
+            assertEquals(discovery.queryForInstances("test"), list);
+        } finally {
+            CloseableUtils.closeQuietly(discovery);
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    private static class CustomPathConstructor implements DiscoveryPathConstructor {
+        @Override
+        public String getBasePath() {
+            return "/test";
+        }
+
+        @Override
+        public String getPathForInstances(String serviceName) {
+            return String.format("/test/%s/instances", serviceName);
+        }
+    }
+
+    @Test
+    public void testCustomPathConstructor() throws Exception {
+        CuratorFramework client = null;
+        ServiceDiscovery<String> discovery = null;
+        try {
+            client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+            client.start();
+
+            ServiceInstance<String> instance = ServiceInstance.<String>builder()
+                    .payload("thing")
+                    .name("test")
+                    .port(10064)
+                    .build();
+            discovery = ServiceDiscoveryBuilder.builder(String.class)
+                    .pathConstructor(new CustomPathConstructor())
                     .client(client)
                     .thisInstance(instance)
                     .build();

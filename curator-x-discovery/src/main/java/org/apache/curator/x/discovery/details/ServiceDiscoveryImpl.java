@@ -38,6 +38,7 @@ import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.ExceptionAccumulator;
 import org.apache.curator.utils.ThreadUtils;
+import org.apache.curator.utils.ZKPaths;
 import org.apache.curator.x.discovery.DiscoveryPathConstructor;
 import org.apache.curator.x.discovery.ServiceCache;
 import org.apache.curator.x.discovery.ServiceCacheBuilder;
@@ -389,7 +390,7 @@ public class ServiceDiscoveryImpl<T> implements ServiceDiscovery<T> {
 
     @VisibleForTesting
     String pathForInstance(String serviceName, String instanceId) {
-        return pathConstructor.getPathForInstance(serviceName, instanceId);
+        return ZKPaths.makePath(pathForName(serviceName), instanceId);
     }
 
     @VisibleForTesting
