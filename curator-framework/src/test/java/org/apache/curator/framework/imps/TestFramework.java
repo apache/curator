@@ -30,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import com.google.common.collect.Lists;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -81,6 +82,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedConstruction;
+import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -721,6 +724,38 @@ public class TestFramework extends BaseClassForTests {
             assertArrayEquals(bytes, "hey".getBytes());
         } finally {
             CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void testNullNamespace() {
+        CuratorFramework client = CuratorFrameworkFactory.builder()
+                .connectString(server.getConnectString())
+                .ensembleTracker(true)
+                .retryPolicy(new RetryOneTime(1))
+                .build();
+
+        client.start();
+
+        CuratorFrameworkImpl nullNamespace = (CuratorFrameworkImpl) client.usingNamespace(null);
+
+        assertNotNull(nullNamespace.getEnsembleTracker());
+        assertNotNull(nullNamespace.getNamespaceFacadeCache());
+        nullNamespace.runSafe(() -> {}).join();
+
+        CloseableUtils.closeQuietly(client);
+    }
+
+    @Test
+    public void testNoPartialConstruction() {
+        try (MockedConstruction<CuratorFrameworkImpl> construction =
+                Mockito.mockConstruction(CuratorFrameworkImpl.class)) {
+            CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder()
+                    .connectString(server.getConnectString())
+                    .retryPolicy(new RetryOneTime(1));
+            // Invoke constructor directly to make the construction more visible.
+            CuratorFramework client = new CuratorFrameworkImpl(builder);
+            assertEquals(Collections.singletonList(client), construction.constructed());
         }
     }
 
