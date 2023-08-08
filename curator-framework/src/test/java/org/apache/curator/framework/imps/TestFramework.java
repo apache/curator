@@ -77,6 +77,7 @@ import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.client.ZKClientConfig;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
+import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -89,10 +90,16 @@ import org.slf4j.LoggerFactory;
 public class TestFramework extends BaseClassForTests {
     private final Logger log = LoggerFactory.getLogger(getClass());
 
+    private static final String superUserPasswordDigest = "curator-test:zghsj3JfJqK7DbWf0RQ1BgbJH9w="; // ran from
+    // DigestAuthenticationProvider.generateDigest(superUserPassword);
+    private static final String superUserPassword = "curator-test";
+
     @BeforeEach
     @Override
     public void setup() throws Exception {
         System.setProperty("znode.container.checkIntervalMs", "1000");
+        QuorumPeerConfig.setReconfigEnabled(true);
+        System.setProperty("zookeeper.DigestAuthenticationProvider.superDigest", superUserPasswordDigest);
         super.setup();
     }
 
@@ -1122,6 +1129,43 @@ public class TestFramework extends BaseClassForTests {
             assertNotNull(event);
             assertEquals("/zoo/zoo/a", event.getPath());
         }
+    }
+
+    @Test
+    public void testBackgroundConfigPathWithNamespace() throws Exception {
+        CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder();
+        try (CuratorFramework client = builder.connectString(server.getConnectString())
+                .retryPolicy(new RetryOneTime(1))
+                .authorization("digest", superUserPassword.getBytes())
+                .build()) {
+            client.start();
+            assertBackgroundConfigPath(client);
+            assertBackgroundConfigPath(client.usingNamespace("zoo"));
+            assertBackgroundConfigPath(client.usingNamespace("zookeeper"));
+            assertBackgroundConfigPath(client.usingNamespace("zookeeper/config"));
+            assertBackgroundConfigPath(client.usingNamespace("foo"));
+            assertBackgroundConfigPath(client.usingNamespace("foo/bar"));
+        }
+    }
+
+    private void assertBackgroundConfigPath(CuratorFramework client) throws Exception {
+        BlockingQueue<CuratorEvent> events = new LinkedBlockingQueue<>();
+        BlockingQueue<WatchedEvent> watchedEvents = new LinkedBlockingQueue<>();
+        BackgroundCallback callback = (CuratorFramework ignored, CuratorEvent event) -> {
+            events.add(event);
+        };
+        Watcher watcher = watchedEvents::add;
+
+        client.getConfig().usingWatcher(watcher).inBackground(callback).forEnsemble();
+        CuratorEvent event = events.poll(10, TimeUnit.SECONDS);
+        assertNotNull(event);
+        assertEquals("/zookeeper/config", event.getPath());
+
+        client.usingNamespace(null).setData().forPath("/zookeeper/config", event.getData());
+        WatchedEvent watchedEvent = watchedEvents.poll(10, TimeUnit.SECONDS);
+        assertNotNull(watchedEvent);
+        assertEquals(Watcher.Event.EventType.NodeDataChanged, watchedEvent.getType());
+        assertEquals("/zookeeper/config", watchedEvent.getPath());
     }
 
     @Test
