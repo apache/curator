@@ -39,15 +39,15 @@ public class GetConfigBuilderImpl
     private Stat stat;
 
     public GetConfigBuilderImpl(CuratorFrameworkImpl client) {
-        this.client = client;
+        this.client = (CuratorFrameworkImpl) client.usingNamespace(null);
         backgrounding = new Backgrounding();
-        watching = new Watching(client);
+        watching = new Watching(this.client);
     }
 
     public GetConfigBuilderImpl(CuratorFrameworkImpl client, Backgrounding backgrounding, Watcher watcher, Stat stat) {
-        this.client = client;
+        this.client = (CuratorFrameworkImpl) client.usingNamespace(null);
         this.backgrounding = backgrounding;
-        this.watching = new Watching(client, watcher);
+        this.watching = new Watching(this.client, watcher);
         this.stat = stat;
     }
 
