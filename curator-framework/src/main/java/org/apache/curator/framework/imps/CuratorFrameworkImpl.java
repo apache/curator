@@ -283,14 +283,14 @@ public class CuratorFrameworkImpl implements CuratorFramework {
         compressionProvider = parent.compressionProvider;
         aclProvider = parent.aclProvider;
         namespaceFacadeCache = parent.namespaceFacadeCache;
-        namespace = new NamespaceImpl(this, null);
+        namespace = parent.namespace;
         state = parent.state;
         authInfos = parent.authInfos;
         useContainerParentsIfAvailable = parent.useContainerParentsIfAvailable;
         connectionStateErrorPolicy = parent.connectionStateErrorPolicy;
         internalConnectionHandler = parent.internalConnectionHandler;
         schemaSet = parent.schemaSet;
-        ensembleTracker = null;
+        ensembleTracker = parent.ensembleTracker;
         runSafeService = parent.runSafeService;
     }
 
