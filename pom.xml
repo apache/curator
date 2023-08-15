@@ -352,6 +352,18 @@
             </roles>
             <url>https://github.com/tisonkun/</url>
         </developer>
+
+        <developer>
+            <id>kezhuw</id>
+            <name>Kezhu Wang</name>
+            <email>kezhuw@apache.org</email>
+            <timezone>+8</timezone>
+            <roles>
+                <role>Committer</role>
+                <role>PMC Member</role>
+            </roles>
+            <url>https://github.com/kezhuw</url>
+        </developer>
     </developers>
 
     <modules>
