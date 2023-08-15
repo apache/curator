@@ -134,30 +134,6 @@
         <url>https://issues.apache.org/jira/browse/CURATOR</url>
     </issueManagement>
 
-    <ciManagement>
-        <system>Jenkins</system>
-        <url>https://builds.apache.org/job/Curator/</url>
-        <notifiers>
-            <notifier>
-                <type>mail</type>
-                <sendOnError>true</sendOnError>
-                <sendOnFailure>true</sendOnFailure>
-                <sendOnSuccess>false</sendOnSuccess>
-                <sendOnWarning>false</sendOnWarning>
-                <configuration>
-                    <address>dev@curator.apache.org</address>
-                </configuration>
-            </notifier>
-        </notifiers>
-    </ciManagement>
-
-    <distributionManagement>
-        <site>
-            <id>apache.website.svnpub</id>
-            <url>scm:svn:https://svn.apache.org/repos/asf/curator/site/trunk</url>
-        </site>
-    </distributionManagement>
-
     <mailingLists>
         <mailingList>
             <name>Users</name>
@@ -833,50 +809,6 @@
                     </additionalJOptions>
                     <failOnError>false</failOnError>
                 </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-site-plugin</artifactId>
-                <configuration>
-                    <locales>en</locales>
-                    <skipDeploy>true</skipDeploy>
-                </configuration>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.apache.maven.doxia</groupId>
-                        <artifactId>doxia-module-confluence</artifactId>
-                        <version>${doxia-module-confluence-version}</version>
-                    </dependency>
-                </dependencies>
-                <executions>
-                    <execution>
-                        <phase>site</phase>
-                        <goals>
-                            <goal>site</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-scm-publish-plugin</artifactId>
-                <inherited>false</inherited>
-                <configuration>
-                    <checkinComment>Curator website deployment</checkinComment>
-                    <!-- define curator-website-checkout-path in settings.xml -->
-                    <checkoutDirectory>${curator-website-checkout-path}</checkoutDirectory>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>scm-publish</id>
-                        <phase>site-deploy</phase>
-                        <goals>
-                            <goal>publish-scm</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
 
             <plugin>
