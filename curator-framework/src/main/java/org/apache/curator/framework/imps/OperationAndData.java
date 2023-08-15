@@ -36,7 +36,7 @@ class OperationAndData<T> implements Delayed, RetrySleeper {
     private final BackgroundCallback callback;
     private final long startTimeMs = System.currentTimeMillis();
     private final ErrorCallback<T> errorCallback;
-    private final AtomicInteger retryCount = new AtomicInteger(0);
+    private final AtomicInteger retryCount;
     private final AtomicLong sleepUntilTimeMs = new AtomicLong(0);
     private final AtomicLong ordinal = new AtomicLong();
     private final Object context;
@@ -44,6 +44,16 @@ class OperationAndData<T> implements Delayed, RetrySleeper {
 
     interface ErrorCallback<T> {
         void retriesExhausted(OperationAndData<T> operationAndData);
+    }
+
+    OperationAndData(BackgroundOperation<T> operation, OperationAndData<T> main) {
+        this.operation = operation;
+        this.data = main.data;
+        this.callback = main.callback;
+        this.errorCallback = main.errorCallback;
+        this.context = main.context;
+        this.connectionRequired = main.connectionRequired;
+        this.retryCount = main.retryCount;
     }
 
     OperationAndData(
@@ -59,6 +69,7 @@ class OperationAndData<T> implements Delayed, RetrySleeper {
         this.errorCallback = errorCallback;
         this.context = context;
         this.connectionRequired = connectionRequired;
+        this.retryCount = new AtomicInteger(0);
         reset();
     }
 

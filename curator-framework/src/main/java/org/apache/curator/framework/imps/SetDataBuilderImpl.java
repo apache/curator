@@ -229,12 +229,7 @@ public class SetDataBuilderImpl
         BackgroundOperation<PathAndBytes> operation = new BackgroundOperation<PathAndBytes>() {
             @Override
             public void performBackgroundOperation(OperationAndData<PathAndBytes> op) throws Exception {
-                try {
-                    client.getZooKeeper().getData(path, false, dataCallback, backgrounding.getContext());
-                } catch (KeeperException e) {
-                    // ignore
-                    client.logError("Unexpected exception in async idempotent check for, ignoring: " + path, e);
-                }
+                client.getZooKeeper().getData(path, false, dataCallback, backgrounding.getContext());
             }
 
             @Override
@@ -242,7 +237,7 @@ public class SetDataBuilderImpl
                 return CuratorEventType.SET_DATA;
             }
         };
-        client.queueOperation(new OperationAndData<>(operation, null, null, null, null, null));
+        client.queueOperation(new OperationAndData<>(operation, mainOperationAndData));
     }
 
     @Override

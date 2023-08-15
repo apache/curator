@@ -230,8 +230,7 @@ public class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<Str
                 return CuratorEventType.DELETE;
             }
         };
-        OperationAndData<String> parentOperation = new OperationAndData<String>(
-                operation, mainOperationAndData.getData(), null, null, backgrounding.getContext(), null);
+        OperationAndData<String> parentOperation = new OperationAndData<>(operation, mainOperationAndData);
         client.queueOperation(parentOperation);
     }
 
