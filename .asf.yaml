@@ -34,6 +34,9 @@ github:
     rebase:  true
   protected_branches:
     master: {}
+  autolink_jira:
+    - CURATOR
+    - ZOOKEEPER
 
 notifications:
   commits:      commits@curator.apache.org
