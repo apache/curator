@@ -196,8 +196,12 @@ public class SharedValue implements Closeable, SharedValueReader {
     private void updateValue(int version, byte[] bytes) {
         while (true) {
             VersionedValue<byte[]> current = currentValue.get();
-            if (current.getVersion() >= version) {
-                // A newer version was concurrently set.
+            // Update currentValue only when no newer version was concurrently set
+            // AND the current version is not uninitialized AND remote znode version is not MIN_VALUE.
+            // WARN: When the version return to -1 after overflow, it will setData blindly.
+            if (current.getVersion() >= version
+                    && current.getVersion() != UNINITIALIZED_VERSION
+                    && version != Integer.MIN_VALUE) {
                 return;
             }
             if (currentValue.compareAndSet(current, new VersionedValue<byte[]>(version, bytes))) {
