@@ -19,7 +19,9 @@
 
 package org.apache.curator.framework.recipes.cache;
 
-import static org.apache.curator.framework.recipes.cache.CuratorCacheListener.Type.*;
+import static org.apache.curator.framework.recipes.cache.CuratorCacheListener.Type.NODE_CHANGED;
+import static org.apache.curator.framework.recipes.cache.CuratorCacheListener.Type.NODE_CREATED;
+import static org.apache.curator.framework.recipes.cache.CuratorCacheListener.Type.NODE_DELETED;
 import static org.apache.zookeeper.KeeperException.Code.NONODE;
 import static org.apache.zookeeper.KeeperException.Code.OK;
 import com.google.common.annotations.VisibleForTesting;
@@ -64,8 +66,8 @@ class CuratorCacheImpl implements CuratorCache, CuratorCacheBridge {
         protected boolean onAdvance(int phase, int registeredParties) {
             callListeners(CuratorCacheListener::initialized);
             synchronized (CuratorCacheImpl.this) {
-                currentChildPhaser = rootPhaser; 
-            } 
+                currentChildPhaser = rootPhaser;
+            }
             return true;
         }
     };

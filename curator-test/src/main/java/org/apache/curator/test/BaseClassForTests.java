@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 public class BaseClassForTests {
     protected volatile TestingServer server;
 
-    private final Logger log = LoggerFactory.getLogger(getClass());
+    protected final Logger log = LoggerFactory.getLogger(getClass());
     private final AtomicBoolean isRetrying = new AtomicBoolean(false);
 
     private static final String INTERNAL_PROPERTY_DONT_LOG_CONNECTION_ISSUES;
