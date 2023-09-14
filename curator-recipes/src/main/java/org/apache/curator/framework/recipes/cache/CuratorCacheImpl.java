@@ -30,7 +30,6 @@ import com.google.common.collect.Sets;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.Phaser;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -61,28 +60,8 @@ class CuratorCacheImpl implements CuratorCache, CuratorCacheBridge {
     private final StandardListenerManager<CuratorCacheListener> listenerManager = StandardListenerManager.standard();
     private final Consumer<Exception> exceptionHandler;
 
-    private final Phaser rootPhaser = new Phaser() {
-        @Override
-        protected boolean onAdvance(int phase, int registeredParties) {
-            callListeners(CuratorCacheListener::initialized);
-            synchronized (CuratorCacheImpl.this) {
-                currentChildPhaser = rootPhaser;
-            }
-            return true;
-        }
-    };
-
-    private Phaser currentChildPhaser = new Phaser(rootPhaser);
-
-    private synchronized Phaser getPhaserAndRegister() {
-        if (currentChildPhaser.getRegisteredParties() >= 0xffff) {
-            currentChildPhaser = new Phaser(rootPhaser);
-        }
-
-        currentChildPhaser.register();
-
-        return currentChildPhaser;
-    }
+    private final OutstandingOps outstandingOps =
+            new OutstandingOps(() -> callListeners(CuratorCacheListener::initialized));
 
     private enum State {
         LATENT,
@@ -199,8 +178,6 @@ class CuratorCacheImpl implements CuratorCache, CuratorCacheBridge {
             return; // children haven't changed
         }
 
-        final Phaser outstandingOps = getPhaserAndRegister();
-
         try {
             BackgroundCallback callback = (__, event) -> {
                 if (event.getResultCode() == OK.intValue()) {
@@ -210,9 +187,10 @@ class CuratorCacheImpl implements CuratorCache, CuratorCacheBridge {
                 } else {
                     handleException(event);
                 }
-                outstandingOps.arriveAndDeregister();
+                outstandingOps.decrement();
             };
 
+            outstandingOps.increment();
             client.getChildren().inBackground(callback).forPath(fromPath);
         } catch (Exception e) {
             handleException(e);
@@ -223,8 +201,6 @@ class CuratorCacheImpl implements CuratorCache, CuratorCacheBridge {
         if (state.get() != State.STARTED) {
             return;
         }
-
-        final Phaser outstandingOps = getPhaserAndRegister();
 
         try {
             BackgroundCallback callback = (__, event) -> {
@@ -238,9 +214,10 @@ class CuratorCacheImpl implements CuratorCache, CuratorCacheBridge {
                 } else {
                     handleException(event);
                 }
-                outstandingOps.arriveAndDeregister();
+                outstandingOps.decrement();
             };
 
+            outstandingOps.increment();
             if (compressedData) {
                 client.getData().decompressed().inBackground(callback).forPath(fromPath);
             } else {
