@@ -19,7 +19,9 @@
 
 package org.apache.curator.framework.recipes.cache;
 
-import static org.apache.curator.framework.recipes.cache.CuratorCacheListener.Type.*;
+import static org.apache.curator.framework.recipes.cache.CuratorCacheListener.Type.NODE_CHANGED;
+import static org.apache.curator.framework.recipes.cache.CuratorCacheListener.Type.NODE_CREATED;
+import static org.apache.curator.framework.recipes.cache.CuratorCacheListener.Type.NODE_DELETED;
 import static org.apache.zookeeper.KeeperException.Code.NONODE;
 import static org.apache.zookeeper.KeeperException.Code.OK;
 import com.google.common.annotations.VisibleForTesting;
@@ -28,7 +30,6 @@ import com.google.common.collect.Sets;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.Phaser;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -59,13 +60,8 @@ class CuratorCacheImpl implements CuratorCache, CuratorCacheBridge {
     private final StandardListenerManager<CuratorCacheListener> listenerManager = StandardListenerManager.standard();
     private final Consumer<Exception> exceptionHandler;
 
-    private final Phaser outstandingOps = new Phaser() {
-        @Override
-        protected boolean onAdvance(int phase, int registeredParties) {
-            callListeners(CuratorCacheListener::initialized);
-            return true;
-        }
-    };
+    private final OutstandingOps outstandingOps =
+            new OutstandingOps(() -> callListeners(CuratorCacheListener::initialized));
 
     private enum State {
         LATENT,
@@ -191,10 +187,10 @@ class CuratorCacheImpl implements CuratorCache, CuratorCacheBridge {
                 } else {
                     handleException(event);
                 }
-                outstandingOps.arriveAndDeregister();
+                outstandingOps.decrement();
             };
 
-            outstandingOps.register();
+            outstandingOps.increment();
             client.getChildren().inBackground(callback).forPath(fromPath);
         } catch (Exception e) {
             handleException(e);
@@ -218,10 +214,10 @@ class CuratorCacheImpl implements CuratorCache, CuratorCacheBridge {
                 } else {
                     handleException(event);
                 }
-                outstandingOps.arriveAndDeregister();
+                outstandingOps.decrement();
             };
 
-            outstandingOps.register();
+            outstandingOps.increment();
             if (compressedData) {
                 client.getData().decompressed().inBackground(callback).forPath(fromPath);
             } else {

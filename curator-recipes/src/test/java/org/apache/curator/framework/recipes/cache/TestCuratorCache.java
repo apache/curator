@@ -23,11 +23,14 @@ import static org.apache.curator.framework.recipes.cache.CuratorCache.Options.DO
 import static org.apache.curator.framework.recipes.cache.CuratorCacheListener.builder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.junit.jupiter.api.Tag;
@@ -177,6 +180,50 @@ public class TestCuratorCache extends CuratorTestBase {
                 timing.sleepABit();
             }
             assertEquals(storage.size(), 0);
+        }
+    }
+
+    // CURATOR-690 - CuratorCache fails to load the cache if there are more than 64K child ZNodes
+    @Test
+    public void testGreaterThan64kZNodes() throws Exception {
+        final CuratorCacheStorage storage = new StandardCuratorCacheStorage(false);
+
+        // Phaser has a hard-limit of 64k registrants; we need to create more than that to trigger the initial problem.
+        final int zNodeCount = 0xFFFF + 5;
+
+        // Bulk creations in multiOp for (1) speed up creations (2) not exceed jute.maxbuffer size.
+        final int bulkSize = 10000;
+
+        try (CuratorFramework client = CuratorFrameworkFactory.newClient(
+                server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1))) {
+            client.start();
+            final CountDownLatch initializedLatch = new CountDownLatch(1);
+            client.create().creatingParentsIfNeeded().forPath("/test");
+
+            final List<CuratorOp> creations = new ArrayList<>();
+            for (int i = 0; i < zNodeCount; i++) {
+                creations.add(client.transactionOp().create().forPath("/test/node_" + i));
+                if (creations.size() > bulkSize) {
+                    client.transaction().forOperations(creations);
+                    creations.clear();
+                }
+            }
+            client.transaction().forOperations(creations);
+            creations.clear();
+
+            try (CuratorCache cache =
+                    CuratorCache.builder(client, "/test").withStorage(storage).build()) {
+                final CuratorCacheListener listener =
+                        builder().forInitialized(initializedLatch::countDown).build();
+                cache.listenable().addListener(listener);
+                cache.start();
+
+                assertTrue(timing.awaitLatch(initializedLatch));
+                assertEquals(
+                        zNodeCount + 1,
+                        cache.size(),
+                        "Cache size should be equal to the number of zNodes created plus the root");
+            }
         }
     }
 }
