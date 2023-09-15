@@ -200,8 +200,6 @@ public class LeaderLatch implements Closeable {
             }
         }
 
-        Preconditions.checkNotNull(closeMode, "closeMode cannot be null");
-
         cancelStartTask();
 
         try {
@@ -213,18 +211,12 @@ public class LeaderLatch implements Closeable {
         } finally {
             client.getConnectionStateListenable().removeListener(listener);
 
-            switch (closeMode) {
-                case NOTIFY_LEADER: {
-                    setLeadership(false);
-                    listeners.clear();
-                    break;
-                }
-
-                default: {
-                    listeners.clear();
-                    setLeadership(false);
-                    break;
-                }
+            if (closeMode == CloseMode.NOTIFY_LEADER) {
+                setLeadership(false);
+                listeners.clear();
+            } else {
+                listeners.clear();
+                setLeadership(false);
             }
         }
     }
