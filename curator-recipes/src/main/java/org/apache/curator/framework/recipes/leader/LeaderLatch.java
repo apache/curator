@@ -188,6 +188,7 @@ public class LeaderLatch implements Closeable {
      * @throws IOException errors
      */
     public void close(CloseMode closeMode) throws IOException {
+        Preconditions.checkNotNull(closeMode, "closeMode cannot be null");
         internalClose(closeMode, true);
     }
 
@@ -199,8 +200,6 @@ public class LeaderLatch implements Closeable {
                 return;
             }
         }
-
-        Preconditions.checkNotNull(closeMode, "closeMode cannot be null");
 
         cancelStartTask();
 
@@ -214,17 +213,14 @@ public class LeaderLatch implements Closeable {
             client.getConnectionStateListenable().removeListener(listener);
 
             switch (closeMode) {
-                case NOTIFY_LEADER: {
+                case NOTIFY_LEADER:
                     setLeadership(false);
                     listeners.clear();
                     break;
-                }
-
-                default: {
+                case SILENT:
                     listeners.clear();
                     setLeadership(false);
                     break;
-                }
             }
         }
     }
@@ -457,13 +453,12 @@ public class LeaderLatch implements Closeable {
      * it is possible for <code>null</code> to be returned. The path, if any,
      * returned is not guaranteed to be valid at any point in the future as internal
      * state changes might require the instance to delete and create a new path.
-     *
+     * <p>
      * However, the existence of <code>ourPath</code> doesn't mean that this instance
      * holds leadership.
      *
-     * @see #getLastPathIsLeader
-     *
      * @return lock node path or <code>null</code>
+     * @see #getLastPathIsLeader
      */
     public String getOurPath() {
         return ourPath.get();
@@ -475,7 +470,7 @@ public class LeaderLatch implements Closeable {
      * Also, it is possible for <code>null</code> to be returned (for this instance never becomes
      * a leader). The path, if any, returned is not guaranteed to be valid at any point in the future
      * as internal state changes might require the instance to delete the path.
-     *
+     * <p>
      * The existence of <code>lastPathIsLeader</code> means that this instance holds leadership.
      *
      * @return last lock node path that was leader ever or <code>null</code>
