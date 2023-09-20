@@ -86,17 +86,6 @@
         <jackson-mapper-asl-version>1.9.13</jackson-mapper-asl-version>
         <jackson-version>2.13.5</jackson-version>
         <assertj-version>3.23.1</assertj-version>
-        <!-- Upgrading to Jersey 2.x is difficult and of unclear benefits, see
-             https://stackoverflow.com/questions/17098341#22033825 -->
-        <jersey-version>1.19.4</jersey-version>
-        <jsr311-api-version>1.1.1</jsr311-api-version>
-        <!-- See https://stackoverflow.com/questions/43574426#comment93992044_43574427 -->
-        <jaxb-version>2.2.11</jaxb-version>
-        <javax-activation-version>1.1.1</javax-activation-version>
-        <jetty-version>9.4.45.v20220203</jetty-version>
-        <scannotation-version>1.0.2</scannotation-version>
-        <!-- resteasy-jaxrs dependency cannot be higher than 2.x for compatibility with Jersey 1.x -->
-        <resteasy-jaxrs-version>2.3.5.Final</resteasy-jaxrs-version>
         <guava-version>32.0.0-jre</guava-version>
         <guava-listenablefuture-version>1.0</guava-listenablefuture-version>
         <guava-failureaccess-version>1.0.1</guava-failureaccess-version>
@@ -349,7 +338,7 @@
         <module>curator-recipes</module>
         <module>curator-examples</module>
         <module>curator-x-discovery</module>
-        <module>curator-x-discovery-server</module>
+<!--        <module>curator-x-discovery-server</module>-->
         <module>curator-x-async</module>
         <module>curator-test-zk35</module>
         <module>curator-test-zk36</module>
@@ -466,84 +455,6 @@
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
                 <version>${jackson-version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.sun.jersey</groupId>
-                <artifactId>jersey-server</artifactId>
-                <version>${jersey-version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.sun.jersey</groupId>
-                <artifactId>jersey-servlet</artifactId>
-                <version>${jersey-version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.sun.jersey</groupId>
-                <artifactId>jersey-client</artifactId>
-                <version>${jersey-version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.sun.jersey</groupId>
-                <artifactId>jersey-core</artifactId>
-                <version>${jersey-version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>javax.ws.rs</groupId>
-                <artifactId>jsr311-api</artifactId>
-                <version>${jsr311-api-version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>javax.xml.bind</groupId>
-                <artifactId>jaxb-api</artifactId>
-                <version>${jaxb-version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.sun.xml.bind</groupId>
-                <artifactId>jaxb-core</artifactId>
-                <version>${jaxb-version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.sun.xml.bind</groupId>
-                <artifactId>jaxb-impl</artifactId>
-                <version>${jaxb-version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>javax.activation</groupId>
-                <artifactId>activation</artifactId>
-                <version>${javax-activation-version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-webapp</artifactId>
-                <version>${jetty-version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>net.sf.scannotation</groupId>
-                <artifactId>scannotation</artifactId>
-                <version>${scannotation-version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.jboss.resteasy</groupId>
-                <artifactId>resteasy-jaxrs</artifactId>
-                <version>${resteasy-jaxrs-version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.scannotation</groupId>
-                        <artifactId>scannotation</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
 
             <dependency>
