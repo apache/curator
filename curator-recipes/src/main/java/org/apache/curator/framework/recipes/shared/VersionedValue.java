@@ -20,28 +20,47 @@
 package org.apache.curator.framework.recipes.shared;
 
 import com.google.common.base.Preconditions;
+import java.util.function.Function;
+import org.apache.zookeeper.data.Stat;
 
 /**
- * POJO for a version and a value
+ * POJO for versioned value.
+ *
+ * <p>Client must never construct this but get through {@link SharedValue#getVersionedValue()}
+ * or {@link SharedCount#getVersionedValue()}.
  */
 public class VersionedValue<T> {
+    private final long zxid;
     private final int version;
     private final T value;
 
-    /**
-     * @param version the version
-     * @param value the value (cannot be null)
-     */
-    VersionedValue(int version, T value) {
+    VersionedValue(long zxid, int version, T value) {
+        this.zxid = zxid;
         this.version = version;
         this.value = Preconditions.checkNotNull(value, "value cannot be null");
     }
 
+    /**
+     * It is {@link Stat#getMzxid()} of the corresponding node.
+     */
+    public long getZxid() {
+        return zxid;
+    }
+
+    /**
+     * It is {@link Stat#getVersion()} of the corresponding node.
+     *
+     * <p>It is known that this will overflow and hence not monotonic.
+     */
     public int getVersion() {
         return version;
     }
 
     public T getValue() {
         return value;
+    }
+
+    <R> VersionedValue<R> mapValue(Function<T, R> f) {
+        return new VersionedValue<>(zxid, version, f.apply(value));
     }
 }

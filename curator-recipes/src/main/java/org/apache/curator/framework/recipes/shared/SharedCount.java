@@ -30,6 +30,7 @@ import java.util.concurrent.Executor;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.state.ConnectionState;
+import org.apache.zookeeper.data.Stat;
 
 /**
  * Manages a shared integer. All clients watching the same path will have the up-to-date
@@ -60,7 +61,7 @@ public class SharedCount implements Closeable, SharedCountReader, Listenable<Sha
     @Override
     public VersionedValue<Integer> getVersionedValue() {
         VersionedValue<byte[]> localValue = sharedValue.getVersionedValue();
-        return new VersionedValue<Integer>(localValue.getVersion(), fromBytes(localValue.getValue()));
+        return localValue.mapValue(SharedCount::fromBytes);
     }
 
     /**
@@ -102,11 +103,11 @@ public class SharedCount implements Closeable, SharedCountReader, Listenable<Sha
      * @param newCount the new value to attempt
      * @return true if the change attempt was successful, false if not. If the change
      * was not successful, {@link #getCount()} will return the updated value
+     * @throws IllegalTrySetVersionException if {@link Stat#getVersion()} overflowed to {@code -1}
      * @throws Exception ZK errors, interruptions, etc.
      */
     public boolean trySetCount(VersionedValue<Integer> previous, int newCount) throws Exception {
-        VersionedValue<byte[]> previousCopy =
-                new VersionedValue<byte[]>(previous.getVersion(), toBytes(previous.getValue()));
+        VersionedValue<byte[]> previousCopy = previous.mapValue(SharedCount::toBytes);
         return sharedValue.trySetValue(previousCopy, toBytes(newCount));
     }
 

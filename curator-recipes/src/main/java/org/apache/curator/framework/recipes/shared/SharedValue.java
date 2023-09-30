@@ -48,6 +48,7 @@ import org.slf4j.LoggerFactory;
  * value (considering ZK's normal consistency guarantees).
  */
 public class SharedValue implements Closeable, SharedValueReader {
+    private static final int NO_ZXID = -1;
     private static final int UNINITIALIZED_VERSION = -1;
 
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -101,8 +102,8 @@ public class SharedValue implements Closeable, SharedValueReader {
         this.path = PathUtils.validatePath(path);
         this.seedValue = Arrays.copyOf(seedValue, seedValue.length);
         this.watcher = new SharedValueCuratorWatcher();
-        currentValue = new AtomicReference<VersionedValue<byte[]>>(
-                new VersionedValue<byte[]>(UNINITIALIZED_VERSION, Arrays.copyOf(seedValue, seedValue.length)));
+        currentValue = new AtomicReference<>(
+                new VersionedValue<>(NO_ZXID, UNINITIALIZED_VERSION, Arrays.copyOf(seedValue, seedValue.length)));
     }
 
     @VisibleForTesting
@@ -112,8 +113,8 @@ public class SharedValue implements Closeable, SharedValueReader {
         this.seedValue = Arrays.copyOf(seedValue, seedValue.length);
         // inject watcher for testing
         this.watcher = watcher;
-        currentValue = new AtomicReference<VersionedValue<byte[]>>(
-                new VersionedValue<byte[]>(UNINITIALIZED_VERSION, Arrays.copyOf(seedValue, seedValue.length)));
+        currentValue = new AtomicReference<>(
+                new VersionedValue<>(NO_ZXID, UNINITIALIZED_VERSION, Arrays.copyOf(seedValue, seedValue.length)));
     }
 
     @Override
@@ -125,12 +126,11 @@ public class SharedValue implements Closeable, SharedValueReader {
     @Override
     public VersionedValue<byte[]> getVersionedValue() {
         VersionedValue<byte[]> localCopy = currentValue.get();
-        return new VersionedValue<byte[]>(
-                localCopy.getVersion(), Arrays.copyOf(localCopy.getValue(), localCopy.getValue().length));
+        return localCopy.mapValue(bytes -> Arrays.copyOf(bytes, bytes.length));
     }
 
     /**
-     * Change the shared value value irrespective of its previous state
+     * Change the shared value irrespective of its previous state
      *
      * @param newValue new value
      * @throws Exception ZK errors, interruptions, etc.
@@ -139,7 +139,7 @@ public class SharedValue implements Closeable, SharedValueReader {
         Preconditions.checkState(state.get() == State.STARTED, "not started");
 
         Stat result = client.setData().forPath(path, newValue);
-        updateValue(result.getVersion(), Arrays.copyOf(newValue, newValue.length));
+        updateValue(result.getMzxid(), result.getVersion(), Arrays.copyOf(newValue, newValue.length));
     }
 
     /**
@@ -171,19 +171,26 @@ public class SharedValue implements Closeable, SharedValueReader {
      * @param newValue the new value to attempt
      * @return true if the change attempt was successful, false if not. If the change
      * was not successful, {@link #getValue()} will return the updated value
+     * @throws IllegalTrySetVersionException if {@link Stat#getVersion()} overflowed to {@code -1}
      * @throws Exception ZK errors, interruptions, etc.
      */
+    @SuppressWarnings("deprecation")
     public boolean trySetValue(VersionedValue<byte[]> previous, byte[] newValue) throws Exception {
         Preconditions.checkState(state.get() == State.STARTED, "not started");
 
         VersionedValue<byte[]> current = currentValue.get();
-        if (previous.getVersion() != current.getVersion() || !Arrays.equals(previous.getValue(), current.getValue())) {
+        // Omit comparing of getVersion here, so we can test the exception case.
+        // This affects no correctness as construction of VersionedValue is private.
+        if (previous.getZxid() != current.getZxid() || !Arrays.equals(previous.getValue(), current.getValue())) {
             return false;
+        }
+        if (previous.getVersion() == -1) {
+            throw new IllegalTrySetVersionException();
         }
 
         try {
             Stat result = client.setData().withVersion(previous.getVersion()).forPath(path, newValue);
-            updateValue(result.getVersion(), Arrays.copyOf(newValue, newValue.length));
+            updateValue(result.getMzxid(), result.getVersion(), Arrays.copyOf(newValue, newValue.length));
             return true;
         } catch (KeeperException.BadVersionException ignore) {
             // ignore
@@ -193,18 +200,13 @@ public class SharedValue implements Closeable, SharedValueReader {
         return false;
     }
 
-    private void updateValue(int version, byte[] bytes) {
+    private void updateValue(long zxid, int version, byte[] bytes) {
         while (true) {
             VersionedValue<byte[]> current = currentValue.get();
-            // Update currentValue only when no newer version was concurrently set
-            // AND the current version is not uninitialized AND remote znode version is not MIN_VALUE.
-            // WARN: When the version return to -1 after overflow, it will setData blindly.
-            if (current.getVersion() >= version
-                    && current.getVersion() != UNINITIALIZED_VERSION
-                    && version != Integer.MIN_VALUE) {
+            if (current.getZxid() >= zxid) {
                 return;
             }
-            if (currentValue.compareAndSet(current, new VersionedValue<byte[]>(version, bytes))) {
+            if (currentValue.compareAndSet(current, new VersionedValue<>(zxid, version, bytes))) {
                 // Successfully set.
                 return;
             }
@@ -252,14 +254,14 @@ public class SharedValue implements Closeable, SharedValueReader {
         Stat localStat = new Stat();
         byte[] bytes =
                 client.getData().storingStatIn(localStat).usingWatcher(watcher).forPath(path);
-        updateValue(localStat.getVersion(), bytes);
+        updateValue(localStat.getMzxid(), localStat.getVersion(), bytes);
     }
 
     private final BackgroundCallback upadateAndNotifyListenerCallback = new BackgroundCallback() {
         @Override
         public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
             if (event.getResultCode() == KeeperException.Code.OK.intValue()) {
-                updateValue(event.getStat().getVersion(), event.getData());
+                updateValue(event.getStat().getMzxid(), event.getStat().getVersion(), event.getData());
                 notifyListeners();
             }
         }
