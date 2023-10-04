@@ -48,8 +48,7 @@ public class TestDistributedDelayQueue extends BaseClassForTests {
                 server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try {
-            BlockingQueueConsumer<Long> consumer =
-                    new BlockingQueueConsumer<>(new DummyConnectionStateListener());
+            BlockingQueueConsumer<Long> consumer = new BlockingQueueConsumer<>(new DummyConnectionStateListener());
             queue = QueueBuilder.builder(client, consumer, new LongSerializer(), "/test")
                     .buildDelayQueue();
             queue.start();
@@ -78,8 +77,7 @@ public class TestDistributedDelayQueue extends BaseClassForTests {
                 server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try {
-            BlockingQueueConsumer<Long> consumer =
-                    new BlockingQueueConsumer<>(new DummyConnectionStateListener());
+            BlockingQueueConsumer<Long> consumer = new BlockingQueueConsumer<>(new DummyConnectionStateListener());
             queue = QueueBuilder.builder(client, consumer, new LongSerializer(), "/test")
                     .buildDelayQueue();
             queue.start();
@@ -106,8 +104,7 @@ public class TestDistributedDelayQueue extends BaseClassForTests {
                 server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         client.start();
         try {
-            BlockingQueueConsumer<Long> consumer =
-                    new BlockingQueueConsumer<>(new DummyConnectionStateListener());
+            BlockingQueueConsumer<Long> consumer = new BlockingQueueConsumer<>(new DummyConnectionStateListener());
             queue = QueueBuilder.builder(client, consumer, new LongSerializer(), "/test")
                     .buildDelayQueue();
             queue.start();
@@ -175,8 +172,7 @@ public class TestDistributedDelayQueue extends BaseClassForTests {
                 putQueue.put(data.get(key), key);
             }
 
-            BlockingQueueConsumer<Long> consumer =
-                    new BlockingQueueConsumer<>(new DummyConnectionStateListener());
+            BlockingQueueConsumer<Long> consumer = new BlockingQueueConsumer<>(new DummyConnectionStateListener());
             getQueue = QueueBuilder.builder(client, consumer, new LongSerializer(), "/test2")
                     .putInBackground(false)
                     .buildDelayQueue();

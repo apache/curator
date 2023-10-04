@@ -49,8 +49,7 @@ public class TestDistributedPriorityQueue extends BaseClassForTests {
         try {
             final int minItemsBeforeRefresh = 3;
 
-            BlockingQueueConsumer<Integer> consumer =
-                    new BlockingQueueConsumer<>(new DummyConnectionStateListener());
+            BlockingQueueConsumer<Integer> consumer = new BlockingQueueConsumer<>(new DummyConnectionStateListener());
             queue = QueueBuilder.builder(client, consumer, new IntSerializer(), "/test")
                     .buildPriorityQueue(minItemsBeforeRefresh);
             queue.start();
@@ -95,8 +94,7 @@ public class TestDistributedPriorityQueue extends BaseClassForTests {
                 }
 
                 @Override
-                public void stateChanged(CuratorFramework client, ConnectionState newState) {
-                }
+                public void stateChanged(CuratorFramework client, ConnectionState newState) {}
             };
             queue = QueueBuilder.builder(client, consumer, new IntSerializer(), "/test")
                     .buildPriorityQueue(0);
@@ -110,8 +108,7 @@ public class TestDistributedPriorityQueue extends BaseClassForTests {
             timing.sleepABit();
             queue.put(1000, 1); // lower priority
             timing.sleepABit();
-            assertEquals(
-                    blockingQueue.poll(timing.seconds(), TimeUnit.SECONDS), 1); // is in consumer already
+            assertEquals(blockingQueue.poll(timing.seconds(), TimeUnit.SECONDS), 1); // is in consumer already
             assertEquals(blockingQueue.poll(timing.seconds(), TimeUnit.SECONDS), 1000);
         } finally {
             CloseableUtils.closeQuietly(queue);
@@ -138,8 +135,7 @@ public class TestDistributedPriorityQueue extends BaseClassForTests {
                     return super.deserialize(bytes);
                 }
             };
-            BlockingQueueConsumer<Integer> consumer =
-                    new BlockingQueueConsumer<>(new DummyConnectionStateListener());
+            BlockingQueueConsumer<Integer> consumer = new BlockingQueueConsumer<>(new DummyConnectionStateListener());
             queue = QueueBuilder.builder(client, consumer, serializer, "/test").buildPriorityQueue(1);
             queue.start();
 
