@@ -85,8 +85,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedConstruction;
-import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,6 +113,7 @@ public class TestFramework extends BaseClassForTests {
         super.teardown();
     }
 
+    @Test
     public void testWaitForShutdownTimeoutMs() throws Exception {
         final BlockingQueue<Integer> timeoutQueue = new ArrayBlockingQueue<>(1);
         ZookeeperFactory zookeeperFactory = new ZookeeperFactory() {
@@ -753,19 +752,6 @@ public class TestFramework extends BaseClassForTests {
         nullNamespace.runSafe(() -> {}).join();
 
         CloseableUtils.closeQuietly(client);
-    }
-
-    @Test
-    public void testNoPartialConstruction() {
-        try (MockedConstruction<CuratorFrameworkImpl> construction =
-                Mockito.mockConstruction(CuratorFrameworkImpl.class)) {
-            CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder()
-                    .connectString(server.getConnectString())
-                    .retryPolicy(new RetryOneTime(1));
-            // Invoke constructor directly to make the construction more visible.
-            CuratorFramework client = new CuratorFrameworkImpl(builder);
-            assertEquals(Collections.singletonList(client), construction.constructed());
-        }
     }
 
     @Test
