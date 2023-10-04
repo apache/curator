@@ -45,7 +45,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           java-version: 21
-          distribution: 'temurin'
+          distribution: 'zulu'
       - name: Check code style
         run: ./mvnw spotless:check
 
@@ -74,7 +74,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           java-version: ${{ matrix.java }}
-          distribution: 'temurin'
+          distribution: 'zulu'
 
       - name: Build with ${{ matrix.java }}
         run: ./mvnw clean install -DskipTests
