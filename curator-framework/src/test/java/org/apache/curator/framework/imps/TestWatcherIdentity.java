@@ -20,11 +20,14 @@
 package org.apache.curator.framework.imps;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Sets;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -37,11 +40,9 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 public class TestWatcherIdentity extends BaseClassForTests {
     private static final String PATH = "/foo";
-    private static final int TIMEOUT_MS = 100000;
 
     private static class CountZKWatcher implements Watcher {
         private final AtomicInteger count = new AtomicInteger(0);
@@ -49,6 +50,34 @@ public class TestWatcherIdentity extends BaseClassForTests {
         @Override
         public void process(WatchedEvent event) {
             count.incrementAndGet();
+        }
+    }
+
+    private static class TestEventWatcher implements CuratorWatcher {
+        private final Timing timing;
+        private final BlockingQueue<WatchedEvent> events = new LinkedBlockingQueue<>();
+
+        private TestEventWatcher(Timing timing) {
+            this.timing = timing;
+        }
+
+        @Override
+        public void process(WatchedEvent event) {
+            events.add(event);
+        }
+
+        private void assertEvent(Watcher.Event.EventType type, String path) throws InterruptedException {
+            WatchedEvent event = events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS);
+            assertNotNull(event);
+            assertEquals(type, event.getType());
+            assertEquals(path, event.getPath());
+        }
+
+        private void assertNoMoreEvents() throws InterruptedException {
+            timing.sleepABit();
+            assertTrue(
+                    events.isEmpty(),
+                    String.format("Expected no events, found %d; first event: %s", events.size(), events.peek()));
         }
     }
 
@@ -81,10 +110,8 @@ public class TestWatcherIdentity extends BaseClassForTests {
 
     @Test
     public void testSameCuratorWatcherPerZKDocs() throws Exception {
-        // Construct mock object
-        CuratorWatcher actualWatcher = mock(CuratorWatcher.class);
-
         Timing timing = new Timing();
+        TestEventWatcher actualWatcher = new TestEventWatcher(timing);
         CuratorFramework client = CuratorFrameworkFactory.newClient(
                 server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         try {
@@ -97,12 +124,13 @@ public class TestWatcherIdentity extends BaseClassForTests {
 
             client.setData().forPath("/test", "foo".getBytes());
             client.delete().forPath("/test");
-            Mockito.verify(actualWatcher, Mockito.timeout(TIMEOUT_MS).times(1)).process(any(WatchedEvent.class));
+            actualWatcher.assertEvent(Watcher.Event.EventType.NodeDataChanged, "/test");
 
             client.create().forPath("/test");
             client.checkExists().usingWatcher(actualWatcher).forPath("/test");
             client.delete().forPath("/test");
-            Mockito.verify(actualWatcher, Mockito.timeout(TIMEOUT_MS).times(2)).process(any(WatchedEvent.class));
+            actualWatcher.assertEvent(Watcher.Event.EventType.NodeDeleted, "/test");
+            actualWatcher.assertNoMoreEvents();
         } finally {
             CloseableUtils.closeQuietly(client);
         }
@@ -110,15 +138,12 @@ public class TestWatcherIdentity extends BaseClassForTests {
 
     @Test
     public void testSetAddition() {
-        Watcher watcher = new Watcher() {
-            @Override
-            public void process(WatchedEvent event) {}
-        };
+        Watcher watcher = event -> {};
         NamespaceWatcher namespaceWatcher1 = new NamespaceWatcher(null, watcher, "/foo");
         NamespaceWatcher namespaceWatcher2 = new NamespaceWatcher(null, watcher, "/foo");
         assertEquals(namespaceWatcher1, namespaceWatcher2);
-        assertFalse(namespaceWatcher1.equals(watcher));
-        assertFalse(watcher.equals(namespaceWatcher1));
+        assertNotEquals(namespaceWatcher1, watcher);
+        assertNotEquals(watcher, namespaceWatcher1);
         Set<Watcher> set = Sets.newHashSet();
         set.add(namespaceWatcher1);
         set.add(namespaceWatcher2);
@@ -128,8 +153,7 @@ public class TestWatcherIdentity extends BaseClassForTests {
     @Test
     public void testCuratorWatcher() throws Exception {
         Timing timing = new Timing();
-        // Construct mock object
-        CuratorWatcher watcher = mock(CuratorWatcher.class);
+        TestEventWatcher watcher = new TestEventWatcher(timing);
         CuratorFramework client = CuratorFrameworkFactory.newClient(
                 server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
         try {
@@ -140,7 +164,8 @@ public class TestWatcherIdentity extends BaseClassForTests {
             client.getData().usingWatcher(watcher).forPath(PATH);
             // Ok, let's test it
             client.setData().forPath(PATH, new byte[] {});
-            Mockito.verify(watcher, Mockito.timeout(TIMEOUT_MS).times(1)).process(any(WatchedEvent.class));
+            watcher.assertEvent(Watcher.Event.EventType.NodeDataChanged, PATH);
+            watcher.assertNoMoreEvents();
         } finally {
             CloseableUtils.closeQuietly(client);
         }

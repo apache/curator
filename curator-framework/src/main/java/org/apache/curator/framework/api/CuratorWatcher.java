@@ -33,5 +33,5 @@ public interface CuratorWatcher {
      * @param event the event
      * @throws Exception any exceptions to log
      */
-    public void process(WatchedEvent event) throws Exception;
+    void process(WatchedEvent event) throws Exception;
 }
