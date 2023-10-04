@@ -79,7 +79,7 @@
         <maven-project-info-reports-plugin-version>3.0.0</maven-project-info-reports-plugin-version>
         <maven-javadoc-plugin-version>3.3.2</maven-javadoc-plugin-version>
         <maven-surefire-plugin-version>3.0.0-M5</maven-surefire-plugin-version>
-        <spotless.version>2.36.0</spotless.version>
+        <spotless.version>2.39.0</spotless.version>
         <doxia-module-confluence-version>1.11.1</doxia-module-confluence-version>
         <javassist-version>3.24.1-GA</javassist-version>
         <commons-math-version>2.2</commons-math-version>
@@ -949,7 +949,7 @@
                 <configuration>
                     <java>
                         <palantirJavaFormat>
-                            <version>2.30.0</version>
+                            <version>2.38.0</version>
                         </palantirJavaFormat>
                         <!-- static imports first, then others, no blank lines  -->
                         <importOrder>
