@@ -64,7 +64,7 @@ public class TestDistributedQueue extends BaseClassForTests {
         /*
            https://issues.apache.org/jira/browse/CURATOR-56
 
-           This tests against ever growing node name bug
+           This tests against ever-growing node name bug
         */
 
         DistributedQueue<TestQueueItem> queue = null;
