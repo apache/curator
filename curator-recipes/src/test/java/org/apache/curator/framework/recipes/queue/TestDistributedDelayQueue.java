@@ -32,13 +32,12 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.framework.state.ConnectionStateListener;
+import org.apache.curator.framework.state.DummyConnectionStateListener;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 public class TestDistributedDelayQueue extends BaseClassForTests {
     @Test
@@ -50,7 +49,7 @@ public class TestDistributedDelayQueue extends BaseClassForTests {
         client.start();
         try {
             BlockingQueueConsumer<Long> consumer =
-                    new BlockingQueueConsumer<Long>(Mockito.mock(ConnectionStateListener.class));
+                    new BlockingQueueConsumer<>(new DummyConnectionStateListener());
             queue = QueueBuilder.builder(client, consumer, new LongSerializer(), "/test")
                     .buildDelayQueue();
             queue.start();
@@ -80,7 +79,7 @@ public class TestDistributedDelayQueue extends BaseClassForTests {
         client.start();
         try {
             BlockingQueueConsumer<Long> consumer =
-                    new BlockingQueueConsumer<Long>(Mockito.mock(ConnectionStateListener.class));
+                    new BlockingQueueConsumer<>(new DummyConnectionStateListener());
             queue = QueueBuilder.builder(client, consumer, new LongSerializer(), "/test")
                     .buildDelayQueue();
             queue.start();
@@ -108,7 +107,7 @@ public class TestDistributedDelayQueue extends BaseClassForTests {
         client.start();
         try {
             BlockingQueueConsumer<Long> consumer =
-                    new BlockingQueueConsumer<Long>(Mockito.mock(ConnectionStateListener.class));
+                    new BlockingQueueConsumer<>(new DummyConnectionStateListener());
             queue = QueueBuilder.builder(client, consumer, new LongSerializer(), "/test")
                     .buildDelayQueue();
             queue.start();
@@ -177,7 +176,7 @@ public class TestDistributedDelayQueue extends BaseClassForTests {
             }
 
             BlockingQueueConsumer<Long> consumer =
-                    new BlockingQueueConsumer<Long>(Mockito.mock(ConnectionStateListener.class));
+                    new BlockingQueueConsumer<>(new DummyConnectionStateListener());
             getQueue = QueueBuilder.builder(client, consumer, new LongSerializer(), "/test2")
                     .putInBackground(false)
                     .buildDelayQueue();
@@ -185,9 +184,8 @@ public class TestDistributedDelayQueue extends BaseClassForTests {
 
             long lastValue = -1;
             for (int i = 0; i < QTY; ++i) {
-                Long value = consumer.take(DELAY_MS * 2, TimeUnit.MILLISECONDS);
-                assertNotNull(value);
-                assertEquals(value, new Long(lastValue + 1));
+                long value = consumer.take(DELAY_MS * 2, TimeUnit.MILLISECONDS);
+                assertEquals(value, lastValue + 1);
                 lastValue = value;
             }
         } finally {
