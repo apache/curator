@@ -28,14 +28,12 @@ import java.util.concurrent.TimeUnit;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
-import org.apache.curator.framework.state.ConnectionStateListener;
+import org.apache.curator.framework.state.DummyConnectionStateListener;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
-@SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
 public class TestDistributedIdQueue extends BaseClassForTests {
     private static final String QUEUE_PATH = "/a/queue";
 
@@ -86,7 +84,7 @@ public class TestDistributedIdQueue extends BaseClassForTests {
         client.start();
         try {
             BlockingQueueConsumer<TestQueueItem> consumer =
-                    new BlockingQueueConsumer<TestQueueItem>(Mockito.mock(ConnectionStateListener.class));
+                    new BlockingQueueConsumer<>(new DummyConnectionStateListener());
 
             queue = QueueBuilder.builder(client, consumer, serializer, QUEUE_PATH)
                     .buildIdQueue();

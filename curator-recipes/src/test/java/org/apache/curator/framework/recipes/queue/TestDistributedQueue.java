@@ -44,7 +44,7 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
 import org.apache.curator.framework.state.ConnectionState;
-import org.apache.curator.framework.state.ConnectionStateListener;
+import org.apache.curator.framework.state.DummyConnectionStateListener;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
@@ -52,7 +52,6 @@ import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.CreateMode;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
 public class TestDistributedQueue extends BaseClassForTests {
@@ -65,7 +64,7 @@ public class TestDistributedQueue extends BaseClassForTests {
         /*
            https://issues.apache.org/jira/browse/CURATOR-56
 
-           This tests against ever growing node name bug
+           This tests against ever-growing node name bug
         */
 
         DistributedQueue<TestQueueItem> queue = null;
@@ -205,7 +204,7 @@ public class TestDistributedQueue extends BaseClassForTests {
         client.start();
         try {
             BlockingQueueConsumer<TestQueueItem> consumer =
-                    new BlockingQueueConsumer<TestQueueItem>(Mockito.mock(ConnectionStateListener.class));
+                    new BlockingQueueConsumer<>(new DummyConnectionStateListener());
 
             queue = QueueBuilder.builder(client, consumer, serializer, QUEUE_PATH)
                     .buildQueue();
@@ -505,7 +504,7 @@ public class TestDistributedQueue extends BaseClassForTests {
         client.start();
         try {
             final BlockingQueueConsumer<TestQueueItem> consumer =
-                    new BlockingQueueConsumer<TestQueueItem>(Mockito.mock(ConnectionStateListener.class));
+                    new BlockingQueueConsumer<>(new DummyConnectionStateListener());
             queue = QueueBuilder.builder(client, consumer, serializer, QUEUE_PATH)
                     .lockPath("/a/locks")
                     .buildQueue();
@@ -544,7 +543,7 @@ public class TestDistributedQueue extends BaseClassForTests {
         client.start();
         try {
             BlockingQueueConsumer<TestQueueItem> consumer =
-                    new BlockingQueueConsumer<TestQueueItem>(Mockito.mock(ConnectionStateListener.class));
+                    new BlockingQueueConsumer<>(new DummyConnectionStateListener());
 
             queue = QueueBuilder.builder(client, consumer, serializer, QUEUE_PATH)
                     .buildQueue();
@@ -583,7 +582,7 @@ public class TestDistributedQueue extends BaseClassForTests {
         client.start();
         try {
             BlockingQueueConsumer<TestQueueItem> consumer =
-                    new BlockingQueueConsumer<TestQueueItem>(Mockito.mock(ConnectionStateListener.class));
+                    new BlockingQueueConsumer<>(new DummyConnectionStateListener());
 
             queue = QueueBuilder.builder(client, consumer, serializer, QUEUE_PATH)
                     .buildQueue();
@@ -686,7 +685,7 @@ public class TestDistributedQueue extends BaseClassForTests {
         client.start();
         try {
             BlockingQueueConsumer<TestQueueItem> consumer =
-                    new BlockingQueueConsumer<TestQueueItem>(Mockito.mock(ConnectionStateListener.class));
+                    new BlockingQueueConsumer<>(new DummyConnectionStateListener());
 
             queue = QueueBuilder.builder(client, consumer, serializer, QUEUE_PATH)
                     .buildQueue();

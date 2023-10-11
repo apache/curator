@@ -17,21 +17,13 @@
  * under the License.
  */
 
-package org.apache.curator.framework.api;
+package org.apache.curator.framework.state;
 
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
+import org.apache.curator.framework.CuratorFramework;
 
-/**
- * A version of {@link Watcher} that can throw an exception
- */
-public interface CuratorWatcher {
-    /**
-     * Same as {@link Watcher#process(WatchedEvent)}. If an exception
-     * is thrown, Curator will log it
-     *
-     * @param event the event
-     * @throws Exception any exceptions to log
-     */
-    void process(WatchedEvent event) throws Exception;
+public class DummyConnectionStateListener implements ConnectionStateListener {
+    @Override
+    public void stateChanged(CuratorFramework curatorFramework, ConnectionState connectionState) {
+        // do nothing
+    }
 }
