@@ -31,7 +31,7 @@
     <artifactId>curator-test-zk36</artifactId>
 
     <properties>
-        <zookeeper-36-version>3.6.3</zookeeper-36-version>
+        <zookeeper-36-version>3.7.2</zookeeper-36-version>
     </properties>
 
     <dependencies>

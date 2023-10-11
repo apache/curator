@@ -31,7 +31,7 @@
     <artifactId>curator-test-zk35</artifactId>
 
     <properties>
-        <zookeeper-35-version>3.5.7</zookeeper-35-version>
+        <zookeeper-35-version>3.7.2</zookeeper-35-version>
     </properties>
 
     <dependencies>
