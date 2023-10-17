@@ -33,13 +33,12 @@ import java.util.concurrent.TimeUnit;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
-import org.apache.curator.framework.state.ConnectionStateListener;
+import org.apache.curator.framework.state.DummyConnectionStateListener;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 public class TestDistributedPriorityQueue extends BaseClassForTests {
     @Test
@@ -50,8 +49,7 @@ public class TestDistributedPriorityQueue extends BaseClassForTests {
         try {
             final int minItemsBeforeRefresh = 3;
 
-            BlockingQueueConsumer<Integer> consumer =
-                    new BlockingQueueConsumer<Integer>(Mockito.mock(ConnectionStateListener.class));
+            BlockingQueueConsumer<Integer> consumer = new BlockingQueueConsumer<>(new DummyConnectionStateListener());
             queue = QueueBuilder.builder(client, consumer, new IntSerializer(), "/test")
                     .buildPriorityQueue(minItemsBeforeRefresh);
             queue.start();
@@ -60,7 +58,7 @@ public class TestDistributedPriorityQueue extends BaseClassForTests {
                 queue.put(i, 10 + i);
             }
 
-            assertEquals(consumer.take(1, TimeUnit.SECONDS), new Integer(0));
+            assertEquals(consumer.take(1, TimeUnit.SECONDS), 0);
             queue.put(1000, 1); // lower priority
 
             int count = 0;
@@ -106,13 +104,12 @@ public class TestDistributedPriorityQueue extends BaseClassForTests {
                 queue.put(i, 10);
             }
 
-            assertEquals(blockingQueue.poll(timing.seconds(), TimeUnit.SECONDS), new Integer(0));
+            assertEquals(blockingQueue.poll(timing.seconds(), TimeUnit.SECONDS), 0);
             timing.sleepABit();
             queue.put(1000, 1); // lower priority
             timing.sleepABit();
-            assertEquals(
-                    blockingQueue.poll(timing.seconds(), TimeUnit.SECONDS), new Integer(1)); // is in consumer already
-            assertEquals(blockingQueue.poll(timing.seconds(), TimeUnit.SECONDS), new Integer(1000));
+            assertEquals(blockingQueue.poll(timing.seconds(), TimeUnit.SECONDS), 1); // is in consumer already
+            assertEquals(blockingQueue.poll(timing.seconds(), TimeUnit.SECONDS), 1000);
         } finally {
             CloseableUtils.closeQuietly(queue);
             CloseableUtils.closeQuietly(client);
@@ -138,8 +135,7 @@ public class TestDistributedPriorityQueue extends BaseClassForTests {
                     return super.deserialize(bytes);
                 }
             };
-            BlockingQueueConsumer<Integer> consumer =
-                    new BlockingQueueConsumer<Integer>(Mockito.mock(ConnectionStateListener.class));
+            BlockingQueueConsumer<Integer> consumer = new BlockingQueueConsumer<>(new DummyConnectionStateListener());
             queue = QueueBuilder.builder(client, consumer, serializer, "/test").buildPriorityQueue(1);
             queue.start();
 
@@ -171,7 +167,7 @@ public class TestDistributedPriorityQueue extends BaseClassForTests {
             final CountDownLatch hasConsumedLatch = new CountDownLatch(1);
             final CountDownLatch okToConsumeLatch = new CountDownLatch(1);
             BlockingQueueConsumer<Integer> consumer =
-                    new BlockingQueueConsumer<Integer>(Mockito.mock(ConnectionStateListener.class)) {
+                    new BlockingQueueConsumer<Integer>(new DummyConnectionStateListener()) {
                         @Override
                         public void consumeMessage(Integer message) throws Exception {
                             hasConsumedLatch.countDown();

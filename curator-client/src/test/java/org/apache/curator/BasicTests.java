@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.curator.ensemble.fixed.FixedEnsembleProvider;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
@@ -40,13 +41,16 @@ import org.apache.zookeeper.ZooKeeper;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 public class BasicTests extends BaseClassForTests {
     @Test
     public void testFactory() throws Exception {
-        final ZooKeeper mockZookeeper = Mockito.mock(ZooKeeper.class);
-        ZookeeperFactory zookeeperFactory = (connectString, sessionTimeout, watcher, canBeReadOnly) -> mockZookeeper;
+        final AtomicReference<ZooKeeper> expectedZooKeeper = new AtomicReference<>();
+        ZookeeperFactory zookeeperFactory = (connectString, sessionTimeout, watcher, canBeReadOnly) -> {
+            final ZooKeeper zooKeeper = new ZooKeeper(connectString, sessionTimeout, watcher, canBeReadOnly);
+            expectedZooKeeper.set(zooKeeper);
+            return zooKeeper;
+        };
         CuratorZookeeperClient client = new CuratorZookeeperClient(
                 zookeeperFactory,
                 new FixedEnsembleProvider(server.getConnectString()),
@@ -56,7 +60,7 @@ public class BasicTests extends BaseClassForTests {
                 new RetryOneTime(1),
                 false);
         client.start();
-        assertEquals(client.getZooKeeper(), mockZookeeper);
+        assertEquals(client.getZooKeeper(), expectedZooKeeper.get());
     }
 
     @Test

@@ -23,8 +23,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.Mockito.times;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.retry.RetryForever;
 import org.apache.curator.retry.RetryOneTime;
@@ -34,7 +34,6 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 public class TestRetryLoop extends BaseClassForTests {
     @Test
@@ -133,13 +132,14 @@ public class TestRetryLoop extends BaseClassForTests {
     @Test
     public void testRetryForever() throws Exception {
         int retryIntervalMs = 1;
-        RetrySleeper sleeper = Mockito.mock(RetrySleeper.class);
+        AtomicLong retryTimes = new AtomicLong();
+        RetrySleeper sleeper = (time, unit) -> retryTimes.incrementAndGet();
         RetryForever retryForever = new RetryForever(retryIntervalMs);
 
         for (int i = 0; i < 10; i++) {
             boolean allowed = retryForever.allowRetry(i, 0, sleeper);
             assertTrue(allowed);
-            Mockito.verify(sleeper, times(i + 1)).sleepFor(retryIntervalMs, TimeUnit.MILLISECONDS);
+            assertEquals(i + 1, retryTimes.get());
         }
     }
 
