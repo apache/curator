@@ -26,6 +26,9 @@ import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -149,7 +152,12 @@ public class EnsembleTracker implements Closeable, CuratorWatcher {
     @VisibleForTesting
     public static String configToConnectionString(QuorumVerifier data) throws Exception {
         StringBuilder sb = new StringBuilder();
-        for (QuorumPeer.QuorumServer server : data.getAllMembers().values()) {
+
+        List<QuorumPeer.QuorumServer> servers =
+                new ArrayList<>(data.getAllMembers().values());
+        Collections.sort(servers, (a, b) -> a.toString().compareTo(b.toString()));
+
+        for (QuorumPeer.QuorumServer server : servers) {
             if (server.clientAddr == null) {
                 // Invalid client address configuration in zoo.cfg
                 continue;
