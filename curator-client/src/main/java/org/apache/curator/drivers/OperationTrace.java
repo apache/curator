@@ -19,12 +19,12 @@
 
 package org.apache.curator.drivers;
 
-import org.apache.curator.drivers.TracerDriver;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 
-import java.io.UnsupportedEncodingException;
 import java.util.concurrent.TimeUnit;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Used to trace the metrics of a certain Zookeeper operation.
@@ -33,17 +33,18 @@ public class OperationTrace
 {
     private final String name;
     private final TracerDriver driver;
-
+    private final long startTimeNanos = System.nanoTime();
+    private final long sessionId;
+    private long endTimeNanos = -1L;
     private int returnCode = KeeperException.Code.OK.intValue();
     private long latencyMs;
     private long requestBytesLength;
     private long responseBytesLength;
     private String path;
     private boolean withWatcher;
-    private long sessionId;
     private Stat stat;
-
-    private final long startTimeNanos = System.nanoTime();
+    // This would ideally be a parameterised type, but we do not wish to break the existing API at this time.
+    private Object driverTrace;
 
     public OperationTrace(String name, TracerDriver driver) {
       this(name, driver, -1);
@@ -53,6 +54,9 @@ public class OperationTrace
       this.name = name;
       this.driver = driver;
       this.sessionId = sessionId;
+      if (this.driver instanceof AdvancedTracerDriver) {
+        driverTrace = ((AdvancedTracerDriver) this.driver).startTrace(this);
+      }
     }
 
     public OperationTrace setReturnCode(int returnCode) {
@@ -66,17 +70,11 @@ public class OperationTrace
     }
 
     public OperationTrace setRequestBytesLength(String data) {
-      if (data == null) {
+        if (data == null) {
+            return this;
+        }
+        this.setRequestBytesLength(data.getBytes(UTF_8).length);
         return this;
-      }
-
-      try {
-        this.setRequestBytesLength(data.getBytes("UTF-8").length);
-      } catch (UnsupportedEncodingException e) {
-        // Ignore the exception.
-      }
-
-      return this;
     }
 
     public OperationTrace setRequestBytesLength(byte[] data) {
@@ -115,6 +113,10 @@ public class OperationTrace
       return this;
     }
 
+    public Object getDriverTrace() {
+      return driverTrace;
+    }
+
     public String getName() {
       return this.name;
     }
@@ -151,11 +153,23 @@ public class OperationTrace
       return this.stat;
     }
 
+    public long getStartTimeNanos() {
+      return this.startTimeNanos;
+    }
+
+    public long getEndTimeNanos() {
+      if (endTimeNanos < startTimeNanos) {
+        throw new IllegalStateException("End time requested but trace has not yet ended.");
+      }
+      return this.endTimeNanos;
+    }
+
     public void commit() {
-      long elapsed = System.nanoTime() - startTimeNanos;
+      endTimeNanos = System.nanoTime();
+      long elapsed = endTimeNanos - startTimeNanos;
       this.latencyMs = TimeUnit.MILLISECONDS.convert(elapsed, TimeUnit.NANOSECONDS);
       if (this.driver instanceof AdvancedTracerDriver) {
-        ((AdvancedTracerDriver) this.driver).addTrace(this);
+        ((AdvancedTracerDriver) this.driver).endTrace(this);
       } else {
         this.driver.addTrace(this.name, elapsed, TimeUnit.NANOSECONDS);
       }
