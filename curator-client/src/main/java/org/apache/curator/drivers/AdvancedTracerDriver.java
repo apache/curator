@@ -54,7 +54,7 @@ public abstract class AdvancedTracerDriver implements TracerDriver {
      * @deprecated Prefer the use of {@link #startTrace(OperationTrace)} followed by {@link #endTrace(OperationTrace)}
      */
     @Deprecated
-    public void     addTrace(OperationTrace trace) {
+    public void addTrace(OperationTrace trace) {
         startTrace(trace);
         endTrace(trace);
     }
