@@ -28,11 +28,11 @@
     <parent>
         <groupId>org.apache.curator</groupId>
         <artifactId>curator-drivers</artifactId>
-        <version>5.5.0</version>
+        <version>5.5.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>curator-drivers-open-telemetry</artifactId>
-    <version>5.5.0</version>
+    <version>5.5.1-SNAPSHOT</version>
 
     <name>Curator OpenTelemetry Tracing Driver</name>
     <description>A tracing driver driver that emits OpenTelemetry spans.</description>
