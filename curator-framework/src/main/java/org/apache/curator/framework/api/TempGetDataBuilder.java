@@ -19,9 +19,5 @@
 
 package org.apache.curator.framework.api;
 
-public interface TempGetDataBuilder extends
-    StatPathable<byte[]>,
-    Decompressible<StatPathable<byte[]>>,
-    Pathable<byte[]>
-{
-}
+public interface TempGetDataBuilder
+        extends StatPathable<byte[]>, Decompressible<StatPathable<byte[]>>, Pathable<byte[]> {}

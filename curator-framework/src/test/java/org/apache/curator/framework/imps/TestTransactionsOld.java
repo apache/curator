@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import com.google.common.collect.Iterables;
+import java.util.Collection;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
@@ -41,64 +42,64 @@ import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.Stat;
 import org.junit.jupiter.api.Test;
 
-import java.util.Collection;
-
 @SuppressWarnings("deprecation")
-public class TestTransactionsOld extends BaseClassForTests
-{
+public class TestTransactionsOld extends BaseClassForTests {
     @Test
-    public void     testCheckVersion() throws Exception
-    {
-        CuratorFramework        client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+    public void testCheckVersion() throws Exception {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try {
             client.start();
             client.create().forPath("/foo");
-            Stat        stat = client.setData().forPath("/foo", "new".getBytes());  // up the version
+            Stat stat = client.setData().forPath("/foo", "new".getBytes()); // up the version
 
-            try
-            {
+            try {
                 client.inTransaction()
-                    .check().withVersion(stat.getVersion() + 1).forPath("/foo") // force a bad version
-                .and()
-                    .create().forPath("/bar")
-                .and()
-                    .commit();
+                        .check()
+                        .withVersion(stat.getVersion() + 1)
+                        .forPath("/foo") // force a bad version
+                        .and()
+                        .create()
+                        .forPath("/bar")
+                        .and()
+                        .commit();
 
                 fail();
-            }
-            catch ( KeeperException.BadVersionException correct )
-            {
+            } catch (KeeperException.BadVersionException correct) {
                 // correct
             }
 
             assertNull(client.checkExists().forPath("/bar"));
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
 
     @Test
-    public void     testWithNamespace() throws Exception
-    {
-        CuratorFramework        client = CuratorFrameworkFactory.builder().connectString(server.getConnectString()).retryPolicy(new RetryOneTime(1)).namespace("galt").build();
-        try
-        {
+    public void testWithNamespace() throws Exception {
+        CuratorFramework client = CuratorFrameworkFactory.builder()
+                .connectString(server.getConnectString())
+                .retryPolicy(new RetryOneTime(1))
+                .namespace("galt")
+                .build();
+        try {
             client.start();
-            Collection<CuratorTransactionResult>    results =
-                client.inTransaction()
-                    .create().forPath("/foo", "one".getBytes())
-                .and()
-                    .create().withMode(CreateMode.PERSISTENT_SEQUENTIAL).forPath("/test-", "one".getBytes())
-                .and()
-                    .setData().forPath("/foo", "two".getBytes())
-                .and()
-                    .create().forPath("/foo/bar")
-                .and()
-                    .delete().forPath("/foo/bar")
-                .and()
+            Collection<CuratorTransactionResult> results = client.inTransaction()
+                    .create()
+                    .forPath("/foo", "one".getBytes())
+                    .and()
+                    .create()
+                    .withMode(CreateMode.PERSISTENT_SEQUENTIAL)
+                    .forPath("/test-", "one".getBytes())
+                    .and()
+                    .setData()
+                    .forPath("/foo", "two".getBytes())
+                    .and()
+                    .create()
+                    .forPath("/foo/bar")
+                    .and()
+                    .delete()
+                    .forPath("/foo/bar")
+                    .and()
                     .commit();
 
             assertTrue(client.checkExists().forPath("/foo") != null);
@@ -106,37 +107,52 @@ public class TestTransactionsOld extends BaseClassForTests
             assertArrayEquals(client.getData().forPath("/foo"), "two".getBytes());
             assertTrue(client.checkExists().forPath("/foo/bar") == null);
 
-            CuratorTransactionResult    ephemeralResult = Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/test-"));
+            CuratorTransactionResult ephemeralResult =
+                    Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/test-"));
             assertNotNull(ephemeralResult);
             assertNotEquals(ephemeralResult.getResultPath(), "/test-");
             assertTrue(ephemeralResult.getResultPath().startsWith("/test-"));
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
 
     @Test
-    public void     testWithCompression() throws Exception
-    {
-        CuratorFramework        client = CuratorFrameworkFactory.builder().connectString(server.getConnectString()).retryPolicy(new RetryOneTime(1)).namespace("galt").build();
+    public void testWithCompression() throws Exception {
+        CuratorFramework client = CuratorFrameworkFactory.builder()
+                .connectString(server.getConnectString())
+                .retryPolicy(new RetryOneTime(1))
+                .namespace("galt")
+                .build();
         client.start();
-        try
-        {
-            Collection<CuratorTransactionResult>    results =
-                    client.inTransaction()
-                        .create().compressed().forPath("/foo", "one".getBytes())
+        try {
+            Collection<CuratorTransactionResult> results = client.inTransaction()
+                    .create()
+                    .compressed()
+                    .forPath("/foo", "one".getBytes())
                     .and()
-                        .create().compressed().withACL(ZooDefs.Ids.READ_ACL_UNSAFE).forPath("/bar", "two".getBytes())
+                    .create()
+                    .compressed()
+                    .withACL(ZooDefs.Ids.READ_ACL_UNSAFE)
+                    .forPath("/bar", "two".getBytes())
                     .and()
-                        .create().compressed().withMode(CreateMode.PERSISTENT_SEQUENTIAL).forPath("/test-", "three".getBytes())
+                    .create()
+                    .compressed()
+                    .withMode(CreateMode.PERSISTENT_SEQUENTIAL)
+                    .forPath("/test-", "three".getBytes())
                     .and()
-                        .create().compressed().withMode(CreateMode.PERSISTENT).withACL(ZooDefs.Ids.READ_ACL_UNSAFE).forPath("/baz", "four".getBytes())
+                    .create()
+                    .compressed()
+                    .withMode(CreateMode.PERSISTENT)
+                    .withACL(ZooDefs.Ids.READ_ACL_UNSAFE)
+                    .forPath("/baz", "four".getBytes())
                     .and()
-                        .setData().compressed().withVersion(0).forPath("/foo", "five".getBytes())
+                    .setData()
+                    .compressed()
+                    .withVersion(0)
+                    .forPath("/foo", "five".getBytes())
                     .and()
-                        .commit();
+                    .commit();
 
             assertTrue(client.checkExists().forPath("/foo") != null);
             assertArrayEquals(client.getData().decompressed().forPath("/foo"), "five".getBytes());
@@ -145,7 +161,8 @@ public class TestTransactionsOld extends BaseClassForTests
             assertArrayEquals(client.getData().decompressed().forPath("/bar"), "two".getBytes());
             assertEquals(client.getACL().forPath("/bar"), ZooDefs.Ids.READ_ACL_UNSAFE);
 
-            CuratorTransactionResult    ephemeralResult = Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/test-"));
+            CuratorTransactionResult ephemeralResult =
+                    Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/test-"));
             assertNotNull(ephemeralResult);
             assertNotEquals(ephemeralResult.getResultPath(), "/test-");
             assertTrue(ephemeralResult.getResultPath().startsWith("/test-"));
@@ -153,41 +170,38 @@ public class TestTransactionsOld extends BaseClassForTests
             assertTrue(client.checkExists().forPath("/baz") != null);
             assertArrayEquals(client.getData().decompressed().forPath("/baz"), "four".getBytes());
             assertEquals(client.getACL().forPath("/baz"), ZooDefs.Ids.READ_ACL_UNSAFE);
-        }
-        finally
-        {
+        } finally {
             client.close();
         }
     }
 
     @Test
-    public void     testBasic() throws Exception
-    {
-        CuratorFramework        client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+    public void testBasic() throws Exception {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try {
             client.start();
-            Collection<CuratorTransactionResult>    results =
-                client.inTransaction()
-                    .create().forPath("/foo")
-                .and()
-                    .create().forPath("/foo/bar", "snafu".getBytes())
-                .and()
+            Collection<CuratorTransactionResult> results = client.inTransaction()
+                    .create()
+                    .forPath("/foo")
+                    .and()
+                    .create()
+                    .forPath("/foo/bar", "snafu".getBytes())
+                    .and()
                     .commit();
 
             assertTrue(client.checkExists().forPath("/foo/bar") != null);
             assertArrayEquals(client.getData().forPath("/foo/bar"), "snafu".getBytes());
 
-            CuratorTransactionResult    fooResult = Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/foo"));
-            CuratorTransactionResult    fooBarResult = Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/foo/bar"));
+            CuratorTransactionResult fooResult =
+                    Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/foo"));
+            CuratorTransactionResult fooBarResult =
+                    Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/foo/bar"));
             assertNotNull(fooResult);
             assertNotNull(fooBarResult);
             assertNotSame(fooResult, fooBarResult);
             assertEquals(fooResult.getResultPath(), "/foo");
             assertEquals(fooBarResult.getResultPath(), "/foo/bar");
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }

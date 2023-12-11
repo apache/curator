@@ -19,16 +19,15 @@
 
 package org.apache.curator.x.async.api;
 
+import java.util.List;
 import org.apache.curator.x.async.AsyncStage;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
-import java.util.List;
 
 /**
  * Builder for setting ACLs
  */
-public interface AsyncSetACLBuilder
-{
+public interface AsyncSetACLBuilder {
     /**
      * Set the given ACLs
      *

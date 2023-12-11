@@ -24,15 +24,14 @@ import java.util.concurrent.Executor;
 /**
  * Specifies locks that can be revoked
  */
-public interface Revocable<T>
-{
+public interface Revocable<T> {
     /**
      * Make the lock revocable. Your listener will get called when another process/thread
      * wants you to release the lock. Revocation is cooperative.
      *
      * @param listener the listener
      */
-    public void     makeRevocable(RevocationListener<T> listener);
+    public void makeRevocable(RevocationListener<T> listener);
 
     /**
      * Make the lock revocable. Your listener will get called when another process/thread
@@ -41,5 +40,5 @@ public interface Revocable<T>
      * @param listener the listener
      * @param executor executor for the listener
      */
-    public void     makeRevocable(RevocationListener<T> listener, Executor executor);
+    public void makeRevocable(RevocationListener<T> listener, Executor executor);
 }

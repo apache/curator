@@ -63,15 +63,13 @@ import java.util.regex.Pattern;
  * </pre></code>
  * </p>
  */
-public class SchemaSetLoader
-{
+public class SchemaSetLoader {
     private final List<Schema> schemas;
 
     /**
      * Called to map a schema validator name in the JSON stream to an actual data validator
      */
-    public interface SchemaValidatorMapper
-    {
+    public interface SchemaValidatorMapper {
         /**
          * @param name name of the validator
          * @return the validator
@@ -83,8 +81,7 @@ public class SchemaSetLoader
      * @param json the json to parse
      * @param schemaValidatorMapper mapper from validator name to instance - can be null if not needed
      */
-    public SchemaSetLoader(String json, SchemaValidatorMapper schemaValidatorMapper)
-    {
+    public SchemaSetLoader(String json, SchemaValidatorMapper schemaValidatorMapper) {
         this(getRoot(new StringReader(json)), schemaValidatorMapper);
     }
 
@@ -92,8 +89,7 @@ public class SchemaSetLoader
      * @param jsonStream the json stream to parse
      * @param schemaValidatorMapper mapper from validator name to instance - can be null if not needed
      */
-    public SchemaSetLoader(Reader jsonStream, SchemaValidatorMapper schemaValidatorMapper)
-    {
+    public SchemaSetLoader(Reader jsonStream, SchemaValidatorMapper schemaValidatorMapper) {
         this(getRoot(jsonStream), schemaValidatorMapper);
     }
 
@@ -101,8 +97,7 @@ public class SchemaSetLoader
      * @param root a Jackson root node
      * @param schemaValidatorMapper mapper from validator name to instance - can be null if not needed
      */
-    public SchemaSetLoader(JsonNode root, SchemaValidatorMapper schemaValidatorMapper)
-    {
+    public SchemaSetLoader(JsonNode root, SchemaValidatorMapper schemaValidatorMapper) {
         ImmutableList.Builder<Schema> builder = ImmutableList.builder();
         read(builder, root, schemaValidatorMapper);
         schemas = builder.build();
@@ -112,106 +107,90 @@ public class SchemaSetLoader
      * @param useDefaultSchema if true, return a default schema when there is no match. Otherwise, an exception is thrown
      * @return schema set
      */
-    public SchemaSet toSchemaSet(boolean useDefaultSchema)
-    {
+    public SchemaSet toSchemaSet(boolean useDefaultSchema) {
         return new SchemaSet(schemas, useDefaultSchema);
     }
 
-    public List<Schema> getSchemas()
-    {
+    public List<Schema> getSchemas() {
         return schemas;
     }
 
-    private static JsonNode getRoot(Reader in)
-    {
-        try
-        {
+    private static JsonNode getRoot(Reader in) {
+        try {
             return new ObjectMapper().readTree(in);
-        }
-        catch ( IOException e )
-        {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void read(ImmutableList.Builder<Schema> builder, JsonNode node, SchemaValidatorMapper schemaValidatorMapper)
-    {
-        for ( JsonNode child : node )
-        {
+    private void read(
+            ImmutableList.Builder<Schema> builder, JsonNode node, SchemaValidatorMapper schemaValidatorMapper) {
+        for (JsonNode child : node) {
             readNode(builder, child, schemaValidatorMapper);
         }
     }
 
-    private void readNode(ImmutableList.Builder<Schema> builder, JsonNode node, SchemaValidatorMapper schemaValidatorMapper)
-    {
+    private void readNode(
+            ImmutableList.Builder<Schema> builder, JsonNode node, SchemaValidatorMapper schemaValidatorMapper) {
         String name = getText(node, "name", null);
         String path = getText(node, "path", null);
         boolean isRegex = getBoolean(node, "isRegex");
-        if ( name == null )
-        {
+        if (name == null) {
             throw new RuntimeException("name is required at: " + node);
         }
-        if ( path == null )
-        {
+        if (path == null) {
             throw new RuntimeException("path is required at: " + node);
         }
 
         SchemaBuilder schemaBuilder = isRegex ? Schema.builder(Pattern.compile(path)) : Schema.builder(path);
 
         String schemaValidatorName = getText(node, "schemaValidator", null);
-        if ( schemaValidatorName != null )
-        {
-            if ( schemaValidatorMapper == null )
-            {
+        if (schemaValidatorName != null) {
+            if (schemaValidatorMapper == null) {
                 throw new RuntimeException("No SchemaValidatorMapper provided but needed at: " + node);
             }
             schemaBuilder.dataValidator(schemaValidatorMapper.getSchemaValidator(schemaValidatorName));
         }
 
         Map<String, String> metadata = Maps.newHashMap();
-        if ( node.has("metadata") )
-        {
+        if (node.has("metadata")) {
             JsonNode metadataNode = node.get("metadata");
             Iterator<String> fieldNameIterator = metadataNode.fieldNames();
-            while ( fieldNameIterator.hasNext() )
-            {
+            while (fieldNameIterator.hasNext()) {
                 String fieldName = fieldNameIterator.next();
                 metadata.put(fieldName, getText(metadataNode, fieldName, ""));
             }
         }
 
-        Schema schema = schemaBuilder.name(name)
-            .documentation(getText(node, "documentation", ""))
-            .ephemeral(getAllowance(node, "ephemeral"))
-            .sequential(getAllowance(node, "sequential"))
-            .watched(getAllowance(node, "watched"))
-            .canBeDeleted(getBoolean(node, "canBeDeleted"))
-            .metadata(metadata)
-            .build();
+        Schema schema = schemaBuilder
+                .name(name)
+                .documentation(getText(node, "documentation", ""))
+                .ephemeral(getAllowance(node, "ephemeral"))
+                .sequential(getAllowance(node, "sequential"))
+                .watched(getAllowance(node, "watched"))
+                .canBeDeleted(getBoolean(node, "canBeDeleted"))
+                .metadata(metadata)
+                .build();
         builder.add(schema);
     }
 
-    private String getText(JsonNode node, String name, String defaultValue)
-    {
+    private String getText(JsonNode node, String name, String defaultValue) {
         JsonNode namedNode = node.get(name);
         return (namedNode != null) ? namedNode.asText() : defaultValue;
     }
 
-    private boolean getBoolean(JsonNode node, String name)
-    {
+    private boolean getBoolean(JsonNode node, String name) {
         JsonNode namedNode = node.get(name);
         return (namedNode != null) && namedNode.asBoolean();
     }
 
-    private Schema.Allowance getAllowance(JsonNode node, String name)
-    {
+    private Schema.Allowance getAllowance(JsonNode node, String name) {
         JsonNode namedNode = node.get(name);
-        try
-        {
-            return (namedNode != null) ? Schema.Allowance.valueOf(namedNode.asText().toUpperCase()) : Schema.Allowance.CAN;
-        }
-        catch ( IllegalArgumentException ignore )
-        {
+        try {
+            return (namedNode != null)
+                    ? Schema.Allowance.valueOf(namedNode.asText().toUpperCase())
+                    : Schema.Allowance.CAN;
+        } catch (IllegalArgumentException ignore) {
             throw new RuntimeException("Must be one of: " + Arrays.toString(Schema.Allowance.values()) + " at " + node);
         }
     }

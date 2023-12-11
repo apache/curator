@@ -22,20 +22,18 @@ package org.apache.curator.framework.recipes.atomic;
 /**
  * Debugging stats about operations
  */
-public class AtomicStats
-{
-    private int     optimisticTries = 0;
-    private int     promotedLockTries = 0;
-    private long    optimisticTimeMs = 0;
-    private long    promotedTimeMs = 0;
+public class AtomicStats {
+    private int optimisticTries = 0;
+    private int promotedLockTries = 0;
+    private long optimisticTimeMs = 0;
+    private long promotedTimeMs = 0;
 
     /**
      * Returns the number of optimistic locks used to perform the operation
      *
      * @return qty
      */
-    public int getOptimisticTries()
-    {
+    public int getOptimisticTries() {
         return optimisticTries;
     }
 
@@ -44,8 +42,7 @@ public class AtomicStats
      *
      * @return qty
      */
-    public int getPromotedLockTries()
-    {
+    public int getPromotedLockTries() {
         return promotedLockTries;
     }
 
@@ -54,8 +51,7 @@ public class AtomicStats
      *
      * @return time in ms
      */
-    public long getOptimisticTimeMs()
-    {
+    public long getOptimisticTimeMs() {
         return optimisticTimeMs;
     }
 
@@ -64,28 +60,23 @@ public class AtomicStats
      *
      * @return time in ms
      */
-    public long getPromotedTimeMs()
-    {
+    public long getPromotedTimeMs() {
         return promotedTimeMs;
     }
 
-    void incrementOptimisticTries()
-    {
+    void incrementOptimisticTries() {
         ++optimisticTries;
     }
 
-    void incrementPromotedTries()
-    {
+    void incrementPromotedTries() {
         ++promotedLockTries;
     }
 
-    void setOptimisticTimeMs(long optimisticTimeMs)
-    {
+    void setOptimisticTimeMs(long optimisticTimeMs) {
         this.optimisticTimeMs = optimisticTimeMs;
     }
 
-    void setPromotedTimeMs(long promotedTimeMs)
-    {
+    void setPromotedTimeMs(long promotedTimeMs) {
         this.promotedTimeMs = promotedTimeMs;
     }
 }

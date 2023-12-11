@@ -21,13 +21,13 @@ package org.apache.curator.framework.recipes.queue;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.listen.Listenable;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.listen.Listenable;
 
 /**
  * <p>An implementation of the Distributed Priority Queue ZK recipe.</p>
@@ -36,12 +36,10 @@ import java.util.concurrent.TimeUnit;
  * <p>IMPORTANT NOTE: The priority queue will perform far worse than a standard queue. Every time an
  * item is added to/removed from the queue, every watcher must re-get all the nodes</p>
  */
-public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T>
-{
-    private final DistributedQueue<T>      queue;
+public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T> {
+    private final DistributedQueue<T> queue;
 
-    DistributedPriorityQueue
-        (
+    DistributedPriorityQueue(
             CuratorFramework client,
             QueueConsumer<T> consumer,
             QueueSerializer<T> serializer,
@@ -52,26 +50,22 @@ public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T>
             String lockPath,
             int maxItems,
             boolean putInBackground,
-            int finalFlushMs
-        )
-    {
+            int finalFlushMs) {
         Preconditions.checkArgument(minItemsBeforeRefresh >= 0, "minItemsBeforeRefresh cannot be negative");
 
-        queue = new DistributedQueue<T>
-        (
-            client,
-            consumer, 
-            serializer,
-            queuePath,
-            threadFactory,
-            executor,
-            minItemsBeforeRefresh,
-            true,
-            lockPath,
-            maxItems,
-            putInBackground,
-            finalFlushMs
-        );
+        queue = new DistributedQueue<T>(
+                client,
+                consumer,
+                serializer,
+                queuePath,
+                threadFactory,
+                executor,
+                minItemsBeforeRefresh,
+                true,
+                lockPath,
+                maxItems,
+                putInBackground,
+                finalFlushMs);
     }
 
     /**
@@ -80,14 +74,12 @@ public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T>
      * @throws Exception startup errors
      */
     @Override
-    public void     start() throws Exception
-    {
+    public void start() throws Exception {
         queue.start();
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         queue.close();
     }
 
@@ -101,8 +93,7 @@ public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T>
      * @param priority item's priority - lower numbers come out of the queue first
      * @throws Exception connection issues
      */
-    public void     put(T item, int priority) throws Exception
-    {
+    public void put(T item, int priority) throws Exception {
         put(item, priority, 0, null);
     }
 
@@ -117,11 +108,10 @@ public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T>
      * @return true if items was added, false if timed out
      * @throws Exception
      */
-    public boolean     put(T item, int priority, int maxWait, TimeUnit unit) throws Exception
-    {
+    public boolean put(T item, int priority, int maxWait, TimeUnit unit) throws Exception {
         queue.checkState();
 
-        String      priorityHex = priorityToString(priority);
+        String priorityHex = priorityToString(priority);
         return queue.internalPut(item, null, queue.makeItemPath() + priorityHex, maxWait, unit);
     }
 
@@ -135,8 +125,7 @@ public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T>
      * @param priority item priority - lower numbers come out of the queue first
      * @throws Exception connection issues
      */
-    public void     putMulti(MultiItem<T> items, int priority) throws Exception
-    {
+    public void putMulti(MultiItem<T> items, int priority) throws Exception {
         putMulti(items, priority, 0, null);
     }
 
@@ -151,23 +140,20 @@ public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T>
      * @return true if items was added, false if timed out
      * @throws Exception
      */
-    public boolean      putMulti(MultiItem<T> items, int priority, int maxWait, TimeUnit unit) throws Exception
-    {
+    public boolean putMulti(MultiItem<T> items, int priority, int maxWait, TimeUnit unit) throws Exception {
         queue.checkState();
 
-        String      priorityHex = priorityToString(priority);
+        String priorityHex = priorityToString(priority);
         return queue.internalPut(null, items, queue.makeItemPath() + priorityHex, maxWait, unit);
     }
 
     @Override
-    public void setErrorMode(ErrorMode newErrorMode)
-    {
+    public void setErrorMode(ErrorMode newErrorMode) {
         queue.setErrorMode(newErrorMode);
     }
 
     @Override
-    public boolean flushPuts(long waitTime, TimeUnit timeUnit) throws InterruptedException
-    {
+    public boolean flushPuts(long waitTime, TimeUnit timeUnit) throws InterruptedException {
         return queue.flushPuts(waitTime, timeUnit);
     }
 
@@ -177,8 +163,7 @@ public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T>
      * @return put listener container
      */
     @Override
-    public Listenable<QueuePutListener<T>> getPutListenerContainer()
-    {
+    public Listenable<QueuePutListener<T>> getPutListenerContainer() {
         return queue.getPutListenerContainer();
     }
 
@@ -189,23 +174,20 @@ public class DistributedPriorityQueue<T> implements Closeable, QueueBase<T>
      * @return count (can be 0)
      */
     @Override
-    public int getLastMessageCount()
-    {
+    public int getLastMessageCount() {
         return queue.getLastMessageCount();
     }
 
     @VisibleForTesting
-    ChildrenCache getCache()
-    {
+    ChildrenCache getCache() {
         return queue.getCache();
     }
 
     @VisibleForTesting
-    static String priorityToString(int priority)
-    {
+    static String priorityToString(int priority) {
         // the padded hex val of the number prefixed with a 0 for negative numbers
         // and a 1 for positive (so that it sorts correctly)
-        long        l = (long)priority & 0xFFFFFFFFL;
+        long l = (long) priority & 0xFFFFFFFFL;
         return String.format("%s%08X", (priority >= 0) ? "1" : "0", l);
     }
 }

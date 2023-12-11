@@ -22,21 +22,20 @@ package org.apache.curator.x.async;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import com.google.common.base.Throwables;
-import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.test.compatibility.Timing2;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
+import org.apache.curator.test.BaseClassForTests;
+import org.apache.curator.test.compatibility.Timing2;
 
-public abstract class CompletableBaseClassForTests extends BaseClassForTests
-{
+public abstract class CompletableBaseClassForTests extends BaseClassForTests {
     protected static final Timing2 timing = new Timing2();
 
     protected void joinThrowable(CompletionStage<?> stage) throws Throwable {
         try {
-            stage.toCompletableFuture().get();
+            timing.getFuture(stage.toCompletableFuture());
         } catch (Exception ex) {
             throw Throwables.getRootCause(ex);
         }
@@ -48,39 +47,30 @@ public abstract class CompletableBaseClassForTests extends BaseClassForTests
         });
     }
 
-    protected <T, U> void complete(CompletionStage<T> stage)
-    {
+    protected <T, U> void complete(CompletionStage<T> stage) {
         complete(stage, (v, e) -> {
-            if ( e != null )
-            {
+            if (e != null) {
                 Throwables.propagate(e);
             }
         });
     }
 
-    protected <T, U> void complete(CompletionStage<T> stage, BiConsumer<? super T, Throwable> handler)
-    {
-        try
-        {
+    protected <T, U> void complete(CompletionStage<T> stage, BiConsumer<? super T, Throwable> handler) {
+        try {
             stage.handle((v, e) -> {
-                handler.accept(v, e);
-                return null;
-            }).toCompletableFuture().get(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS);
-        }
-        catch ( InterruptedException e )
-        {
+                        handler.accept(v, e);
+                        return null;
+                    })
+                    .toCompletableFuture()
+                    .get(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
             Thread.interrupted();
-        }
-        catch ( ExecutionException e )
-        {
-            if ( e.getCause() instanceof AssertionError )
-            {
-                throw (AssertionError)e.getCause();
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof AssertionError) {
+                throw (AssertionError) e.getCause();
             }
             fail("get() failed", e);
-        }
-        catch ( TimeoutException e )
-        {
+        } catch (TimeoutException e) {
             fail("get() timed out");
         }
     }

@@ -21,30 +21,27 @@ package org.apache.curator.zk36;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.Compatibility;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-public class TestIs36 extends CuratorTestBase
-{
+public class TestIs36 extends CuratorTestBase {
     @Test
     @Tag(zk36Group)
-    public void testIsZk36()
-    {
+    public void testIsZk36() {
         assertTrue(Compatibility.hasGetReachableOrOneMethod());
         assertTrue(Compatibility.hasAddrField());
         assertTrue(Compatibility.hasPersistentWatchers());
         try {
             Class.forName("org.apache.zookeeper.proto.WhoAmIResponse");
             fail("WhoAmIResponse is introduced after ZooKeeper 3.7");
-        } catch (ClassNotFoundException ignore) {}
+        } catch (ClassNotFoundException ignore) {
+        }
     }
 
     @Override
-    protected void createServer()
-    {
+    protected void createServer() {
         // NOP
     }
 }

@@ -26,21 +26,17 @@ import org.apache.curator.utils.Compatibility;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-public class TestIs35 extends CuratorTestBase
-{
+public class TestIs35 extends CuratorTestBase {
     @Test
     @Tag(zk35TestCompatibilityGroup)
-    public void testIsZk35()
-    {
+    public void testIsZk35() {
         assertFalse(Compatibility.hasGetReachableOrOneMethod());
         assertTrue(Compatibility.hasAddrField());
         assertFalse(Compatibility.hasPersistentWatchers());
     }
 
     @Override
-    protected void createServer()
-    {
+    protected void createServer() {
         // NOP
     }
 }
-

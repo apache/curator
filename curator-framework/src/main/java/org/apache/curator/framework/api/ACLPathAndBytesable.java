@@ -19,8 +19,4 @@
 
 package org.apache.curator.framework.api;
 
-public interface ACLPathAndBytesable<T> extends
-    ParentACLable<PathAndBytesable<T>>,
-    PathAndBytesable<T>
-{
-}
+public interface ACLPathAndBytesable<T> extends ParentACLable<PathAndBytesable<T>>, PathAndBytesable<T> {}

@@ -23,7 +23,7 @@ import static org.apache.curator.framework.recipes.cache.CuratorCache.Options.DO
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
+import java.util.concurrent.CountDownLatch;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
@@ -34,19 +34,15 @@ import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.CountDownLatch;
-
 @Tag(CuratorTestBase.zk36Group)
-public class TestCuratorCacheEdges extends CuratorTestBase
-{
+public class TestCuratorCacheEdges extends CuratorTestBase {
     @Test
-    public void testReconnectConsistency() throws Exception
-    {
+    public void testReconnectConsistency() throws Exception {
         final byte[] first = "one".getBytes();
         final byte[] second = "two".getBytes();
 
-        try (CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1)))
-        {
+        try (CuratorFramework client = CuratorFrameworkFactory.newClient(
+                server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1))) {
             client.start();
             client.create().forPath("/root", first);
             client.create().forPath("/root/1", first);
@@ -58,10 +54,15 @@ public class TestCuratorCacheEdges extends CuratorTestBase
             client.create().forPath("/root/2/22", first);
 
             CuratorCacheStorage storage = CuratorCacheStorage.standard();
-            try (CuratorCache cache = CuratorCache.builder(client, "/root").withStorage(storage).withOptions(DO_NOT_CLEAR_ON_CLOSE).build())
-            {
+            try (CuratorCache cache = CuratorCache.builder(client, "/root")
+                    .withStorage(storage)
+                    .withOptions(DO_NOT_CLEAR_ON_CLOSE)
+                    .build()) {
                 CountDownLatch latch = new CountDownLatch(1);
-                cache.listenable().addListener(CuratorCacheListener.builder().forInitialized(latch::countDown).build());
+                cache.listenable()
+                        .addListener(CuratorCacheListener.builder()
+                                .forInitialized(latch::countDown)
+                                .build());
                 cache.start();
                 assertTrue(timing.awaitLatch(latch));
             }
@@ -82,10 +83,15 @@ public class TestCuratorCacheEdges extends CuratorTestBase
             client.create().forPath("/root/1/13/132", second);
             client.create().forPath("/root/1/13/132/1321", second);
 
-            try (CuratorCache cache = CuratorCache.builder(client, "/root").withStorage(storage).withOptions(DO_NOT_CLEAR_ON_CLOSE).build())
-            {
+            try (CuratorCache cache = CuratorCache.builder(client, "/root")
+                    .withStorage(storage)
+                    .withOptions(DO_NOT_CLEAR_ON_CLOSE)
+                    .build()) {
                 CountDownLatch latch = new CountDownLatch(1);
-                cache.listenable().addListener(CuratorCacheListener.builder().forInitialized(latch::countDown).build());
+                cache.listenable()
+                        .addListener(CuratorCacheListener.builder()
+                                .forInitialized(latch::countDown)
+                                .build());
                 cache.start();
                 assertTrue(timing.awaitLatch(latch));
             }
@@ -94,37 +100,40 @@ public class TestCuratorCacheEdges extends CuratorTestBase
             assertArrayEquals(storage.get("/root").map(ChildData::getData).orElse(null), second);
             assertArrayEquals(storage.get("/root/1").map(ChildData::getData).orElse(null), first);
             assertArrayEquals(storage.get("/root/1/11").map(ChildData::getData).orElse(null), first);
-            assertArrayEquals(storage.get("/root/1/11/111").map(ChildData::getData).orElse(null), second);
-            assertArrayEquals(storage.get("/root/1/11/111/1111").map(ChildData::getData).orElse(null), second);
-            assertArrayEquals(storage.get("/root/1/11/111/1112").map(ChildData::getData).orElse(null), second);
+            assertArrayEquals(
+                    storage.get("/root/1/11/111").map(ChildData::getData).orElse(null), second);
+            assertArrayEquals(
+                    storage.get("/root/1/11/111/1111").map(ChildData::getData).orElse(null), second);
+            assertArrayEquals(
+                    storage.get("/root/1/11/111/1112").map(ChildData::getData).orElse(null), second);
             assertArrayEquals(storage.get("/root/1/12").map(ChildData::getData).orElse(null), first);
             assertArrayEquals(storage.get("/root/1/13").map(ChildData::getData).orElse(null), first);
-            assertArrayEquals(storage.get("/root/1/13/131").map(ChildData::getData).orElse(null), second);
-            assertArrayEquals(storage.get("/root/1/13/132").map(ChildData::getData).orElse(null), second);
-            assertArrayEquals(storage.get("/root/1/13/132/1321").map(ChildData::getData).orElse(null), second);
+            assertArrayEquals(
+                    storage.get("/root/1/13/131").map(ChildData::getData).orElse(null), second);
+            assertArrayEquals(
+                    storage.get("/root/1/13/132").map(ChildData::getData).orElse(null), second);
+            assertArrayEquals(
+                    storage.get("/root/1/13/132/1321").map(ChildData::getData).orElse(null), second);
         }
     }
 
     @Test
-    public void testServerLoss() throws Exception   // mostly copied from TestPathChildrenCacheInCluster
-    {
-        try (TestingCluster cluster = new TestingCluster(3))
-        {
+    public void testServerLoss() throws Exception // mostly copied from TestPathChildrenCacheInCluster
+            {
+        try (TestingCluster cluster = new TestingCluster(3)) {
             cluster.start();
 
-            try (CuratorFramework client = CuratorFrameworkFactory.newClient(cluster.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1)))
-            {
+            try (CuratorFramework client = CuratorFrameworkFactory.newClient(
+                    cluster.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1))) {
                 client.start();
                 client.create().creatingParentsIfNeeded().forPath("/test");
 
-                try (CuratorCache cache = CuratorCache.build(client, "/test"))
-                {
+                try (CuratorCache cache = CuratorCache.build(client, "/test")) {
                     cache.start();
 
                     CountDownLatch reconnectLatch = new CountDownLatch(1);
                     client.getConnectionStateListenable().addListener((__, newState) -> {
-                        if ( newState == ConnectionState.RECONNECTED )
-                        {
+                        if (newState == ConnectionState.RECONNECTED) {
                             reconnectLatch.countDown();
                         }
                     });
@@ -137,7 +146,8 @@ public class TestCuratorCacheEdges extends CuratorTestBase
 
                     assertTrue(timing.awaitLatch(latch));
 
-                    InstanceSpec connectionInstance = cluster.findConnectionInstance(client.getZookeeperClient().getZooKeeper());
+                    InstanceSpec connectionInstance = cluster.findConnectionInstance(
+                            client.getZookeeperClient().getZooKeeper());
                     cluster.killServer(connectionInstance);
 
                     assertTrue(timing.awaitLatch(reconnectLatch));

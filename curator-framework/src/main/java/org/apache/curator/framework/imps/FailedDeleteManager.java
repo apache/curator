@@ -21,17 +21,13 @@ package org.apache.curator.framework.imps;
 
 import org.apache.curator.framework.CuratorFramework;
 
-class FailedDeleteManager extends FailedOperationManager<String>
-{
-    FailedDeleteManager(CuratorFramework client)
-    {
+class FailedDeleteManager extends FailedOperationManager<String> {
+    FailedDeleteManager(CuratorFramework client) {
         super(client);
     }
 
     @Override
-    protected void executeGuaranteedOperationInBackground(String path)
-            throws Exception
-    {
+    protected void executeGuaranteedOperationInBackground(String path) throws Exception {
         client.delete().guaranteed().inBackground().forPath(path);
     }
 }

@@ -22,8 +22,7 @@ package org.apache.curator.framework.api;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.Watcher;
 
-public enum CuratorEventType
-{
+public enum CuratorEventType {
     /**
      * Corresponds to {@link CuratorFramework#create()}
      */
@@ -55,7 +54,7 @@ public enum CuratorEventType
     CHILDREN,
 
     /**
-     * Corresponds to {@link CuratorFramework#sync(String, Object)}
+     * Corresponds to {@link CuratorFramework#sync()}
      */
     SYNC,
 
@@ -90,7 +89,7 @@ public enum CuratorEventType
     WATCHED,
 
     /**
-     * Corresponds to {@link CuratorFramework#watches()} ()}
+     * Corresponds to {@link CuratorFramework#watchers()} ()}
      */
     REMOVE_WATCHES,
 
@@ -100,7 +99,7 @@ public enum CuratorEventType
     CLOSING,
 
     /**
-     * Corresponds to {@link CuratorFramework#watches()}
+     * Corresponds to {@link CuratorFramework#watchers()}
      */
     ADD_WATCH
 }

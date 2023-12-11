@@ -22,11 +22,6 @@ package org.apache.curator.utils;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
-import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -34,79 +29,63 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public class TestCloseableExecutorService
-{
+public class TestCloseableExecutorService {
     private static final int QTY = 10;
 
     private volatile ExecutorService executorService;
 
     @BeforeEach
-    public void setup()
-    {
+    public void setup() {
         executorService = Executors.newFixedThreadPool(QTY * 2);
     }
 
     @AfterEach
-    public void tearDown()
-    {
+    public void tearDown() {
         executorService.shutdownNow();
     }
 
     @Test
-    public void testBasicRunnable() throws InterruptedException
-    {
-        try
-        {
+    public void testBasicRunnable() throws InterruptedException {
+        try {
             CloseableExecutorService service = new CloseableExecutorService(executorService);
             CountDownLatch startLatch = new CountDownLatch(QTY);
             CountDownLatch latch = new CountDownLatch(QTY);
-            for ( int i = 0; i < QTY; ++i )
-            {
+            for (int i = 0; i < QTY; ++i) {
                 submitRunnable(service, startLatch, latch);
             }
 
             assertTrue(startLatch.await(3, TimeUnit.SECONDS));
             service.close();
             assertTrue(latch.await(3, TimeUnit.SECONDS));
-        }
-        catch ( AssertionError e )
-        {
+        } catch (AssertionError e) {
             throw e;
-        }
-        catch ( Throwable e )
-        {
+        } catch (Throwable e) {
             e.printStackTrace();
         }
     }
 
     @Test
-    public void testBasicCallable() throws InterruptedException
-    {
+    public void testBasicCallable() throws InterruptedException {
         CloseableExecutorService service = new CloseableExecutorService(executorService);
         final CountDownLatch startLatch = new CountDownLatch(QTY);
         final CountDownLatch latch = new CountDownLatch(QTY);
-        for ( int i = 0; i < QTY; ++i )
-        {
-            service.submit
-            (
-                    (Callable<Void>) () -> {
-                        try
-                        {
-                            startLatch.countDown();
-                            Thread.currentThread().join();
-                        }
-                        catch ( InterruptedException e )
-                        {
-                            Thread.currentThread().interrupt();
-                        }
-                        finally
-                        {
-                            latch.countDown();
-                        }
-                        return null;
-                    }
-            );
+        for (int i = 0; i < QTY; ++i) {
+            service.submit((Callable<Void>) () -> {
+                try {
+                    startLatch.countDown();
+                    Thread.currentThread().join();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } finally {
+                    latch.countDown();
+                }
+                return null;
+            });
         }
 
         assertTrue(startLatch.await(3, TimeUnit.SECONDS));
@@ -115,106 +94,78 @@ public class TestCloseableExecutorService
     }
 
     @Test
-    public void testListeningRunnable() throws InterruptedException
-    {
+    public void testListeningRunnable() throws InterruptedException {
         CloseableExecutorService service = new CloseableExecutorService(executorService);
         List<Future<?>> futures = Lists.newArrayList();
         final CountDownLatch startLatch = new CountDownLatch(QTY);
-        for ( int i = 0; i < QTY; ++i )
-        {
-            Future<?> future = service.submit
-            (
-                    () -> {
-                        try
-                        {
-                            startLatch.countDown();
-                            Thread.currentThread().join();
-                        }
-                        catch ( InterruptedException e )
-                        {
-                            Thread.currentThread().interrupt();
-                        }
-                    }
-            );
-            futures.add(future);
-        }
-
-        assertTrue(startLatch.await(3, TimeUnit.SECONDS));
-
-        for ( Future<?> future : futures )
-        {
-            future.cancel(true);
-        }
-
-        assertEquals(service.size(), 0);
-    }
-
-    @Test
-    public void testListeningCallable() throws InterruptedException
-    {
-        CloseableExecutorService service = new CloseableExecutorService(executorService);
-        final CountDownLatch startLatch = new CountDownLatch(QTY);
-        List<Future<?>> futures = Lists.newArrayList();
-        for ( int i = 0; i < QTY; ++i )
-        {
-            Future<?> future = service.submit
-            (
-                    (Callable<Void>) () -> {
-                        try
-                        {
-                            startLatch.countDown();
-                            Thread.currentThread().join();
-                        }
-                        catch ( InterruptedException e )
-                        {
-                            Thread.currentThread().interrupt();
-                        }
-                        return null;
-                    }
-            );
-            futures.add(future);
-        }
-
-        assertTrue(startLatch.await(3, TimeUnit.SECONDS));
-        for ( Future<?> future : futures )
-        {
-            future.cancel(true);
-        }
-
-        assertEquals(service.size(), 0);
-    }
-
-    @Test
-    public void testPartialRunnable() throws InterruptedException
-    {
-        final CountDownLatch outsideLatch = new CountDownLatch(1);
-        executorService.submit
-        (
-                () -> {
-                    try
-                    {
-                        Thread.currentThread().join();
-                    }
-                    catch ( InterruptedException e )
-                    {
-                        Thread.currentThread().interrupt();
-                    }
-                    finally
-                    {
-                        outsideLatch.countDown();
-                    }
+        for (int i = 0; i < QTY; ++i) {
+            Future<?> future = service.submit(() -> {
+                try {
+                    startLatch.countDown();
+                    Thread.currentThread().join();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                 }
-        );
+            });
+            futures.add(future);
+        }
+
+        assertTrue(startLatch.await(3, TimeUnit.SECONDS));
+
+        for (Future<?> future : futures) {
+            future.cancel(true);
+        }
+
+        assertEquals(service.size(), 0);
+    }
+
+    @Test
+    public void testListeningCallable() throws InterruptedException {
+        CloseableExecutorService service = new CloseableExecutorService(executorService);
+        final CountDownLatch startLatch = new CountDownLatch(QTY);
+        List<Future<?>> futures = Lists.newArrayList();
+        for (int i = 0; i < QTY; ++i) {
+            Future<?> future = service.submit((Callable<Void>) () -> {
+                try {
+                    startLatch.countDown();
+                    Thread.currentThread().join();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                return null;
+            });
+            futures.add(future);
+        }
+
+        assertTrue(startLatch.await(3, TimeUnit.SECONDS));
+        for (Future<?> future : futures) {
+            future.cancel(true);
+        }
+
+        assertEquals(service.size(), 0);
+    }
+
+    @Test
+    public void testPartialRunnable() throws InterruptedException {
+        final CountDownLatch outsideLatch = new CountDownLatch(1);
+        executorService.submit(() -> {
+            try {
+                Thread.currentThread().join();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } finally {
+                outsideLatch.countDown();
+            }
+        });
 
         CloseableExecutorService service = new CloseableExecutorService(executorService);
         CountDownLatch startLatch = new CountDownLatch(QTY);
         CountDownLatch latch = new CountDownLatch(QTY);
-        for ( int i = 0; i < QTY; ++i )
-        {
+        for (int i = 0; i < QTY; ++i) {
             submitRunnable(service, startLatch, latch);
         }
 
-        Awaitility.await().until(()-> service.size() >= QTY);
+        Awaitility.await().until(() -> service.size() >= QTY);
 
         assertTrue(startLatch.await(3, TimeUnit.SECONDS));
         service.close();
@@ -222,25 +173,17 @@ public class TestCloseableExecutorService
         assertEquals(outsideLatch.getCount(), 1);
     }
 
-    private void submitRunnable(CloseableExecutorService service, final CountDownLatch startLatch, final CountDownLatch latch)
-    {
-        service.submit
-            (
-                    () -> {
-                        try
-                        {
-                            startLatch.countDown();
-                            Thread.sleep(100000);
-                        }
-                        catch ( InterruptedException e )
-                        {
-                            Thread.currentThread().interrupt();
-                        }
-                        finally
-                        {
-                            latch.countDown();
-                        }
-                    }
-            );
+    private void submitRunnable(
+            CloseableExecutorService service, final CountDownLatch startLatch, final CountDownLatch latch) {
+        service.submit(() -> {
+            try {
+                startLatch.countDown();
+                Thread.sleep(100000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } finally {
+                latch.countDown();
+            }
+        });
     }
 }

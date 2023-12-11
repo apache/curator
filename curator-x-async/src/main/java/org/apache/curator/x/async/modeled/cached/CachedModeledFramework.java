@@ -19,17 +19,16 @@
 
 package org.apache.curator.x.async.modeled.cached;
 
+import java.io.Closeable;
+import java.util.List;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.modeled.ModeledFramework;
 import org.apache.curator.x.async.modeled.ZNode;
 import org.apache.curator.x.async.modeled.ZPath;
 import org.apache.zookeeper.data.Stat;
-import java.io.Closeable;
-import java.util.List;
 
-public interface CachedModeledFramework<T> extends ModeledFramework<T>, Closeable
-{
+public interface CachedModeledFramework<T> extends ModeledFramework<T>, Closeable {
     /**
      * Return the cache instance
      *

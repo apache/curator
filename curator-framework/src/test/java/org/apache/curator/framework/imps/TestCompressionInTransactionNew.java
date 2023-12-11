@@ -30,86 +30,75 @@ import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.junit.jupiter.api.Test;
 
-public class TestCompressionInTransactionNew extends BaseClassForTests
-{
+public class TestCompressionInTransactionNew extends BaseClassForTests {
     @Test
-    public void testSetData() throws Exception
-    {
+    public void testSetData() throws Exception {
         final String path = "/a";
-        final byte[]            data = "here's a string".getBytes();
+        final byte[] data = "here's a string".getBytes();
 
-        CuratorFramework        client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try {
             client.start();
 
-            //Create uncompressed data in a transaction
+            // Create uncompressed data in a transaction
             CuratorOp op = client.transactionOp().create().forPath(path, data);
             client.transaction().forOperations(op);
             assertArrayEquals(data, client.getData().forPath(path));
 
-            //Create compressed data in transaction
+            // Create compressed data in transaction
             op = client.transactionOp().setData().compressed().forPath(path, data);
             client.transaction().forOperations(op);
             assertArrayEquals(data, client.getData().decompressed().forPath(path));
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
-    
+
     @Test
-    public void testSetCompressedAndUncompressed() throws Exception
-    {
+    public void testSetCompressedAndUncompressed() throws Exception {
         final String path1 = "/a";
         final String path2 = "/b";
-        
-        final byte[]            data1 = "here's a string".getBytes();
-        final byte[]            data2 = "here's another string".getBytes();
 
-        CuratorFramework        client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+        final byte[] data1 = "here's a string".getBytes();
+        final byte[] data2 = "here's another string".getBytes();
+
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try {
             client.start();
 
-            //Create the nodes
+            // Create the nodes
             CuratorOp op1 = client.transactionOp().create().compressed().forPath(path1);
             CuratorOp op2 = client.transactionOp().create().forPath(path2);
             client.transaction().forOperations(op1, op2);
 
-            //Check they exist
+            // Check they exist
             assertNotNull(client.checkExists().forPath(path1));
             assertNotNull(client.checkExists().forPath(path2));
-            
-            //Set the nodes, path1 compressed, path2 uncompressed.
+
+            // Set the nodes, path1 compressed, path2 uncompressed.
             op1 = client.transactionOp().setData().compressed().forPath(path1, data1);
             op2 = client.transactionOp().setData().forPath(path2, data2);
             client.transaction().forOperations(op1, op2);
-            
+
             assertNotEquals(data1, client.getData().forPath(path1));
             assertArrayEquals(data1, client.getData().decompressed().forPath(path1));
-      
+
             assertArrayEquals(data2, client.getData().forPath(path2));
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
-    }    
-    
+    }
+
     @Test
-    public void testSimple() throws Exception
-    {
+    public void testSimple() throws Exception {
         final String path1 = "/a";
         final String path2 = "/a/b";
-        
-        final byte[]            data1 = "here's a string".getBytes();
-        final byte[]            data2 = "here's another string".getBytes();
 
-        CuratorFramework        client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+        final byte[] data1 = "here's a string".getBytes();
+        final byte[] data2 = "here's another string".getBytes();
+
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try {
             client.start();
 
             CuratorOp op1 = client.transactionOp().create().compressed().forPath(path1, data1);
@@ -119,33 +108,29 @@ public class TestCompressionInTransactionNew extends BaseClassForTests
 
             assertNotEquals(data1, client.getData().forPath(path1));
             assertArrayEquals(data1, client.getData().decompressed().forPath(path1));
-            
+
             assertNotEquals(data2, client.getData().forPath(path2));
             assertArrayEquals(data2, client.getData().decompressed().forPath(path2));
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
-    }    
-    
+    }
+
     /**
      * Test the case where both uncompressed and compressed data is generated in
      * the same transaction
      * @throws Exception
      */
     @Test
-    public void testCreateCompressedAndUncompressed() throws Exception
-    {
+    public void testCreateCompressedAndUncompressed() throws Exception {
         final String path1 = "/a";
         final String path2 = "/b";
-        
-        final byte[]            data1 = "here's a string".getBytes();
-        final byte[]            data2 = "here's another string".getBytes();
 
-        CuratorFramework        client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+        final byte[] data1 = "here's a string".getBytes();
+        final byte[] data2 = "here's another string".getBytes();
+
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try {
             client.start();
 
             CuratorOp op1 = client.transactionOp().create().compressed().forPath(path1, data1);
@@ -154,11 +139,9 @@ public class TestCompressionInTransactionNew extends BaseClassForTests
 
             assertNotEquals(data1, client.getData().forPath(path1));
             assertArrayEquals(data1, client.getData().decompressed().forPath(path1));
-      
+
             assertArrayEquals(data2, client.getData().forPath(path2));
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }

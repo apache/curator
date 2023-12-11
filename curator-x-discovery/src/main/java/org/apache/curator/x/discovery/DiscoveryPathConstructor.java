@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -17,35 +17,24 @@
  * under the License.
  */
 
-tt {
-  background-color: #EEE;
-}
+package org.apache.curator.x.discovery;
 
-.well, .breadcrumb {
-  background-color: #EDF1F6;
-}
+/**
+ * Constructs ZooKeeper paths to services for service discovering.
+ */
+public interface DiscoveryPathConstructor {
+    /**
+     * Return the parent path where all service names registered.
+     *
+     * @return the base path of all services
+     */
+    String getBasePath();
 
-a:link, a:visited, a:active {
-  color: #316290;
-}
-
-a:hover {
-  color: #001F67;
-}
-
-.nav-list .active a:link, .nav-list .active a:visited, .nav-list .active a:active, .nav-list .active a:hover {
-  background-color: #316290;
-}
-
-.nav-list li a:hover {
-  background-color: #DDDDDD;
-}
-
-.search-query {
-  margin-top: 15px;
-  width: 85%;
-}
-
-#banner {
-  margin-bottom: 3px;
+    /**
+     * Return the parent path where all instances of the service registered.
+     *
+     * @param serviceName service name
+     * @return  path to service instances
+     */
+    String getPathForInstances(String serviceName);
 }

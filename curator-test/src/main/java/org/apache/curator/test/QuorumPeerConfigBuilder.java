@@ -19,9 +19,8 @@
 
 package org.apache.curator.test;
 
-import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
-
 import java.util.Properties;
+import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 
 public class QuorumPeerConfigBuilder {
     private final QuorumConfigBuilder configBuilder;

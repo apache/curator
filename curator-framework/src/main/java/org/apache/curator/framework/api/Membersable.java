@@ -21,8 +21,7 @@ package org.apache.curator.framework.api;
 
 import java.util.List;
 
-public interface Membersable<T>
-{
+public interface Membersable<T> {
     /**
      * Sets one or more members that are meant to be the ensemble.
      * The expected format is server.[id]=[hostname]:[peer port]:[election port]:[type];[client port]

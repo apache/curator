@@ -21,7 +21,6 @@ package org.apache.curator.framework.recipes.queue;
 
 import org.apache.curator.framework.CuratorFramework;
 
-public interface QueueAllocator<U, T extends QueueBase<U>>
-{
-    public T    allocateQueue(CuratorFramework client, String queuePath);
+public interface QueueAllocator<U, T extends QueueBase<U>> {
+    public T allocateQueue(CuratorFramework client, String queuePath);
 }

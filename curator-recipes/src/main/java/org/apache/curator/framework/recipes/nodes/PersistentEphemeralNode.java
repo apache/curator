@@ -34,87 +34,73 @@ import org.apache.zookeeper.CreateMode;
  * @deprecated This has been replaced with the more general {@link PersistentNode}
  */
 @Deprecated
-public class PersistentEphemeralNode extends PersistentNode
-{
+public class PersistentEphemeralNode extends PersistentNode {
     /**
      * The mode for node creation
      *
      * @deprecated This has been replaced with the more general {@link PersistentNode}
      */
     @Deprecated
-    public enum Mode
-    {
+    public enum Mode {
         /**
          * Same as {@link CreateMode#EPHEMERAL}
          */
-        EPHEMERAL()
-            {
-                @Override
-                protected CreateMode getCreateMode(boolean pathIsSet)
-                {
-                    return CreateMode.EPHEMERAL;
-                }
+        EPHEMERAL() {
+            @Override
+            protected CreateMode getCreateMode(boolean pathIsSet) {
+                return CreateMode.EPHEMERAL;
+            }
 
-                @Override
-                protected boolean isProtected()
-                {
-                    return false;
-                }
-            },
+            @Override
+            protected boolean isProtected() {
+                return false;
+            }
+        },
 
         /**
          * Same as {@link CreateMode#EPHEMERAL_SEQUENTIAL}
          */
-        EPHEMERAL_SEQUENTIAL()
-            {
-                @Override
-                protected CreateMode getCreateMode(boolean pathIsSet)
-                {
-                    return pathIsSet ? CreateMode.EPHEMERAL : CreateMode.EPHEMERAL_SEQUENTIAL;
-                }
+        EPHEMERAL_SEQUENTIAL() {
+            @Override
+            protected CreateMode getCreateMode(boolean pathIsSet) {
+                return pathIsSet ? CreateMode.EPHEMERAL : CreateMode.EPHEMERAL_SEQUENTIAL;
+            }
 
-                @Override
-                protected boolean isProtected()
-                {
-                    return false;
-                }
-            },
+            @Override
+            protected boolean isProtected() {
+                return false;
+            }
+        },
 
         /**
          * Same as {@link CreateMode#EPHEMERAL} with protection
          */
-        PROTECTED_EPHEMERAL()
-            {
-                @Override
-                protected CreateMode getCreateMode(boolean pathIsSet)
-                {
-                    return CreateMode.EPHEMERAL;
-                }
+        PROTECTED_EPHEMERAL() {
+            @Override
+            protected CreateMode getCreateMode(boolean pathIsSet) {
+                return CreateMode.EPHEMERAL;
+            }
 
-                @Override
-                protected boolean isProtected()
-                {
-                    return true;
-                }
-            },
+            @Override
+            protected boolean isProtected() {
+                return true;
+            }
+        },
 
         /**
          * Same as {@link CreateMode#EPHEMERAL_SEQUENTIAL} with protection
          */
-        PROTECTED_EPHEMERAL_SEQUENTIAL()
-            {
-                @Override
-                protected CreateMode getCreateMode(boolean pathIsSet)
-                {
-                    return pathIsSet ? CreateMode.EPHEMERAL : CreateMode.EPHEMERAL_SEQUENTIAL;
-                }
+        PROTECTED_EPHEMERAL_SEQUENTIAL() {
+            @Override
+            protected CreateMode getCreateMode(boolean pathIsSet) {
+                return pathIsSet ? CreateMode.EPHEMERAL : CreateMode.EPHEMERAL_SEQUENTIAL;
+            }
 
-                @Override
-                protected boolean isProtected()
-                {
-                    return true;
-                }
-            };
+            @Override
+            protected boolean isProtected() {
+                return true;
+            }
+        };
 
         protected abstract CreateMode getCreateMode(boolean pathIsSet);
 
@@ -128,8 +114,7 @@ public class PersistentEphemeralNode extends PersistentNode
      * @param initData     data for the node
      */
     @SuppressWarnings("deprecation")
-    public PersistentEphemeralNode(CuratorFramework client, Mode mode, String basePath, byte[] initData)
-    {
+    public PersistentEphemeralNode(CuratorFramework client, Mode mode, String basePath, byte[] initData) {
         super(client, mode.getCreateMode(false), mode.isProtected(), basePath, initData);
     }
 }

@@ -26,40 +26,40 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Collections;
 import java.util.List;
-
-import org.apache.curator.test.BaseClassForTests;
-import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
-import org.apache.zookeeper.ZooDefs;
+import org.apache.curator.test.BaseClassForTests;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.KeeperException.NoAuthException;
+import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 import org.junit.jupiter.api.Test;
 
-public class TestNamespaceFacade extends BaseClassForTests
-{
+public class TestNamespaceFacade extends BaseClassForTests {
     @Test
-    public void     testInvalid() throws Exception
-    {
-        try
-        {
-            CuratorFrameworkFactory.builder().namespace("/snafu").retryPolicy(new RetryOneTime(1)).connectString("foo").build();
+    public void testInvalid() throws Exception {
+        try {
+            CuratorFrameworkFactory.builder()
+                    .namespace("/snafu")
+                    .retryPolicy(new RetryOneTime(1))
+                    .connectString("foo")
+                    .build();
             fail();
-        }
-        catch ( IllegalArgumentException e )
-        {
+        } catch (IllegalArgumentException e) {
             // correct
         }
     }
 
     @Test
-    public void     testGetNamespace() throws Exception
-    {
-        CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        CuratorFramework    client2 = CuratorFrameworkFactory.builder().namespace("snafu").retryPolicy(new RetryOneTime(1)).connectString("foo").build();
-        try
-        {
+    public void testGetNamespace() throws Exception {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        CuratorFramework client2 = CuratorFrameworkFactory.builder()
+                .namespace("snafu")
+                .retryPolicy(new RetryOneTime(1))
+                .connectString("foo")
+                .build();
+        try {
             client.start();
 
             CuratorFramework fooClient = client.usingNamespace("foo");
@@ -69,20 +69,16 @@ public class TestNamespaceFacade extends BaseClassForTests
             assertEquals(client2.getNamespace(), "snafu");
             assertEquals(fooClient.getNamespace(), "foo");
             assertEquals(barClient.getNamespace(), "bar");
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client2);
             CloseableUtils.closeQuietly(client);
         }
     }
 
     @Test
-    public void     testSimultaneous() throws Exception
-    {
-        CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+    public void testSimultaneous() throws Exception {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try {
             client.start();
 
             CuratorFramework fooClient = client.usingNamespace("foo");
@@ -93,36 +89,28 @@ public class TestNamespaceFacade extends BaseClassForTests
 
             assertNotNull(client.getZookeeperClient().getZooKeeper().exists("/foo/one", false));
             assertNotNull(client.getZookeeperClient().getZooKeeper().exists("/bar/one", false));
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
 
     @Test
-    public void     testCache() throws Exception
-    {
-        CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+    public void testCache() throws Exception {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try {
             client.start();
 
             assertSame(client.usingNamespace("foo"), client.usingNamespace("foo"));
             assertNotSame(client.usingNamespace("foo"), client.usingNamespace("bar"));
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
 
     @Test
-    public void     testBasic() throws Exception
-    {
-        CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+    public void testBasic() throws Exception {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try {
             client.start();
 
             client.create().forPath("/one");
@@ -134,9 +122,7 @@ public class TestNamespaceFacade extends BaseClassForTests
             client.usingNamespace("name").create().forPath("/one");
             assertNotNull(client.getZookeeperClient().getZooKeeper().exists("/name", false));
             assertNotNull(client.getZookeeperClient().getZooKeeper().exists("/name/one", false));
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
@@ -145,98 +131,92 @@ public class TestNamespaceFacade extends BaseClassForTests
      * CURATOR-128: access root node within a namespace.
      */
     @Test
-    public void     testRootAccess() throws Exception
-    {
-        CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+    public void testRootAccess() throws Exception {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try {
             client.start();
 
             client.create().forPath("/one");
             assertNotNull(client.getZookeeperClient().getZooKeeper().exists("/one", false));
 
             assertNotNull(client.checkExists().forPath("/"));
-            try
-            {
+            try {
                 client.checkExists().forPath("");
                 fail("IllegalArgumentException expected");
-            }
-            catch ( IllegalArgumentException expected )
-            {
+            } catch (IllegalArgumentException expected) {
             }
 
             assertNotNull(client.usingNamespace("one").checkExists().forPath("/"));
-            try
-            {
+            try {
                 client.usingNamespace("one").checkExists().forPath("");
                 fail("IllegalArgumentException expected");
+            } catch (IllegalArgumentException expected) {
             }
-            catch ( IllegalArgumentException expected )
-            {
-            }
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(client);
         }
     }
 
-
     @Test
-    public void     testIsStarted() throws Exception
-    {
-        CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+    public void testIsStarted() throws Exception {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
         client.start();
-        CuratorFramework    namespaced = client.usingNamespace(null);
+        CuratorFramework namespaced = client.usingNamespace(null);
 
-        assertEquals(client.getState(), namespaced.getState(), "Namespaced state did not match true state after call to start.");
+        assertEquals(
+                client.getState(),
+                namespaced.getState(),
+                "Namespaced state did not match true state after call to start.");
 
         client.close();
-        assertEquals(client.getState(), namespaced.getState(), "Namespaced state did not match true state after call to close.");
+        assertEquals(
+                client.getState(),
+                namespaced.getState(),
+                "Namespaced state did not match true state after call to close.");
     }
-    
+
     /**
      * Test that ACLs work on a NamespaceFacade. See CURATOR-132
      * @throws Exception
      */
     @Test
-    public void testACL() throws Exception
-    {
-        CuratorFramework    client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+    public void testACL() throws Exception {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
         client.start();
         client.getZookeeperClient().blockUntilConnectedOrTimedOut();
 
         client.create().creatingParentsIfNeeded().forPath("/parent/child", "A string".getBytes());
         CuratorFramework client2 = client.usingNamespace("parent");
 
-        assertNotNull(client2.getData().forPath("/child"));  
-        client.setACL().withACL(Collections.singletonList(
-            new ACL(ZooDefs.Perms.WRITE, ZooDefs.Ids.ANYONE_ID_UNSAFE))).
-                forPath("/parent/child");
+        assertNotNull(client2.getData().forPath("/child"));
+        client.setACL()
+                .withACL(Collections.singletonList(new ACL(ZooDefs.Perms.WRITE, ZooDefs.Ids.ANYONE_ID_UNSAFE)))
+                .forPath("/parent/child");
         // This will attempt to setACL on /parent/child, Previously this failed because /child
         // isn't present. Using "child" would case a failure because the path didn't start with
         // a slash
-        try
-        {
+        try {
             List<ACL> acls = client2.getACL().forPath("/child");
             assertNotNull(acls);
             assertEquals(acls.size(), 1);
             assertEquals(acls.get(0).getId(), ZooDefs.Ids.ANYONE_ID_UNSAFE);
             assertEquals(acls.get(0).getPerms(), ZooDefs.Perms.WRITE);
-            client2.setACL().withACL(Collections.singletonList(
-                new ACL(ZooDefs.Perms.DELETE, ZooDefs.Ids.ANYONE_ID_UNSAFE))).
-                    forPath("/child");
+            client2.setACL()
+                    .withACL(Collections.singletonList(new ACL(ZooDefs.Perms.DELETE, ZooDefs.Ids.ANYONE_ID_UNSAFE)))
+                    .forPath("/child");
             fail("Expected auth exception was not thrown");
-        }
-        catch(NoAuthException e)
-        {
-            //Expected
+        } catch (NoAuthException e) {
+            // Expected
         }
     }
 
     @Test
     public void testUnfixForEmptyNamespace() {
-        CuratorFramework client = CuratorFrameworkFactory.builder().namespace("").retryPolicy(new RetryOneTime(1)).connectString("foo").build();
+        CuratorFramework client = CuratorFrameworkFactory.builder()
+                .namespace("")
+                .retryPolicy(new RetryOneTime(1))
+                .connectString("foo")
+                .build();
         CuratorFrameworkImpl clientImpl = (CuratorFrameworkImpl) client;
 
         assertEquals(clientImpl.unfixForNamespace("/foo/bar"), "/foo/bar");

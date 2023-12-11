@@ -19,6 +19,11 @@
 
 package org.apache.curator.framework.recipes.queue;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.EnsureContainers;
 import org.apache.curator.utils.PathUtils;
@@ -29,11 +34,6 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.Collections;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 /**
  * <p>
@@ -46,8 +46,7 @@ import java.util.concurrent.TimeUnit;
  *     it can read from an existing queue
  * </p>
  */
-public class SimpleDistributedQueue
-{
+public class SimpleDistributedQueue {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorFramework client;
     private final String path;
@@ -59,8 +58,7 @@ public class SimpleDistributedQueue
      * @param client the client
      * @param path path to store queue nodes
      */
-    public SimpleDistributedQueue(CuratorFramework client, String path)
-    {
+    public SimpleDistributedQueue(CuratorFramework client, String path) {
         this.client = client;
         this.path = PathUtils.validatePath(path);
         ensureContainers = new EnsureContainers(client, path);
@@ -73,11 +71,9 @@ public class SimpleDistributedQueue
      * @throws Exception errors
      * @throws NoSuchElementException if the queue is empty
      */
-    public byte[] element() throws Exception
-    {
+    public byte[] element() throws Exception {
         byte[] bytes = internalElement(false, null);
-        if ( bytes == null )
-        {
+        if (bytes == null) {
             throw new NoSuchElementException();
         }
         return bytes;
@@ -90,11 +86,9 @@ public class SimpleDistributedQueue
      * @throws Exception errors
      * @throws NoSuchElementException if the queue is empty
      */
-    public byte[] remove() throws Exception
-    {
+    public byte[] remove() throws Exception {
         byte[] bytes = internalElement(true, null);
-        if ( bytes == null )
-        {
+        if (bytes == null) {
             throw new NoSuchElementException();
         }
         return bytes;
@@ -106,8 +100,7 @@ public class SimpleDistributedQueue
      * @return The former head of the queue
      * @throws Exception errors
      */
-    public byte[] take() throws Exception
-    {
+    public byte[] take() throws Exception {
         return internalPoll(0, null);
     }
 
@@ -118,10 +111,12 @@ public class SimpleDistributedQueue
      * @return true if data was successfully added
      * @throws Exception errors
      */
-    public boolean offer(byte[] data) throws Exception
-    {
+    public boolean offer(byte[] data) throws Exception {
         String thisPath = ZKPaths.makePath(path, PREFIX);
-        client.create().creatingParentContainersIfNeeded().withMode(CreateMode.PERSISTENT_SEQUENTIAL).forPath(thisPath, data);
+        client.create()
+                .creatingParentContainersIfNeeded()
+                .withMode(CreateMode.PERSISTENT_SEQUENTIAL)
+                .forPath(thisPath, data);
         return true;
     }
 
@@ -131,14 +126,10 @@ public class SimpleDistributedQueue
      * @return data at the first element of the queue, or null.
      * @throws Exception errors
      */
-    public byte[] peek() throws Exception
-    {
-        try
-        {
+    public byte[] peek() throws Exception {
+        try {
             return element();
-        }
-        catch ( NoSuchElementException e )
-        {
+        } catch (NoSuchElementException e) {
             return null;
         }
     }
@@ -155,8 +146,7 @@ public class SimpleDistributedQueue
      *         specified waiting time elapses before an element is available
      * @throws Exception errors
      */
-    public byte[] poll(long timeout, TimeUnit unit) throws Exception
-    {
+    public byte[] poll(long timeout, TimeUnit unit) throws Exception {
         return internalPoll(timeout, unit);
     }
 
@@ -166,110 +156,85 @@ public class SimpleDistributedQueue
      * @return Head of the queue or null.
      * @throws Exception errors
      */
-    public byte[] poll() throws Exception
-    {
-        try
-        {
+    public byte[] poll() throws Exception {
+        try {
             return remove();
-        }
-        catch ( NoSuchElementException e )
-        {
+        } catch (NoSuchElementException e) {
             return null;
         }
     }
 
-    protected void ensurePath() throws Exception
-    {
+    protected void ensurePath() throws Exception {
         ensureContainers.ensure();
     }
 
-    private byte[] internalPoll(long timeout, TimeUnit unit) throws Exception
-    {
+    private byte[] internalPoll(long timeout, TimeUnit unit) throws Exception {
         ensurePath();
 
-        long            startMs = System.currentTimeMillis();
-        boolean         hasTimeout = (unit != null);
-        long            maxWaitMs = hasTimeout ? TimeUnit.MILLISECONDS.convert(timeout, unit) : Long.MAX_VALUE;
-        for(;;)
-        {
-            final CountDownLatch    latch = new CountDownLatch(1);
-            Watcher                 watcher = new Watcher()
-            {
+        long startMs = System.currentTimeMillis();
+        boolean hasTimeout = (unit != null);
+        long maxWaitMs = hasTimeout ? TimeUnit.MILLISECONDS.convert(timeout, unit) : Long.MAX_VALUE;
+        for (; ; ) {
+            final CountDownLatch latch = new CountDownLatch(1);
+            Watcher watcher = new Watcher() {
                 @Override
-                public void process(WatchedEvent event)
-                {
+                public void process(WatchedEvent event) {
                     latch.countDown();
                 }
             };
-            byte[]      bytes;
-            try
-            {
+            byte[] bytes;
+            try {
                 bytes = internalElement(true, watcher);
-            }
-            catch ( NoSuchElementException dummy )
-            {
+            } catch (NoSuchElementException dummy) {
                 log.debug("Parent containers appear to have lapsed - recreate and retry");
                 ensureContainers.reset();
                 continue;
             }
-            if ( bytes != null )
-            {
+            if (bytes != null) {
                 return bytes;
             }
 
-            if ( hasTimeout )
-            {
-                long        elapsedMs = System.currentTimeMillis() - startMs;
-                long        thisWaitMs = maxWaitMs - elapsedMs;
-                if ( thisWaitMs <= 0 )
-                {
+            if (hasTimeout) {
+                long elapsedMs = System.currentTimeMillis() - startMs;
+                long thisWaitMs = maxWaitMs - elapsedMs;
+                if (thisWaitMs <= 0) {
                     return null;
                 }
                 latch.await(thisWaitMs, TimeUnit.MILLISECONDS);
-            }
-            else
-            {
+            } else {
                 latch.await();
             }
         }
     }
 
-    private byte[] internalElement(boolean removeIt, Watcher watcher) throws Exception
-    {
+    private byte[] internalElement(boolean removeIt, Watcher watcher) throws Exception {
         ensurePath();
 
         List<String> nodes;
-        try
-        {
-            nodes = (watcher != null) ? client.getChildren().usingWatcher(watcher).forPath(path) : client.getChildren().forPath(path);
-        }
-        catch ( KeeperException.NoNodeException dummy )
-        {
+        try {
+            nodes = (watcher != null)
+                    ? client.getChildren().usingWatcher(watcher).forPath(path)
+                    : client.getChildren().forPath(path);
+        } catch (KeeperException.NoNodeException dummy) {
             throw new NoSuchElementException();
         }
         Collections.sort(nodes);
 
-        for ( String node : nodes )
-        {
-            if ( !node.startsWith(PREFIX) )
-            {
+        for (String node : nodes) {
+            if (!node.startsWith(PREFIX)) {
                 log.warn("Foreign node in queue path: " + node);
                 continue;
             }
 
-            String  thisPath = ZKPaths.makePath(path, node);
-            try
-            {
+            String thisPath = ZKPaths.makePath(path, node);
+            try {
                 byte[] bytes = client.getData().forPath(thisPath);
-                if ( removeIt )
-                {
+                if (removeIt) {
                     client.delete().forPath(thisPath);
                 }
                 return bytes;
-            }
-            catch ( KeeperException.NoNodeException ignore )
-            {
-                //Another client removed the node first, try next
+            } catch (KeeperException.NoNodeException ignore) {
+                // Another client removed the node first, try next
             }
         }
 

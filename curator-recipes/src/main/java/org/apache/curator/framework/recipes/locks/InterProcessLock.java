@@ -24,8 +24,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * NOTE: depending on its implementation, {@link #release()} may throw an exception if the current thread does not own the lock
  */
-public interface InterProcessLock
-{
+public interface InterProcessLock {
     /**
      * Acquire the mutex - blocking until it's available. Each call to acquire must be balanced by a call
      * to {@link #release()}

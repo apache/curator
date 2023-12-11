@@ -30,130 +30,110 @@ import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.zookeeper.ZooKeeper;
 
-class NamespaceFacade extends CuratorFrameworkImpl
-{
+class NamespaceFacade extends CuratorFrameworkImpl {
     private final CuratorFrameworkImpl client;
     private final NamespaceImpl namespace;
     private final FailedDeleteManager failedDeleteManager = new FailedDeleteManager(this);
 
-    NamespaceFacade(CuratorFrameworkImpl client, String namespace)
-    {
+    NamespaceFacade(CuratorFrameworkImpl client, String namespace) {
         super(client);
         this.client = client;
         this.namespace = new NamespaceImpl(client, namespace);
     }
 
     @Override
-    public CuratorFramework nonNamespaceView()
-    {
+    public CuratorFramework nonNamespaceView() {
         return usingNamespace(null);
     }
 
     @Override
-    public CuratorFramework usingNamespace(String newNamespace)
-    {
+    public CuratorFramework usingNamespace(String newNamespace) {
         return client.getNamespaceFacadeCache().get(newNamespace);
     }
 
     @Override
-    public String getNamespace()
-    {
+    public String getNamespace() {
         return namespace.getNamespace();
     }
 
     @Override
-    public void start()
-    {
+    public void start() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Listenable<ConnectionStateListener> getConnectionStateListenable()
-    {
+    public Listenable<ConnectionStateListener> getConnectionStateListenable() {
         return client.getConnectionStateListenable();
     }
 
     @Override
-    public Listenable<CuratorListener> getCuratorListenable()
-    {
-        throw new UnsupportedOperationException("getCuratorListenable() is only available from a non-namespaced CuratorFramework instance");
+    public Listenable<CuratorListener> getCuratorListenable() {
+        throw new UnsupportedOperationException(
+                "getCuratorListenable() is only available from a non-namespaced CuratorFramework instance");
     }
 
     @Override
-    public Listenable<UnhandledErrorListener> getUnhandledErrorListenable()
-    {
+    public Listenable<UnhandledErrorListener> getUnhandledErrorListenable() {
         return client.getUnhandledErrorListenable();
     }
 
     @Override
-    public void sync(String path, Object context)
-    {
+    public void sync(String path, Object context) {
         internalSync(this, path, context);
     }
 
     @Override
-    public CuratorZookeeperClient getZookeeperClient()
-    {
+    public CuratorZookeeperClient getZookeeperClient() {
         return client.getZookeeperClient();
     }
 
     @Override
-    RetryLoop newRetryLoop()
-    {
+    RetryLoop newRetryLoop() {
         return client.newRetryLoop();
     }
 
     @Override
-    ZooKeeper getZooKeeper() throws Exception
-    {
+    ZooKeeper getZooKeeper() throws Exception {
         return client.getZooKeeper();
     }
 
     @Override
-    <DATA_TYPE> void processBackgroundOperation(OperationAndData<DATA_TYPE> operationAndData, CuratorEvent event)
-    {
+    <DATA_TYPE> void processBackgroundOperation(OperationAndData<DATA_TYPE> operationAndData, CuratorEvent event) {
         client.processBackgroundOperation(operationAndData, event);
     }
 
     @Override
-    void logError(String reason, Throwable e)
-    {
+    void logError(String reason, Throwable e) {
         client.logError(reason, e);
     }
 
     @Override
-    String unfixForNamespace(String path)
-    {
+    String unfixForNamespace(String path) {
         return namespace.unfixForNamespace(path);
     }
 
     @Override
-    String fixForNamespace(String path)
-    {
+    String fixForNamespace(String path) {
         return namespace.fixForNamespace(path, false);
     }
 
     @Override
-    String fixForNamespace(String path, boolean isSequential)
-    {
+    String fixForNamespace(String path, boolean isSequential) {
         return namespace.fixForNamespace(path, isSequential);
     }
 
     @Override
-    public EnsurePath newNamespaceAwareEnsurePath(String path)
-    {
+    public EnsurePath newNamespaceAwareEnsurePath(String path) {
         return namespace.newNamespaceAwareEnsurePath(path);
     }
 
     @Override
-    FailedDeleteManager getFailedDeleteManager()
-    {
+    FailedDeleteManager getFailedDeleteManager() {
         return failedDeleteManager;
     }
 }

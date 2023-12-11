@@ -19,6 +19,9 @@
 
 package org.apache.curator.x.async.details;
 
+import static org.apache.curator.x.async.details.BackgroundProcs.childrenProc;
+import static org.apache.curator.x.async.details.BackgroundProcs.safeCall;
+import java.util.List;
 import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.framework.imps.GetChildrenBuilderImpl;
 import org.apache.curator.x.async.AsyncStage;
@@ -26,36 +29,28 @@ import org.apache.curator.x.async.WatchMode;
 import org.apache.curator.x.async.api.AsyncGetChildrenBuilder;
 import org.apache.curator.x.async.api.AsyncPathable;
 import org.apache.zookeeper.data.Stat;
-import java.util.List;
 
-import static org.apache.curator.x.async.details.BackgroundProcs.childrenProc;
-import static org.apache.curator.x.async.details.BackgroundProcs.safeCall;
-
-class AsyncGetChildrenBuilderImpl implements AsyncGetChildrenBuilder
-{
+class AsyncGetChildrenBuilderImpl implements AsyncGetChildrenBuilder {
     private final CuratorFrameworkImpl client;
     private final Filters filters;
     private final WatchMode watchMode;
     private Stat stat = null;
 
-    AsyncGetChildrenBuilderImpl(CuratorFrameworkImpl client, Filters filters, WatchMode watchMode)
-    {
+    AsyncGetChildrenBuilderImpl(CuratorFrameworkImpl client, Filters filters, WatchMode watchMode) {
         this.client = client;
         this.filters = filters;
         this.watchMode = watchMode;
     }
 
     @Override
-    public AsyncStage<List<String>> forPath(String path)
-    {
+    public AsyncStage<List<String>> forPath(String path) {
         BuilderCommon<List<String>> common = new BuilderCommon<>(filters, watchMode, childrenProc);
         GetChildrenBuilderImpl builder = new GetChildrenBuilderImpl(client, common.watcher, common.backgrounding, stat);
         return safeCall(common.internalCallback, () -> builder.forPath(path));
     }
 
     @Override
-    public AsyncPathable<AsyncStage<List<String>>> storingStatIn(Stat stat)
-    {
+    public AsyncPathable<AsyncStage<List<String>>> storingStatIn(Stat stat) {
         this.stat = stat;
         return this;
     }

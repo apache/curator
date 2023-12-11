@@ -19,15 +19,14 @@
 
 package org.apache.curator.x.async;
 
+import java.util.concurrent.CompletionStage;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import java.util.concurrent.CompletionStage;
 
 /**
  * The exception type set for async watchers
  */
-public abstract class AsyncEventException extends Exception
-{
+public abstract class AsyncEventException extends Exception {
     /**
      * Returns the error condition that temporarily triggered the watcher. NOTE: the watcher
      * will most likely still be set. Use {@link #reset()} to stage on the successful trigger

@@ -24,9 +24,7 @@ import java.util.concurrent.TimeUnit;
 /**
  *  Expose more metrics for the operations and events
  */
-public abstract class AdvancedTracerDriver implements TracerDriver
-{
-
+public abstract class AdvancedTracerDriver implements TracerDriver {
     /**
      * Records the start of a new operation that will later complete successfully or erroneously via a call to
      * {@link #endTrace(OperationTrace)}. The call may optionally return driver specific state which can be
@@ -66,13 +64,13 @@ public abstract class AdvancedTracerDriver implements TracerDriver
      *
      * @param trace name of the counter
      */
-    public abstract void     addEvent(EventTrace trace);
+    public abstract void addEvent(EventTrace trace);
 
     @Deprecated
     @Override
-    public final void     addTrace(String name, long time, TimeUnit unit) {}
+    public final void addTrace(String name, long time, TimeUnit unit) {}
 
     @Deprecated
     @Override
-    public final void     addCount(String name, int increment) {}
+    public final void addCount(String name, int increment) {}
 }

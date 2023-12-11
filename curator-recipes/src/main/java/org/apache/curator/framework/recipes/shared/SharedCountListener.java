@@ -24,8 +24,7 @@ import org.apache.curator.framework.state.ConnectionStateListener;
 /**
  * Listener for changes to a shared count
  */
-public interface SharedCountListener extends ConnectionStateListener
-{
+public interface SharedCountListener extends ConnectionStateListener {
     /**
      * Called when the shared value has changed
      *
@@ -33,5 +32,5 @@ public interface SharedCountListener extends ConnectionStateListener
      * @param newCount the new count
      * @throws Exception errors
      */
-    public void         countHasChanged(SharedCountReader sharedCount, int newCount) throws Exception;
+    public void countHasChanged(SharedCountReader sharedCount, int newCount) throws Exception;
 }

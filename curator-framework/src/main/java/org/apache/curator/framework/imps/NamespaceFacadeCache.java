@@ -24,38 +24,46 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
-class NamespaceFacadeCache
-{
-    private final CuratorFrameworkImpl                  client;
-    private final NamespaceFacade                       nullNamespace;
-    private final CacheLoader<String, NamespaceFacade>  loader = new CacheLoader<String, NamespaceFacade>()
-    {
+class NamespaceFacadeCache {
+    private final CuratorFrameworkImpl client;
+    private final AtomicReference<NamespaceFacade> nullNamespace;
+    private final CacheLoader<String, NamespaceFacade> loader = new CacheLoader<String, NamespaceFacade>() {
         @Override
-        public NamespaceFacade load(String namespace) throws Exception
-        {
+        public NamespaceFacade load(String namespace) throws Exception {
             return new NamespaceFacade(client, namespace);
         }
     };
     private final LoadingCache<String, NamespaceFacade> cache = CacheBuilder.newBuilder()
-        .expireAfterAccess(5, TimeUnit.MINUTES) // does this need config? probably not
-        .build(loader);
+            .expireAfterAccess(5, TimeUnit.MINUTES) // does this need config? probably not
+            .build(loader);
 
-    NamespaceFacadeCache(CuratorFrameworkImpl client)
-    {
+    NamespaceFacadeCache(CuratorFrameworkImpl client) {
         this.client = client;
-        nullNamespace = new NamespaceFacade(client, null);
+        this.nullNamespace = new AtomicReference<>(null);
     }
 
-    NamespaceFacade     get(String namespace)
-    {
-        try
-        {
-            return (namespace != null) ? cache.get(namespace) : nullNamespace;
+    private NamespaceFacade getNullNamespace() {
+        NamespaceFacade facade = nullNamespace.get();
+        if (facade != null) {
+            return facade;
         }
-        catch ( ExecutionException e )
-        {
-            throw new RuntimeException(e);  // should never happen
+        facade = new NamespaceFacade(client, null);
+        if (!nullNamespace.compareAndSet(null, facade)) {
+            facade = nullNamespace.get();
+        }
+        return facade;
+    }
+
+    NamespaceFacade get(String namespace) {
+        try {
+            if (namespace == null) {
+                return getNullNamespace();
+            }
+            return cache.get(namespace);
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e); // should never happen
         }
     }
 }

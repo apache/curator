@@ -20,15 +20,15 @@
 package org.apache.curator.framework.imps;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.curator.RetrySleeper;
-import org.apache.curator.framework.api.BackgroundCallback;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.curator.RetrySleeper;
+import org.apache.curator.framework.api.BackgroundCallback;
+import org.apache.curator.framework.api.CuratorEventType;
 
-class OperationAndData<T> implements Delayed, RetrySleeper
-{
+class OperationAndData<T> implements Delayed, RetrySleeper {
     private static final AtomicLong nextOrdinal = new AtomicLong();
 
     private final BackgroundOperation<T> operation;
@@ -36,116 +36,123 @@ class OperationAndData<T> implements Delayed, RetrySleeper
     private final BackgroundCallback callback;
     private final long startTimeMs = System.currentTimeMillis();
     private final ErrorCallback<T> errorCallback;
-    private final AtomicInteger retryCount = new AtomicInteger(0);
+    private final AtomicInteger retryCount;
     private final AtomicLong sleepUntilTimeMs = new AtomicLong(0);
     private final AtomicLong ordinal = new AtomicLong();
     private final Object context;
     private final boolean connectionRequired;
 
-    interface ErrorCallback<T>
-    {
+    interface ErrorCallback<T> {
         void retriesExhausted(OperationAndData<T> operationAndData);
     }
-    
-    OperationAndData(BackgroundOperation<T> operation, T data, BackgroundCallback callback, ErrorCallback<T> errorCallback, Object context, boolean connectionRequired)
-    {
+
+    OperationAndData(BackgroundOperation<T> operation, OperationAndData<T> main) {
+        this.operation = operation;
+        this.data = main.data;
+        this.callback = main.callback;
+        this.errorCallback = main.errorCallback;
+        this.context = main.context;
+        this.connectionRequired = main.connectionRequired;
+        this.retryCount = main.retryCount;
+    }
+
+    OperationAndData(
+            BackgroundOperation<T> operation,
+            T data,
+            BackgroundCallback callback,
+            ErrorCallback<T> errorCallback,
+            Object context,
+            boolean connectionRequired) {
         this.operation = operation;
         this.data = data;
         this.callback = callback;
         this.errorCallback = errorCallback;
         this.context = context;
         this.connectionRequired = connectionRequired;
+        this.retryCount = new AtomicInteger(0);
         reset();
     }
 
-    void reset()
-    {
+    void reset() {
         retryCount.set(0);
         ordinal.set(nextOrdinal.getAndIncrement());
     }
 
-    OperationAndData(BackgroundOperation<T> operation, T data, BackgroundCallback callback, ErrorCallback<T> errorCallback, Object context, Watching watching)
-    {
+    OperationAndData(
+            BackgroundOperation<T> operation,
+            T data,
+            BackgroundCallback callback,
+            ErrorCallback<T> errorCallback,
+            Object context,
+            Watching watching) {
         this(operation, data, callback, errorCallback, context, true);
     }
 
-    Object getContext()
-    {
+    Object getContext() {
         return context;
     }
-    
-    boolean isConnectionRequired()
-    {
+
+    boolean isConnectionRequired() {
         return connectionRequired;
     }
 
-    void callPerformBackgroundOperation() throws Exception
-    {
+    void callPerformBackgroundOperation() throws Exception {
         operation.performBackgroundOperation(this);
     }
 
-    T getData()
-    {
+    T getData() {
         return data;
     }
 
-    long getElapsedTimeMs()
-    {
+    long getElapsedTimeMs() {
         return System.currentTimeMillis() - startTimeMs;
     }
 
-    int getThenIncrementRetryCount()
-    {
+    int getThenIncrementRetryCount() {
         return retryCount.getAndIncrement();
     }
 
-    BackgroundCallback getCallback()
-    {
+    BackgroundCallback getCallback() {
         return callback;
     }
 
-    ErrorCallback<T> getErrorCallback()
-    {
+    ErrorCallback<T> getErrorCallback() {
         return errorCallback;
     }
 
     @VisibleForTesting
-    BackgroundOperation<T> getOperation()
-    {
+    BackgroundOperation<T> getOperation() {
         return operation;
     }
 
-    void clearSleep()
-    {
+    CuratorEventType getEventType() {
+        return operation.getBackgroundEventType();
+    }
+
+    void clearSleep() {
         sleepUntilTimeMs.set(0);
     }
 
     @Override
-    public void sleepFor(long time, TimeUnit unit) throws InterruptedException
-    {
+    public void sleepFor(long time, TimeUnit unit) throws InterruptedException {
         sleepUntilTimeMs.set(System.currentTimeMillis() + TimeUnit.MILLISECONDS.convert(time, unit));
     }
 
     @Override
-    public long getDelay(TimeUnit unit)
-    {
+    public long getDelay(TimeUnit unit) {
         return unit.convert(sleepUntilTimeMs.get() - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
     }
 
     @Override
-    public int compareTo(Delayed o)
-    {
-        if ( o == this )
-        {
+    public int compareTo(Delayed o) {
+        if (o == this) {
             return 0;
         }
 
         long diff = getDelay(TimeUnit.MILLISECONDS) - o.getDelay(TimeUnit.MILLISECONDS);
-        if ( diff == 0 )
-        {
-            if ( o instanceof OperationAndData )
-            {
-                diff = ordinal.get() - ((OperationAndData)o).ordinal.get();
+        if (diff == 0) {
+            if (o instanceof OperationAndData) {
+                diff = ordinal.get() - ((OperationAndData) o).ordinal.get();
             }
         }
 

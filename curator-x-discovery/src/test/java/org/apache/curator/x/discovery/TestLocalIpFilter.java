@@ -22,37 +22,27 @@ package org.apache.curator.x.discovery;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
-import org.junit.jupiter.api.Test;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.List;
+import org.junit.jupiter.api.Test;
 
-public class TestLocalIpFilter
-{
+public class TestLocalIpFilter {
     @Test
-    public void     testFilterEverything() throws SocketException
-    {
+    public void testFilterEverything() throws SocketException {
         LocalIpFilter localIpFilter = ServiceInstanceBuilder.getLocalIpFilter();
-        try
-        {
-            ServiceInstanceBuilder.setLocalIpFilter
-                (
-                    new LocalIpFilter()
-                    {
-                        @Override
-                        public boolean use(NetworkInterface networkInterface, InetAddress address) throws SocketException
-                        {
-                            return false;
-                        }
-                    }
-                );
+        try {
+            ServiceInstanceBuilder.setLocalIpFilter(new LocalIpFilter() {
+                @Override
+                public boolean use(NetworkInterface networkInterface, InetAddress address) throws SocketException {
+                    return false;
+                }
+            });
 
             List<InetAddress> allLocalIPs = Lists.newArrayList(ServiceInstanceBuilder.getAllLocalIPs());
             assertEquals(allLocalIPs.size(), 0);
-        }
-        finally
-        {
+        } finally {
             ServiceInstanceBuilder.setLocalIpFilter(localIpFilter);
         }
 

@@ -22,8 +22,7 @@ package org.apache.curator.x.async.api;
 /**
  * Options to use when deleting ZNodes
  */
-public enum DeleteOption
-{
+public enum DeleteOption {
     /**
      * Prevents the reporting of {@link org.apache.zookeeper.KeeperException.NoNodeException}s.
      * If the ZNode doesn't exist the delete method will appear to succeed.

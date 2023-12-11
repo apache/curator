@@ -23,30 +23,35 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.reflect.TypeToken;
+import javax.ws.rs.ext.ContextResolver;
+import javax.ws.rs.ext.Provider;
 import org.apache.curator.x.discovery.ProviderStrategy;
 import org.apache.curator.x.discovery.ServiceDiscovery;
 import org.apache.curator.x.discovery.server.rest.DiscoveryContext;
-import javax.ws.rs.ext.ContextResolver;
-import javax.ws.rs.ext.Provider;
 
 /**
  * For convenience, a version of {@link DiscoveryContext} that uses any generic type as the payload
  */
 @Provider
-public class GenericDiscoveryContext<T> implements DiscoveryContext<T>, ContextResolver<DiscoveryContext<T>>
-{
+public class GenericDiscoveryContext<T> implements DiscoveryContext<T>, ContextResolver<DiscoveryContext<T>> {
     private final ServiceDiscovery<T> serviceDiscovery;
     private final ProviderStrategy<T> providerStrategy;
     private final int instanceRefreshMs;
     private final TypeToken<T> payloadType;
 
-    public GenericDiscoveryContext(ServiceDiscovery<T> serviceDiscovery, ProviderStrategy<T> providerStrategy, int instanceRefreshMs, Class<T> payloadType)
-    {
+    public GenericDiscoveryContext(
+            ServiceDiscovery<T> serviceDiscovery,
+            ProviderStrategy<T> providerStrategy,
+            int instanceRefreshMs,
+            Class<T> payloadType) {
         this(serviceDiscovery, providerStrategy, instanceRefreshMs, TypeToken.of(payloadType));
     }
 
-    public GenericDiscoveryContext(ServiceDiscovery<T> serviceDiscovery, ProviderStrategy<T> providerStrategy, int instanceRefreshMs, TypeToken<T> payloadType)
-    {
+    public GenericDiscoveryContext(
+            ServiceDiscovery<T> serviceDiscovery,
+            ProviderStrategy<T> providerStrategy,
+            int instanceRefreshMs,
+            TypeToken<T> payloadType) {
         this.serviceDiscovery = serviceDiscovery;
         this.providerStrategy = providerStrategy;
         this.instanceRefreshMs = instanceRefreshMs;
@@ -54,48 +59,41 @@ public class GenericDiscoveryContext<T> implements DiscoveryContext<T>, ContextR
     }
 
     @Override
-    public ProviderStrategy<T> getProviderStrategy()
-    {
+    public ProviderStrategy<T> getProviderStrategy() {
         return providerStrategy;
     }
 
     @Override
-    public int getInstanceRefreshMs()
-    {
+    public int getInstanceRefreshMs() {
         return instanceRefreshMs;
     }
 
     @Override
-    public ServiceDiscovery<T> getServiceDiscovery()
-    {
+    public ServiceDiscovery<T> getServiceDiscovery() {
         return serviceDiscovery;
     }
 
-	@Override
-    public void marshallJson(ObjectNode node, String fieldName, T payload) throws Exception
-    {
-        if ( payload == null )
-        {
+    @Override
+    public void marshallJson(ObjectNode node, String fieldName, T payload) throws Exception {
+        if (payload == null) {
             //noinspection unchecked
-            payload = (T)payloadType.getRawType().newInstance();
+            payload = (T) payloadType.getRawType().getDeclaredConstructor().newInstance();
         }
-        
+
         node.putPOJO(fieldName, payload);
     }
 
-	@Override
-    public T unMarshallJson(JsonNode node) throws Exception
-    {
+    @Override
+    public T unMarshallJson(JsonNode node) throws Exception {
         T payload;
         ObjectMapper mapper = new ObjectMapper();
         //noinspection unchecked
-        payload = (T)mapper.readValue(node.toString(), payloadType.getRawType());
+        payload = (T) mapper.readValue(node.toString(), payloadType.getRawType());
         return payload;
     }
 
     @Override
-    public DiscoveryContext<T> getContext(Class<?> type)
-    {
+    public DiscoveryContext<T> getContext(Class<?> type) {
         return this;
     }
 }

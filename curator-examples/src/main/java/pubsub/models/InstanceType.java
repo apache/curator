@@ -19,8 +19,7 @@
 
 package pubsub.models;
 
-public enum InstanceType
-{
+public enum InstanceType {
     database,
     cache,
     web,

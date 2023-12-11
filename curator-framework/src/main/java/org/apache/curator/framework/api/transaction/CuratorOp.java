@@ -24,8 +24,7 @@ import org.apache.zookeeper.Op;
 /**
  * Internal representation of a transaction operation
  */
-public interface CuratorOp
-{
+public interface CuratorOp {
     Op get();
 
     TypeAndPath getTypeAndPath();

@@ -19,7 +19,11 @@
 
 package org.apache.curator.x.async.details;
 
+import static org.apache.curator.x.async.details.BackgroundProcs.*;
 import com.google.common.base.Preconditions;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.UnaryOperator;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.UnhandledErrorListener;
@@ -36,38 +40,29 @@ import org.apache.curator.x.async.api.*;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
-import java.util.List;
-import java.util.Objects;
-import java.util.function.UnaryOperator;
 
-import static org.apache.curator.x.async.details.BackgroundProcs.*;
-
-public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework
-{
+public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework {
     private final CuratorFrameworkImpl client;
     private final Filters filters;
     private final WatchMode watchMode;
     private final boolean watched;
 
-    public AsyncCuratorFrameworkImpl(CuratorFramework client)
-    {
+    public AsyncCuratorFrameworkImpl(CuratorFramework client) {
         this(reveal(client), new Filters(null, null, null), WatchMode.stateChangeAndSuccess, false);
     }
 
-    private static CuratorFrameworkImpl reveal(CuratorFramework client)
-    {
-        try
-        {
-            return (CuratorFrameworkImpl)Objects.requireNonNull(client, "client cannot be null");
-        }
-        catch ( Exception e )
-        {
-            throw new IllegalArgumentException("Only Curator clients created through CuratorFrameworkFactory are supported: " + client.getClass().getName());
+    private static CuratorFrameworkImpl reveal(CuratorFramework client) {
+        try {
+            return (CuratorFrameworkImpl) Objects.requireNonNull(client, "client cannot be null");
+        } catch (Exception e) {
+            throw new IllegalArgumentException(
+                    "Only Curator clients created through CuratorFrameworkFactory are supported: "
+                            + client.getClass().getName());
         }
     }
 
-    public AsyncCuratorFrameworkImpl(CuratorFrameworkImpl client, Filters filters, WatchMode watchMode, boolean watched)
-    {
+    public AsyncCuratorFrameworkImpl(
+            CuratorFrameworkImpl client, Filters filters, WatchMode watchMode, boolean watched) {
         this.client = Objects.requireNonNull(client, "client cannot be null");
         this.filters = Objects.requireNonNull(filters, "filters cannot be null");
         this.watchMode = Objects.requireNonNull(watchMode, "watchMode cannot be null");
@@ -75,40 +70,33 @@ public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework
     }
 
     @Override
-    public AsyncCreateBuilder create()
-    {
+    public AsyncCreateBuilder create() {
         return new AsyncCreateBuilderImpl(client, filters);
     }
 
     @Override
-    public AsyncDeleteBuilder delete()
-    {
+    public AsyncDeleteBuilder delete() {
         return new AsyncDeleteBuilderImpl(client, filters);
     }
 
     @Override
-    public AsyncSetDataBuilder setData()
-    {
+    public AsyncSetDataBuilder setData() {
         return new AsyncSetDataBuilderImpl(client, filters);
     }
 
     @Override
-    public AsyncGetACLBuilder getACL()
-    {
-        return new AsyncGetACLBuilder()
-        {
+    public AsyncGetACLBuilder getACL() {
+        return new AsyncGetACLBuilder() {
             private Stat stat = null;
 
             @Override
-            public AsyncPathable<AsyncStage<List<ACL>>> storingStatIn(Stat stat)
-            {
+            public AsyncPathable<AsyncStage<List<ACL>>> storingStatIn(Stat stat) {
                 this.stat = stat;
                 return this;
             }
 
             @Override
-            public AsyncStage<List<ACL>> forPath(String path)
-            {
+            public AsyncStage<List<ACL>> forPath(String path) {
                 BuilderCommon<List<ACL>> common = new BuilderCommon<>(filters, aclProc);
                 GetACLBuilderImpl builder = new GetACLBuilderImpl(client, common.backgrounding, stat);
                 return safeCall(common.internalCallback, () -> builder.forPath(path));
@@ -117,20 +105,17 @@ public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework
     }
 
     @Override
-    public AsyncSetACLBuilder setACL()
-    {
+    public AsyncSetACLBuilder setACL() {
         return new AsyncSetACLBuilderImpl(client, filters);
     }
 
     @Override
-    public AsyncReconfigBuilder reconfig()
-    {
+    public AsyncReconfigBuilder reconfig() {
         return new AsyncReconfigBuilderImpl(client, filters);
     }
 
     @Override
-    public AsyncMultiTransaction transaction()
-    {
+    public AsyncMultiTransaction transaction() {
         return operations -> {
             BuilderCommon<List<CuratorTransactionResult>> common = new BuilderCommon<>(filters, opResultsProc);
             CuratorMultiTransactionImpl builder = new CuratorMultiTransactionImpl(client, common.backgrounding);
@@ -139,8 +124,7 @@ public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework
     }
 
     @Override
-    public AsyncSyncBuilder sync()
-    {
+    public AsyncSyncBuilder sync() {
         return path -> {
             BuilderCommon<Void> common = new BuilderCommon<>(filters, ignoredProc);
             SyncBuilderImpl builder = new SyncBuilderImpl(client, common.backgrounding);
@@ -149,102 +133,102 @@ public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework
     }
 
     @Override
-    public AsyncRemoveWatchesBuilder removeWatches()
-    {
+    public AsyncRemoveWatchesBuilder removeWatches() {
         return new AsyncRemoveWatchesBuilderImpl(client, filters);
     }
 
     @Override
-    public AsyncWatchBuilder addWatch()
-    {
-        Preconditions.checkState(Compatibility.hasPersistentWatchers(), "addWatch() is not supported in the ZooKeeper library being used.");
+    public AsyncWatchBuilder addWatch() {
+        Preconditions.checkState(
+                Compatibility.hasPersistentWatchers(),
+                "addWatch() is not supported in the ZooKeeper library being used.");
         return new AsyncWatchBuilderImpl(client, filters);
     }
 
     @Override
-    public CuratorFramework unwrap()
-    {
+    public CuratorFramework unwrap() {
         return client;
     }
 
     @Override
-    public WatchableAsyncCuratorFramework watched()
-    {
+    public WatchableAsyncCuratorFramework watched() {
         return new AsyncCuratorFrameworkImpl(client, filters, watchMode, true);
     }
 
     @Override
-    public AsyncCuratorFrameworkDsl with(WatchMode mode)
-    {
+    public AsyncCuratorFrameworkDsl with(WatchMode mode) {
         return new AsyncCuratorFrameworkImpl(client, filters, mode, watched);
     }
 
     @Override
-    public AsyncCuratorFrameworkDsl with(WatchMode mode, UnhandledErrorListener listener, UnaryOperator<CuratorEvent> resultFilter, UnaryOperator<WatchedEvent> watcherFilter)
-    {
-        return new AsyncCuratorFrameworkImpl(client, new Filters(listener, filters.getResultFilter(), filters.getWatcherFilter()), mode, watched);
+    public AsyncCuratorFrameworkDsl with(
+            WatchMode mode,
+            UnhandledErrorListener listener,
+            UnaryOperator<CuratorEvent> resultFilter,
+            UnaryOperator<WatchedEvent> watcherFilter) {
+        return new AsyncCuratorFrameworkImpl(
+                client, new Filters(listener, filters.getResultFilter(), filters.getWatcherFilter()), mode, watched);
     }
 
     @Override
-    public AsyncCuratorFrameworkDsl with(UnhandledErrorListener listener)
-    {
-        return new AsyncCuratorFrameworkImpl(client, new Filters(listener, filters.getResultFilter(), filters.getWatcherFilter()), watchMode, watched);
+    public AsyncCuratorFrameworkDsl with(UnhandledErrorListener listener) {
+        return new AsyncCuratorFrameworkImpl(
+                client,
+                new Filters(listener, filters.getResultFilter(), filters.getWatcherFilter()),
+                watchMode,
+                watched);
     }
 
     @Override
-    public AsyncCuratorFrameworkDsl with(UnaryOperator<CuratorEvent> resultFilter, UnaryOperator<WatchedEvent> watcherFilter)
-    {
-        return new AsyncCuratorFrameworkImpl(client, new Filters(filters.getListener(), resultFilter, watcherFilter), watchMode, watched);
+    public AsyncCuratorFrameworkDsl with(
+            UnaryOperator<CuratorEvent> resultFilter, UnaryOperator<WatchedEvent> watcherFilter) {
+        return new AsyncCuratorFrameworkImpl(
+                client, new Filters(filters.getListener(), resultFilter, watcherFilter), watchMode, watched);
     }
 
     @Override
-    public AsyncCuratorFrameworkDsl with(UnhandledErrorListener listener, UnaryOperator<CuratorEvent> resultFilter, UnaryOperator<WatchedEvent> watcherFilter)
-    {
-        return new AsyncCuratorFrameworkImpl(client, new Filters(listener, resultFilter, watcherFilter), watchMode, watched);
+    public AsyncCuratorFrameworkDsl with(
+            UnhandledErrorListener listener,
+            UnaryOperator<CuratorEvent> resultFilter,
+            UnaryOperator<WatchedEvent> watcherFilter) {
+        return new AsyncCuratorFrameworkImpl(
+                client, new Filters(listener, resultFilter, watcherFilter), watchMode, watched);
     }
 
     @Override
-    public AsyncTransactionOp transactionOp()
-    {
+    public AsyncTransactionOp transactionOp() {
         return new AsyncTransactionOpImpl(client);
     }
 
     @Override
-    public AsyncExistsBuilder checkExists()
-    {
+    public AsyncExistsBuilder checkExists() {
         return new AsyncExistsBuilderImpl(client, filters, getBuilderWatchMode());
     }
 
     @Override
-    public AsyncGetDataBuilder getData()
-    {
+    public AsyncGetDataBuilder getData() {
         return new AsyncGetDataBuilderImpl(client, filters, getBuilderWatchMode());
     }
 
     @Override
-    public AsyncGetChildrenBuilder getChildren()
-    {
+    public AsyncGetChildrenBuilder getChildren() {
         return new AsyncGetChildrenBuilderImpl(client, filters, getBuilderWatchMode());
     }
 
     @Override
-    public AsyncGetConfigBuilder getConfig()
-    {
+    public AsyncGetConfigBuilder getConfig() {
         return new AsyncGetConfigBuilderImpl(client, filters, getBuilderWatchMode());
     }
 
-    Filters getFilters()
-    {
+    Filters getFilters() {
         return filters;
     }
 
-    CuratorFrameworkImpl getClient()
-    {
+    CuratorFrameworkImpl getClient() {
         return client;
     }
 
-    private WatchMode getBuilderWatchMode()
-    {
+    private WatchMode getBuilderWatchMode() {
         return watched ? watchMode : null;
     }
 }

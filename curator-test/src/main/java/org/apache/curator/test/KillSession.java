@@ -26,16 +26,14 @@ import org.apache.zookeeper.ZooKeeper;
  *     Utility to simulate a ZK session dying.
  * </p>
  */
-public class KillSession
-{
+public class KillSession {
     /**
      * Kill the given ZK session
      *
      * @param client the client to kill
      * @since 3.0.0
      */
-    public static void     kill(ZooKeeper client)
-    {
+    public static void kill(ZooKeeper client) {
         client.getTestable().injectSessionExpiration();
     }
 
@@ -47,8 +45,7 @@ public class KillSession
      * @throws Exception errors
      * @deprecated use {@link #kill(ZooKeeper)} instead
      */
-    public static void     kill(ZooKeeper client, String connectString) throws Exception
-    {
+    public static void kill(ZooKeeper client, String connectString) throws Exception {
         kill(client);
     }
 
@@ -61,8 +58,7 @@ public class KillSession
      * @throws Exception errors
      * @deprecated use {@link #kill(ZooKeeper)} instead
      */
-    public static void     kill(ZooKeeper client, String connectString, int maxMs) throws Exception
-    {
+    public static void kill(ZooKeeper client, String connectString, int maxMs) throws Exception {
         kill(client);
     }
 }

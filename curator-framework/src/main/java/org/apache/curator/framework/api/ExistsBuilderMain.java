@@ -21,8 +21,4 @@ package org.apache.curator.framework.api;
 
 import org.apache.zookeeper.data.Stat;
 
-public interface ExistsBuilderMain extends
-    Watchable<BackgroundPathable<Stat>>,
-    BackgroundPathable<Stat>
-{
-}
+public interface ExistsBuilderMain extends Watchable<BackgroundPathable<Stat>>, BackgroundPathable<Stat> {}

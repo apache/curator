@@ -21,8 +21,7 @@ package org.apache.curator.framework.api;
 
 import java.util.concurrent.Executor;
 
-public interface Backgroundable<T>
-{
+public interface Backgroundable<T> {
     /**
      * Perform the action in the background
      *

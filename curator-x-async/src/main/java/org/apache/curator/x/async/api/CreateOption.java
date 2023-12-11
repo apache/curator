@@ -22,8 +22,7 @@ package org.apache.curator.x.async.api;
 /**
  * Options when creating ZNodes
  */
-public enum CreateOption
-{
+public enum CreateOption {
     /**
      * Causes any parent nodes to get created if they haven't already been
      */

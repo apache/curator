@@ -32,7 +32,22 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Check license header
-        run: docker run --rm -v $(pwd):/github/workspace -u $(id -u):$(id -g) ghcr.io/korandoru/hawkeye-native:v1 check
+        run: docker run --rm -v $(pwd):/github/workspace ghcr.io/korandoru/hawkeye-native:v3 check
+
+      - name: Cache Local Maven Repository
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: 21
+          distribution: 'zulu'
+      - name: Check code style
+        run: ./mvnw spotless:check
 
   unittest:
     name: Unit tests
@@ -41,7 +56,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [8, 11]
+        java: [8, 11, 17, 21]
+    env:
+      GRADLE_ENTERPRISE_ACCESS_KEY: ${{ secrets.GE_ACCESS_TOKEN }}
     steps:
       - uses: actions/checkout@v3
 
@@ -57,7 +74,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           java-version: ${{ matrix.java }}
-          distribution: 'temurin'
+          distribution: 'zulu'
 
       - name: Build with ${{ matrix.java }}
         run: ./mvnw clean install -DskipTests

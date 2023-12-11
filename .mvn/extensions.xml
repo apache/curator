@@ -19,15 +19,16 @@
     under the License.
 
 -->
-<project xmlns="http://maven.apache.org/DECORATION/1.1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/DECORATION/1.1.0 http://maven.apache.org/xsd/decoration-1.1.0.xsd" name="Apache Curator Client">
-    <body>
-        <head><![CDATA[
-            <link rel="stylesheet" href="../css/site.css" />
-            <script type="text/javascript">
-                $(function(){
-                    $('a[title="Client"]').parent().addClass("active");
-                });
-            </script>
-        ]]></head>
-    </body>
-</project>
+<extensions xmlns="http://maven.apache.org/EXTENSIONS/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:schemaLocation="http://maven.apache.org/EXTENSIONS/1.0.0 http://maven.apache.org/xsd/core-extensions-1.0.0.xsd">
+    <extension>
+        <groupId>com.gradle</groupId>
+        <artifactId>gradle-enterprise-maven-extension</artifactId>
+        <version>1.19.1</version>
+    </extension>
+    <extension>
+        <groupId>com.gradle</groupId>
+        <artifactId>common-custom-user-data-maven-extension</artifactId>
+        <version>1.12.4</version>
+    </extension>
+</extensions>

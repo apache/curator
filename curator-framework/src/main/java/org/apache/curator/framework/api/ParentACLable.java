@@ -19,10 +19,9 @@
 
 package org.apache.curator.framework.api;
 
+import java.util.List;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
-
-import java.util.List;
 
 public interface ParentACLable<T> extends ACLable<T> {
 
@@ -37,5 +36,4 @@ public interface ParentACLable<T> extends ACLable<T> {
      * @return this
      */
     T withACL(List<ACL> aclList, boolean applyToParents);
-
 }

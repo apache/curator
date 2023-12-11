@@ -21,8 +21,7 @@ package org.apache.curator.framework.recipes.cache;
 
 import java.util.concurrent.ExecutorService;
 
-public interface CuratorCacheBridgeBuilder
-{
+public interface CuratorCacheBridgeBuilder {
     /**
      * @param options any options
      * @return this

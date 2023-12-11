@@ -24,8 +24,7 @@ import org.apache.curator.framework.CuratorFramework;
 /**
  * Receives notifications about errors and background events
  */
-public interface CuratorListener
-{
+public interface CuratorListener {
     /**
      * Called when a background task has completed or a watch has triggered
      *
@@ -33,5 +32,5 @@ public interface CuratorListener
      * @param event the event
      * @throws Exception any errors
      */
-    public void         eventReceived(CuratorFramework client, CuratorEvent event) throws Exception;
+    public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception;
 }

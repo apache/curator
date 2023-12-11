@@ -22,6 +22,4 @@ package org.apache.curator.framework.listen;
 /**
  * A {@link ListenerManager} that doesn't do any mapping
  */
-public interface UnaryListenerManager<T> extends ListenerManager<T, T>
-{
-}
+public interface UnaryListenerManager<T> extends ListenerManager<T, T> {}

@@ -21,18 +21,15 @@ package org.apache.curator.x.async.migrations;
 
 import java.util.Objects;
 
-public class MigrationException extends RuntimeException
-{
+public class MigrationException extends RuntimeException {
     private final String migrationId;
 
-    public MigrationException(String migrationId, String message)
-    {
+    public MigrationException(String migrationId, String message) {
         super(message);
         this.migrationId = Objects.requireNonNull(migrationId, "migrationId cannot be null");
     }
 
-    public String getMigrationId()
-    {
+    public String getMigrationId() {
         return migrationId;
     }
 }

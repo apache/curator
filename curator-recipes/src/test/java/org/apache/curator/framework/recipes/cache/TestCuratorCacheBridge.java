@@ -21,7 +21,6 @@ package org.apache.curator.framework.recipes.cache;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
@@ -29,21 +28,17 @@ import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.Compatibility;
 import org.junit.jupiter.api.Test;
 
-public class TestCuratorCacheBridge extends CuratorTestBase
-{
+public class TestCuratorCacheBridge extends CuratorTestBase {
     @Test
-    public void testImplementationSelection()
-    {
-        try (CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)))
-        {
-            CuratorCacheBridge cache = CuratorCache.bridgeBuilder(client, "/foo").build();
-            if ( Compatibility.hasPersistentWatchers() )
-            {
+    public void testImplementationSelection() {
+        try (CuratorFramework client =
+                CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1))) {
+            CuratorCacheBridge cache =
+                    CuratorCache.bridgeBuilder(client, "/foo").build();
+            if (Compatibility.hasPersistentWatchers()) {
                 assertTrue(cache instanceof CuratorCacheImpl);
                 assertTrue(cache.isCuratorCache());
-            }
-            else
-            {
+            } else {
                 assertTrue(cache instanceof CompatibleCuratorCacheBridge);
                 assertFalse(cache.isCuratorCache());
             }
@@ -51,17 +46,15 @@ public class TestCuratorCacheBridge extends CuratorTestBase
     }
 
     @Test
-    public void testForceTreeCache()
-    {
+    public void testForceTreeCache() {
         System.setProperty("curator-cache-bridge-force-tree-cache", "true");
-        try (CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)))
-        {
-            CuratorCacheBridge cache = CuratorCache.bridgeBuilder(client, "/foo").build();
+        try (CuratorFramework client =
+                CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1))) {
+            CuratorCacheBridge cache =
+                    CuratorCache.bridgeBuilder(client, "/foo").build();
             assertTrue(cache instanceof CompatibleCuratorCacheBridge);
             assertFalse(cache.isCuratorCache());
-        }
-        finally
-        {
+        } finally {
             System.clearProperty("curator-cache-bridge-force-tree-cache");
         }
     }

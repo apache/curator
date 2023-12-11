@@ -25,8 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Similar to {@link org.apache.curator.utils.EnsurePath} but creates containers.
  *
  */
-public class EnsureContainers
-{
+public class EnsureContainers {
     private final CuratorFramework client;
     private final String path;
     private final AtomicBoolean ensureNeeded = new AtomicBoolean(true);
@@ -35,8 +34,7 @@ public class EnsureContainers
      * @param client the client
      * @param path path to ensure is containers
      */
-    public EnsureContainers(CuratorFramework client, String path)
-    {
+    public EnsureContainers(CuratorFramework client, String path) {
         this.client = client;
         this.path = path;
     }
@@ -47,10 +45,8 @@ public class EnsureContainers
      *
      * @throws Exception errors
      */
-    public void ensure() throws Exception
-    {
-        if ( ensureNeeded.get() )
-        {
+    public void ensure() throws Exception {
+        if (ensureNeeded.get()) {
             internalEnsure();
         }
     }
@@ -58,15 +54,12 @@ public class EnsureContainers
     /**
      * Reset so that the next call to {@link #ensure()} will attempt to create containers
      */
-    public void reset()
-    {
+    public void reset() {
         ensureNeeded.set(true);
     }
 
-    private synchronized void internalEnsure() throws Exception
-    {
-        if ( ensureNeeded.compareAndSet(true, false) )
-        {
+    private synchronized void internalEnsure() throws Exception {
+        if (ensureNeeded.compareAndSet(true, false)) {
             client.createContainers(path);
         }
     }

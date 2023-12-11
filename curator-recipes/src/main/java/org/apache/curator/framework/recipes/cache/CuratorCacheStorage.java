@@ -25,15 +25,13 @@ import java.util.stream.Stream;
 /**
  * Interface for maintaining data in a {@link CuratorCache}
  */
-public interface CuratorCacheStorage extends CuratorCacheAccessor
-{
+public interface CuratorCacheStorage extends CuratorCacheAccessor {
     /**
      * Return a new standard storage instance
      *
      * @return storage instance
      */
-    static CuratorCacheStorage standard()
-    {
+    static CuratorCacheStorage standard() {
         return new StandardCuratorCacheStorage(true);
     }
 
@@ -43,8 +41,7 @@ public interface CuratorCacheStorage extends CuratorCacheAccessor
      *
      * @return storage instance that does not retain data bytes
      */
-    static CuratorCacheStorage dataNotCached()
-    {
+    static CuratorCacheStorage dataNotCached() {
         return new StandardCuratorCacheStorage(false);
     }
 

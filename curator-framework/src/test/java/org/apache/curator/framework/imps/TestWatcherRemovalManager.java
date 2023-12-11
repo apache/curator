@@ -22,41 +22,34 @@ package org.apache.curator.framework.imps;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.retry.RetryOneTime;
-import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.test.Timing;
 import org.apache.curator.test.WatchersDebug;
+import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
-
-public class TestWatcherRemovalManager extends CuratorTestBase
-{
+public class TestWatcherRemovalManager extends CuratorTestBase {
     @Test
-    public void testSameWatcherDifferentPaths1Triggered() throws Exception
-    {
+    public void testSameWatcherDifferentPaths1Triggered() throws Exception {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+        try {
             client.start();
-            WatcherRemovalFacade removerClient = (WatcherRemovalFacade)client.newWatcherRemoveCuratorFramework();
+            WatcherRemovalFacade removerClient = (WatcherRemovalFacade) client.newWatcherRemoveCuratorFramework();
             final CountDownLatch latch = new CountDownLatch(1);
-            Watcher watcher = new Watcher()
-            {
+            Watcher watcher = new Watcher() {
                 @Override
-                public void process(WatchedEvent event)
-                {
+                public void process(WatchedEvent event) {
                     latch.countDown();
                 }
             };
@@ -69,26 +62,20 @@ public class TestWatcherRemovalManager extends CuratorTestBase
             timing.sleepABit();
 
             removerClient.removeWatchers();
-        }
-        finally
-        {
+        } finally {
             TestCleanState.closeAndTestClean(client);
         }
     }
 
     @Test
-    public void testSameWatcherDifferentPaths() throws Exception
-    {
+    public void testSameWatcherDifferentPaths() throws Exception {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+        try {
             client.start();
-            WatcherRemovalFacade removerClient = (WatcherRemovalFacade)client.newWatcherRemoveCuratorFramework();
-            Watcher watcher = new Watcher()
-            {
+            WatcherRemovalFacade removerClient = (WatcherRemovalFacade) client.newWatcherRemoveCuratorFramework();
+            Watcher watcher = new Watcher() {
                 @Override
-                public void process(WatchedEvent event)
-                {
+                public void process(WatchedEvent event) {
                     // NOP
                 }
             };
@@ -96,27 +83,21 @@ public class TestWatcherRemovalManager extends CuratorTestBase
             removerClient.checkExists().usingWatcher(watcher).forPath("/d/e/f");
             assertEquals(removerClient.getWatcherRemovalManager().getEntries().size(), 2);
             removerClient.removeWatchers();
-        }
-        finally
-        {
+        } finally {
             TestCleanState.closeAndTestClean(client);
         }
     }
 
     @Test
-    public void testSameWatcherDifferentKinds1Triggered() throws Exception
-    {
+    public void testSameWatcherDifferentKinds1Triggered() throws Exception {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+        try {
             client.start();
-            WatcherRemovalFacade removerClient = (WatcherRemovalFacade)client.newWatcherRemoveCuratorFramework();
+            WatcherRemovalFacade removerClient = (WatcherRemovalFacade) client.newWatcherRemoveCuratorFramework();
             final CountDownLatch latch = new CountDownLatch(1);
-            Watcher watcher = new Watcher()
-            {
+            Watcher watcher = new Watcher() {
                 @Override
-                public void process(WatchedEvent event)
-                {
+                public void process(WatchedEvent event) {
                     latch.countDown();
                 }
             };
@@ -131,26 +112,20 @@ public class TestWatcherRemovalManager extends CuratorTestBase
             timing.sleepABit();
 
             removerClient.removeWatchers();
-        }
-        finally
-        {
+        } finally {
             TestCleanState.closeAndTestClean(client);
         }
     }
 
     @Test
-    public void testSameWatcherDifferentKinds() throws Exception
-    {
+    public void testSameWatcherDifferentKinds() throws Exception {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+        try {
             client.start();
-            WatcherRemovalFacade removerClient = (WatcherRemovalFacade)client.newWatcherRemoveCuratorFramework();
-            Watcher watcher = new Watcher()
-            {
+            WatcherRemovalFacade removerClient = (WatcherRemovalFacade) client.newWatcherRemoveCuratorFramework();
+            Watcher watcher = new Watcher() {
                 @Override
-                public void process(WatchedEvent event)
-                {
+                public void process(WatchedEvent event) {
                     // NOP
                 }
             };
@@ -159,148 +134,115 @@ public class TestWatcherRemovalManager extends CuratorTestBase
             removerClient.checkExists().usingWatcher(watcher).forPath("/a/b/c");
             removerClient.getData().usingWatcher(watcher).forPath("/a/b/c");
             removerClient.removeWatchers();
-        }
-        finally
-        {
+        } finally {
             TestCleanState.closeAndTestClean(client);
         }
     }
 
     @Test
-    public void testWithRetry() throws Exception
-    {
+    public void testWithRetry() throws Exception {
         server.stop();
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+        try {
             client.start();
-            WatcherRemovalFacade removerClient = (WatcherRemovalFacade)client.newWatcherRemoveCuratorFramework();
-            Watcher w = new Watcher()
-            {
+            WatcherRemovalFacade removerClient = (WatcherRemovalFacade) client.newWatcherRemoveCuratorFramework();
+            Watcher w = new Watcher() {
                 @Override
-                public void process(WatchedEvent event)
-                {
+                public void process(WatchedEvent event) {
                     // NOP
                 }
             };
-            try
-            {
+            try {
                 removerClient.checkExists().usingWatcher(w).forPath("/one/two/three");
                 fail("Should have thrown ConnectionLossException");
-            }
-            catch ( KeeperException.ConnectionLossException expected )
-            {
+            } catch (KeeperException.ConnectionLossException expected) {
                 // expected
             }
             assertEquals(removerClient.getWatcherRemovalManager().getEntries().size(), 0);
-        }
-        finally
-        {
+        } finally {
             TestCleanState.closeAndTestClean(client);
         }
     }
 
     @Test
-    public void testWithRetryInBackground() throws Exception
-    {
+    public void testWithRetryInBackground() throws Exception {
         server.stop();
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+        try {
             client.start();
-            WatcherRemovalFacade removerClient = (WatcherRemovalFacade)client.newWatcherRemoveCuratorFramework();
-            Watcher w = new Watcher()
-            {
+            WatcherRemovalFacade removerClient = (WatcherRemovalFacade) client.newWatcherRemoveCuratorFramework();
+            Watcher w = new Watcher() {
                 @Override
-                public void process(WatchedEvent event)
-                {
+                public void process(WatchedEvent event) {
                     // NOP
                 }
             };
 
             final CountDownLatch latch = new CountDownLatch(1);
-            BackgroundCallback callback = new BackgroundCallback()
-            {
+            BackgroundCallback callback = new BackgroundCallback() {
                 @Override
-                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
-                {
+                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
                     latch.countDown();
                 }
             };
             removerClient.checkExists().usingWatcher(w).inBackground(callback).forPath("/one/two/three");
             assertTrue(new Timing().awaitLatch(latch));
             assertEquals(removerClient.getWatcherRemovalManager().getEntries().size(), 0);
-        }
-        finally
-        {
+        } finally {
             TestCleanState.closeAndTestClean(client);
         }
     }
 
     @Test
-    public void testMissingNode() throws Exception
-    {
+    public void testMissingNode() throws Exception {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+        try {
             client.start();
-            WatcherRemovalFacade removerClient = (WatcherRemovalFacade)client.newWatcherRemoveCuratorFramework();
-            Watcher w = new Watcher()
-            {
+            WatcherRemovalFacade removerClient = (WatcherRemovalFacade) client.newWatcherRemoveCuratorFramework();
+            Watcher w = new Watcher() {
                 @Override
-                public void process(WatchedEvent event)
-                {
+                public void process(WatchedEvent event) {
                     // NOP
                 }
             };
-            try
-            {
+            try {
                 removerClient.getData().usingWatcher(w).forPath("/one/two/three");
                 fail("Should have thrown NoNodeException");
-            }
-            catch ( KeeperException.NoNodeException expected )
-            {
+            } catch (KeeperException.NoNodeException expected) {
                 // expected
             }
             removerClient.removeWatchers();
-        }
-        finally
-        {
+        } finally {
             TestCleanState.closeAndTestClean(client);
         }
     }
 
     @Test
-    public void testMissingNodeInBackground() throws Exception
-    {
-        final CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        Callable<Void> proc = new Callable<Void>()
-        {
+    public void testMissingNodeInBackground() throws Exception {
+        final CuratorFramework client =
+                CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        Callable<Void> proc = new Callable<Void>() {
             @Override
-            public Void call() throws Exception
-            {
+            public Void call() throws Exception {
                 client.start();
-                WatcherRemovalFacade removerClient = (WatcherRemovalFacade)client.newWatcherRemoveCuratorFramework();
-                Watcher w = new Watcher()
-                {
+                WatcherRemovalFacade removerClient = (WatcherRemovalFacade) client.newWatcherRemoveCuratorFramework();
+                Watcher w = new Watcher() {
                     @Override
-                    public void process(WatchedEvent event)
-                    {
+                    public void process(WatchedEvent event) {
                         // NOP
                     }
                 };
                 final CountDownLatch latch = new CountDownLatch(1);
-                BackgroundCallback callback = new BackgroundCallback()
-                {
+                BackgroundCallback callback = new BackgroundCallback() {
                     @Override
-                    public void processResult(CuratorFramework client, CuratorEvent event) throws Exception
-                    {
+                    public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
                         latch.countDown();
                     }
                 };
                 removerClient.getData().usingWatcher(w).inBackground(callback).forPath("/one/two/three");
                 assertTrue(new Timing().awaitLatch(latch));
-                assertEquals(removerClient.getWatcherRemovalManager().getEntries().size(), 0);
+                assertEquals(
+                        removerClient.getWatcherRemovalManager().getEntries().size(), 0);
                 removerClient.removeWatchers();
                 return null;
             }
@@ -309,89 +251,69 @@ public class TestWatcherRemovalManager extends CuratorTestBase
     }
 
     @Test
-    public void testBasic() throws Exception
-    {
+    public void testBasic() throws Exception {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+        try {
             client.start();
             internalTryBasic(client);
-        }
-        finally
-        {
+        } finally {
             TestCleanState.closeAndTestClean(client);
         }
     }
 
     @Test
-    public void testBasicNamespace1() throws Exception
-    {
+    public void testBasicNamespace1() throws Exception {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+        try {
             client.start();
             internalTryBasic(client.usingNamespace("foo"));
-        }
-        finally
-        {
+        } finally {
             TestCleanState.closeAndTestClean(client);
         }
     }
 
     @Test
-    public void testBasicNamespace2() throws Exception
-    {
+    public void testBasicNamespace2() throws Exception {
         CuratorFramework client = CuratorFrameworkFactory.builder()
-            .connectString(server.getConnectString())
-            .retryPolicy(new RetryOneTime(1))
-            .namespace("hey")
-            .build();
-        try
-        {
+                .connectString(server.getConnectString())
+                .retryPolicy(new RetryOneTime(1))
+                .namespace("hey")
+                .build();
+        try {
             client.start();
             internalTryBasic(client);
-        }
-        finally
-        {
+        } finally {
             TestCleanState.closeAndTestClean(client);
         }
     }
 
     @Test
-    public void testBasicNamespace3() throws Exception
-    {
+    public void testBasicNamespace3() throws Exception {
         CuratorFramework client = CuratorFrameworkFactory.builder()
-            .connectString(server.getConnectString())
-            .retryPolicy(new RetryOneTime(1))
-            .namespace("hey")
-            .build();
-        try
-        {
+                .connectString(server.getConnectString())
+                .retryPolicy(new RetryOneTime(1))
+                .namespace("hey")
+                .build();
+        try {
             client.start();
             internalTryBasic(client.usingNamespace("lakjsf"));
-        }
-        finally
-        {
+        } finally {
             TestCleanState.closeAndTestClean(client);
         }
     }
 
     @Test
-    public void testSameWatcher() throws Exception
-    {
+    public void testSameWatcher() throws Exception {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+        try {
             client.start();
             client.create().forPath("/test");
 
-            WatcherRemovalFacade removerClient = (WatcherRemovalFacade)client.newWatcherRemoveCuratorFramework();
+            WatcherRemovalFacade removerClient = (WatcherRemovalFacade) client.newWatcherRemoveCuratorFramework();
 
-            Watcher watcher = new Watcher()
-            {
+            Watcher watcher = new Watcher() {
                 @Override
-                public void process(WatchedEvent event)
-                {
+                public void process(WatchedEvent event) {
                     // NOP
                 }
             };
@@ -401,31 +323,24 @@ public class TestWatcherRemovalManager extends CuratorTestBase
             removerClient.getData().usingWatcher(watcher).forPath("/test");
             assertEquals(removerClient.getRemovalManager().getEntries().size(), 1);
             removerClient.removeWatchers();
-        }
-        finally
-        {
+        } finally {
             TestCleanState.closeAndTestClean(client);
         }
     }
 
     @Test
-    public void testTriggered() throws Exception
-    {
+    public void testTriggered() throws Exception {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+        try {
             client.start();
 
-            WatcherRemovalFacade removerClient = (WatcherRemovalFacade)client.newWatcherRemoveCuratorFramework();
+            WatcherRemovalFacade removerClient = (WatcherRemovalFacade) client.newWatcherRemoveCuratorFramework();
 
             final CountDownLatch latch = new CountDownLatch(1);
-            Watcher watcher = new Watcher()
-            {
+            Watcher watcher = new Watcher() {
                 @Override
-                public void process(WatchedEvent event)
-                {
-                    if ( event.getType() == Event.EventType.NodeCreated )
-                    {
+                public void process(WatchedEvent event) {
+                    if (event.getType() == Event.EventType.NodeCreated) {
                         latch.countDown();
                     }
                 }
@@ -438,45 +353,33 @@ public class TestWatcherRemovalManager extends CuratorTestBase
             assertTrue(new Timing().awaitLatch(latch));
 
             assertEquals(removerClient.getRemovalManager().getEntries().size(), 0);
-        }
-        finally
-        {
+        } finally {
             TestCleanState.closeAndTestClean(client);
         }
     }
 
     @Test
-    public void testResetFromWatcher() throws Exception
-    {
+    public void testResetFromWatcher() throws Exception {
         Timing timing = new Timing();
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+        try {
             client.start();
 
-            final WatcherRemovalFacade removerClient = (WatcherRemovalFacade)client.newWatcherRemoveCuratorFramework();
+            final WatcherRemovalFacade removerClient = (WatcherRemovalFacade) client.newWatcherRemoveCuratorFramework();
 
             final CountDownLatch createdLatch = new CountDownLatch(1);
             final CountDownLatch deletedLatch = new CountDownLatch(1);
-            Watcher watcher = new Watcher()
-            {
+            Watcher watcher = new Watcher() {
                 @Override
-                public void process(WatchedEvent event)
-                {
-                    if ( event.getType() == Event.EventType.NodeCreated )
-                    {
-                        try
-                        {
+                public void process(WatchedEvent event) {
+                    if (event.getType() == Event.EventType.NodeCreated) {
+                        try {
                             removerClient.checkExists().usingWatcher(this).forPath("/yo");
-                        }
-                        catch ( Exception e )
-                        {
+                        } catch (Exception e) {
                             e.printStackTrace();
                         }
                         createdLatch.countDown();
-                    }
-                    else if ( event.getType() == Event.EventType.NodeDeleted )
-                    {
+                    } else if (event.getType() == Event.EventType.NodeDeleted) {
                         deletedLatch.countDown();
                     }
                 }
@@ -494,32 +397,27 @@ public class TestWatcherRemovalManager extends CuratorTestBase
             assertTrue(timing.awaitLatch(deletedLatch));
 
             assertEquals(removerClient.getRemovalManager().getEntries().size(), 0);
-        }
-        finally
-        {
+        } finally {
             TestCleanState.closeAndTestClean(client);
         }
     }
 
-    private void internalTryBasic(CuratorFramework client) throws Exception
-    {
+    private void internalTryBasic(CuratorFramework client) throws Exception {
         WatcherRemoveCuratorFramework removerClient = client.newWatcherRemoveCuratorFramework();
 
         final CountDownLatch latch = new CountDownLatch(1);
-        Watcher watcher = new Watcher()
-        {
+        Watcher watcher = new Watcher() {
             @Override
-            public void process(WatchedEvent event)
-            {
-                if ( event.getType() == Event.EventType.DataWatchRemoved )
-                {
+            public void process(WatchedEvent event) {
+                if (event.getType() == Event.EventType.DataWatchRemoved) {
                     latch.countDown();
                 }
             }
         };
         removerClient.checkExists().usingWatcher(watcher).forPath("/hey");
 
-        List<String> existWatches = WatchersDebug.getExistWatches(client.getZookeeperClient().getZooKeeper());
+        List<String> existWatches =
+                WatchersDebug.getExistWatches(client.getZookeeperClient().getZooKeeper());
         assertEquals(existWatches.size(), 1);
 
         removerClient.removeWatchers();

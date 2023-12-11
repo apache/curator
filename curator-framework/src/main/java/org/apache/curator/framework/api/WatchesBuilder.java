@@ -20,10 +20,9 @@
 package org.apache.curator.framework.api;
 
 /**
- * Builder to allow watches to be removed 
+ * Builder to allow watches to be removed
  */
-public interface WatchesBuilder extends RemoveWatchesBuilder
-{
+public interface WatchesBuilder extends RemoveWatchesBuilder {
     /**
      * Start an add watch operation
      *

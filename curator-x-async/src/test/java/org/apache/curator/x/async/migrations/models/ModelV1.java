@@ -19,22 +19,18 @@
 
 package org.apache.curator.x.async.migrations.models;
 
-public class ModelV1
-{
+public class ModelV1 {
     private final String name;
 
-    public ModelV1()
-    {
+    public ModelV1() {
         this("");
     }
 
-    public ModelV1(String name)
-    {
+    public ModelV1(String name) {
         this.name = name;
     }
 
-    public String getName()
-    {
+    public String getName() {
         return name;
     }
 }

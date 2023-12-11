@@ -19,29 +19,25 @@
 
 package org.apache.curator.framework.recipes.cache;
 
-import org.apache.curator.framework.CuratorFramework;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import org.apache.curator.framework.CuratorFramework;
 
-class CuratorCacheListenerBuilderImpl implements CuratorCacheListenerBuilder
-{
+class CuratorCacheListenerBuilderImpl implements CuratorCacheListenerBuilder {
     private final List<CuratorCacheListener> listeners = new ArrayList<>();
     private boolean afterInitializedOnly = false;
 
     @Override
-    public CuratorCacheListenerBuilder forAll(CuratorCacheListener listener)
-    {
+    public CuratorCacheListenerBuilder forAll(CuratorCacheListener listener) {
         listeners.add(listener);
         return this;
     }
 
     @Override
-    public CuratorCacheListenerBuilder forCreates(Consumer<ChildData> listener)
-    {
+    public CuratorCacheListenerBuilder forCreates(Consumer<ChildData> listener) {
         listeners.add((type, oldNode, node) -> {
-            if ( type == CuratorCacheListener.Type.NODE_CREATED )
-            {
+            if (type == CuratorCacheListener.Type.NODE_CREATED) {
                 listener.accept(node);
             }
         });
@@ -49,11 +45,9 @@ class CuratorCacheListenerBuilderImpl implements CuratorCacheListenerBuilder
     }
 
     @Override
-    public CuratorCacheListenerBuilder forChanges(ChangeListener listener)
-    {
+    public CuratorCacheListenerBuilder forChanges(ChangeListener listener) {
         listeners.add((type, oldNode, node) -> {
-            if ( type == CuratorCacheListener.Type.NODE_CHANGED )
-            {
+            if (type == CuratorCacheListener.Type.NODE_CHANGED) {
                 listener.event(oldNode, node);
             }
         });
@@ -61,11 +55,9 @@ class CuratorCacheListenerBuilderImpl implements CuratorCacheListenerBuilder
     }
 
     @Override
-    public CuratorCacheListenerBuilder forCreatesAndChanges(ChangeListener listener)
-    {
+    public CuratorCacheListenerBuilder forCreatesAndChanges(ChangeListener listener) {
         listeners.add((type, oldNode, node) -> {
-            if ( (type == CuratorCacheListener.Type.NODE_CHANGED) || (type == CuratorCacheListener.Type.NODE_CREATED) )
-            {
+            if ((type == CuratorCacheListener.Type.NODE_CHANGED) || (type == CuratorCacheListener.Type.NODE_CREATED)) {
                 listener.event(oldNode, node);
             }
         });
@@ -73,11 +65,9 @@ class CuratorCacheListenerBuilderImpl implements CuratorCacheListenerBuilder
     }
 
     @Override
-    public CuratorCacheListenerBuilder forDeletes(Consumer<ChildData> listener)
-    {
+    public CuratorCacheListenerBuilder forDeletes(Consumer<ChildData> listener) {
         listeners.add((type, oldNode, node) -> {
-            if ( type == CuratorCacheListener.Type.NODE_DELETED )
-            {
+            if (type == CuratorCacheListener.Type.NODE_DELETED) {
                 listener.accept(oldNode);
             }
         });
@@ -85,19 +75,15 @@ class CuratorCacheListenerBuilderImpl implements CuratorCacheListenerBuilder
     }
 
     @Override
-    public CuratorCacheListenerBuilder forInitialized(Runnable listener)
-    {
-        CuratorCacheListener localListener = new CuratorCacheListener()
-        {
+    public CuratorCacheListenerBuilder forInitialized(Runnable listener) {
+        CuratorCacheListener localListener = new CuratorCacheListener() {
             @Override
-            public void event(Type type, ChildData oldData, ChildData data)
-            {
+            public void event(Type type, ChildData oldData, ChildData data) {
                 // NOP
             }
 
             @Override
-            public void initialized()
-            {
+            public void initialized() {
                 listener.run();
             }
         };
@@ -106,53 +92,45 @@ class CuratorCacheListenerBuilderImpl implements CuratorCacheListenerBuilder
     }
 
     @Override
-    public CuratorCacheListenerBuilder forPathChildrenCache(String rootPath, CuratorFramework client, PathChildrenCacheListener listener)
-    {
+    public CuratorCacheListenerBuilder forPathChildrenCache(
+            String rootPath, CuratorFramework client, PathChildrenCacheListener listener) {
         listeners.add(new PathChildrenCacheListenerWrapper(rootPath, client, listener));
         return this;
     }
 
     @Override
-    public CuratorCacheListenerBuilder forTreeCache(CuratorFramework client, TreeCacheListener listener)
-    {
+    public CuratorCacheListenerBuilder forTreeCache(CuratorFramework client, TreeCacheListener listener) {
         listeners.add(new TreeCacheListenerWrapper(client, listener));
         return this;
     }
 
     @Override
-    public CuratorCacheListenerBuilder forNodeCache(NodeCacheListener listener)
-    {
+    public CuratorCacheListenerBuilder forNodeCache(NodeCacheListener listener) {
         listeners.add(new NodeCacheListenerWrapper(listener));
         return this;
     }
 
     @Override
-    public CuratorCacheListenerBuilder afterInitialized()
-    {
+    public CuratorCacheListenerBuilder afterInitialized() {
         afterInitializedOnly = true;
         return this;
     }
 
     @Override
-    public CuratorCacheListener build()
-    {
+    public CuratorCacheListener build() {
         List<CuratorCacheListener> copy = new ArrayList<>(listeners);
-        return new CuratorCacheListener()
-        {
+        return new CuratorCacheListener() {
             private volatile boolean isInitialized = !afterInitializedOnly;
 
             @Override
-            public void event(Type type, ChildData oldData, ChildData data)
-            {
-                if ( isInitialized )
-                {
+            public void event(Type type, ChildData oldData, ChildData data) {
+                if (isInitialized) {
                     copy.forEach(l -> l.event(type, oldData, data));
                 }
             }
 
             @Override
-            public void initialized()
-            {
+            public void initialized() {
                 isInitialized = true;
                 copy.forEach(CuratorCacheListener::initialized);
             }

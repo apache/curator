@@ -23,35 +23,41 @@ import static org.apache.curator.framework.recipes.cache.CuratorCache.Options.DO
 import static org.apache.curator.framework.recipes.cache.CuratorCacheListener.builder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicInteger;
-
 @Tag(CuratorTestBase.zk36Group)
-public class TestCuratorCache extends CuratorTestBase
-{
+public class TestCuratorCache extends CuratorTestBase {
     @Test
     public void testUpdateWhenNotCachingData() throws Exception // mostly copied from TestPathChildrenCache
-    {
+            {
         CuratorCacheStorage storage = new StandardCuratorCacheStorage(false);
-        try (CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1)))
-        {
+        try (CuratorFramework client = CuratorFrameworkFactory.newClient(
+                server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1))) {
             client.start();
             final CountDownLatch updatedLatch = new CountDownLatch(1);
             final CountDownLatch addedLatch = new CountDownLatch(1);
             client.create().creatingParentsIfNeeded().forPath("/test");
-            try (CuratorCache cache = CuratorCache.builder(client, "/test").withStorage(storage).build())
-            {
-                cache.listenable().addListener(builder().forChanges((__, ___) -> updatedLatch.countDown()).build());
-                cache.listenable().addListener(builder().forCreates(__ -> addedLatch.countDown()).build());
+            try (CuratorCache cache =
+                    CuratorCache.builder(client, "/test").withStorage(storage).build()) {
+                cache.listenable()
+                        .addListener(builder()
+                                .forChanges((__, ___) -> updatedLatch.countDown())
+                                .build());
+                cache.listenable()
+                        .addListener(builder()
+                                .forCreates(__ -> addedLatch.countDown())
+                                .build());
                 cache.start();
 
                 client.create().forPath("/test/foo", "first".getBytes());
@@ -64,34 +70,31 @@ public class TestCuratorCache extends CuratorTestBase
     }
 
     @Test
-    public void testAfterInitialized() throws Exception
-    {
-        try (CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1)))
-        {
+    public void testAfterInitialized() throws Exception {
+        try (CuratorFramework client = CuratorFrameworkFactory.newClient(
+                server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1))) {
             client.start();
             client.create().creatingParentsIfNeeded().forPath("/test");
             client.create().creatingParentsIfNeeded().forPath("/test/one");
             client.create().creatingParentsIfNeeded().forPath("/test/one/two");
             client.create().creatingParentsIfNeeded().forPath("/test/one/two/three");
-            try (CuratorCache cache = CuratorCache.build(client, "/test"))
-            {
+            try (CuratorCache cache = CuratorCache.build(client, "/test")) {
                 CountDownLatch initializedLatch = new CountDownLatch(1);
                 AtomicInteger eventCount = new AtomicInteger(0);
-                CuratorCacheListener listener = new CuratorCacheListener()
-                {
+                CuratorCacheListener listener = new CuratorCacheListener() {
                     @Override
-                    public void event(Type type, ChildData oldData, ChildData data)
-                    {
+                    public void event(Type type, ChildData oldData, ChildData data) {
                         eventCount.incrementAndGet();
                     }
 
                     @Override
-                    public void initialized()
-                    {
+                    public void initialized() {
                         initializedLatch.countDown();
                     }
                 };
-                cache.listenable().addListener(builder().forAll(listener).afterInitialized().build());
+                cache.listenable()
+                        .addListener(
+                                builder().forAll(listener).afterInitialized().build());
                 cache.start();
                 assertTrue(timing.awaitLatch(initializedLatch));
 
@@ -106,20 +109,24 @@ public class TestCuratorCache extends CuratorTestBase
     }
 
     @Test
-    public void testListenerBuilder() throws Exception
-    {
-        try (CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1)))
-        {
+    public void testListenerBuilder() throws Exception {
+        try (CuratorFramework client = CuratorFrameworkFactory.newClient(
+                server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1))) {
             client.start();
-            try (CuratorCache cache = CuratorCache.build(client, "/test"))
-            {
+            try (CuratorCache cache = CuratorCache.build(client, "/test")) {
                 Semaphore all = new Semaphore(0);
                 Semaphore deletes = new Semaphore(0);
                 Semaphore changes = new Semaphore(0);
                 Semaphore creates = new Semaphore(0);
                 Semaphore createsAndChanges = new Semaphore(0);
 
-                CuratorCacheListener listener = builder().forAll((__, ___, ____) -> all.release()).forDeletes(__ -> deletes.release()).forChanges((__, ___) -> changes.release()).forCreates(__ -> creates.release()).forCreatesAndChanges((__, ___) -> createsAndChanges.release()).build();
+                CuratorCacheListener listener = builder()
+                        .forAll((__, ___, ____) -> all.release())
+                        .forDeletes(__ -> deletes.release())
+                        .forChanges((__, ___) -> changes.release())
+                        .forCreates(__ -> creates.release())
+                        .forCreatesAndChanges((__, ___) -> createsAndChanges.release())
+                        .build();
                 cache.listenable().addListener(listener);
                 cache.start();
 
@@ -148,17 +155,17 @@ public class TestCuratorCache extends CuratorTestBase
     }
 
     @Test
-    public void testClearOnClose() throws Exception
-    {
-        try (CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1)))
-        {
+    public void testClearOnClose() throws Exception {
+        try (CuratorFramework client = CuratorFrameworkFactory.newClient(
+                server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1))) {
             CuratorCacheStorage storage;
             client.start();
 
-            try ( CuratorCache cache = CuratorCache.builder(client, "/test").withOptions(DO_NOT_CLEAR_ON_CLOSE).build() )
-            {
+            try (CuratorCache cache = CuratorCache.builder(client, "/test")
+                    .withOptions(DO_NOT_CLEAR_ON_CLOSE)
+                    .build()) {
                 cache.start();
-                storage = ((CuratorCacheImpl)cache).storage();
+                storage = ((CuratorCacheImpl) cache).storage();
 
                 client.create().forPath("/test", "foo".getBytes());
                 client.create().forPath("/test/bar", "bar".getBytes());
@@ -166,14 +173,57 @@ public class TestCuratorCache extends CuratorTestBase
             }
             assertEquals(storage.size(), 2);
 
-            try ( CuratorCache cache = CuratorCache.build(client, "/test") )
-            {
+            try (CuratorCache cache = CuratorCache.build(client, "/test")) {
                 cache.start();
-                storage = ((CuratorCacheImpl)cache).storage();
+                storage = ((CuratorCacheImpl) cache).storage();
 
                 timing.sleepABit();
             }
             assertEquals(storage.size(), 0);
+        }
+    }
+
+    // CURATOR-690 - CuratorCache fails to load the cache if there are more than 64K child ZNodes
+    @Test
+    public void testGreaterThan64kZNodes() throws Exception {
+        final CuratorCacheStorage storage = new StandardCuratorCacheStorage(false);
+
+        // Phaser has a hard-limit of 64k registrants; we need to create more than that to trigger the initial problem.
+        final int zNodeCount = 0xFFFF + 5;
+
+        // Bulk creations in multiOp for (1) speed up creations (2) not exceed jute.maxbuffer size.
+        final int bulkSize = 10000;
+
+        try (CuratorFramework client = CuratorFrameworkFactory.newClient(
+                server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1))) {
+            client.start();
+            final CountDownLatch initializedLatch = new CountDownLatch(1);
+            client.create().creatingParentsIfNeeded().forPath("/test");
+
+            final List<CuratorOp> creations = new ArrayList<>();
+            for (int i = 0; i < zNodeCount; i++) {
+                creations.add(client.transactionOp().create().forPath("/test/node_" + i));
+                if (creations.size() > bulkSize) {
+                    client.transaction().forOperations(creations);
+                    creations.clear();
+                }
+            }
+            client.transaction().forOperations(creations);
+            creations.clear();
+
+            try (CuratorCache cache =
+                    CuratorCache.builder(client, "/test").withStorage(storage).build()) {
+                final CuratorCacheListener listener =
+                        builder().forInitialized(initializedLatch::countDown).build();
+                cache.listenable().addListener(listener);
+                cache.start();
+
+                assertTrue(timing.awaitLatch(initializedLatch));
+                assertEquals(
+                        zNodeCount + 1,
+                        cache.size(),
+                        "Cache size should be equal to the number of zNodes created plus the root");
+            }
         }
     }
 }

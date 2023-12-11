@@ -19,6 +19,8 @@
 
 package org.apache.curator.x.async.details;
 
+import static org.apache.curator.x.async.details.BackgroundProcs.safeCall;
+import static org.apache.curator.x.async.details.BackgroundProcs.statProc;
 import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.framework.imps.SetDataBuilderImpl;
 import org.apache.curator.x.async.AsyncStage;
@@ -26,58 +28,47 @@ import org.apache.curator.x.async.api.AsyncPathAndBytesable;
 import org.apache.curator.x.async.api.AsyncSetDataBuilder;
 import org.apache.zookeeper.data.Stat;
 
-import static org.apache.curator.x.async.details.BackgroundProcs.safeCall;
-import static org.apache.curator.x.async.details.BackgroundProcs.statProc;
-
-class AsyncSetDataBuilderImpl implements AsyncSetDataBuilder
-{
+class AsyncSetDataBuilderImpl implements AsyncSetDataBuilder {
     private final CuratorFrameworkImpl client;
     private final Filters filters;
     private boolean compressed = false;
     private int version = -1;
 
-    AsyncSetDataBuilderImpl(CuratorFrameworkImpl client, Filters filters)
-    {
+    AsyncSetDataBuilderImpl(CuratorFrameworkImpl client, Filters filters) {
         this.client = client;
         this.filters = filters;
     }
 
     @Override
-    public AsyncStage<Stat> forPath(String path)
-    {
+    public AsyncStage<Stat> forPath(String path) {
         return internalForPath(path, null, false);
     }
 
     @Override
-    public AsyncStage<Stat> forPath(String path, byte[] data)
-    {
+    public AsyncStage<Stat> forPath(String path, byte[] data) {
         return internalForPath(path, data, true);
     }
 
     @Override
-    public AsyncPathAndBytesable<AsyncStage<Stat>> compressed()
-    {
+    public AsyncPathAndBytesable<AsyncStage<Stat>> compressed() {
         compressed = true;
         return this;
     }
 
     @Override
-    public AsyncPathAndBytesable<AsyncStage<Stat>> compressedWithVersion(int version)
-    {
+    public AsyncPathAndBytesable<AsyncStage<Stat>> compressedWithVersion(int version) {
         compressed = true;
         this.version = version;
         return this;
     }
 
     @Override
-    public AsyncPathAndBytesable<AsyncStage<Stat>> withVersion(int version)
-    {
+    public AsyncPathAndBytesable<AsyncStage<Stat>> withVersion(int version) {
         this.version = version;
         return this;
     }
 
-    private AsyncStage<Stat> internalForPath(String path, byte[] data, boolean useData)
-    {
+    private AsyncStage<Stat> internalForPath(String path, byte[] data, boolean useData) {
         BuilderCommon<Stat> common = new BuilderCommon<>(filters, statProc);
         SetDataBuilderImpl builder = new SetDataBuilderImpl(client, common.backgrounding, version, compressed);
         return safeCall(common.internalCallback, () -> useData ? builder.forPath(path, data) : builder.forPath(path));

@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.base.Function;
 import com.google.common.collect.Maps;
+import java.util.Map;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
@@ -35,22 +36,17 @@ import org.apache.curator.utils.CloseableUtils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import java.util.Map;
-
 @Tag(CuratorTestBase.zk35TestCompatibilityGroup)
-public class TestGroupMember extends BaseClassForTests
-{
+public class TestGroupMember extends BaseClassForTests {
     // NOTE - don't need many tests as this class is just a wrapper around two existing recipes
 
     @Test
-    public void testBasic() throws Exception
-    {
+    public void testBasic() throws Exception {
         Timing timing = new Timing();
         GroupMember groupMember1 = null;
         GroupMember groupMember2 = null;
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        try
-        {
+        try {
             client.start();
 
             groupMember1 = new GroupMember(client, "/member", "1");
@@ -64,19 +60,15 @@ public class TestGroupMember extends BaseClassForTests
 
             Map<String, byte[]> currentMembers1 = groupMember1.getCurrentMembers();
             Map<String, byte[]> currentMembers2 = groupMember2.getCurrentMembers();
-            Map<String, String> convertMembers1 = Maps.transformValues(currentMembers1, new Function<byte[], String>()
-            {
+            Map<String, String> convertMembers1 = Maps.transformValues(currentMembers1, new Function<byte[], String>() {
                 @Override
-                public String apply(byte[] input)
-                {
+                public String apply(byte[] input) {
                     return new String(input);
                 }
             });
-            Map<String, String> convertMembers2 = Maps.transformValues(currentMembers2, new Function<byte[], String>()
-            {
+            Map<String, String> convertMembers2 = Maps.transformValues(currentMembers2, new Function<byte[], String>() {
                 @Override
-                public String apply(byte[] input)
-                {
+                public String apply(byte[] input) {
                     return new String(input);
                 }
             });
@@ -101,9 +93,7 @@ public class TestGroupMember extends BaseClassForTests
             currentMembers1 = groupMember1.getCurrentMembers();
             assertTrue(currentMembers1.containsKey("1"));
             assertArrayEquals(currentMembers1.get("1"), "something".getBytes());
-        }
-        finally
-        {
+        } finally {
             CloseableUtils.closeQuietly(groupMember1);
             CloseableUtils.closeQuietly(groupMember2);
             CloseableUtils.closeQuietly(client);

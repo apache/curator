@@ -19,12 +19,11 @@
 
 package org.apache.curator.utils;
 
+import java.util.List;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
-import java.util.List;
 
-public interface InternalACLProvider
-{
+public interface InternalACLProvider {
     /**
      * Return the ACL list to use by default (usually {@link ZooDefs.Ids#OPEN_ACL_UNSAFE}).
      *
@@ -38,5 +37,5 @@ public interface InternalACLProvider
      * @param path path (NOTE: might be null)
      * @return ACL list
      */
-    public List<ACL>        getAclForPath(String path);
+    public List<ACL> getAclForPath(String path);
 }

@@ -26,14 +26,13 @@ import org.apache.curator.x.async.AsyncCuratorFramework;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-public class TestCompatibility extends CuratorTestBase
-{
+public class TestCompatibility extends CuratorTestBase {
     @Test
     @Tag(zk35TestCompatibilityGroup)
-    public void testPersistentWatchesNotAvailable()
-    {
-        assertThrows(IllegalStateException.class, ()-> {
-            try (CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1))) {
+    public void testPersistentWatchesNotAvailable() {
+        assertThrows(IllegalStateException.class, () -> {
+            try (CuratorFramework client =
+                    CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1))) {
                 client.start();
                 client.watchers().add().forPath("/foo");
             }
@@ -42,11 +41,10 @@ public class TestCompatibility extends CuratorTestBase
 
     @Test
     @Tag(zk35TestCompatibilityGroup)
-    public void testPersistentWatchesNotAvailableAsync()
-    {
-        assertThrows(IllegalStateException.class, ()->{
-            try ( CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1)) )
-            {
+    public void testPersistentWatchesNotAvailableAsync() {
+        assertThrows(IllegalStateException.class, () -> {
+            try (CuratorFramework client =
+                    CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1))) {
                 client.start();
 
                 AsyncCuratorFramework async = AsyncCuratorFramework.wrap(client);

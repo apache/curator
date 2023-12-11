@@ -21,10 +21,8 @@ package org.apache.curator.framework.api;
 
 import org.apache.zookeeper.data.Stat;
 
-public interface SetDataBuilder extends
-    BackgroundPathAndBytesable<Stat>,
-    Versionable<BackgroundPathAndBytesable<Stat>>,
-    Compressible<SetDataBackgroundVersionable>,
-    Idempotentable<SetDataBuilder>
-{
-}
+public interface SetDataBuilder
+        extends BackgroundPathAndBytesable<Stat>,
+                Versionable<BackgroundPathAndBytesable<Stat>>,
+                Compressible<SetDataBackgroundVersionable>,
+                Idempotentable<SetDataBuilder> {}

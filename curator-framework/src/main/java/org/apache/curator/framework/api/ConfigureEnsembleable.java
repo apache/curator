@@ -19,9 +19,7 @@
 
 package org.apache.curator.framework.api;
 
-public interface ConfigureEnsembleable extends
-    Ensembleable<byte[]>
-{
+public interface ConfigureEnsembleable extends Ensembleable<byte[]> {
 
     /**
      * Sets the configuration version to use.

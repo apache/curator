@@ -19,35 +19,27 @@
 
 package org.apache.curator.retry;
 
+import java.util.concurrent.TimeUnit;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.RetrySleeper;
-import java.util.concurrent.TimeUnit;
 
-abstract class SleepingRetry implements RetryPolicy
-{
+abstract class SleepingRetry implements RetryPolicy {
     private final int n;
 
-    protected SleepingRetry(int n)
-    {
+    protected SleepingRetry(int n) {
         this.n = n;
     }
 
     // made public for testing
-    public int getN()
-    {
+    public int getN() {
         return n;
     }
 
-    public boolean allowRetry(int retryCount, long elapsedTimeMs, RetrySleeper sleeper)
-    {
-        if ( retryCount < n )
-        {
-            try
-            {
+    public boolean allowRetry(int retryCount, long elapsedTimeMs, RetrySleeper sleeper) {
+        if (retryCount < n) {
+            try {
                 sleeper.sleepFor(getSleepTimeMs(retryCount, elapsedTimeMs), TimeUnit.MILLISECONDS);
-            }
-            catch ( InterruptedException e )
-            {
+            } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 return false;
             }
@@ -56,5 +48,5 @@ abstract class SleepingRetry implements RetryPolicy
         return false;
     }
 
-    protected abstract long   getSleepTimeMs(int retryCount, long elapsedTimeMs);
+    protected abstract long getSleepTimeMs(int retryCount, long elapsedTimeMs);
 }

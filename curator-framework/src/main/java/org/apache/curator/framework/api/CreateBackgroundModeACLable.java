@@ -21,17 +21,16 @@ package org.apache.curator.framework.api;
 
 import org.apache.zookeeper.CreateMode;
 
-public interface CreateBackgroundModeACLable extends
-    BackgroundPathAndBytesable<String>,
-    CreateModable<ACLBackgroundPathAndBytesable<String>>,
-    ACLCreateModeBackgroundPathAndBytesable<String>
-{
+public interface CreateBackgroundModeACLable
+        extends BackgroundPathAndBytesable<String>,
+                CreateModable<ACLBackgroundPathAndBytesable<String>>,
+                ACLCreateModeBackgroundPathAndBytesable<String> {
     /**
      * Causes any parent nodes to get created if they haven't already been
      *
      * @return this
      */
-    public ACLCreateModePathAndBytesable<String>    creatingParentsIfNeeded();
+    public ACLCreateModePathAndBytesable<String> creatingParentsIfNeeded();
 
     /**
      * Causes any parent nodes to get created using {@link CreateMode#CONTAINER} if they haven't already been.
@@ -66,5 +65,5 @@ public interface CreateBackgroundModeACLable extends
      *
      * @return this
      */
-    public ACLPathAndBytesable<String>              withProtectedEphemeralSequential();
+    public ACLPathAndBytesable<String> withProtectedEphemeralSequential();
 }

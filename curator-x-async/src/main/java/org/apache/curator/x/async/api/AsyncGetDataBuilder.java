@@ -25,8 +25,7 @@ import org.apache.zookeeper.data.Stat;
 /**
  * Builder to get ZNode data
  */
-public interface AsyncGetDataBuilder extends AsyncPathable<AsyncStage<byte[]>>
-{
+public interface AsyncGetDataBuilder extends AsyncPathable<AsyncStage<byte[]>> {
     /**
      * Cause the data to be de-compressed using the configured compression provider
      *

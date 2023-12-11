@@ -51,8 +51,7 @@ import org.apache.curator.x.async.modeled.ModeledFrameworkBuilder;
  * </p>
  */
 @FunctionalInterface
-public interface TypedModeledFramework<M, P1>
-{
+public interface TypedModeledFramework<M, P1> {
     /**
      * Resolve into a ModeledFramework using the given parameter
      *
@@ -71,9 +70,12 @@ public interface TypedModeledFramework<M, P1>
      * @param modelSpec TypedModelSpec
      * @return new TypedModeledFramework
      */
-    static <M, P1> TypedModeledFramework<M, P1> from(ModeledFrameworkBuilder<M> frameworkBuilder, TypedModelSpec<M, P1> modelSpec)
-    {
-        return (client, p1) -> frameworkBuilder.withClient(client).withModelSpec(modelSpec.resolved(p1)).build();
+    static <M, P1> TypedModeledFramework<M, P1> from(
+            ModeledFrameworkBuilder<M> frameworkBuilder, TypedModelSpec<M, P1> modelSpec) {
+        return (client, p1) -> frameworkBuilder
+                .withClient(client)
+                .withModelSpec(modelSpec.resolved(p1))
+                .build();
     }
 
     /**
@@ -86,9 +88,12 @@ public interface TypedModeledFramework<M, P1>
      * @param pathWithIds path with {XXXX} parameters
      * @return new TypedModeledFramework
      */
-    static <M, P1> TypedModeledFramework<M, P1> from(ModeledFrameworkBuilder<M> frameworkBuilder, ModelSpecBuilder<M> modelSpecBuilder, String pathWithIds)
-    {
+    static <M, P1> TypedModeledFramework<M, P1> from(
+            ModeledFrameworkBuilder<M> frameworkBuilder, ModelSpecBuilder<M> modelSpecBuilder, String pathWithIds) {
         TypedModelSpec<M, P1> typedModelSpec = TypedModelSpec.from(modelSpecBuilder, pathWithIds);
-        return (client, p1) -> frameworkBuilder.withClient(client).withModelSpec(typedModelSpec.resolved(p1)).build();
+        return (client, p1) -> frameworkBuilder
+                .withClient(client)
+                .withModelSpec(typedModelSpec.resolved(p1))
+                .build();
     }
 }

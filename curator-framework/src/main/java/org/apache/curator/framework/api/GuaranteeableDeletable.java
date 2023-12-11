@@ -32,9 +32,7 @@ package org.apache.curator.framework.api;
  *     exception when the deletion fails. But, you can be assured that as long as the
  *     {@link org.apache.curator.framework.CuratorFramework} instance is open attempts will be made to delete the node.
  * </p>
- *  
+ *
  * @return this
  */
-public interface GuaranteeableDeletable extends Guaranteeable<ChildrenDeletable>, BackgroundVersionable
-{
-}
+public interface GuaranteeableDeletable extends Guaranteeable<ChildrenDeletable>, BackgroundVersionable {}

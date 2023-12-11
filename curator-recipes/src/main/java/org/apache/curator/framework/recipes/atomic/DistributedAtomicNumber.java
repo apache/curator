@@ -19,8 +19,7 @@
 
 package org.apache.curator.framework.recipes.atomic;
 
-public interface DistributedAtomicNumber<T>
-{
+public interface DistributedAtomicNumber<T> {
     /**
      * Returns the current value of the counter. NOTE: if the value has never been set,
      * <code>0</code> is returned.

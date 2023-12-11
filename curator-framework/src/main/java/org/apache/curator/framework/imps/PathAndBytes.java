@@ -19,24 +19,20 @@
 
 package org.apache.curator.framework.imps;
 
-class PathAndBytes
-{
-    private final String    path;
-    private final byte[]    data;
+class PathAndBytes {
+    private final String path;
+    private final byte[] data;
 
-    PathAndBytes(String path, byte[] data)
-    {
+    PathAndBytes(String path, byte[] data) {
         this.path = path;
         this.data = data;
     }
 
-    String getPath()
-    {
+    String getPath() {
         return path;
     }
 
-    byte[] getData()
-    {
+    byte[] getData() {
         return data;
     }
 }

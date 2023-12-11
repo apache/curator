@@ -29,6 +29,9 @@ import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
 import com.sun.jersey.api.core.DefaultResourceConfig;
 import com.sun.jersey.spi.container.servlet.ServletContainer;
+import java.util.Set;
+import javax.ws.rs.core.Application;
+import javax.ws.rs.core.MediaType;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.discovery.ServiceType;
@@ -45,12 +48,8 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.MediaType;
-import java.util.Set;
 
-public class TestObjectPayloadWithJersey
-{
+public class TestObjectPayloadWithJersey {
     private static final String HOST = "127.0.0.1";
     private Server server;
     private JsonServiceNamesMarshaller serviceNamesMarshaller;
@@ -60,27 +59,24 @@ public class TestObjectPayloadWithJersey
     private int port;
 
     @BeforeEach
-    public void         setup() throws Exception
-    {
-        context = new ServiceDetailsDiscoveryContext(new MockServiceDiscovery<ServiceDetails>(), new RandomStrategy<ServiceDetails>(), 1000);
+    public void setup() throws Exception {
+        context = new ServiceDetailsDiscoveryContext(
+                new MockServiceDiscovery<ServiceDetails>(), new RandomStrategy<ServiceDetails>(), 1000);
         serviceNamesMarshaller = new JsonServiceNamesMarshaller();
         serviceInstanceMarshaller = new JsonServiceInstanceMarshaller<ServiceDetails>(context);
         serviceInstancesMarshaller = new JsonServiceInstancesMarshaller<ServiceDetails>(context);
 
-        Application                                     application = new DefaultResourceConfig()
-        {
+        Application application = new DefaultResourceConfig() {
             @Override
-            public Set<Class<?>> getClasses()
-            {
-                Set<Class<?>>       classes = Sets.newHashSet();
+            public Set<Class<?>> getClasses() {
+                Set<Class<?>> classes = Sets.newHashSet();
                 classes.add(ServiceDetailsDiscoveryResource.class);
                 return classes;
             }
 
             @Override
-            public Set<Object> getSingletons()
-            {
-                Set<Object>     singletons = Sets.newHashSet();
+            public Set<Object> getSingletons() {
+                Set<Object> singletons = Sets.newHashSet();
                 singletons.add(context);
                 singletons.add(serviceNamesMarshaller);
                 singletons.add(serviceInstanceMarshaller);
@@ -100,34 +96,30 @@ public class TestObjectPayloadWithJersey
         server.setHandler(root);
         server.start();
     }
-    
+
     @AfterEach
-    public void         teardown() throws Exception
-    {
+    public void teardown() throws Exception {
         server.stop();
         server.join();
     }
 
     @Test
-    public void     testRegisterService() throws Exception
-    {
-        ServiceDetails         payload = new ServiceDetails();
+    public void testRegisterService() throws Exception {
+        ServiceDetails payload = new ServiceDetails();
         payload.setDescription("Example description for test");
         payload.getData().put("one", "1");
         payload.getData().put("two", "2");
         payload.getData().put("three", "3");
         ServiceInstance<ServiceDetails> service = ServiceInstance.<ServiceDetails>builder()
-            .name("test")
-            .payload(payload)
-            .serviceType(ServiceType.STATIC)
-            .build();
+                .name("test")
+                .payload(payload)
+                .serviceType(ServiceType.STATIC)
+                .build();
 
-        ClientConfig    config = new DefaultClientConfig()
-        {
+        ClientConfig config = new DefaultClientConfig() {
             @Override
-            public Set<Object> getSingletons()
-            {
-                Set<Object>     singletons = Sets.newHashSet();
+            public Set<Object> getSingletons() {
+                Set<Object> singletons = Sets.newHashSet();
                 singletons.add(context);
                 singletons.add(serviceNamesMarshaller);
                 singletons.add(serviceInstanceMarshaller);
@@ -135,23 +127,27 @@ public class TestObjectPayloadWithJersey
                 return singletons;
             }
         };
-        Client          client = Client.create(config);
-        WebResource     resource = client.resource("http://" + HOST + ":" + port);
-	        resource.path("/v1/service/test/" + service.getId()).type(MediaType.APPLICATION_JSON_TYPE).put(service);
+        Client client = Client.create(config);
+        WebResource resource = client.resource("http://" + HOST + ":" + port);
+        resource.path("/v1/service/test/" + service.getId())
+                .type(MediaType.APPLICATION_JSON_TYPE)
+                .put(service);
 
         ServiceNames names = resource.path("/v1/service").get(ServiceNames.class);
         assertEquals(names.getNames(), Lists.newArrayList("test"));
 
-        GenericType<ServiceInstances<ServiceDetails>> type = new GenericType<ServiceInstances<ServiceDetails>>(){};
-        ServiceInstances<ServiceDetails>    instances = resource.path("/v1/service/test").get(type);
+        GenericType<ServiceInstances<ServiceDetails>> type = new GenericType<ServiceInstances<ServiceDetails>>() {};
+        ServiceInstances<ServiceDetails> instances =
+                resource.path("/v1/service/test").get(type);
         assertEquals(instances.getServices().size(), 1);
         assertEquals(instances.getServices().get(0), service);
         assertEquals(instances.getServices().get(0).getPayload(), payload);
 
         // Retrieve a single instance
-        GenericType<ServiceInstance<ServiceDetails>> singleInstanceType = new GenericType<ServiceInstance<ServiceDetails>>(){};
-        ServiceInstance<ServiceDetails>    instance = resource.path("/v1/service/test/" + service.getId()).get(singleInstanceType);
+        GenericType<ServiceInstance<ServiceDetails>> singleInstanceType =
+                new GenericType<ServiceInstance<ServiceDetails>>() {};
+        ServiceInstance<ServiceDetails> instance =
+                resource.path("/v1/service/test/" + service.getId()).get(singleInstanceType);
         assertEquals(instance, service);
-
     }
 }

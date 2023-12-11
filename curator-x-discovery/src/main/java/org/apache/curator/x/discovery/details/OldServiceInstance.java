@@ -27,8 +27,7 @@ import org.apache.curator.x.discovery.UriSpec;
 /**
  * POJO that represents a service instance
  */
-class OldServiceInstance<T>
-{
+class OldServiceInstance<T> {
     private final String name;
     private final String id;
     private final String address;
@@ -50,8 +49,16 @@ class OldServiceInstance<T>
      * @param serviceType type of the service
      * @param uriSpec the uri spec or null
      */
-    OldServiceInstance(String name, String id, String address, Integer port, Integer sslPort, T payload, long registrationTimeUTC, ServiceType serviceType, UriSpec uriSpec)
-    {
+    OldServiceInstance(
+            String name,
+            String id,
+            String address,
+            Integer port,
+            Integer sslPort,
+            T payload,
+            long registrationTimeUTC,
+            ServiceType serviceType,
+            UriSpec uriSpec) {
         name = Preconditions.checkNotNull(name, "name cannot be null");
         id = Preconditions.checkNotNull(id, "id cannot be null");
 
@@ -66,106 +73,84 @@ class OldServiceInstance<T>
         this.registrationTimeUTC = registrationTimeUTC;
     }
 
-    OldServiceInstance()
-    {
+    OldServiceInstance() {
         this("", "", null, null, null, null, 0, ServiceType.DYNAMIC, null);
     }
 
-    public String getName()
-    {
+    public String getName() {
         return name;
     }
 
-    public String getId()
-    {
+    public String getId() {
         return id;
     }
 
-    public String getAddress()
-    {
+    public String getAddress() {
         return address;
     }
 
-    public Integer getPort()
-    {
+    public Integer getPort() {
         return port;
     }
 
-    public Integer getSslPort()
-    {
+    public Integer getSslPort() {
         return sslPort;
     }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, defaultImpl = Object.class)
-    public T getPayload()
-    {
+    public T getPayload() {
         return payload;
     }
 
-    public long getRegistrationTimeUTC()
-    {
+    public long getRegistrationTimeUTC() {
         return registrationTimeUTC;
     }
 
-    public ServiceType getServiceType()
-    {
+    public ServiceType getServiceType() {
         return serviceType;
     }
 
-    public UriSpec getUriSpec()
-    {
+    public UriSpec getUriSpec() {
         return uriSpec;
     }
 
     @SuppressWarnings("RedundantIfStatement")
     @Override
-    public boolean equals(Object o)
-    {
-        if ( this == o )
-        {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
-        OldServiceInstance that = (OldServiceInstance)o;
+        OldServiceInstance that = (OldServiceInstance) o;
 
-        if ( registrationTimeUTC != that.registrationTimeUTC )
-        {
+        if (registrationTimeUTC != that.registrationTimeUTC) {
             return false;
         }
-        if ( address != null ? !address.equals(that.address) : that.address != null )
-        {
+        if (address != null ? !address.equals(that.address) : that.address != null) {
             return false;
         }
-        if ( id != null ? !id.equals(that.id) : that.id != null )
-        {
+        if (id != null ? !id.equals(that.id) : that.id != null) {
             return false;
         }
-        if ( name != null ? !name.equals(that.name) : that.name != null )
-        {
+        if (name != null ? !name.equals(that.name) : that.name != null) {
             return false;
         }
-        if ( payload != null ? !payload.equals(that.payload) : that.payload != null )
-        {
+        if (payload != null ? !payload.equals(that.payload) : that.payload != null) {
             return false;
         }
-        if ( port != null ? !port.equals(that.port) : that.port != null )
-        {
+        if (port != null ? !port.equals(that.port) : that.port != null) {
             return false;
         }
-        if ( serviceType != that.serviceType )
-        {
+        if (serviceType != that.serviceType) {
             return false;
         }
-        if ( sslPort != null ? !sslPort.equals(that.sslPort) : that.sslPort != null )
-        {
+        if (sslPort != null ? !sslPort.equals(that.sslPort) : that.sslPort != null) {
             return false;
         }
-        if ( uriSpec != null ? !uriSpec.equals(that.uriSpec) : that.uriSpec != null )
-        {
+        if (uriSpec != null ? !uriSpec.equals(that.uriSpec) : that.uriSpec != null) {
             return false;
         }
 
@@ -173,23 +158,23 @@ class OldServiceInstance<T>
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         int result = name != null ? name.hashCode() : 0;
         result = 31 * result + (id != null ? id.hashCode() : 0);
         result = 31 * result + (address != null ? address.hashCode() : 0);
         result = 31 * result + (port != null ? port.hashCode() : 0);
         result = 31 * result + (sslPort != null ? sslPort.hashCode() : 0);
         result = 31 * result + (payload != null ? payload.hashCode() : 0);
-        result = 31 * result + (int)(registrationTimeUTC ^ (registrationTimeUTC >>> 32));
+        result = 31 * result + (int) (registrationTimeUTC ^ (registrationTimeUTC >>> 32));
         result = 31 * result + (serviceType != null ? serviceType.hashCode() : 0);
         result = 31 * result + (uriSpec != null ? uriSpec.hashCode() : 0);
         return result;
     }
 
     @Override
-    public String toString()
-    {
-        return "ServiceInstance{" + "name='" + name + '\'' + ", id='" + id + '\'' + ", address='" + address + '\'' + ", port=" + port + ", sslPort=" + sslPort + ", payload=" + payload + ", registrationTimeUTC=" + registrationTimeUTC + ", serviceType=" + serviceType + ", uriSpec=" + uriSpec + '}';
+    public String toString() {
+        return "ServiceInstance{" + "name='" + name + '\'' + ", id='" + id + '\'' + ", address='" + address + '\''
+                + ", port=" + port + ", sslPort=" + sslPort + ", payload=" + payload + ", registrationTimeUTC="
+                + registrationTimeUTC + ", serviceType=" + serviceType + ", uriSpec=" + uriSpec + '}';
     }
 }

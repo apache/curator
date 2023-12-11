@@ -22,7 +22,6 @@ package org.apache.curator.x.discovery.details;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
@@ -34,40 +33,38 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 @Tag(CuratorTestBase.zk35TestCompatibilityGroup)
-public class TestServiceDiscoveryBuilder extends BaseClassForTests
-{
+public class TestServiceDiscoveryBuilder extends BaseClassForTests {
     @Test
-    public void testDefaultSerializer()
-    {        
+    public void testDefaultSerializer() {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        ServiceDiscoveryBuilder<Object> builder = ServiceDiscoveryBuilder.builder(Object.class).client(client);
-        ServiceDiscoveryImpl<?> discovery = (ServiceDiscoveryImpl<?>) builder.basePath("/path").build();
+        ServiceDiscoveryBuilder<Object> builder =
+                ServiceDiscoveryBuilder.builder(Object.class).client(client);
+        ServiceDiscoveryImpl<?> discovery =
+                (ServiceDiscoveryImpl<?>) builder.basePath("/path").build();
 
         assertNotNull(discovery.getSerializer(), "default serializer not set");
         assertTrue(discovery.getSerializer() instanceof JsonInstanceSerializer, "default serializer not JSON");
     }
 
     @Test
-    public void testSetSerializer()
-    {
+    public void testSetSerializer() {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
-        ServiceDiscoveryBuilder<Object> builder = ServiceDiscoveryBuilder.builder(Object.class).client(client);
-        builder.serializer(new InstanceSerializer<Object>()
-        {
+        ServiceDiscoveryBuilder<Object> builder =
+                ServiceDiscoveryBuilder.builder(Object.class).client(client);
+        builder.serializer(new InstanceSerializer<Object>() {
             @Override
-            public byte[] serialize(ServiceInstance<Object> instance)
-            {
+            public byte[] serialize(ServiceInstance<Object> instance) {
                 return null;
             }
 
             @Override
-            public ServiceInstance<Object> deserialize(byte[] bytes)
-            {
+            public ServiceInstance<Object> deserialize(byte[] bytes) {
                 return null;
             }
         });
 
-        ServiceDiscoveryImpl<?> discovery = (ServiceDiscoveryImpl<?>) builder.basePath("/path").build();
+        ServiceDiscoveryImpl<?> discovery =
+                (ServiceDiscoveryImpl<?>) builder.basePath("/path").build();
         assertNotNull(discovery.getSerializer(), "default serializer not set");
         assertFalse(discovery.getSerializer() instanceof JsonInstanceSerializer, "set serializer is JSON");
     }

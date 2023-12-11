@@ -25,7 +25,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Properties;
-
 import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.apache.zookeeper.server.ZooKeeperServerMain;
 import org.apache.zookeeper.server.embedded.ZooKeeperServerEmbedded;
@@ -47,6 +46,7 @@ public class ZooKeeperServerEmbeddedAdapter implements ZooKeeperMainFace {
         try {
             final Properties properties = configBuilder.buildProperties();
             properties.put("admin.enableServer", "false");
+            properties.put("4lw.commands.whitelist", "*");
 
             final Path dataDir = Paths.get(properties.getProperty("dataDir"));
             zooKeeperEmbedded = ZooKeeperServerEmbedded.builder()

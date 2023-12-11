@@ -19,15 +19,12 @@
 
 package org.apache.curator.test;
 
-public class FailedServerStartException extends IllegalStateException
-{
-    public FailedServerStartException(Throwable cause)
-    {
+public class FailedServerStartException extends IllegalStateException {
+    public FailedServerStartException(Throwable cause) {
         super(cause);
     }
 
-    public FailedServerStartException(String s)
-    {
+    public FailedServerStartException(String s) {
         super(s);
     }
 }
