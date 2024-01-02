@@ -26,11 +26,11 @@
     <parent>
         <groupId>org.apache.curator</groupId>
         <artifactId>apache-curator</artifactId>
-        <version>5.6.0</version>
+        <version>5.6.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>curator-client</artifactId>
-    <version>5.6.0</version>
+    <version>5.6.1-SNAPSHOT</version>
     <packaging>bundle</packaging>
 
     <name>Curator Client</name>
