@@ -352,6 +352,7 @@
         <module>curator-x-async</module>
         <module>curator-test-zk35</module>
         <module>curator-test-zk36</module>
+        <module>curator-drivers</module>
     </modules>
 
     <dependencyManagement>
