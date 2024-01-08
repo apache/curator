@@ -106,7 +106,7 @@ public class OpenTelemetryTracingDriver extends AdvancedTracerDriver {
         if (trace.getRequestBytesLength() > 0) {
             span.setAttribute(REQUEST_BYTES_LENGTH_ATTRIBUTE, trace.getRequestBytesLength());
         }
-        // We will close this at in endTrace
+        // We will close this in endTrace
         @SuppressWarnings("MustBeClosedChecker")
         Scope scope = span.makeCurrent();
         return new SpanScope(span, scope);
