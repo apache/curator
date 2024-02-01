@@ -36,6 +36,7 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +44,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Test cases designed after CURATOR-45
  */
+@Tag("zk38OrLater")
 public class TestLeaderSelectorEdges extends BaseClassForTests {
     private final Logger log = LoggerFactory.getLogger(getClass());
 
