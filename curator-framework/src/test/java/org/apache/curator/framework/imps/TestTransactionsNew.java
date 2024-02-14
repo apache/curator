@@ -125,7 +125,7 @@ public class TestTransactionsNew extends BaseClassForTests {
             assertNull(client.checkExists().forPath("/foo/bar"));
 
             CuratorTransactionResult ephemeralResult =
-                    Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/test-"));
+                    Iterables.find(results, TransactionsHelper.ofTypeAndPath(OperationType.CREATE, "/test-"));
             assertNotNull(ephemeralResult);
             assertNotEquals(ephemeralResult.getResultPath(), "/test-");
             assertTrue(ephemeralResult.getResultPath().startsWith("/test-"));
@@ -148,9 +148,9 @@ public class TestTransactionsNew extends BaseClassForTests {
             assertArrayEquals(client.getData().forPath("/foo/bar"), "snafu".getBytes());
 
             CuratorTransactionResult fooResult =
-                    Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/foo"));
+                    Iterables.find(results, TransactionsHelper.ofTypeAndPath(OperationType.CREATE, "/foo"));
             CuratorTransactionResult fooBarResult =
-                    Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/foo/bar"));
+                    Iterables.find(results, TransactionsHelper.ofTypeAndPath(OperationType.CREATE, "/foo/bar"));
             assertNotNull(fooResult);
             assertNotNull(fooBarResult);
             assertNotSame(fooResult, fooBarResult);
@@ -179,9 +179,9 @@ public class TestTransactionsNew extends BaseClassForTests {
             assertArrayEquals(client.getData().forPath("/foo/bar"), "snafu".getBytes());
 
             CuratorTransactionResult fooResult =
-                    Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/foo"));
+                    Iterables.find(results, TransactionsHelper.ofTypeAndPath(OperationType.CREATE, "/foo"));
             CuratorTransactionResult fooBarResult =
-                    Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/foo/bar"));
+                    Iterables.find(results, TransactionsHelper.ofTypeAndPath(OperationType.CREATE, "/foo/bar"));
             assertNotNull(fooResult);
             assertNotNull(fooBarResult);
             assertNotSame(fooResult, fooBarResult);
@@ -225,7 +225,7 @@ public class TestTransactionsNew extends BaseClassForTests {
             assertNull(client.checkExists().forPath("/foo/bar"));
 
             CuratorTransactionResult ephemeralResult =
-                    Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/test-"));
+                    Iterables.find(results, TransactionsHelper.ofTypeAndPath(OperationType.CREATE, "/test-"));
             assertNotNull(ephemeralResult);
             assertNotEquals(ephemeralResult.getResultPath(), "/test-");
             assertTrue(ephemeralResult.getResultPath().startsWith("/test-"));
