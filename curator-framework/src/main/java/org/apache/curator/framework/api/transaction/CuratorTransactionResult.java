@@ -43,13 +43,8 @@ public class CuratorTransactionResult {
      * @param forPath path
      * @return predicate
      */
-    public static Predicate<CuratorTransactionResult> ofTypeAndPath(final OperationType type, final String forPath) {
-        return new Predicate<CuratorTransactionResult>() {
-            @Override
-            public boolean apply(CuratorTransactionResult result) {
-                return (result.getType() == type) && result.getForPath().equals(forPath);
-            }
-        };
+    public static Predicate<CuratorTransactionResult> ofTypeAndPath(OperationType type, String forPath) {
+        return result -> (result.getType() == type) && result.getForPath().equals(forPath);
     }
 
     public CuratorTransactionResult(OperationType type, String forPath, String resultPath, Stat resultStat) {
