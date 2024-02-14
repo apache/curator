@@ -224,7 +224,7 @@
                         <dependency>org.apache.curator:curator-recipes</dependency>
                         <dependency>org.apache.curator:curator-client</dependency>
                     </dependenciesToScan>
-                    <excludedGroups>zk38OrLater</excludedGroups>
+                    <excludedGroups>master</excludedGroups>
                 </configuration>
             </plugin>
         </plugins>
