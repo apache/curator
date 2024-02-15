@@ -59,12 +59,7 @@ public class TestTransactionsNew extends BaseClassForTests {
             CuratorOp createOp1 = client.transactionOp().create().forPath("/bar");
             CuratorOp createOp2 = client.transactionOp().create().forPath("/z/blue");
             final BlockingQueue<CuratorEvent> callbackQueue = new LinkedBlockingQueue<>();
-            BackgroundCallback callback = new BackgroundCallback() {
-                @Override
-                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
-                    callbackQueue.add(event);
-                }
-            };
+            BackgroundCallback callback = (client1, event) -> callbackQueue.add(event);
             client.transaction().inBackground(callback).forOperations(createOp1, createOp2);
             CuratorEvent event = callbackQueue.poll(new Timing().milliseconds(), TimeUnit.MILLISECONDS);
             assertNotNull(event);
@@ -124,13 +119,13 @@ public class TestTransactionsNew extends BaseClassForTests {
             Collection<CuratorTransactionResult> results =
                     client.transaction().forOperations(createOp1, createOp2, setDataOp, createOp3, deleteOp);
 
-            assertTrue(client.checkExists().forPath("/foo") != null);
-            assertTrue(client.usingNamespace(null).checkExists().forPath("/galt/foo") != null);
+            assertNotNull(client.checkExists().forPath("/foo"));
+            assertNotNull(client.usingNamespace(null).checkExists().forPath("/galt/foo"));
             assertArrayEquals(client.getData().forPath("/foo"), "two".getBytes());
-            assertTrue(client.checkExists().forPath("/foo/bar") == null);
+            assertNull(client.checkExists().forPath("/foo/bar"));
 
             CuratorTransactionResult ephemeralResult =
-                    Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/test-"));
+                    Iterables.find(results, TransactionsHelper.ofTypeAndPath(OperationType.CREATE, "/test-"));
             assertNotNull(ephemeralResult);
             assertNotEquals(ephemeralResult.getResultPath(), "/test-");
             assertTrue(ephemeralResult.getResultPath().startsWith("/test-"));
@@ -149,13 +144,13 @@ public class TestTransactionsNew extends BaseClassForTests {
 
             Collection<CuratorTransactionResult> results = client.transaction().forOperations(createOp1, createOp2);
 
-            assertTrue(client.checkExists().forPath("/foo/bar") != null);
+            assertNotNull(client.checkExists().forPath("/foo/bar"));
             assertArrayEquals(client.getData().forPath("/foo/bar"), "snafu".getBytes());
 
             CuratorTransactionResult fooResult =
-                    Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/foo"));
+                    Iterables.find(results, TransactionsHelper.ofTypeAndPath(OperationType.CREATE, "/foo"));
             CuratorTransactionResult fooBarResult =
-                    Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/foo/bar"));
+                    Iterables.find(results, TransactionsHelper.ofTypeAndPath(OperationType.CREATE, "/foo/bar"));
             assertNotNull(fooResult);
             assertNotNull(fooBarResult);
             assertNotSame(fooResult, fooBarResult);
@@ -175,23 +170,18 @@ public class TestTransactionsNew extends BaseClassForTests {
             CuratorOp createOp2 = client.transactionOp().create().forPath("/foo/bar", "snafu".getBytes());
 
             final BlockingQueue<List<CuratorTransactionResult>> queue = Queues.newLinkedBlockingQueue();
-            BackgroundCallback callback = new BackgroundCallback() {
-                @Override
-                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
-                    queue.add(event.getOpResults());
-                }
-            };
+            BackgroundCallback callback = (client1, event) -> queue.add(event.getOpResults());
             client.transaction().inBackground(callback).forOperations(createOp1, createOp2);
             Collection<CuratorTransactionResult> results = queue.poll(5, TimeUnit.SECONDS);
 
             assertNotNull(results);
-            assertTrue(client.checkExists().forPath("/foo/bar") != null);
+            assertNotNull(client.checkExists().forPath("/foo/bar"));
             assertArrayEquals(client.getData().forPath("/foo/bar"), "snafu".getBytes());
 
             CuratorTransactionResult fooResult =
-                    Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/foo"));
+                    Iterables.find(results, TransactionsHelper.ofTypeAndPath(OperationType.CREATE, "/foo"));
             CuratorTransactionResult fooBarResult =
-                    Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/foo/bar"));
+                    Iterables.find(results, TransactionsHelper.ofTypeAndPath(OperationType.CREATE, "/foo/bar"));
             assertNotNull(fooResult);
             assertNotNull(fooBarResult);
             assertNotSame(fooResult, fooBarResult);
@@ -221,12 +211,7 @@ public class TestTransactionsNew extends BaseClassForTests {
             CuratorOp deleteOp = client.transactionOp().delete().forPath("/foo/bar");
 
             final BlockingQueue<List<CuratorTransactionResult>> queue = Queues.newLinkedBlockingQueue();
-            BackgroundCallback callback = new BackgroundCallback() {
-                @Override
-                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
-                    queue.add(event.getOpResults());
-                }
-            };
+            BackgroundCallback callback = (client1, event) -> queue.add(event.getOpResults());
             client.transaction()
                     .inBackground(callback)
                     .forOperations(createOp1, createOp2, setDataOp, createOp3, deleteOp);
@@ -234,13 +219,13 @@ public class TestTransactionsNew extends BaseClassForTests {
             Collection<CuratorTransactionResult> results = queue.poll(5, TimeUnit.SECONDS);
 
             assertNotNull(results);
-            assertTrue(client.checkExists().forPath("/foo") != null);
-            assertTrue(client.usingNamespace(null).checkExists().forPath("/galt/foo") != null);
+            assertNotNull(client.checkExists().forPath("/foo"));
+            assertNotNull(client.usingNamespace(null).checkExists().forPath("/galt/foo"));
             assertArrayEquals(client.getData().forPath("/foo"), "two".getBytes());
-            assertTrue(client.checkExists().forPath("/foo/bar") == null);
+            assertNull(client.checkExists().forPath("/foo/bar"));
 
             CuratorTransactionResult ephemeralResult =
-                    Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/test-"));
+                    Iterables.find(results, TransactionsHelper.ofTypeAndPath(OperationType.CREATE, "/test-"));
             assertNotNull(ephemeralResult);
             assertNotEquals(ephemeralResult.getResultPath(), "/test-");
             assertTrue(ephemeralResult.getResultPath().startsWith("/test-"));

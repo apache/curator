@@ -17,13 +17,14 @@
  * under the License.
  */
 
-package org.apache.curator.test.compatibility;
+package org.apache.curator.framework.imps;
 
-import org.apache.curator.test.BaseClassForTests;
+import com.google.common.base.Predicate;
+import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
+import org.apache.curator.framework.api.transaction.OperationType;
 
-public class CuratorTestBase extends BaseClassForTests {
-    public static final String zk36Group = "zk36";
-    public static final String zk35TestCompatibilityGroup = "zk35TestCompatibility";
-
-    protected final Timing2 timing = new Timing2();
+public class TransactionsHelper {
+    public static Predicate<CuratorTransactionResult> ofTypeAndPath(OperationType type, String forPath) {
+        return result -> (result.getType() == type) && result.getForPath().equals(forPath);
+    }
 }

@@ -36,13 +36,15 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Test cases designed after CURATOR-45
+ * Test cases designed after CURATOR-45.
  */
+@Tag("master")
 public class TestLeaderSelectorEdges extends BaseClassForTests {
     private final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -59,8 +61,6 @@ public class TestLeaderSelectorEdges extends BaseClassForTests {
     /**
      * Create a LeaderSelector but close the connection right after the "lock" znode
      * has been created.
-     *
-     * @throws Exception
      */
     @Test
     public void flappingTest() throws Exception {
@@ -81,7 +81,7 @@ public class TestLeaderSelectorEdges extends BaseClassForTests {
             // At this point the ChaosMonkeyZookeeperServer must close the connection
             // right after the lock znode is created.
             assertTrue(listener.reconnected.await(10, TimeUnit.SECONDS), "Connection has not been lost");
-            // Check that leader ship has failed
+            // Check that leadership has failed
             assertEquals(listener.takeLeadership.getCount(), 1);
             // Wait FailedDelete
             Thread.sleep(ChaosMonkeyCnxnFactory.LOCKOUT_DURATION_MS * 2);

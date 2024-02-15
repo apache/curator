@@ -72,7 +72,7 @@
         <redirectTestOutputToFile>true</redirectTestOutputToFile>
 
         <!-- versions -->
-        <zookeeper-version>3.7.2</zookeeper-version>
+        <zookeeper-version>3.9.1</zookeeper-version>
         <maven-bundle-plugin-version>5.1.4</maven-bundle-plugin-version>
         <maven-compiler-plugin-version>3.10.0</maven-compiler-plugin-version>
         <maven-dependency-plugin-version>3.2.0</maven-dependency-plugin-version>
@@ -352,6 +352,8 @@
         <module>curator-x-async</module>
         <module>curator-test-zk35</module>
         <module>curator-test-zk36</module>
+        <module>curator-test-zk37</module>
+        <module>curator-test-zk38</module>
     </modules>
 
     <dependencyManagement>
@@ -557,6 +559,10 @@
                     <exclusion>
                         <groupId>org.slf4j</groupId>
                         <artifactId>slf4j-log4j12</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>ch.qos.logback</groupId>
+                        <artifactId>logback-classic</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>

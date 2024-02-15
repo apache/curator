@@ -20,12 +20,10 @@
 package org.apache.curator.framework.recipes.leader;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import org.apache.curator.test.Compatibility;
 import org.apache.curator.test.TestingZooKeeperMain;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.proto.CreateRequest;
-import org.apache.zookeeper.server.ByteBufferInputStream;
 import org.apache.zookeeper.server.NIOServerCnxnFactory;
 import org.apache.zookeeper.server.Request;
 import org.apache.zookeeper.server.ZooKeeperServer;
@@ -81,22 +79,19 @@ public class ChaosMonkeyCnxnFactory extends NIOServerCnxnFactory {
                     && si.type != ZooDefs.OpCode.ping
                     && firstError != 0
                     && remaining > 0) {
-                log.debug("Rejected : " + si.toString());
+                log.debug("Rejected : {}", si);
                 // Still reject request
                 log.debug("Still not ready for " + remaining + "ms");
                 Compatibility.serverCnxnClose(si.cnxn);
                 return;
             }
             // Submit the request to the legacy Zookeeper server
-            log.debug("Applied : " + si.toString());
+            log.debug("Applied : {}", si);
             super.submitRequest(si);
             // Raise an error if a lock is created
             if ((si.type == ZooDefs.OpCode.create) || (si.type == ZooDefs.OpCode.create2)) {
-                CreateRequest createRequest = new CreateRequest();
                 try {
-                    ByteBuffer duplicate = si.request.duplicate();
-                    duplicate.rewind();
-                    ByteBufferInputStream.byteBuffer2Record(duplicate, createRequest);
+                    CreateRequest createRequest = si.readRequestRecord(CreateRequest::new);
                     if (createRequest.getPath().startsWith(CHAOS_ZNODE_PREFIX) && firstError == 0) {
                         firstError = System.currentTimeMillis();
                         // The znode has been created, close the connection and don't tell it to client

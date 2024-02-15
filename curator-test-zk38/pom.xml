@@ -20,7 +20,8 @@
 
 -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <groupId>org.apache.curator</groupId>
         <artifactId>apache-curator</artifactId>
@@ -28,10 +29,10 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>curator-test-zk36</artifactId>
+    <artifactId>curator-test-zk38</artifactId>
 
     <properties>
-        <zookeeper-36-version>3.6.3</zookeeper-36-version>
+        <zookeeper-38-version>3.8.3</zookeeper-38-version>
     </properties>
 
     <dependencies>
@@ -71,7 +72,7 @@
         <dependency>
             <groupId>org.apache.zookeeper</groupId>
             <artifactId>zookeeper</artifactId>
-            <version>${zookeeper-36-version}</version>
+            <version>${zookeeper-38-version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.sun.jmx</groupId>
@@ -92,6 +93,10 @@
                 <exclusion>
                     <groupId>org.slf4j</groupId>
                     <artifactId>slf4j-log4j12</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>ch.qos.logback</groupId>
+                    <artifactId>logback-classic</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -224,7 +229,7 @@
                         <dependency>org.apache.curator:curator-recipes</dependency>
                         <dependency>org.apache.curator:curator-client</dependency>
                     </dependenciesToScan>
-                    <groups>zk36,zk35TestCompatibility</groups>
+                    <excludedGroups>master</excludedGroups>
                 </configuration>
             </plugin>
         </plugins>

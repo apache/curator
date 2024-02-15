@@ -28,10 +28,10 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>curator-test-zk36</artifactId>
+    <artifactId>curator-test-zk37</artifactId>
 
     <properties>
-        <zookeeper-36-version>3.6.3</zookeeper-36-version>
+        <zookeeper-37-version>3.7.2</zookeeper-37-version>
     </properties>
 
     <dependencies>
@@ -71,7 +71,7 @@
         <dependency>
             <groupId>org.apache.zookeeper</groupId>
             <artifactId>zookeeper</artifactId>
-            <version>${zookeeper-36-version}</version>
+            <version>${zookeeper-37-version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.sun.jmx</groupId>
@@ -224,7 +224,7 @@
                         <dependency>org.apache.curator:curator-recipes</dependency>
                         <dependency>org.apache.curator:curator-client</dependency>
                     </dependenciesToScan>
-                    <groups>zk36,zk35TestCompatibility</groups>
+                    <excludedGroups>master</excludedGroups>
                 </configuration>
             </plugin>
         </plugins>

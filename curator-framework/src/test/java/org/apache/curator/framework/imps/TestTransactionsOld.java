@@ -102,13 +102,13 @@ public class TestTransactionsOld extends BaseClassForTests {
                     .and()
                     .commit();
 
-            assertTrue(client.checkExists().forPath("/foo") != null);
-            assertTrue(client.usingNamespace(null).checkExists().forPath("/galt/foo") != null);
+            assertNotNull(client.checkExists().forPath("/foo"));
+            assertNotNull(client.usingNamespace(null).checkExists().forPath("/galt/foo"));
             assertArrayEquals(client.getData().forPath("/foo"), "two".getBytes());
-            assertTrue(client.checkExists().forPath("/foo/bar") == null);
+            assertNull(client.checkExists().forPath("/foo/bar"));
 
             CuratorTransactionResult ephemeralResult =
-                    Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/test-"));
+                    Iterables.find(results, TransactionsHelper.ofTypeAndPath(OperationType.CREATE, "/test-"));
             assertNotNull(ephemeralResult);
             assertNotEquals(ephemeralResult.getResultPath(), "/test-");
             assertTrue(ephemeralResult.getResultPath().startsWith("/test-"));
@@ -154,20 +154,20 @@ public class TestTransactionsOld extends BaseClassForTests {
                     .and()
                     .commit();
 
-            assertTrue(client.checkExists().forPath("/foo") != null);
+            assertNotNull(client.checkExists().forPath("/foo"));
             assertArrayEquals(client.getData().decompressed().forPath("/foo"), "five".getBytes());
 
-            assertTrue(client.checkExists().forPath("/bar") != null);
+            assertNotNull(client.checkExists().forPath("/bar"));
             assertArrayEquals(client.getData().decompressed().forPath("/bar"), "two".getBytes());
             assertEquals(client.getACL().forPath("/bar"), ZooDefs.Ids.READ_ACL_UNSAFE);
 
             CuratorTransactionResult ephemeralResult =
-                    Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/test-"));
+                    Iterables.find(results, TransactionsHelper.ofTypeAndPath(OperationType.CREATE, "/test-"));
             assertNotNull(ephemeralResult);
             assertNotEquals(ephemeralResult.getResultPath(), "/test-");
             assertTrue(ephemeralResult.getResultPath().startsWith("/test-"));
 
-            assertTrue(client.checkExists().forPath("/baz") != null);
+            assertNotNull(client.checkExists().forPath("/baz"));
             assertArrayEquals(client.getData().decompressed().forPath("/baz"), "four".getBytes());
             assertEquals(client.getACL().forPath("/baz"), ZooDefs.Ids.READ_ACL_UNSAFE);
         } finally {
@@ -189,13 +189,13 @@ public class TestTransactionsOld extends BaseClassForTests {
                     .and()
                     .commit();
 
-            assertTrue(client.checkExists().forPath("/foo/bar") != null);
+            assertNotNull(client.checkExists().forPath("/foo/bar"));
             assertArrayEquals(client.getData().forPath("/foo/bar"), "snafu".getBytes());
 
             CuratorTransactionResult fooResult =
-                    Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/foo"));
+                    Iterables.find(results, TransactionsHelper.ofTypeAndPath(OperationType.CREATE, "/foo"));
             CuratorTransactionResult fooBarResult =
-                    Iterables.find(results, CuratorTransactionResult.ofTypeAndPath(OperationType.CREATE, "/foo/bar"));
+                    Iterables.find(results, TransactionsHelper.ofTypeAndPath(OperationType.CREATE, "/foo/bar"));
             assertNotNull(fooResult);
             assertNotNull(fooBarResult);
             assertNotSame(fooResult, fooBarResult);

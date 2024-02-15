@@ -17,13 +17,28 @@
  * under the License.
  */
 
-package org.apache.curator.test.compatibility;
+package org.apache.curator.zk37;
 
-import org.apache.curator.test.BaseClassForTests;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import org.apache.curator.test.compatibility.CuratorTestBase;
+import org.apache.zookeeper.proto.WhoAmIResponse;
+import org.junit.jupiter.api.Test;
 
-public class CuratorTestBase extends BaseClassForTests {
-    public static final String zk36Group = "zk36";
-    public static final String zk35TestCompatibilityGroup = "zk35TestCompatibility";
+public class TestIs37 extends CuratorTestBase {
+    /**
+     * Ensure that ZooKeeper is 3.7 or above.
+     *
+     * <p>It uses reflection to get {@link WhoAmIResponse} which was introduced in 3.7.0.
+     *
+     * @see <a href="https://issues.apache.org/jira/browse/ZOOKEEPER-3969">ZOOKEEPER-3969</a>
+     */
+    @Test
+    public void testIsZk37() throws Exception {
+        assertNotNull(Class.forName("org.apache.zookeeper.proto.WhoAmIResponse"));
+    }
 
-    protected final Timing2 timing = new Timing2();
+    @Override
+    protected void createServer() {
+        // NOP
+    }
 }
