@@ -175,7 +175,7 @@ public class CuratorFrameworkFactory {
                 ConnectionStateListenerManagerFactory.standard;
         private int simulatedSessionExpirationPercent = 100;
         private ZKClientConfig zkClientConfig;
-        private ZookeeperCompatibility zookeeperCompatibility = ZookeeperCompatibility.Version.LATEST;
+        private ZookeeperCompatibility zookeeperCompatibility = ZookeeperCompatibility.LATEST;
 
         /**
          * Apply the current values and build a new CuratorFramework
@@ -522,8 +522,8 @@ public class CuratorFrameworkFactory {
         }
 
         public Builder zookeeperCompatibility(ZookeeperCompatibility zookeeperCompatibility) {
-          this.zookeeperCompatibility = zookeeperCompatibility;
-          return this;
+            this.zookeeperCompatibility = zookeeperCompatibility;
+            return this;
         }
 
         public Executor getRunSafeService() {
@@ -648,7 +648,7 @@ public class CuratorFrameworkFactory {
         }
 
         public ZookeeperCompatibility getZookeeperCompatibility() {
-          return zookeeperCompatibility;
+            return zookeeperCompatibility;
         }
 
         private Builder() {}

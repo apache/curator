@@ -20,29 +20,52 @@
 package org.apache.curator.utils;
 
 /**
- * Describe feature supports based on server compatibility (as opposed to {@code Compatibility}
- * which represents client compatibility.
+ * Describe feature supports based on server compatibility (as opposed to
+ * {@code Compatibility} which represents client compatibility.
  */
-public interface ZookeeperCompatibility {
-  public enum Version implements ZookeeperCompatibility {
-    VERSION_3_5(false),
-    LATEST(true);
+public class ZookeeperCompatibility {
+    /**
+     * Represent latest version with all features enabled
+     */
+    public static final ZookeeperCompatibility LATEST =
+            builder().hasPersistentWatchers(true).build();
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        // List of features introduced by Zookeeper over time.
+        // All values are set to false by default for backward compatibility
+        private boolean hasPersistentWatchers = false;
+
+        public Builder hasPersistentWatchers(boolean value) {
+            this.hasPersistentWatchers = value;
+            return this;
+        }
+
+        public boolean hasPersistentWatchers() {
+            return this.hasPersistentWatchers;
+        }
+
+        public ZookeeperCompatibility build() {
+            return new ZookeeperCompatibility(this);
+        }
+    }
 
     private final boolean hasPersistentWatchers;
 
-    private Version(boolean hasPersistentWatchers) {
-      this.hasPersistentWatchers = hasPersistentWatchers;
+    private ZookeeperCompatibility(Builder builder) {
+        this.hasPersistentWatchers = builder.hasPersistentWatchers;
     }
 
-    @Override
+    /**
+     * Check if both client and server support persistent watchers
+     *
+     * @return {@code true} if both the client library and the server version
+     *         support persistent watchers
+     */
     public boolean hasPersistentWatchers() {
-      return this.hasPersistentWatchers && Compatibility.hasPersistentWatchers();
+        return this.hasPersistentWatchers && Compatibility.hasPersistentWatchers();
     }
-  }
-
-  /**
-   * Check if both client and server support persistent watchers
-   * @return {@code true} if both the client library and the server version support persistent watchers
-   */
-  boolean hasPersistentWatchers();
 }
