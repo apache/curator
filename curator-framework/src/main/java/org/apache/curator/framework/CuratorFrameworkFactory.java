@@ -19,7 +19,6 @@
 
 package org.apache.curator.framework;
 
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import java.net.InetAddress;
