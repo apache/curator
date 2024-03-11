@@ -77,11 +77,11 @@ import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateErrorPolicy;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.framework.state.ConnectionStateManager;
-import org.apache.curator.utils.Compatibility;
 import org.apache.curator.utils.DebugUtils;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZKPaths;
+import org.apache.curator.utils.ZookeeperCompatibility;
 import org.apache.curator.utils.ZookeeperFactory;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -117,6 +117,7 @@ public class CuratorFrameworkImpl implements CuratorFramework {
     private final EnsembleTracker ensembleTracker;
     private final SchemaSet schemaSet;
     private final Executor runSafeService;
+    private final ZookeeperCompatibility zookeeperCompatibility;
 
     private volatile ExecutorService executorService;
     private final AtomicBoolean logAsErrorConnectionErrors = new AtomicBoolean(false);
@@ -204,6 +205,7 @@ public class CuratorFrameworkImpl implements CuratorFramework {
                 builder.withEnsembleTracker() ? new EnsembleTracker(this, builder.getEnsembleProvider()) : null;
 
         runSafeService = makeRunSafeService(builder);
+        zookeeperCompatibility = builder.getZookeeperCompatibility();
     }
 
     private Executor makeRunSafeService(CuratorFrameworkFactory.Builder builder) {
@@ -292,6 +294,7 @@ public class CuratorFrameworkImpl implements CuratorFramework {
         schemaSet = parent.schemaSet;
         ensembleTracker = parent.ensembleTracker;
         runSafeService = parent.runSafeService;
+        zookeeperCompatibility = parent.zookeeperCompatibility;
     }
 
     @Override
@@ -585,8 +588,8 @@ public class CuratorFrameworkImpl implements CuratorFramework {
     @Override
     public WatchesBuilder watchers() {
         Preconditions.checkState(
-                Compatibility.hasPersistentWatchers(),
-                "watchers() is not supported in the ZooKeeper library being used. Use watches() instead.");
+                zookeeperCompatibility.hasPersistentWatchers(),
+                "watchers() is not supported in the ZooKeeper library and/or server being used. Use watches() instead.");
         return new WatchesBuilderImpl(this);
     }
 
@@ -598,6 +601,11 @@ public class CuratorFrameworkImpl implements CuratorFramework {
     @Override
     public CuratorZookeeperClient getZookeeperClient() {
         return client;
+    }
+
+    @Override
+    public ZookeeperCompatibility getZookeeperCompatibility() {
+        return zookeeperCompatibility;
     }
 
     @Override

@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.Compatibility;
+import org.apache.curator.utils.ZookeeperCompatibility;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -33,6 +34,12 @@ public class TestIs35 extends CuratorTestBase {
         assertFalse(Compatibility.hasGetReachableOrOneMethod());
         assertTrue(Compatibility.hasAddrField());
         assertFalse(Compatibility.hasPersistentWatchers());
+        assertFalse(ZookeeperCompatibility.LATEST.hasPersistentWatchers());
+        assertFalse(ZookeeperCompatibility.builder().build().hasPersistentWatchers());
+        assertFalse(ZookeeperCompatibility.builder()
+                .hasPersistentWatchers(false)
+                .build()
+                .hasPersistentWatchers());
     }
 
     @Override
