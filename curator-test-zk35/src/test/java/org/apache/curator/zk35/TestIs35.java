@@ -35,9 +35,7 @@ public class TestIs35 extends CuratorTestBase {
         assertTrue(Compatibility.hasAddrField());
         assertFalse(Compatibility.hasPersistentWatchers());
         assertFalse(ZookeeperCompatibility.LATEST.hasPersistentWatchers());
-        assertFalse(ZookeeperCompatibility.builder()
-            .build()
-            .hasPersistentWatchers());
+        assertFalse(ZookeeperCompatibility.builder().build().hasPersistentWatchers());
         assertFalse(ZookeeperCompatibility.builder()
                 .hasPersistentWatchers(false)
                 .build()
