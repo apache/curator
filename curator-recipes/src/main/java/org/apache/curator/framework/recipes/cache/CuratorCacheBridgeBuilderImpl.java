@@ -21,7 +21,6 @@ package org.apache.curator.framework.recipes.cache;
 
 import java.util.concurrent.ExecutorService;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.utils.Compatibility;
 import org.slf4j.LoggerFactory;
 
 class CuratorCacheBridgeBuilderImpl implements CuratorCacheBridgeBuilder {
@@ -57,7 +56,7 @@ class CuratorCacheBridgeBuilderImpl implements CuratorCacheBridgeBuilder {
 
     @Override
     public CuratorCacheBridge build() {
-        if (!forceTreeCache && Compatibility.hasPersistentWatchers()) {
+        if (!forceTreeCache && client.getZookeeperCompatibility().hasPersistentWatchers()) {
             if (executorService != null) {
                 LoggerFactory.getLogger(getClass()).warn("CuratorCache does not support custom ExecutorService");
             }

@@ -19,6 +19,7 @@
 
 package org.apache.curator.framework;
 
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import java.net.InetAddress;
@@ -46,6 +47,7 @@ import org.apache.curator.framework.state.ConnectionStateErrorPolicy;
 import org.apache.curator.framework.state.ConnectionStateListenerManagerFactory;
 import org.apache.curator.framework.state.StandardConnectionStateErrorPolicy;
 import org.apache.curator.utils.DefaultZookeeperFactory;
+import org.apache.curator.utils.ZookeeperCompatibility;
 import org.apache.curator.utils.ZookeeperFactory;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.Watcher;
@@ -174,6 +176,7 @@ public class CuratorFrameworkFactory {
                 ConnectionStateListenerManagerFactory.standard;
         private int simulatedSessionExpirationPercent = 100;
         private ZKClientConfig zkClientConfig;
+        private ZookeeperCompatibility zookeeperCompatibility = ZookeeperCompatibility.Version.LATEST;
 
         /**
          * Apply the current values and build a new CuratorFramework
@@ -519,6 +522,11 @@ public class CuratorFrameworkFactory {
             return this;
         }
 
+        public Builder zookeeperCompatibility(ZookeeperCompatibility zookeeperCompatibility) {
+          this.zookeeperCompatibility = zookeeperCompatibility;
+          return this;
+        }
+
         public Executor getRunSafeService() {
             return runSafeService;
         }
@@ -638,6 +646,10 @@ public class CuratorFrameworkFactory {
 
         public ConnectionStateListenerManagerFactory getConnectionStateListenerManagerFactory() {
             return connectionStateListenerManagerFactory;
+        }
+
+        public ZookeeperCompatibility getZookeeperCompatibility() {
+          return zookeeperCompatibility;
         }
 
         private Builder() {}

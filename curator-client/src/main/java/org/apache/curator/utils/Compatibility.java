@@ -22,6 +22,7 @@ package org.apache.curator.utils;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
+
 import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
