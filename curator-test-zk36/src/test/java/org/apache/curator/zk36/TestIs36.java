@@ -19,10 +19,12 @@
 
 package org.apache.curator.zk36;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.utils.Compatibility;
+import org.apache.curator.utils.ZookeeperCompatibility;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -33,6 +35,14 @@ public class TestIs36 extends CuratorTestBase {
         assertTrue(Compatibility.hasGetReachableOrOneMethod());
         assertTrue(Compatibility.hasAddrField());
         assertTrue(Compatibility.hasPersistentWatchers());
+        assertTrue(ZookeeperCompatibility.LATEST.hasPersistentWatchers());
+        assertFalse(ZookeeperCompatibility.builder()
+            .build()
+            .hasPersistentWatchers());
+        assertFalse(ZookeeperCompatibility.builder()
+                .hasPersistentWatchers(false)
+                .build()
+                .hasPersistentWatchers());
         try {
             Class.forName("org.apache.zookeeper.proto.WhoAmIResponse");
             fail("WhoAmIResponse is introduced after ZooKeeper 3.7");
