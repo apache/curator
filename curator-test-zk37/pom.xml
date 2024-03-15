@@ -31,7 +31,7 @@
     <artifactId>curator-test-zk37</artifactId>
 
     <properties>
-        <zookeeper-37-version>3.7.2</zookeeper-37-version>
+        <zookeeper-37-version>3.7.3</zookeeper-37-version>
     </properties>
 
     <dependencies>
