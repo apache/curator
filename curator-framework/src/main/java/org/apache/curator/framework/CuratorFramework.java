@@ -34,6 +34,7 @@ import org.apache.curator.framework.schema.SchemaSet;
 import org.apache.curator.framework.state.ConnectionStateErrorPolicy;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.EnsurePath;
+import org.apache.curator.utils.ZookeeperCompatibility;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
 
@@ -261,6 +262,13 @@ public interface CuratorFramework extends Closeable {
      * @return client
      */
     public CuratorZookeeperClient getZookeeperClient();
+
+    /**
+     * Return zookeeper server compatibility
+     *
+     * @return compatibility
+     */
+    public ZookeeperCompatibility getZookeeperCompatibility();
 
     /**
      * Allocates an ensure path instance that is namespace aware

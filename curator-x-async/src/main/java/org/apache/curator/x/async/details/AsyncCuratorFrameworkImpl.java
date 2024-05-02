@@ -32,7 +32,6 @@ import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.framework.imps.CuratorMultiTransactionImpl;
 import org.apache.curator.framework.imps.GetACLBuilderImpl;
 import org.apache.curator.framework.imps.SyncBuilderImpl;
-import org.apache.curator.utils.Compatibility;
 import org.apache.curator.x.async.AsyncCuratorFramework;
 import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.WatchMode;
@@ -140,8 +139,8 @@ public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework {
     @Override
     public AsyncWatchBuilder addWatch() {
         Preconditions.checkState(
-                Compatibility.hasPersistentWatchers(),
-                "addWatch() is not supported in the ZooKeeper library being used.");
+                client.getZookeeperCompatibility().hasPersistentWatchers(),
+                "addWatch() is not supported in the ZooKeeper library and/or server being used.");
         return new AsyncWatchBuilderImpl(client, filters);
     }
 
