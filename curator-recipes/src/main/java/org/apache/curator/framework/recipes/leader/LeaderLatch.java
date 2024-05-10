@@ -509,7 +509,7 @@ public class LeaderLatch implements Closeable {
                         getChildren();
                     }
                 } else {
-                    log.error("getChildren() failed. rc = " + event.getResultCode());
+                    log.error("getChildren() failed. rc = {}", event.getResultCode());
                 }
             }
         };
@@ -548,43 +548,58 @@ public class LeaderLatch implements Closeable {
         log.debug("checkLeadership with id: {}, ourPath: {}, children: {}", id, localOurPath, sortedChildren);
 
         if (ourIndex < 0) {
-            log.error("Can't find our node. Resetting. Index: " + ourIndex);
+            log.error("Can't find our node. Resetting. Index: {}", ourIndex);
             reset();
-        } else if (ourIndex == 0) {
-            lastPathIsLeader.set(localOurPath);
-            setLeadership(true);
-        } else {
-            setLeadership(false);
-            String watchPath = sortedChildren.get(ourIndex - 1);
-            Watcher watcher = new Watcher() {
-                @Override
-                public void process(WatchedEvent event) {
-                    if (state.get() == State.STARTED && event.getType() == Event.EventType.NodeDeleted) {
-                        try {
-                            getChildren();
-                        } catch (Exception ex) {
-                            ThreadUtils.checkInterrupted(ex);
-                            log.error("An error occurred checking the leadership.", ex);
-                        }
-                    }
-                }
-            };
-
-            BackgroundCallback callback = new BackgroundCallback() {
-                @Override
-                public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
-                    if (event.getResultCode() == KeeperException.Code.NONODE.intValue()) {
-                        // previous node is gone - retry getChildren
-                        getChildren();
-                    }
-                }
-            };
-            // use getData() instead of exists() to avoid leaving unneeded watchers which is a type of resource leak
-            client.getData()
-                    .usingWatcher(watcher)
-                    .inBackground(callback)
-                    .forPath(ZKPaths.makePath(latchPath, watchPath));
+            return;
         }
+
+        if (ourIndex == 0) {
+            client.getData()
+                    .inBackground((client, event) -> {
+                        final long ephemeralOwner =
+                                event.getStat() != null ? event.getStat().getEphemeralOwner() : -1;
+                        final long thisSessionId =
+                                client.getZookeeperClient().getZooKeeper().getSessionId();
+                        if (ephemeralOwner != thisSessionId) {
+                            // this node is gone - reset
+                            reset();
+                        } else {
+                            lastPathIsLeader.set(localOurPath);
+                            setLeadership(true);
+                        }
+                    })
+                    .forPath(ZKPaths.makePath(latchPath, localOurPath));
+
+            return;
+        }
+
+        setLeadership(false);
+        String watchPath = sortedChildren.get(ourIndex - 1);
+        Watcher watcher = new Watcher() {
+            @Override
+            public void process(WatchedEvent event) {
+                if (state.get() == State.STARTED && event.getType() == Event.EventType.NodeDeleted) {
+                    try {
+                        getChildren();
+                    } catch (Exception ex) {
+                        ThreadUtils.checkInterrupted(ex);
+                        log.error("An error occurred checking the leadership.", ex);
+                    }
+                }
+            }
+        };
+
+        BackgroundCallback callback = new BackgroundCallback() {
+            @Override
+            public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
+                if (event.getResultCode() == KeeperException.Code.NONODE.intValue()) {
+                    // previous node is gone - retry getChildren
+                    getChildren();
+                }
+            }
+        };
+        // use getData() instead of exists() to avoid leaving unneeded watchers which is a type of resource leak
+        client.getData().usingWatcher(watcher).inBackground(callback).forPath(ZKPaths.makePath(latchPath, watchPath));
     }
 
     private void getChildren() throws Exception {
