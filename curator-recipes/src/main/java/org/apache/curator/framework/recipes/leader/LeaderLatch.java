@@ -568,8 +568,7 @@ public class LeaderLatch implements Closeable {
                             setLeadership(true);
                         }
                     })
-                    .forPath(ZKPaths.makePath(latchPath, localOurPath));
-
+                    .forPath(localOurPath);
             return;
         }
 
