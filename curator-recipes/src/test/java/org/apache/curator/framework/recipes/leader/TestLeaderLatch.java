@@ -53,7 +53,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import javax.annotation.Nonnull;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.imps.TestCleanState;
@@ -217,30 +216,25 @@ public class TestLeaderLatch extends BaseClassForTests {
     public void testSessionInterruptionDoNotCauseBrainSplit() throws Exception {
         final String latchPath = "/testSessionInterruptionDoNotCauseBrainSplit";
         final Timing2 timing = new Timing2();
-        final BlockingQueue<TestEvent> events = new LinkedBlockingQueue<TestEvent>() {
-            @Override
-            public boolean add(@Nonnull TestEvent testEvent) {
-                LOG.debug("Add event: {}", testEvent);
-                return super.add(testEvent);
-            }
-        };
+        final BlockingQueue<TestEvent> events0 = new LinkedBlockingQueue<>();
+        final BlockingQueue<TestEvent> events1 = new LinkedBlockingQueue<>();
 
         final List<Closeable> closeableResources = new ArrayList<>();
         try {
             final String id0 = "id0";
             final CuratorFramework client0 = createAndStartClient(server.getConnectString(), timing, id0, null);
             closeableResources.add(client0);
-            final LeaderLatch latch0 = createAndStartLeaderLatch(client0, latchPath, id0, events);
+            final LeaderLatch latch0 = createAndStartLeaderLatch(client0, latchPath, id0, events0);
             closeableResources.add(latch0);
 
-            assertThat(events.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS))
+            assertThat(events0.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS))
                     .isNotNull()
                     .isEqualTo(new TestEvent(id0, TestEventType.GAINED_LEADERSHIP));
 
             final String id1 = "id1";
             final CuratorFramework client1 = createAndStartClient(server.getConnectString(), timing, id1, null);
             closeableResources.add(client1);
-            final LeaderLatch latch1 = createAndStartLeaderLatch(client1, latchPath, id1, events);
+            final LeaderLatch latch1 = createAndStartLeaderLatch(client1, latchPath, id1, events1);
             closeableResources.add(latch1);
 
             // wait for the non-leading LeaderLatch (i.e. latch1) instance to be done with its creation
@@ -253,12 +247,16 @@ public class TestLeaderLatch extends BaseClassForTests {
 
             client0.getZookeeperClient().getZooKeeper().getTestable().injectSessionExpiration();
 
-            assertThat(events.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS))
-                    .isNotNull()
-                    .isEqualTo(new TestEvent(id0, TestEventType.LOST_LEADERSHIP));
-            assertThat(events.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS))
+            assertThat(events1.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS))
                     .isNotNull()
                     .isEqualTo(new TestEvent(id1, TestEventType.GAINED_LEADERSHIP));
+
+            assertThat(events0.poll(timing.forWaiting().milliseconds(), TimeUnit.MILLISECONDS))
+                    .isNotNull()
+                    .isEqualTo(new TestEvent(id0, TestEventType.LOST_LEADERSHIP));
+            // No leadership grained to old leader after session changed, hence no brain split.
+            assertThat(events0.poll(20, TimeUnit.MILLISECONDS))
+                    .isNotEqualTo(new TestEvent(id0, TestEventType.GAINED_LEADERSHIP));
         } finally {
             // reverse is necessary for closing the LeaderLatch instances before closing the corresponding client
             Collections.reverse(closeableResources);
