@@ -27,10 +27,13 @@ import java.io.Closeable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ThreadPoolExecutor;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
@@ -97,6 +100,81 @@ public class TestServiceCache extends BaseClassForTests {
             discovery.registerService(instance1);
             discovery.registerService(instance2);
             discovery.registerService(instance3);
+
+            assertTrue(latch.await(10, TimeUnit.SECONDS));
+
+            ServiceCache<String> cache2 =
+                    discovery.serviceCacheBuilder().name("test").build();
+            closeables.add(cache2);
+            cache2.start();
+
+            assertEquals(cache2.getInstances().size(), 3);
+        } finally {
+            Collections.reverse(closeables);
+            for (Closeable c : closeables) {
+                CloseableUtils.closeQuietly(c);
+            }
+        }
+    }
+
+    @Test
+    public void testInitialLoadUsingExecutor() throws Exception {
+        List<Closeable> closeables = Lists.newArrayList();
+        ExecutorService runSafeExec = new ThreadPoolExecutor(2, 2, 0, TimeUnit.SECONDS, new ArrayBlockingQueue<>(5));
+        try {
+            CuratorFramework client = CuratorFrameworkFactory.builder()
+                    .connectString(server.getConnectString())
+                    .retryPolicy(new RetryOneTime(1))
+                    .runSafeService(runSafeExec)
+                    .build();
+            closeables.add(client);
+            client.start();
+
+            ServiceDiscovery<String> discovery = ServiceDiscoveryBuilder.builder(String.class)
+                    .basePath("/discovery")
+                    .client(client)
+                    .build();
+            closeables.add(discovery);
+            discovery.start();
+
+            ServiceInstance<String> instance1 = ServiceInstance.<String>builder()
+                    .payload("test")
+                    .name("test")
+                    .port(10064)
+                    .build();
+            discovery.registerService(instance1);
+
+            ServiceCache<String> cache =
+                    discovery.serviceCacheBuilder().name("test").build();
+            closeables.add(cache);
+
+            final CountDownLatch latch = new CountDownLatch(2);
+            ServiceCacheListener listener = new ServiceCacheListener() {
+                @Override
+                public void cacheChanged() {
+                    latch.countDown();
+                }
+
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState newState) {}
+            };
+            cache.addListener(listener);
+            cache.start();
+            //assertEquals(1, cache.getInstances().size());
+
+            ServiceInstance<String> instance2 = ServiceInstance.<String>builder()
+                    .payload("test")
+                    .name("test")
+                    .port(10065)
+                    .build();
+            ServiceInstance<String> instance3 = ServiceInstance.<String>builder()
+                    .payload("test")
+                    .name("test")
+                    .port(10066)
+                    .build();
+            discovery.registerService(instance2);
+            discovery.registerService(instance3);
+            assertEquals(3, cache.getInstances().size());
 
             assertTrue(latch.await(10, TimeUnit.SECONDS));
 
