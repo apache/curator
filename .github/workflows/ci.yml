@@ -80,7 +80,40 @@ jobs:
         run: ./mvnw clean install -DskipTests
 
       - name: Test with ${{ matrix.java }}
-        run: ./mvnw verify
+        run: ./mvnw verify -pl '!curator-test-zk38,!curator-test-zk37,!curator-test-zk36,!curator-test-zk35'
+
+  zk-compatibility-test:
+    name: ${{ matrix.zookeeper }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        zookeeper: [curator-test-zk38, curator-test-zk37, curator-test-zk36, curator-test-zk35]
+    env:
+      GRADLE_ENTERPRISE_ACCESS_KEY: ${{ secrets.GE_ACCESS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Cache Local Maven Repository
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Set up JDK 8
+        uses: actions/setup-java@v3
+        with:
+          java-version: 8
+          distribution: 'zulu'
+
+      - name: Build with JDK 8
+        run: ./mvnw clean install -DskipTests
+
+      - name: Test with JDK 8
+        run: ./mvnw verify -pl ${{ matrix.zookeeper }}
 
   required:
     name: Required
@@ -89,12 +122,14 @@ jobs:
     needs:
       - check
       - unittest
+      - zk-compatibility-test
     steps:
       - name: Guardian
         run: |
           if [[ ! ( \
                  "${{ needs.check.result }}" == "success" \
               && "${{ needs.unittest.result }}" == "success" \
+              && "${{ needs.zk-compatibility-test.result }}" == "success" \
               ) ]]; then
             echo "Required jobs haven't been completed successfully."
             exit -1
