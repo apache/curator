@@ -174,7 +174,6 @@ public class SharedValue implements Closeable, SharedValueReader {
      * @throws IllegalTrySetVersionException if {@link Stat#getVersion()} overflowed to {@code -1}
      * @throws Exception ZK errors, interruptions, etc.
      */
-    @SuppressWarnings("deprecation")
     public boolean trySetValue(VersionedValue<byte[]> previous, byte[] newValue) throws Exception {
         Preconditions.checkState(state.get() == State.STARTED, "not started");
 
