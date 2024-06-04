@@ -21,6 +21,7 @@ package org.apache.curator.framework.recipes.shared;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -51,6 +52,7 @@ import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.WatchedEvent;
 import org.junit.jupiter.api.Test;
 
+@SuppressWarnings("deprecation")
 public class TestSharedCount extends CuratorTestBase {
     @Test
     public void testMultiClients() throws Exception {
@@ -206,13 +208,20 @@ public class TestSharedCount extends CuratorTestBase {
             assertEquals(count.getCount(), 10);
 
             // Wrong value
-            assertFalse(count.trySetCount(new VersionedValue<Integer>(3, 20), 7));
+            assertFalse(count.trySetCount(new VersionedValue<>(current.getZxid(), 3, 20), 7));
             // Wrong version
-            assertFalse(count.trySetCount(new VersionedValue<Integer>(10, 10), 7));
+            assertFalse(count.trySetCount(new VersionedValue<>(current.getZxid(), 10, 10), 7));
+            assertFalse(count.trySetCount(new VersionedValue<>(current.getZxid() + 1, 3, 10), 7));
 
             // Server changed
             client.setData().forPath("/count", SharedCount.toBytes(88));
             assertFalse(count.trySetCount(current, 234));
+
+            assertThrows(IllegalTrySetVersionException.class, () -> {
+                VersionedValue<Integer> cached = count.getVersionedValue();
+                VersionedValue<Integer> illegal = new VersionedValue<>(cached.getZxid(), -1, cached.getValue());
+                count.trySetCount(illegal, 20);
+            });
         } finally {
             CloseableUtils.closeQuietly(count);
             CloseableUtils.closeQuietly(client);
