@@ -58,7 +58,7 @@ jobs:
       matrix:
         java: [8, 11, 17, 21]
     env:
-      GRADLE_ENTERPRISE_ACCESS_KEY: ${{ secrets.GE_ACCESS_TOKEN }}
+      DEVELOCITY_ACCESS_KEY: ${{ secrets.GE_ACCESS_TOKEN }}
     steps:
       - uses: actions/checkout@v3
 
@@ -91,7 +91,7 @@ jobs:
       matrix:
         zookeeper: [curator-test-zk38, curator-test-zk37, curator-test-zk36, curator-test-zk35]
     env:
-      GRADLE_ENTERPRISE_ACCESS_KEY: ${{ secrets.GE_ACCESS_TOKEN }}
+      DEVELOCITY_ACCESS_KEY: ${{ secrets.GE_ACCESS_TOKEN }}
     steps:
       - uses: actions/checkout@v3
 
