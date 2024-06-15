@@ -1,0 +1,5 @@
+# You can configure git to automatically use this file with the following config:
+# git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+#  ignore spotless format
+484ede9a33abb1427ba58c77e5792814aac889f0
