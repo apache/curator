@@ -182,6 +182,75 @@ public class TestCreate extends BaseClassForTests {
         }
     }
 
+    @Test
+    public void testCreateWithParentsWithAclApplyToParentsInNamespace() throws Exception {
+        CuratorFramework client = createClient(new DefaultACLProvider());
+        try {
+            client.start();
+
+            // given: a namespace
+            CuratorFramework bar = client.usingNamespace("bar");
+
+            // when: create a path with custom ACL and applyToParents option open in that namespace
+            List<ACL> acl =
+                    Collections.singletonList(new ACL(ZooDefs.Perms.CREATE | ZooDefs.Perms.READ, ANYONE_ID_UNSAFE));
+            bar.create().creatingParentsIfNeeded().withACL(acl, true).forPath("/foo/boo");
+
+            // then: the created path has custom ACL
+            List<ACL> actual_bar_foo_boo = client.getACL().forPath("/bar/foo/boo");
+            assertEquals(actual_bar_foo_boo, acl);
+
+            // then: the parent path has custom ACL
+            List<ACL> actual_bar_foo = client.getACL().forPath("/bar/foo");
+            assertEquals(actual_bar_foo, acl);
+
+            // then: but the namespace path inherits ACL from CuratorFramework
+            List<ACL> actual_bar = client.getACL().forPath("/bar");
+            assertEquals(actual_bar, ZooDefs.Ids.OPEN_ACL_UNSAFE);
+        } finally {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void testCreateWithParentsWithAclApplyToParentsInNamespaceBackground() throws Exception {
+        CuratorFramework client = createClient(new DefaultACLProvider());
+        try {
+            client.start();
+
+            final CountDownLatch latch = new CountDownLatch(1);
+            BackgroundCallback callback = (client1, event) -> latch.countDown();
+
+            List<ACL> acl =
+                    Collections.singletonList(new ACL(ZooDefs.Perms.CREATE | ZooDefs.Perms.READ, ANYONE_ID_UNSAFE));
+
+            // given: a namespace
+            CuratorFramework bar = client.usingNamespace("bar");
+
+            // when: create a path with custom ACL and applyToParents option open in that namespace in background
+            bar.create()
+                    .creatingParentsIfNeeded()
+                    .withACL(acl, true)
+                    .inBackground(callback)
+                    .forPath("/foo/boo");
+            assertTrue(latch.await(2000, TimeUnit.MILLISECONDS), "Callback not invoked");
+
+            // then: the created path has custom ACL
+            List<ACL> actual_bar_foo_boo = client.getACL().forPath("/bar/foo/boo");
+            assertEquals(actual_bar_foo_boo, acl);
+
+            // then: the parent path has custom ACL
+            List<ACL> actual_bar_foo = client.getACL().forPath("/bar/foo");
+            assertEquals(actual_bar_foo, acl);
+
+            // then: but the namespace path inherits ACL from CuratorFramework
+            List<ACL> actual_bar = client.getACL().forPath("/bar");
+            assertEquals(actual_bar, ZooDefs.Ids.OPEN_ACL_UNSAFE);
+        } finally {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
     /**
      * Tests that if no ACL list provided to the create builder, then the ACL list is created based on the client's ACLProvider.
      */
@@ -228,6 +297,68 @@ public class TestCreate extends BaseClassForTests {
             assertEquals(actual_bar_foo_boo, ZooDefs.Ids.OPEN_ACL_UNSAFE);
             List<ACL> actual_bar_foo = client.getACL().forPath("/bar/foo");
             assertEquals(actual_bar_foo, READ_CREATE_WRITE);
+            List<ACL> actual_bar = client.getACL().forPath("/bar");
+            assertEquals(actual_bar, READ_CREATE);
+        } finally {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    /**
+     * Tests that if no ACL list provided to the create builder, then the ACL list is created based on the client's ACLProvider.
+     */
+    @Test
+    public void testCreateWithParentsWithoutAclInNamespace() throws Exception {
+        CuratorFramework client = createClient(testACLProvider);
+        try {
+            client.start();
+
+            // given: a namespace
+            CuratorFramework bar = client.usingNamespace("bar");
+
+            // when: create a path in that namespace
+            bar.create().creatingParentsIfNeeded().forPath("/foo/boo");
+
+            // then: all created paths inherit ACLs from CuratorFramework
+            List<ACL> actual_bar_foo_boo = client.getACL().forPath("/bar/foo/boo");
+            assertEquals(actual_bar_foo_boo, ZooDefs.Ids.OPEN_ACL_UNSAFE);
+            List<ACL> actual_bar_foo = client.getACL().forPath("/bar/foo");
+            assertEquals(actual_bar_foo, READ_CREATE_WRITE);
+
+            // then: also the namespace path inherits ACL from CuratorFramework
+            List<ACL> actual_bar = client.getACL().forPath("/bar");
+            assertEquals(actual_bar, READ_CREATE);
+        } finally {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    /**
+     * Tests that if no ACL list provided to the create builder, then the ACL list is created based on the client's ACLProvider.
+     */
+    @Test
+    public void testCreateWithParentsWithoutAclInNamespaceBackground() throws Exception {
+        CuratorFramework client = createClient(testACLProvider);
+        try {
+            client.start();
+
+            final CountDownLatch latch = new CountDownLatch(1);
+            BackgroundCallback callback = (client1, event) -> latch.countDown();
+
+            // given: a namespace
+            CuratorFramework bar = client.usingNamespace("bar");
+
+            // when: create a path in that namespace in background
+            bar.create().creatingParentsIfNeeded().inBackground(callback).forPath("/foo/boo");
+            assertTrue(latch.await(2000, TimeUnit.MILLISECONDS), "Callback not invoked");
+
+            // then: all created paths inherit ACLs from CuratorFramework
+            List<ACL> actual_bar_foo_boo = client.getACL().forPath("/bar/foo/boo");
+            assertEquals(actual_bar_foo_boo, ZooDefs.Ids.OPEN_ACL_UNSAFE);
+            List<ACL> actual_bar_foo = client.getACL().forPath("/bar/foo");
+            assertEquals(actual_bar_foo, READ_CREATE_WRITE);
+
+            // then: also the namespace path inherits ACL from CuratorFramework
             List<ACL> actual_bar = client.getACL().forPath("/bar");
             assertEquals(actual_bar, READ_CREATE);
         } finally {
