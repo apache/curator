@@ -21,7 +21,6 @@ package org.apache.curator.framework.imps;
 
 import static org.apache.zookeeper.ZooDefs.Ids.ANYONE_ID_UNSAFE;
 import static org.junit.jupiter.api.Assertions.*;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -477,13 +476,15 @@ public class TestCreate extends BaseClassForTests {
             client.start();
 
             client.create().creatingParentsIfNeeded().forPath("/bat/bi/hiru");
-            client.setACL().withACL(Collections.singletonList(new ACL(0, ANYONE_ID_UNSAFE))).forPath("/bat");
+            client.setACL()
+                    .withACL(Collections.singletonList(new ACL(0, ANYONE_ID_UNSAFE)))
+                    .forPath("/bat");
 
             // In creation attempts where the parent ("/bat") has ACL that restricts read, creation request fails.
             try {
                 client.create().creatingParentsIfNeeded().forPath("/bat/bost");
                 fail("Expected NoAuthException when not authorized to read new node grandparent");
-            } catch(KeeperException.NoAuthException noAuthException) {
+            } catch (KeeperException.NoAuthException noAuthException) {
             }
 
             // But creating a node in the same subtree where its grandparent has read access is allowed and
