@@ -20,9 +20,7 @@
 package org.apache.curator.framework.imps;
 
 import static org.apache.zookeeper.ZooDefs.Ids.ANYONE_ID_UNSAFE;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -596,5 +594,36 @@ public class TestCreate extends BaseClassForTests {
         assertEquals(ProtectedUtils.toProtectedZNodePath(path, null), path);
         path = ZKPaths.makePath("hola", name);
         assertEquals(ProtectedUtils.normalizePath(path), "/hola/yo");
+    }
+
+    /**
+     * Tests that parents existence checks don't need READ access to the whole path (from / to the new node)
+     * but just to the first ancestor parent. (See https://issues.apache.org/jira/browse/ZOOKEEPER-2590)
+     */
+    @Test
+    public void testForbiddenAncestors() throws Exception {
+        CuratorFramework client = createClient(testACLProvider);
+        try {
+            client.start();
+
+            client.create().creatingParentsIfNeeded().forPath("/bat/bi/hiru");
+            client.setACL()
+                    .withACL(Collections.singletonList(new ACL(0, ANYONE_ID_UNSAFE)))
+                    .forPath("/bat");
+
+            // In creation attempts where the parent ("/bat") has ACL that restricts read, creation request fails.
+            try {
+                client.create().creatingParentsIfNeeded().forPath("/bat/bost");
+                fail("Expected NoAuthException when not authorized to read new node grandparent");
+            } catch (KeeperException.NoAuthException noAuthException) {
+            }
+
+            // But creating a node in the same subtree where its grandparent has read access is allowed and
+            // Curator will not check for higher nodes' existence.
+            client.create().creatingParentsIfNeeded().forPath("/bat/bi/hiru/bost");
+            assertNotNull(client.checkExists().forPath("/bat/bi/hiru/bost"));
+        } finally {
+            CloseableUtils.closeQuietly(client);
+        }
     }
 }

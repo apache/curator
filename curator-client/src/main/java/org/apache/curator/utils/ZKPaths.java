@@ -289,7 +289,20 @@ public class ZKPaths {
             throws InterruptedException, KeeperException {
         PathUtils.validatePath(path);
 
-        int pos = 1; // skip first slash, root is guaranteed to exist
+        int pos = path.length();
+        String subPath;
+
+        // This first loop locates the first parent that doesn't exist from leaf nodes towards root
+        // this way, it is not required to have read access on all parents.
+        // This is relevant after https://issues.apache.org/jira/browse/ZOOKEEPER-2590.
+
+        do {
+            pos = path.lastIndexOf(PATH_SEPARATOR_CHAR, pos - 1);
+            subPath = path.substring(0, pos);
+        } while (pos > 0 && zookeeper.exists(subPath, false) == null);
+
+        // Start creating the subtree after the longest path that exists, assuming root always exists.
+
         do {
             pos = path.indexOf(PATH_SEPARATOR_CHAR, pos + 1);
 
@@ -301,23 +314,23 @@ public class ZKPaths {
                 }
             }
 
-            String subPath = path.substring(0, pos);
-            if (zookeeper.exists(subPath, false) == null) {
-                try {
-                    List<ACL> acl = null;
-                    if (aclProvider != null) {
-                        acl = aclProvider.getAclForPath(subPath);
-                        if (acl == null) {
-                            acl = aclProvider.getDefaultAcl();
-                        }
-                    }
+            subPath = path.substring(0, pos);
+
+            // All the paths from the initial `pos` do not exist.
+            try {
+                List<ACL> acl = null;
+                if (aclProvider != null) {
+                    acl = aclProvider.getAclForPath(subPath);
                     if (acl == null) {
-                        acl = ZooDefs.Ids.OPEN_ACL_UNSAFE;
+                        acl = aclProvider.getDefaultAcl();
                     }
-                    zookeeper.create(subPath, new byte[0], acl, getCreateMode(asContainers));
-                } catch (KeeperException.NodeExistsException ignore) {
-                    // ignore... someone else has created it since we checked
                 }
+                if (acl == null) {
+                    acl = ZooDefs.Ids.OPEN_ACL_UNSAFE;
+                }
+                zookeeper.create(subPath, new byte[0], acl, getCreateMode(asContainers));
+            } catch (KeeperException.NodeExistsException ignore) {
+                // ignore... someone else has created it since we checked
             }
 
         } while (pos < path.length());
