@@ -26,11 +26,11 @@
     <parent>
         <groupId>org.apache.curator</groupId>
         <artifactId>apache-curator</artifactId>
-        <version>5.7.1-SNAPSHOT</version>
+        <version>5.7.1</version>
     </parent>
 
     <artifactId>curator-x-discovery-server</artifactId>
-    <version>5.7.1-SNAPSHOT</version>
+    <version>5.7.1</version>
     <packaging>bundle</packaging>
 
     <name>Curator Service Discovery Server</name>
