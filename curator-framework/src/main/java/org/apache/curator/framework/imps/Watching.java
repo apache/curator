@@ -28,10 +28,12 @@ public class Watching {
     private final CuratorWatcher curatorWatcher;
     private final boolean watched;
     private final CuratorFrameworkImpl client;
+    private WatcherRemovalManager watcherRemovalManager;
     private NamespaceWatcher namespaceWatcher;
 
     public Watching(CuratorFrameworkImpl client, boolean watched) {
         this.client = client;
+        this.watcherRemovalManager = client.getWatcherRemovalManager();
         this.watcher = null;
         this.curatorWatcher = null;
         this.watched = watched;
@@ -39,6 +41,7 @@ public class Watching {
 
     public Watching(CuratorFrameworkImpl client, Watcher watcher) {
         this.client = client;
+        this.watcherRemovalManager = client.getWatcherRemovalManager();
         this.watcher = watcher;
         this.curatorWatcher = null;
         this.watched = false;
@@ -46,6 +49,7 @@ public class Watching {
 
     public Watching(CuratorFrameworkImpl client, CuratorWatcher watcher) {
         this.client = client;
+        this.watcherRemovalManager = client.getWatcherRemovalManager();
         this.watcher = null;
         this.curatorWatcher = watcher;
         this.watched = false;
@@ -53,9 +57,15 @@ public class Watching {
 
     public Watching(CuratorFrameworkImpl client) {
         this.client = client;
+        this.watcherRemovalManager = client.getWatcherRemovalManager();
         watcher = null;
         watched = false;
         curatorWatcher = null;
+    }
+
+    Watching setWatcherRemovalManager(WatcherRemovalManager watcherRemovalManager) {
+        this.watcherRemovalManager = watcherRemovalManager;
+        return this;
     }
 
     Watcher getWatcher(String unfixedPath) {
@@ -85,10 +95,8 @@ public class Watching {
             doCommit = (rc == KeeperException.Code.OK.intValue());
         }
 
-        if (doCommit && (namespaceWatcher != null)) {
-            if (client.getWatcherRemovalManager() != null) {
-                client.getWatcherRemovalManager().add(namespaceWatcher);
-            }
+        if (doCommit && namespaceWatcher != null && watcherRemovalManager != null) {
+            watcherRemovalManager.add(namespaceWatcher);
         }
     }
 }

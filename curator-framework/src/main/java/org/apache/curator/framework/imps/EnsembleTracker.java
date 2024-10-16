@@ -45,6 +45,7 @@ import org.apache.curator.utils.Compatibility;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.apache.zookeeper.server.quorum.flexible.QuorumMaj;
 import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
@@ -132,7 +133,7 @@ public class EnsembleTracker implements Closeable, CuratorWatcher {
                     outstanding.decrementAndGet();
                     if ((event.getType() == CuratorEventType.GET_CONFIG)
                             && (event.getResultCode() == KeeperException.Code.OK.intValue())) {
-                        processConfigData(event.getData());
+                        processConfigData(event.getStat(), event.getData());
                     }
                 }
             };
@@ -181,7 +182,7 @@ public class EnsembleTracker implements Closeable, CuratorWatcher {
         }
     }
 
-    private void processConfigData(byte[] data) throws Exception {
+    private void processConfigData(Stat stat, byte[] data) throws Exception {
         Properties properties = new Properties();
         properties.load(new ByteArrayInputStream(data));
         log.info("New config event received: {}", properties);
@@ -190,6 +191,10 @@ public class EnsembleTracker implements Closeable, CuratorWatcher {
             QuorumMaj newConfig = new QuorumMaj(properties);
             String connectionString = configToConnectionString(newConfig).trim();
             if (!connectionString.isEmpty()) {
+                // ZooKeeper will set version for `reconfig`, but will not do such
+                // for `setData("/zookeeper/config")`. Normally, users should never
+                // do this, but in case of tests, `stat.getMzxid` will fill the gap.
+                newConfig.setVersion(stat.getMzxid());
                 currentConfig.set(newConfig);
                 String oldConnectionString = ensembleProvider.getConnectionString();
                 int i = oldConnectionString.indexOf('/');
