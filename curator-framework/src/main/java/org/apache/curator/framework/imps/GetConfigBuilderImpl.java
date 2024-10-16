@@ -33,6 +33,7 @@ import org.apache.zookeeper.data.Stat;
 public class GetConfigBuilderImpl
         implements GetConfigBuilder, BackgroundOperation<Void>, ErrorListenerEnsembleable<byte[]> {
     private final CuratorFrameworkImpl client;
+    private final WatcherRemovalManager watcherRemovalManager;
 
     private Backgrounding backgrounding;
     private Watching watching;
@@ -40,14 +41,16 @@ public class GetConfigBuilderImpl
 
     public GetConfigBuilderImpl(CuratorFrameworkImpl client) {
         this.client = (CuratorFrameworkImpl) client.usingNamespace(null);
+        this.watcherRemovalManager = client.getWatcherRemovalManager();
         backgrounding = new Backgrounding();
-        watching = new Watching(this.client);
+        watching = new Watching(this.client).setWatcherRemovalManager(watcherRemovalManager);
     }
 
     public GetConfigBuilderImpl(CuratorFrameworkImpl client, Backgrounding backgrounding, Watcher watcher, Stat stat) {
         this.client = (CuratorFrameworkImpl) client.usingNamespace(null);
+        this.watcherRemovalManager = client.getWatcherRemovalManager();
         this.backgrounding = backgrounding;
-        this.watching = new Watching(this.client, watcher);
+        this.watching = new Watching(this.client, watcher).setWatcherRemovalManager(watcherRemovalManager);
         this.stat = stat;
     }
 
@@ -110,19 +113,19 @@ public class GetConfigBuilderImpl
 
     @Override
     public BackgroundEnsembleable<byte[]> watched() {
-        watching = new Watching(client, true);
+        watching = new Watching(client, true).setWatcherRemovalManager(watcherRemovalManager);
         return new InternalBackgroundEnsembleable();
     }
 
     @Override
     public BackgroundEnsembleable<byte[]> usingWatcher(Watcher watcher) {
-        watching = new Watching(client, watcher);
+        watching = new Watching(client, watcher).setWatcherRemovalManager(watcherRemovalManager);
         return new InternalBackgroundEnsembleable();
     }
 
     @Override
     public BackgroundEnsembleable<byte[]> usingWatcher(CuratorWatcher watcher) {
-        watching = new Watching(client, watcher);
+        watching = new Watching(client, watcher).setWatcherRemovalManager(watcherRemovalManager);
         return new InternalBackgroundEnsembleable();
     }
 
