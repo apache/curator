@@ -39,7 +39,7 @@ import org.apache.curator.framework.listen.Listenable;
  *     <ul>
  *         <li>Pre-network partition the cache contains "/foo" and "/foo/bar"</li>
  *         <li>A network partition occurs and your Curator client loses connection to the server</li>
- *         <li>Image another client that isn't partitioned, deletes "/foo/bar" and then a third client re-creates "/foo/bar"</li>
+ *         <li>Imagine another client that isn't partitioned, deletes "/foo/bar" and then a third client re-creates "/foo/bar"</li>
  *         <li>Your client's partition is fixed. The cache will only see <em>one</em> change - the third client's re-create</li>
  *     </ul>
  *
