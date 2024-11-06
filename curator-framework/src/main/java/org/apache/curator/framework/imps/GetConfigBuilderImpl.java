@@ -40,16 +40,18 @@ public class GetConfigBuilderImpl
     private Stat stat;
 
     public GetConfigBuilderImpl(CuratorFrameworkImpl client) {
-        this.client = (CuratorFrameworkImpl) client.usingNamespace(null);
-        this.watcherRemovalManager = client.getWatcherRemovalManager();
-        backgrounding = new Backgrounding();
-        watching = new Watching(this.client).setWatcherRemovalManager(watcherRemovalManager);
+        this(client, new Backgrounding(), null, null);
     }
 
     public GetConfigBuilderImpl(CuratorFrameworkImpl client, Backgrounding backgrounding, Watcher watcher, Stat stat) {
         this.client = (CuratorFrameworkImpl) client.usingNamespace(null);
         this.watcherRemovalManager = client.getWatcherRemovalManager();
         this.backgrounding = backgrounding;
+        // We are using `client.usingNamespace(null)` to avoid `unfixNamespace` for "/zookeeper/config"(CURATOR-667)
+        // events. But `client.usingNamespace(null)` will loss possible `WatcherRemovalManager`(CURATOR-710). So, let's
+        // reset it.
+        //
+        // See also `NamespaceWatchedEvent`.
         this.watching = new Watching(this.client, watcher).setWatcherRemovalManager(watcherRemovalManager);
         this.stat = stat;
     }
