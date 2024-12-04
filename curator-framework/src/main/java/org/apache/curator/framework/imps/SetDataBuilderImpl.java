@@ -54,14 +54,14 @@ public class SetDataBuilderImpl
         this.client = client;
         backgrounding = new Backgrounding();
         version = -1;
-        compress = false;
+        compress = client.globalCompressionEnabled();
     }
 
     public SetDataBuilderImpl(CuratorFrameworkImpl client, Backgrounding backgrounding, int version, boolean compress) {
         this.client = client;
         this.backgrounding = backgrounding;
         this.version = version;
-        this.compress = compress;
+        this.compress = client.globalCompressionEnabled() || compress;
     }
 
     <T> TransactionSetDataBuilder<T> asTransactionSetDataBuilder(
