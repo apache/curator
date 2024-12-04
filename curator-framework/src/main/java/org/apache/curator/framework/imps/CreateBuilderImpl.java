@@ -1147,23 +1147,26 @@ public class CreateBuilderImpl
 
                 if (createdPath == null) {
                     try {
-                        if (failBeforeNextCreateForTesting) {
-                            failBeforeNextCreateForTesting = false;
-                            throw new KeeperException.ConnectionLossException();
-                        }
-                        createdPath = client.getZooKeeper().create(path, data, aclList, createMode, storingStat, ttl);
-                    } catch (KeeperException.NoNodeException e) {
-                        if (createParentsIfNeeded) {
-                            ZKPaths.mkdirs(
-                                    client.getZooKeeper(),
-                                    path,
-                                    false,
-                                    acling.getACLProviderForParents(),
-                                    createParentsAsContainers);
-                            createdPath = client.getZooKeeper()
-                                    .create(path, data, acling.getAclList(path), createMode, storingStat, ttl);
-                        } else {
-                            throw e;
+                        try {
+                            if (failBeforeNextCreateForTesting) {
+                                failBeforeNextCreateForTesting = false;
+                                throw new KeeperException.ConnectionLossException();
+                            }
+                            createdPath =
+                                    client.getZooKeeper().create(path, data, aclList, createMode, storingStat, ttl);
+                        } catch (KeeperException.NoNodeException e) {
+                            if (createParentsIfNeeded) {
+                                ZKPaths.mkdirs(
+                                        client.getZooKeeper(),
+                                        path,
+                                        false,
+                                        acling.getACLProviderForParents(),
+                                        createParentsAsContainers);
+                                createdPath = client.getZooKeeper()
+                                        .create(path, data, acling.getAclList(path), createMode, storingStat, ttl);
+                            } else {
+                                throw e;
+                            }
                         }
                     } catch (KeeperException.NodeExistsException e) {
                         if (setDataIfExists) {
