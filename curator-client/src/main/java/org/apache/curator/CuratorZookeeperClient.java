@@ -399,6 +399,9 @@ public class CuratorZookeeperClient implements Closeable {
     public void internalBlockUntilConnectedOrTimedOut() throws InterruptedException {
         long waitTimeMs = connectionTimeoutMs;
         while (!state.isConnected() && (waitTimeMs > 0)) {
+            if (!started.get()) {
+                throw new IllegalStateException("Client is not started");
+            }
             final CountDownLatch latch = new CountDownLatch(1);
             Watcher tempWatcher = new Watcher() {
                 @Override
