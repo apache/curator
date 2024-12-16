@@ -100,7 +100,7 @@ public class CreateBuilderImpl
         acling = new ACLing(client.getAclProvider());
         createParentsIfNeeded = false;
         createParentsAsContainers = false;
-        compress = false;
+        compress = client.globalCompressionEnabled();
         setDataIfExists = false;
         storingStat = null;
         ttl = -1;
@@ -123,7 +123,7 @@ public class CreateBuilderImpl
         this.backgrounding = backgrounding;
         this.createParentsIfNeeded = createParentsIfNeeded;
         this.createParentsAsContainers = createParentsAsContainers;
-        this.compress = compress;
+        this.compress = client.globalCompressionEnabled() || compress;
         this.setDataIfExists = setDataIfExists;
         this.acling = new ACLing(client.getAclProvider(), aclList);
         this.storingStat = storingStat;

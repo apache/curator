@@ -98,6 +98,32 @@ public class TestCompression extends BaseClassForTests {
     }
 
     @Test
+    public void testSetDataGlobalCompression() throws Exception {
+        final byte[] data = "here's a string".getBytes();
+
+        CuratorFramework client = CuratorFrameworkFactory.builder()
+                .connectString(server.getConnectString())
+                .retryPolicy(new RetryOneTime(1))
+                .enableGlobalCompression()
+                .build();
+        try {
+            client.start();
+
+            // Write without explicit compression, read with explicit compression
+            client.create().creatingParentsIfNeeded().forPath("/a/b/c", data);
+            assertArrayEquals(data, client.getData().decompressed().forPath("/a/b/c"));
+            assertNotEquals(data.length, client.checkExists().forPath("/a/b/c").getDataLength());
+
+            // Write with explicit compression, read without explicit compression
+            client.setData().compressed().forPath("/a/b/c", data);
+            assertEquals(data.length, client.getData().forPath("/a/b/c").length);
+            assertNotEquals(data.length, client.checkExists().forPath("/a/b/c").getDataLength());
+        } finally {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
     public void testSimple() throws Exception {
         final byte[] data = "here's a string".getBytes();
 
