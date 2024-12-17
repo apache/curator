@@ -509,7 +509,7 @@ public class LeaderLatch implements Closeable {
                         getChildren();
                     }
                 } else {
-                    log.error("getChildren() failed. rc = {}", event.getResultCode());
+                    log.error("creatingParentContainersIfNeeded() failed (rc = {})", event.getResultCode());
                 }
             }
         };
@@ -528,7 +528,7 @@ public class LeaderLatch implements Closeable {
                 reset();
             } catch (Exception e) {
                 ThreadUtils.checkInterrupted(e);
-                log.error("An error occurred checking resetting leadership.", e);
+                log.error("failed to check resetting leadership.", e);
             }
         }
     }
@@ -548,7 +548,7 @@ public class LeaderLatch implements Closeable {
         log.debug("checkLeadership with id: {}, ourPath: {}, children: {}", id, localOurPath, sortedChildren);
 
         if (ourIndex < 0) {
-            log.error("Can't find our node. Resetting. Index: {}", ourIndex);
+            log.error("failed to find our node; resetting (index: {})", ourIndex);
             reset();
             return;
         }
@@ -582,7 +582,7 @@ public class LeaderLatch implements Closeable {
                         getChildren();
                     } catch (Exception ex) {
                         ThreadUtils.checkInterrupted(ex);
-                        log.error("An error occurred checking the leadership.", ex);
+                        log.error("failed to check the leadership.", ex);
                     }
                 }
             }
@@ -607,6 +607,17 @@ public class LeaderLatch implements Closeable {
             public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
                 if (event.getResultCode() == KeeperException.Code.OK.intValue()) {
                     checkLeadership(event.getChildren());
+                } else if (event.getResultCode() == KeeperException.Code.NONODE.intValue()) {
+                    // latchPath has gone - reset
+                    //
+                    // This is possible when RECONNECTED during:
+                    // (1) Scale the zk cluster to 0 nodes.
+                    // (2) Scale it back.
+                    //
+                    // See also https://issues.apache.org/jira/browse/CURATOR-724
+                    reset();
+                } else {
+                    log.error("getChildren() failed (rc = {})", event.getResultCode());
                 }
             }
         };
@@ -616,11 +627,6 @@ public class LeaderLatch implements Closeable {
     @VisibleForTesting
     protected void handleStateChange(ConnectionState newState) {
         switch (newState) {
-            default: {
-                // NOP
-                break;
-            }
-
             case RECONNECTED: {
                 try {
                     if (client.getConnectionStateErrorPolicy().isErrorState(ConnectionState.SUSPENDED)
@@ -629,7 +635,7 @@ public class LeaderLatch implements Closeable {
                     }
                 } catch (Exception e) {
                     ThreadUtils.checkInterrupted(e);
-                    log.error("Could not reset leader latch", e);
+                    log.error("failed to reset leader latch", e);
                     setLeadership(false);
                 }
                 break;
@@ -644,6 +650,11 @@ public class LeaderLatch implements Closeable {
 
             case LOST: {
                 setLeadership(false);
+                break;
+            }
+
+            default: {
+                // NOP
                 break;
             }
         }
