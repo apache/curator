@@ -33,8 +33,10 @@ public class OperationTrace {
 
     private int returnCode = KeeperException.Code.OK.intValue();
     private long latencyMs;
+    private int requestTransactionCount;
     private long requestBytesLength;
     private long responseBytesLength;
+    private int responseChildrenCount = -1;
     private String path;
     private boolean withWatcher;
     private long sessionId;
@@ -54,6 +56,11 @@ public class OperationTrace {
 
     public OperationTrace setReturnCode(int returnCode) {
         this.returnCode = returnCode;
+        return this;
+    }
+
+    public OperationTrace setRequestTransactionCount(int transactionCount) {
+        this.requestTransactionCount = transactionCount;
         return this;
     }
 
@@ -97,6 +104,11 @@ public class OperationTrace {
         return this.setResponseBytesLength(data.length);
     }
 
+    public OperationTrace setResponseChildrenCount(int responseChildrenCount) {
+        this.responseChildrenCount = responseChildrenCount;
+        return this;
+    }
+
     public OperationTrace setPath(String path) {
         this.path = path;
         return this;
@@ -124,12 +136,20 @@ public class OperationTrace {
         return this.latencyMs;
     }
 
+    public int getRequestTransactionCount() {
+        return this.requestTransactionCount;
+    }
+
     public long getRequestBytesLength() {
         return this.requestBytesLength;
     }
 
     public long getResponseBytesLength() {
         return this.responseBytesLength;
+    }
+
+    public int getResponseChildrenCount() {
+        return this.responseChildrenCount;
     }
 
     public long getSessionId() {
