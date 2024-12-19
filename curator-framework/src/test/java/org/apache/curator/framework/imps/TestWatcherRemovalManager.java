@@ -22,6 +22,7 @@ package org.apache.curator.framework.imps;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -34,12 +35,27 @@ import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.Timing;
 import org.apache.curator.test.WatchersDebug;
 import org.apache.curator.test.compatibility.CuratorTestBase;
+import org.apache.curator.utils.DebugUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooDefs;
+import org.apache.zookeeper.server.quorum.QuorumPeer;
+import org.apache.zookeeper.server.quorum.flexible.QuorumMaj;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class TestWatcherRemovalManager extends CuratorTestBase {
+    private static final String superUserPasswordDigest = "curator-test:zghsj3JfJqK7DbWf0RQ1BgbJH9w="; // ran from
+    private static final String superUserPassword = "curator-test";
+
+    @BeforeEach
+    @Override
+    public void setup() throws Exception {
+        System.setProperty("zookeeper.DigestAuthenticationProvider.superDigest", superUserPasswordDigest);
+        super.setup();
+    }
+
     @Test
     public void testSameWatcherDifferentPaths1Triggered() throws Exception {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
@@ -297,6 +313,54 @@ public class TestWatcherRemovalManager extends CuratorTestBase {
         try {
             client.start();
             internalTryBasic(client.usingNamespace("lakjsf"));
+        } finally {
+            TestCleanState.closeAndTestClean(client);
+        }
+    }
+
+    @Test
+    public void testEnsembleTracker() throws Exception {
+        // given: client with ensemble tracker
+        CuratorFramework client = CuratorFrameworkFactory.builder()
+                .connectString(server.getConnectString())
+                .retryPolicy(new RetryOneTime(1))
+                .namespace("hey")
+                .ensembleTracker(true)
+                .authorization("digest", superUserPassword.getBytes())
+                .build();
+        try {
+            client.start();
+
+            // We are using standalone, so "/zookeeper/config" will be empty.
+            // So let's set it directly.
+            QuorumMaj quorumMaj = new QuorumMaj(Collections.singletonMap(
+                    1L,
+                    new QuorumPeer.QuorumServer(1, "127.0.0.1:2182:2183:participant;" + server.getConnectString())));
+            quorumMaj.setVersion(1);
+            client.usingNamespace(null)
+                    .setData()
+                    .forPath(ZooDefs.CONFIG_NODE, quorumMaj.toString().getBytes());
+
+            // when: zookeeper config node data fetched
+            while (client.getCurrentConfig().getVersion() == 0) {
+                Thread.sleep(100);
+            }
+
+            // then: the watcher must be attached
+            assertEquals(
+                    1,
+                    WatchersDebug.getDataWatches(client.getZookeeperClient().getZooKeeper())
+                            .size());
+
+            // when: ensemble tracker closed
+            System.setProperty(DebugUtils.PROPERTY_REMOVE_WATCHERS_IN_FOREGROUND, "true");
+            ((CuratorFrameworkImpl) client).getEnsembleTracker().close();
+
+            // then: the watcher must be removed
+            assertEquals(
+                    0,
+                    WatchersDebug.getDataWatches(client.getZookeeperClient().getZooKeeper())
+                            .size());
         } finally {
             TestCleanState.closeAndTestClean(client);
         }
