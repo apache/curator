@@ -36,7 +36,7 @@ public class OperationTrace {
     private int requestTransactionCount;
     private long requestBytesLength;
     private long responseBytesLength;
-    private int responseChildrenCount;
+    private int responseChildrenCount = -1;
     private String path;
     private boolean withWatcher;
     private long sessionId;
