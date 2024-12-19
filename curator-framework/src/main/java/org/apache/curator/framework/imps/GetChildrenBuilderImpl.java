@@ -165,11 +165,14 @@ public class GetChildrenBuilderImpl
                 @Override
                 public void processResult(int rc, String path, Object o, List<String> strings, Stat stat) {
                     watching.commitWatcher(rc, false);
+                    if (strings == null) {
+                        strings = Lists.newArrayList();
+                    }
                     trace.setReturnCode(rc)
                             .setPath(path)
                             .setWithWatcher(watching.hasWatcher())
                             .setStat(stat)
-                            .setResponseChildrenCount(strings != null ? strings.size() : 0)
+                            .setResponseChildrenCount(strings.size())
                             .commit();
                     CuratorEventImpl event = new CuratorEventImpl(
                             client,
