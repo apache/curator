@@ -113,7 +113,7 @@ class CuratorEventImpl implements CuratorEvent {
                 + opResults + '}';
     }
 
-    oCuratorEventImpl(
+    CuratorEventImpl(
             CuratorFrameworkImpl client,
             CuratorEventType type,
             int resultCode,
