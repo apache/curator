@@ -625,17 +625,20 @@ public class LeaderLatch implements Closeable {
     }
 
     @VisibleForTesting
+    volatile CountDownLatch debugHandleReconnectedLatch = null;
+
+    @VisibleForTesting
     protected void handleStateChange(ConnectionState newState) {
         switch (newState) {
             case RECONNECTED: {
                 try {
-                    if (client.getConnectionStateErrorPolicy().isErrorState(ConnectionState.SUSPENDED)
-                            || !hasLeadership.get()) {
-                        getChildren();
+                    if (debugHandleReconnectedLatch != null) {
+                        debugHandleReconnectedLatch.await();
                     }
+                    getChildren();
                 } catch (Exception e) {
                     ThreadUtils.checkInterrupted(e);
-                    log.error("failed to reset leader latch", e);
+                    log.error("failed to recheck leadership on reconnected", e);
                     setLeadership(false);
                 }
                 break;
