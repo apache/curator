@@ -509,7 +509,7 @@ public class LeaderLatch implements Closeable {
                         getChildren();
                     }
                 } else {
-                    log.error("getChildren() failed. rc = {}", event.getResultCode());
+                    log.error("[id={}] creatingParentContainersIfNeeded() failed (rc = {})", id, event.getResultCode());
                 }
             }
         };
@@ -528,7 +528,7 @@ public class LeaderLatch implements Closeable {
                 reset();
             } catch (Exception e) {
                 ThreadUtils.checkInterrupted(e);
-                log.error("An error occurred checking resetting leadership.", e);
+                log.error("[id={}] failed to check resetting leadership.", id, e);
             }
         }
     }
@@ -545,10 +545,10 @@ public class LeaderLatch implements Closeable {
         List<String> sortedChildren = LockInternals.getSortedChildren(LOCK_NAME, sorter, children);
         int ourIndex = (localOurPath != null) ? sortedChildren.indexOf(ZKPaths.getNodeFromPath(localOurPath)) : -1;
 
-        log.debug("checkLeadership with id: {}, ourPath: {}, children: {}", id, localOurPath, sortedChildren);
+        log.debug("[id={}] checkLeadership with ourPath: {}, children: {}", id, localOurPath, sortedChildren);
 
         if (ourIndex < 0) {
-            log.error("Can't find our node. Resetting. Index: {}", ourIndex);
+            log.error("[id={}] failed to find our node; resetting (index: {})", id, ourIndex);
             reset();
             return;
         }
@@ -582,7 +582,7 @@ public class LeaderLatch implements Closeable {
                         getChildren();
                     } catch (Exception ex) {
                         ThreadUtils.checkInterrupted(ex);
-                        log.error("An error occurred checking the leadership.", ex);
+                        log.error("[id={}] failed to check the leadership.", id, ex);
                     }
                 }
             }
@@ -592,7 +592,7 @@ public class LeaderLatch implements Closeable {
             @Override
             public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
                 if (event.getResultCode() == KeeperException.Code.NONODE.intValue()) {
-                    // previous node is gone - retry getChildren
+                    log.debug("[id={}] previous node is gone; retry getChildren", id);
                     getChildren();
                 }
             }
@@ -607,6 +607,16 @@ public class LeaderLatch implements Closeable {
             public void processResult(CuratorFramework client, CuratorEvent event) throws Exception {
                 if (event.getResultCode() == KeeperException.Code.OK.intValue()) {
                     checkLeadership(event.getChildren());
+                } else if (event.getResultCode() == KeeperException.Code.NONODE.intValue()) {
+                    log.debug("[id={}] latchPath has gone; reset", id);
+                    // This is possible when RECONNECTED during:
+                    // (1) Scale the zk cluster to 0 nodes.
+                    // (2) Scale it back.
+                    //
+                    // See also https://issues.apache.org/jira/browse/CURATOR-724
+                    reset();
+                } else {
+                    log.error("[id={}] getChildren() failed (rc = {})", id, event.getResultCode());
                 }
             }
         };
@@ -614,22 +624,20 @@ public class LeaderLatch implements Closeable {
     }
 
     @VisibleForTesting
+    volatile CountDownLatch debugHandleReconnectedLatch = null;
+
+    @VisibleForTesting
     protected void handleStateChange(ConnectionState newState) {
         switch (newState) {
-            default: {
-                // NOP
-                break;
-            }
-
             case RECONNECTED: {
                 try {
-                    if (client.getConnectionStateErrorPolicy().isErrorState(ConnectionState.SUSPENDED)
-                            || !hasLeadership.get()) {
-                        getChildren();
+                    if (debugHandleReconnectedLatch != null) {
+                        debugHandleReconnectedLatch.await();
                     }
+                    getChildren();
                 } catch (Exception e) {
                     ThreadUtils.checkInterrupted(e);
-                    log.error("Could not reset leader latch", e);
+                    log.error("[id={}] failed to recheck leadership on reconnected", id, e);
                     setLeadership(false);
                 }
                 break;
@@ -644,6 +652,11 @@ public class LeaderLatch implements Closeable {
 
             case LOST: {
                 setLeadership(false);
+                break;
+            }
+
+            default: {
+                // NOP
                 break;
             }
         }
@@ -662,7 +675,7 @@ public class LeaderLatch implements Closeable {
 
     private void setNode(String newValue) throws Exception {
         String oldPath = ourPath.getAndSet(newValue);
-        log.debug("setNode with id: {}, oldPath: {}, newValue: {}", id, oldPath, newValue);
+        log.debug("[id={}] setNode with oldPath: {}, newValue: {}", id, oldPath, newValue);
         if (oldPath != null) {
             client.delete().guaranteed().inBackground().forPath(oldPath);
         }
