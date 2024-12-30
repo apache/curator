@@ -37,7 +37,7 @@ public class TestCleanState {
 
         try {
             Timing2 timing = new Timing2();
-            CuratorFrameworkImpl internalClient = (CuratorFrameworkImpl) client;
+            InternalCuratorFramework internalClient = (InternalCuratorFramework) client;
             EnsembleTracker ensembleTracker = internalClient.getEnsembleTracker();
             if (ensembleTracker != null) {
                 Awaitility.await().until(() -> !ensembleTracker.hasOutstanding());

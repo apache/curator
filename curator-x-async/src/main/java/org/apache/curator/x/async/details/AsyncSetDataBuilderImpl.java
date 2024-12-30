@@ -21,7 +21,7 @@ package org.apache.curator.x.async.details;
 
 import static org.apache.curator.x.async.details.BackgroundProcs.safeCall;
 import static org.apache.curator.x.async.details.BackgroundProcs.statProc;
-import org.apache.curator.framework.imps.CuratorFrameworkImpl;
+import org.apache.curator.framework.imps.InternalCuratorFramework;
 import org.apache.curator.framework.imps.SetDataBuilderImpl;
 import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.api.AsyncPathAndBytesable;
@@ -29,12 +29,12 @@ import org.apache.curator.x.async.api.AsyncSetDataBuilder;
 import org.apache.zookeeper.data.Stat;
 
 class AsyncSetDataBuilderImpl implements AsyncSetDataBuilder {
-    private final CuratorFrameworkImpl client;
+    private final InternalCuratorFramework client;
     private final Filters filters;
     private boolean compressed;
     private int version = -1;
 
-    AsyncSetDataBuilderImpl(CuratorFrameworkImpl client, Filters filters) {
+    AsyncSetDataBuilderImpl(InternalCuratorFramework client, Filters filters) {
         this.client = client;
         this.filters = filters;
         this.compressed = client.compressionEnabled();

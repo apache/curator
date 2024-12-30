@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import org.apache.curator.framework.imps.CreateBuilderImpl;
-import org.apache.curator.framework.imps.CuratorFrameworkImpl;
+import org.apache.curator.framework.imps.InternalCuratorFramework;
 import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.api.AsyncCreateBuilder;
 import org.apache.curator.x.async.api.AsyncPathAndBytesable;
@@ -36,7 +36,7 @@ import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 
 class AsyncCreateBuilderImpl implements AsyncCreateBuilder {
-    private final CuratorFrameworkImpl client;
+    private final InternalCuratorFramework client;
     private final Filters filters;
     private CreateMode createMode = CreateMode.PERSISTENT;
     private List<ACL> aclList = null;
@@ -45,7 +45,7 @@ class AsyncCreateBuilderImpl implements AsyncCreateBuilder {
     private long ttl = -1;
     private int setDataVersion = -1;
 
-    AsyncCreateBuilderImpl(CuratorFrameworkImpl client, Filters filters) {
+    AsyncCreateBuilderImpl(InternalCuratorFramework client, Filters filters) {
         this.client = client;
         this.filters = filters;
     }

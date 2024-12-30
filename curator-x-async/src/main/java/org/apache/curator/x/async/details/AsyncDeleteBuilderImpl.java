@@ -24,20 +24,20 @@ import static org.apache.curator.x.async.details.BackgroundProcs.safeCall;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
-import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.framework.imps.DeleteBuilderImpl;
+import org.apache.curator.framework.imps.InternalCuratorFramework;
 import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.api.AsyncDeleteBuilder;
 import org.apache.curator.x.async.api.AsyncPathable;
 import org.apache.curator.x.async.api.DeleteOption;
 
 class AsyncDeleteBuilderImpl implements AsyncDeleteBuilder {
-    private final CuratorFrameworkImpl client;
+    private final InternalCuratorFramework client;
     private final Filters filters;
     private Set<DeleteOption> options = Collections.emptySet();
     private int version = -1;
 
-    AsyncDeleteBuilderImpl(CuratorFrameworkImpl client, Filters filters) {
+    AsyncDeleteBuilderImpl(InternalCuratorFramework client, Filters filters) {
         this.client = client;
         this.filters = filters;
     }

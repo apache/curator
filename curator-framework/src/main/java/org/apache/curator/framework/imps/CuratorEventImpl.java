@@ -114,7 +114,7 @@ class CuratorEventImpl implements CuratorEvent {
     }
 
     CuratorEventImpl(
-            CuratorFrameworkImpl client,
+            InternalCuratorFramework client,
             CuratorEventType type,
             int resultCode,
             String path,

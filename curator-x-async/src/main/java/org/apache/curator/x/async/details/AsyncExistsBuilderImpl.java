@@ -24,8 +24,8 @@ import static org.apache.curator.x.async.details.BackgroundProcs.safeStatProc;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
-import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.framework.imps.ExistsBuilderImpl;
+import org.apache.curator.framework.imps.InternalCuratorFramework;
 import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.WatchMode;
 import org.apache.curator.x.async.api.AsyncExistsBuilder;
@@ -34,12 +34,12 @@ import org.apache.curator.x.async.api.ExistsOption;
 import org.apache.zookeeper.data.Stat;
 
 class AsyncExistsBuilderImpl implements AsyncExistsBuilder {
-    private final CuratorFrameworkImpl client;
+    private final InternalCuratorFramework client;
     private final Filters filters;
     private final WatchMode watchMode;
     private Set<ExistsOption> options = Collections.emptySet();
 
-    AsyncExistsBuilderImpl(CuratorFrameworkImpl client, Filters filters, WatchMode watchMode) {
+    AsyncExistsBuilderImpl(InternalCuratorFramework client, Filters filters, WatchMode watchMode) {
         this.client = client;
         this.filters = filters;
         this.watchMode = watchMode;

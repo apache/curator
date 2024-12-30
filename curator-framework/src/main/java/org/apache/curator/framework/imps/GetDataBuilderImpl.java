@@ -35,13 +35,13 @@ import org.slf4j.LoggerFactory;
 
 public class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<String>, ErrorListenerPathable<byte[]> {
     private final Logger log = LoggerFactory.getLogger(getClass());
-    private final CuratorFrameworkImpl client;
+    private final InternalCuratorFramework client;
     private Stat responseStat;
     private Watching watching;
     private Backgrounding backgrounding;
     private boolean decompress;
 
-    GetDataBuilderImpl(CuratorFrameworkImpl client) {
+    GetDataBuilderImpl(InternalCuratorFramework client) {
         this.client = client;
         responseStat = null;
         watching = new Watching(client);
@@ -50,7 +50,7 @@ public class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<S
     }
 
     public GetDataBuilderImpl(
-            CuratorFrameworkImpl client,
+            InternalCuratorFramework client,
             Stat responseStat,
             Watcher watcher,
             Backgrounding backgrounding,

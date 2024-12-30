@@ -27,31 +27,31 @@ public class Watching {
     private final Watcher watcher;
     private final CuratorWatcher curatorWatcher;
     private final boolean watched;
-    private final CuratorFrameworkImpl client;
+    private final InternalCuratorFramework client;
     private NamespaceWatcher namespaceWatcher;
 
-    public Watching(CuratorFrameworkImpl client, boolean watched) {
+    public Watching(InternalCuratorFramework client, boolean watched) {
         this.client = client;
         this.watcher = null;
         this.curatorWatcher = null;
         this.watched = watched;
     }
 
-    public Watching(CuratorFrameworkImpl client, Watcher watcher) {
+    public Watching(InternalCuratorFramework client, Watcher watcher) {
         this.client = client;
         this.watcher = watcher;
         this.curatorWatcher = null;
         this.watched = false;
     }
 
-    public Watching(CuratorFrameworkImpl client, CuratorWatcher watcher) {
+    public Watching(InternalCuratorFramework client, CuratorWatcher watcher) {
         this.client = client;
         this.watcher = null;
         this.curatorWatcher = watcher;
         this.watched = false;
     }
 
-    public Watching(CuratorFrameworkImpl client) {
+    public Watching(InternalCuratorFramework client) {
         this.client = client;
         watcher = null;
         watched = false;

@@ -24,10 +24,10 @@ import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.zookeeper.AsyncCallback;
 
 class BackgroundSyncImpl implements BackgroundOperation<String> {
-    private final CuratorFrameworkImpl client;
+    private final InternalCuratorFramework client;
     private final Object context;
 
-    BackgroundSyncImpl(CuratorFrameworkImpl client, Object context) {
+    BackgroundSyncImpl(InternalCuratorFramework client, Object context) {
         this.client = client;
         this.context = context;
     }

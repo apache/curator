@@ -47,30 +47,12 @@ import org.apache.curator.drivers.OperationTrace;
 import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.framework.api.CompressionProvider;
-import org.apache.curator.framework.api.CreateBuilder;
-import org.apache.curator.framework.api.CuratorClosedException;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.CuratorListener;
-import org.apache.curator.framework.api.DeleteBuilder;
-import org.apache.curator.framework.api.ExistsBuilder;
-import org.apache.curator.framework.api.GetACLBuilder;
-import org.apache.curator.framework.api.GetChildrenBuilder;
-import org.apache.curator.framework.api.GetConfigBuilder;
-import org.apache.curator.framework.api.GetDataBuilder;
-import org.apache.curator.framework.api.ReconfigBuilder;
-import org.apache.curator.framework.api.RemoveWatchesBuilder;
-import org.apache.curator.framework.api.SetACLBuilder;
-import org.apache.curator.framework.api.SetDataBuilder;
-import org.apache.curator.framework.api.SyncBuilder;
 import org.apache.curator.framework.api.UnhandledErrorListener;
-import org.apache.curator.framework.api.WatchesBuilder;
-import org.apache.curator.framework.api.transaction.CuratorMultiTransaction;
-import org.apache.curator.framework.api.transaction.CuratorTransaction;
-import org.apache.curator.framework.api.transaction.TransactionOp;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.listen.StandardListenerManager;
 import org.apache.curator.framework.schema.SchemaSet;
@@ -81,7 +63,6 @@ import org.apache.curator.framework.state.ConnectionStateManager;
 import org.apache.curator.utils.DebugUtils;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.curator.utils.ThreadUtils;
-import org.apache.curator.utils.ZKPaths;
 import org.apache.curator.utils.ZookeeperCompatibility;
 import org.apache.curator.utils.ZookeeperFactory;
 import org.apache.zookeeper.KeeperException;
@@ -93,7 +74,7 @@ import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CuratorFrameworkImpl implements CuratorFramework {
+public final class CuratorFrameworkImpl extends InternalCuratorFramework {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorZookeeperClient client;
     private final StandardListenerManager<CuratorListener> listeners;
@@ -236,11 +217,6 @@ public class CuratorFrameworkImpl implements CuratorFramework {
     }
 
     @Override
-    public WatcherRemoveCuratorFramework newWatcherRemoveCuratorFramework() {
-        return new WatcherRemovalFacade(this);
-    }
-
-    @Override
     public QuorumVerifier getCurrentConfig() {
         return (ensembleTracker != null) ? ensembleTracker.getCurrentConfig() : null;
     }
@@ -271,39 +247,6 @@ public class CuratorFrameworkImpl implements CuratorFramework {
             threadFactory = ThreadUtils.newThreadFactory("Framework");
         }
         return threadFactory;
-    }
-
-    protected CuratorFrameworkImpl(CuratorFrameworkImpl parent) {
-        client = parent.client;
-        listeners = parent.listeners;
-        unhandledErrorListeners = parent.unhandledErrorListeners;
-        threadFactory = parent.threadFactory;
-        maxCloseWaitMs = parent.maxCloseWaitMs;
-        backgroundOperations = parent.backgroundOperations;
-        forcedSleepOperations = parent.forcedSleepOperations;
-        connectionStateManager = parent.connectionStateManager;
-        defaultData = parent.defaultData;
-        failedDeleteManager = parent.failedDeleteManager;
-        failedRemoveWatcherManager = parent.failedRemoveWatcherManager;
-        compressionProvider = parent.compressionProvider;
-        compressionEnabled = parent.compressionEnabled;
-        aclProvider = parent.aclProvider;
-        namespaceFacadeCache = parent.namespaceFacadeCache;
-        namespace = parent.namespace;
-        state = parent.state;
-        authInfos = parent.authInfos;
-        useContainerParentsIfAvailable = parent.useContainerParentsIfAvailable;
-        connectionStateErrorPolicy = parent.connectionStateErrorPolicy;
-        internalConnectionHandler = parent.internalConnectionHandler;
-        schemaSet = parent.schemaSet;
-        ensembleTracker = parent.ensembleTracker;
-        runSafeService = parent.runSafeService;
-        zookeeperCompatibility = parent.zookeeperCompatibility;
-    }
-
-    @Override
-    public void createContainers(String path) throws Exception {
-        checkExists().creatingParentContainersIfNeeded().forPath(ZKPaths.makePath(path, "foo"));
     }
 
     @Override
@@ -452,113 +395,14 @@ public class CuratorFrameworkImpl implements CuratorFramework {
         }
     }
 
-    @Override
-    @Deprecated
-    public CuratorFramework nonNamespaceView() {
-        return usingNamespace(null);
-    }
-
-    @Override
-    public String getNamespace() {
-        String str = namespace.getNamespace();
-        return (str != null) ? str : "";
-    }
-
-    private void checkState() {
-        CuratorFrameworkState state = getState();
-        switch (state) {
-            case STARTED:
-                return;
-            case STOPPED:
-                throw new CuratorClosedException();
-            default:
-                String msg = String.format("Expected state [%s] was [%s]", CuratorFrameworkState.STARTED, state);
-                throw new IllegalStateException(msg);
-        }
+    NamespaceImpl getNamespaceImpl() {
+        return namespace;
     }
 
     @Override
     public CuratorFramework usingNamespace(String newNamespace) {
         checkState();
         return namespaceFacadeCache.get(newNamespace);
-    }
-
-    @Override
-    public CreateBuilder create() {
-        checkState();
-        return new CreateBuilderImpl(this);
-    }
-
-    @Override
-    public DeleteBuilder delete() {
-        checkState();
-        return new DeleteBuilderImpl(this);
-    }
-
-    @Override
-    public ExistsBuilder checkExists() {
-        checkState();
-        return new ExistsBuilderImpl(this);
-    }
-
-    @Override
-    public GetDataBuilder getData() {
-        checkState();
-        return new GetDataBuilderImpl(this);
-    }
-
-    @Override
-    public SetDataBuilder setData() {
-        checkState();
-        return new SetDataBuilderImpl(this);
-    }
-
-    @Override
-    public GetChildrenBuilder getChildren() {
-        checkState();
-        return new GetChildrenBuilderImpl(this);
-    }
-
-    @Override
-    public GetACLBuilder getACL() {
-        checkState();
-        return new GetACLBuilderImpl(this);
-    }
-
-    @Override
-    public SetACLBuilder setACL() {
-        checkState();
-        return new SetACLBuilderImpl(this);
-    }
-
-    @Override
-    public ReconfigBuilder reconfig() {
-        checkState();
-        return new ReconfigBuilderImpl(this);
-    }
-
-    @Override
-    public GetConfigBuilder getConfig() {
-        checkState();
-        return new GetConfigBuilderImpl(this);
-    }
-
-    @Override
-    public CuratorTransaction inTransaction() {
-        checkState();
-        return new CuratorTransactionImpl(this);
-    }
-
-    @Override
-    public CuratorMultiTransaction transaction() {
-        checkState();
-        return new CuratorMultiTransactionImpl(this);
-    }
-
-    @Override
-    public TransactionOp transactionOp() {
-        checkState();
-        return new TransactionOpImpl(this);
     }
 
     @Override
@@ -574,41 +418,6 @@ public class CuratorFrameworkImpl implements CuratorFramework {
     @Override
     public Listenable<UnhandledErrorListener> getUnhandledErrorListenable() {
         return unhandledErrorListeners;
-    }
-
-    @Override
-    public void sync(String path, Object context) {
-        checkState();
-
-        path = fixForNamespace(path);
-
-        internalSync(this, path, context);
-    }
-
-    @Override
-    public SyncBuilder sync() {
-        checkState();
-        return new SyncBuilderImpl(this);
-    }
-
-    @Override
-    public RemoveWatchesBuilder watches() {
-        checkState();
-        return new RemoveWatchesBuilderImpl(this);
-    }
-
-    @Override
-    public WatchesBuilder watchers() {
-        Preconditions.checkState(
-                zookeeperCompatibility.hasPersistentWatchers(),
-                "watchers() is not supported in the ZooKeeper library and/or server being used. Use watches() instead.");
-        checkState();
-        return new WatchesBuilderImpl(this);
-    }
-
-    protected void internalSync(CuratorFrameworkImpl impl, String path, Object context) {
-        BackgroundOperation<String> operation = new BackgroundSyncImpl(impl, context);
-        performBackgroundOperation(new OperationAndData<String>(operation, path, null, null, context, null));
     }
 
     @Override
@@ -640,10 +449,12 @@ public class CuratorFrameworkImpl implements CuratorFramework {
         return aclProvider;
     }
 
+    @Override
     FailedDeleteManager getFailedDeleteManager() {
         return failedDeleteManager;
     }
 
+    @Override
     FailedRemoveWatchManager getFailedRemoveWatcherManager() {
         return failedRemoveWatcherManager;
     }
@@ -652,14 +463,12 @@ public class CuratorFrameworkImpl implements CuratorFramework {
         return client.newRetryLoop();
     }
 
-    ZooKeeper getZooKeeper() throws Exception {
-        return client.getZooKeeper();
-    }
-
+    @Override
     CompressionProvider getCompressionProvider() {
         return compressionProvider;
     }
 
+    @Override
     boolean useContainerParentsIfAvailable() {
         return useContainerParentsIfAvailable;
     }
@@ -796,6 +605,7 @@ public class CuratorFrameworkImpl implements CuratorFramework {
         return false;
     }
 
+    @Override
     void logError(String reason, final Throwable e) {
         if ((reason == null) || (reason.length() == 0)) {
             reason = "n/a";
@@ -819,18 +629,6 @@ public class CuratorFrameworkImpl implements CuratorFramework {
         if (debugUnhandledErrorListener != null) {
             debugUnhandledErrorListener.unhandledError(reason, e);
         }
-    }
-
-    String unfixForNamespace(String path) {
-        return namespace.unfixForNamespace(path);
-    }
-
-    String fixForNamespace(String path) {
-        return namespace.fixForNamespace(path, false);
-    }
-
-    String fixForNamespace(String path, boolean isSequential) {
-        return namespace.fixForNamespace(path, isSequential);
     }
 
     byte[] getDefaultData() {
@@ -866,34 +664,6 @@ public class CuratorFrameworkImpl implements CuratorFramework {
         }
     }
 
-    Watcher.Event.KeeperState codeToState(KeeperException.Code code) {
-        switch (code) {
-            case AUTHFAILED:
-            case NOAUTH: {
-                return Watcher.Event.KeeperState.AuthFailed;
-            }
-
-            case CONNECTIONLOSS:
-            case OPERATIONTIMEOUT: {
-                return Watcher.Event.KeeperState.Disconnected;
-            }
-
-            case SESSIONEXPIRED: {
-                return Watcher.Event.KeeperState.Expired;
-            }
-
-            case OK:
-            case SESSIONMOVED: {
-                return Watcher.Event.KeeperState.SyncConnected;
-            }
-        }
-        return Watcher.Event.KeeperState.fromInt(-1);
-    }
-
-    WatcherRemovalManager getWatcherRemovalManager() {
-        return null;
-    }
-
     boolean setToSuspended() {
         return connectionStateManager.setToSuspended();
     }
@@ -902,6 +672,7 @@ public class CuratorFrameworkImpl implements CuratorFramework {
         connectionStateManager.addStateChange(newConnectionState);
     }
 
+    @Override
     EnsembleTracker getEnsembleTracker() {
         return ensembleTracker;
     }
@@ -959,7 +730,7 @@ public class CuratorFrameworkImpl implements CuratorFramework {
                 }
             }
 
-            validateConnection(codeToState(code));
+            validateConnection(FrameworkUtils.codeToState(code));
             logError("Background operation retry gave up", e);
         }
         return doRetry;
