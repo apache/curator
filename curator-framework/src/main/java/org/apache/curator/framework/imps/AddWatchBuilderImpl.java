@@ -34,18 +34,18 @@ import org.apache.zookeeper.AddWatchMode;
 import org.apache.zookeeper.Watcher;
 
 public class AddWatchBuilderImpl implements AddWatchBuilder, Pathable<Void>, BackgroundOperation<String> {
-    private final CuratorFrameworkImpl client;
+    private final InternalCuratorFramework client;
     private Watching watching;
     private Backgrounding backgrounding = new Backgrounding();
     private AddWatchMode mode = AddWatchMode.PERSISTENT_RECURSIVE;
 
-    AddWatchBuilderImpl(CuratorFrameworkImpl client) {
+    AddWatchBuilderImpl(InternalCuratorFramework client) {
         this.client = client;
         watching = new Watching(client, true);
     }
 
     public AddWatchBuilderImpl(
-            CuratorFrameworkImpl client, Watching watching, Backgrounding backgrounding, AddWatchMode mode) {
+            InternalCuratorFramework client, Watching watching, Backgrounding backgrounding, AddWatchMode mode) {
         this.client = client;
         this.watching = watching;
         this.backgrounding = backgrounding;

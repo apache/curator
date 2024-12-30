@@ -32,20 +32,21 @@ import org.apache.zookeeper.data.Stat;
 
 public class GetConfigBuilderImpl
         implements GetConfigBuilder, BackgroundOperation<Void>, ErrorListenerEnsembleable<byte[]> {
-    private final CuratorFrameworkImpl client;
+    private final InternalCuratorFramework client;
 
     private Backgrounding backgrounding;
     private Watching watching;
     private Stat stat;
 
-    public GetConfigBuilderImpl(CuratorFrameworkImpl client) {
-        this.client = (CuratorFrameworkImpl) client.usingNamespace(null);
+    public GetConfigBuilderImpl(InternalCuratorFramework client) {
+        this.client = (InternalCuratorFramework) client.usingNamespace(null);
         backgrounding = new Backgrounding();
         watching = new Watching(this.client);
     }
 
-    public GetConfigBuilderImpl(CuratorFrameworkImpl client, Backgrounding backgrounding, Watcher watcher, Stat stat) {
-        this.client = (CuratorFrameworkImpl) client.usingNamespace(null);
+    public GetConfigBuilderImpl(
+            InternalCuratorFramework client, Backgrounding backgrounding, Watcher watcher, Stat stat) {
+        this.client = (InternalCuratorFramework) client.usingNamespace(null);
         this.backgrounding = backgrounding;
         this.watching = new Watching(this.client, watcher);
         this.stat = stat;

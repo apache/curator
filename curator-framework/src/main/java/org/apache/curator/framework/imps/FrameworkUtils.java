@@ -19,27 +19,31 @@
 
 package org.apache.curator.framework.imps;
 
-import org.apache.curator.framework.WatcherRemoveCuratorFramework;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.Watcher;
 
-class WatcherRemovalFacade extends DelegatingCuratorFramework implements WatcherRemoveCuratorFramework {
-    private final WatcherRemovalManager removalManager;
+class FrameworkUtils {
+    static Watcher.Event.KeeperState codeToState(KeeperException.Code code) {
+        switch (code) {
+            case AUTHFAILED:
+            case NOAUTH: {
+                return Watcher.Event.KeeperState.AuthFailed;
+            }
 
-    WatcherRemovalFacade(InternalCuratorFramework client) {
-        super(client);
-        removalManager = new WatcherRemovalManager(client);
-    }
+            case CONNECTIONLOSS:
+            case OPERATIONTIMEOUT: {
+                return Watcher.Event.KeeperState.Disconnected;
+            }
 
-    WatcherRemovalManager getRemovalManager() {
-        return removalManager;
-    }
+            case SESSIONEXPIRED: {
+                return Watcher.Event.KeeperState.Expired;
+            }
 
-    @Override
-    public void removeWatchers() {
-        removalManager.removeWatchers();
-    }
-
-    @Override
-    WatcherRemovalManager getWatcherRemovalManager() {
-        return removalManager;
+            case OK:
+            case SESSIONMOVED: {
+                return Watcher.Event.KeeperState.SyncConnected;
+            }
+        }
+        return Watcher.Event.KeeperState.fromInt(-1);
     }
 }

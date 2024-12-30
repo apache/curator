@@ -34,12 +34,12 @@ import org.slf4j.LoggerFactory;
 
 class FindAndDeleteProtectedNodeInBackground implements BackgroundOperation<Void> {
     private final Logger log = LoggerFactory.getLogger(getClass());
-    private final CuratorFrameworkImpl client;
+    private final InternalCuratorFramework client;
     private final String namespaceAdjustedParentPath;
     private final String protectedId;
 
     FindAndDeleteProtectedNodeInBackground(
-            CuratorFrameworkImpl client, String namespaceAdjustedParentPath, String protectedId) {
+            InternalCuratorFramework client, String namespaceAdjustedParentPath, String protectedId) {
         this.client = client;
         this.namespaceAdjustedParentPath = namespaceAdjustedParentPath;
         this.protectedId = protectedId;

@@ -24,7 +24,7 @@ import static org.apache.curator.x.async.details.BackgroundProcs.safeCall;
 import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.curator.framework.api.WatchableBase;
 import org.apache.curator.framework.imps.AddWatchBuilderImpl;
-import org.apache.curator.framework.imps.CuratorFrameworkImpl;
+import org.apache.curator.framework.imps.InternalCuratorFramework;
 import org.apache.curator.framework.imps.Watching;
 import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.api.AsyncPathable;
@@ -38,12 +38,12 @@ class AsyncWatchBuilderImpl
                 AsyncWatchBuilder2,
                 WatchableBase<AsyncPathable<AsyncStage<Void>>>,
                 AsyncPathable<AsyncStage<Void>> {
-    private final CuratorFrameworkImpl client;
+    private final InternalCuratorFramework client;
     private final Filters filters;
     private Watching watching;
     private AddWatchMode mode = AddWatchMode.PERSISTENT_RECURSIVE;
 
-    AsyncWatchBuilderImpl(CuratorFrameworkImpl client, Filters filters) {
+    AsyncWatchBuilderImpl(InternalCuratorFramework client, Filters filters) {
         this.client = client;
         this.filters = filters;
         watching = new Watching(client, true);

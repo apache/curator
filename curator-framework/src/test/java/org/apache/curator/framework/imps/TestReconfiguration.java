@@ -213,7 +213,7 @@ public class TestReconfiguration extends CuratorTestBase {
     public void testAddWithoutEnsembleTracker() throws Exception {
         final String initialClusterCS = cluster.getConnectString();
         try (CuratorFramework client = newClient(cluster.getConnectString(), false)) {
-            assertEquals(((CuratorFrameworkImpl) client).getEnsembleTracker(), null);
+            assertEquals(((InternalCuratorFramework) client).getEnsembleTracker(), null);
             client.start();
 
             QuorumVerifier oldConfig = toQuorumVerifier(client.getConfig().forEnsemble());

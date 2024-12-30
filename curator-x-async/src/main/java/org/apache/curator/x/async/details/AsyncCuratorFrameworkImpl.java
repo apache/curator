@@ -28,9 +28,9 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
-import org.apache.curator.framework.imps.CuratorFrameworkImpl;
 import org.apache.curator.framework.imps.CuratorMultiTransactionImpl;
 import org.apache.curator.framework.imps.GetACLBuilderImpl;
+import org.apache.curator.framework.imps.InternalCuratorFramework;
 import org.apache.curator.framework.imps.SyncBuilderImpl;
 import org.apache.curator.x.async.AsyncCuratorFramework;
 import org.apache.curator.x.async.AsyncStage;
@@ -41,7 +41,7 @@ import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 
 public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework {
-    private final CuratorFrameworkImpl client;
+    private final InternalCuratorFramework client;
     private final Filters filters;
     private final WatchMode watchMode;
     private final boolean watched;
@@ -50,9 +50,9 @@ public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework {
         this(reveal(client), new Filters(null, null, null), WatchMode.stateChangeAndSuccess, false);
     }
 
-    private static CuratorFrameworkImpl reveal(CuratorFramework client) {
+    private static InternalCuratorFramework reveal(CuratorFramework client) {
         try {
-            return (CuratorFrameworkImpl) Objects.requireNonNull(client, "client cannot be null");
+            return (InternalCuratorFramework) Objects.requireNonNull(client, "client cannot be null");
         } catch (Exception e) {
             throw new IllegalArgumentException(
                     "Only Curator clients created through CuratorFrameworkFactory are supported: "
@@ -61,7 +61,7 @@ public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework {
     }
 
     public AsyncCuratorFrameworkImpl(
-            CuratorFrameworkImpl client, Filters filters, WatchMode watchMode, boolean watched) {
+            InternalCuratorFramework client, Filters filters, WatchMode watchMode, boolean watched) {
         this.client = Objects.requireNonNull(client, "client cannot be null");
         this.filters = Objects.requireNonNull(filters, "filters cannot be null");
         this.watchMode = Objects.requireNonNull(watchMode, "watchMode cannot be null");
@@ -223,7 +223,7 @@ public class AsyncCuratorFrameworkImpl implements AsyncCuratorFramework {
         return filters;
     }
 
-    CuratorFrameworkImpl getClient() {
+    InternalCuratorFramework getClient() {
         return client;
     }
 

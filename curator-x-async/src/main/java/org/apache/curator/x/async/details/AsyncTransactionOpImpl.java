@@ -27,7 +27,7 @@ import org.apache.curator.framework.api.VersionPathAndBytesable;
 import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.framework.api.transaction.TransactionCreateBuilder2;
 import org.apache.curator.framework.api.transaction.TransactionSetDataBuilder;
-import org.apache.curator.framework.imps.CuratorFrameworkImpl;
+import org.apache.curator.framework.imps.InternalCuratorFramework;
 import org.apache.curator.x.async.api.AsyncPathAndBytesable;
 import org.apache.curator.x.async.api.AsyncPathable;
 import org.apache.curator.x.async.api.AsyncTransactionCheckBuilder;
@@ -39,9 +39,9 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.ACL;
 
 class AsyncTransactionOpImpl implements AsyncTransactionOp {
-    private final CuratorFrameworkImpl client;
+    private final InternalCuratorFramework client;
 
-    AsyncTransactionOpImpl(CuratorFrameworkImpl client) {
+    AsyncTransactionOpImpl(InternalCuratorFramework client) {
         this.client = client;
     }
 

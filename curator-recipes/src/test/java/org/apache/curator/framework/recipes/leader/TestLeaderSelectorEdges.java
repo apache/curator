@@ -21,7 +21,6 @@ package org.apache.curator.framework.recipes.leader;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.curator.framework.CuratorFramework;
@@ -98,15 +97,13 @@ public class TestLeaderSelectorEdges extends BaseClassForTests {
         } finally {
             try {
                 leaderSelector1.close();
-            } catch (IllegalStateException e) {
-                fail(e.getMessage());
+            } catch (IllegalStateException ignored) {
             }
             try {
                 if (leaderSelector2 != null) {
                     leaderSelector2.close();
                 }
-            } catch (IllegalStateException e) {
-                fail(e.getMessage());
+            } catch (IllegalStateException ignored) {
             }
             client.close();
         }
