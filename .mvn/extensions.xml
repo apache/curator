@@ -27,7 +27,7 @@
         <!--
           Make sure the extension version is compatible with server version of https://ge.apache.org/, otherwise CI
           could pass while build scan rejected. It might be good to fail CI in this case, so we can drop this comment,
-          but I did find an option.
+          but I did not find an option.
 
           Refs: https://docs.gradle.com/develocity/compatibility/
         -->
