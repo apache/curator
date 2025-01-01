@@ -31,10 +31,10 @@ import org.slf4j.LoggerFactory;
 
 public class WatcherRemovalManager {
     private final Logger log = LoggerFactory.getLogger(getClass());
-    private final CuratorFrameworkImpl client;
+    private final InternalCuratorFramework client;
     private final Set<NamespaceWatcher> entries = Sets.newConcurrentHashSet();
 
-    WatcherRemovalManager(CuratorFrameworkImpl client) {
+    WatcherRemovalManager(InternalCuratorFramework client) {
         this.client = client;
     }
 

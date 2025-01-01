@@ -34,7 +34,7 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
 
 public class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<String>, ErrorListenerPathable<Void> {
-    private final CuratorFrameworkImpl client;
+    private final InternalCuratorFramework client;
     private int version;
     private Backgrounding backgrounding;
     private boolean deletingChildrenIfNeeded;
@@ -47,7 +47,7 @@ public class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<Str
     @VisibleForTesting
     boolean failBeforeNextDeleteForTesting = false;
 
-    DeleteBuilderImpl(CuratorFrameworkImpl client) {
+    DeleteBuilderImpl(InternalCuratorFramework client) {
         this.client = client;
         version = -1;
         backgrounding = new Backgrounding();
@@ -57,7 +57,7 @@ public class DeleteBuilderImpl implements DeleteBuilder, BackgroundOperation<Str
     }
 
     public DeleteBuilderImpl(
-            CuratorFrameworkImpl client,
+            InternalCuratorFramework client,
             int version,
             Backgrounding backgrounding,
             boolean deletingChildrenIfNeeded,
