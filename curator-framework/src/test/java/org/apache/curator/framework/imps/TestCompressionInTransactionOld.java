@@ -172,4 +172,59 @@ public class TestCompressionInTransactionOld extends BaseClassForTests {
             CloseableUtils.closeQuietly(client);
         }
     }
+
+    @Test
+    public void testGlobalCompression() throws Exception {
+        final String path1 = "/a";
+        final String path2 = "/b";
+
+        final byte[] data1 = "here's a string".getBytes();
+        final byte[] data2 = "here's another string".getBytes();
+
+        CuratorFramework client = CuratorFrameworkFactory.builder()
+                .connectString(server.getConnectString())
+                .retryPolicy(new RetryOneTime(1))
+                .enableGlobalCompression()
+                .build();
+        try {
+            client.start();
+
+            // Create the nodes
+            client.inTransaction()
+                    .create()
+                    .forPath(path1, data1)
+                    .and()
+                    .create()
+                    .forPath(path2, data2)
+                    .and()
+                    .commit();
+
+            // Check they exist
+            assertNotNull(client.checkExists().forPath(path1));
+            assertNotEquals(data1.length, client.checkExists().forPath(path1).getDataLength());
+            assertNotNull(client.checkExists().forPath(path2));
+            assertNotEquals(data2.length, client.checkExists().forPath(path2).getDataLength());
+            assertArrayEquals(data1, client.getData().decompressed().forPath(path1));
+            assertArrayEquals(data2, client.getData().decompressed().forPath(path2));
+
+            // Set the nodes, path1 compressed, path2 uncompressed.
+            client.inTransaction()
+                    .setData()
+                    .forPath(path1, data2)
+                    .and()
+                    .setData()
+                    .forPath(path2, data1)
+                    .and()
+                    .commit();
+
+            assertNotNull(client.checkExists().forPath(path1));
+            assertNotEquals(data2.length, client.checkExists().forPath(path1).getDataLength());
+            assertNotNull(client.checkExists().forPath(path2));
+            assertNotEquals(data1.length, client.checkExists().forPath(path2).getDataLength());
+            assertArrayEquals(data2, client.getData().decompressed().forPath(path1));
+            assertArrayEquals(data1, client.getData().decompressed().forPath(path2));
+        } finally {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
 }

@@ -145,4 +145,33 @@ public class TestCompressionInTransactionNew extends BaseClassForTests {
             CloseableUtils.closeQuietly(client);
         }
     }
+
+    @Test
+    public void testGlobalCompression() throws Exception {
+        final String path = "/a";
+        final byte[] data = "here's a string".getBytes();
+
+        CuratorFramework client = CuratorFrameworkFactory.builder()
+                .connectString(server.getConnectString())
+                .retryPolicy(new RetryOneTime(1))
+                .enableGlobalCompression()
+                .build();
+        try {
+            client.start();
+
+            // Create compressed data in a transaction
+            CuratorOp op = client.transactionOp().create().forPath(path, data);
+            client.transaction().forOperations(op);
+            assertArrayEquals(data, client.getData().decompressed().forPath(path));
+            assertNotEquals(data.length, client.checkExists().forPath(path).getDataLength());
+
+            // Set compressed data in transaction
+            op = client.transactionOp().setData().forPath(path, data);
+            client.transaction().forOperations(op);
+            assertArrayEquals(data, client.getData().decompressed().forPath(path));
+            assertNotEquals(data.length, client.checkExists().forPath(path).getDataLength());
+        } finally {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
 }

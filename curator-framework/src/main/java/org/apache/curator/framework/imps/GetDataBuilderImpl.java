@@ -46,7 +46,7 @@ public class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<S
         responseStat = null;
         watching = new Watching(client);
         backgrounding = new Backgrounding();
-        decompress = false;
+        decompress = client.globalCompressionEnabled();
     }
 
     public GetDataBuilderImpl(
@@ -59,7 +59,7 @@ public class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<S
         this.responseStat = responseStat;
         this.watching = new Watching(client, watcher);
         this.backgrounding = backgrounding;
-        this.decompress = decompress;
+        this.decompress = client.globalCompressionEnabled() || decompress;
     }
 
     @Override
