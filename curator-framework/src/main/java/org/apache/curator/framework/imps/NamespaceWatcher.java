@@ -22,6 +22,7 @@ package org.apache.curator.framework.imps;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import java.io.Closeable;
+import java.util.concurrent.Executor;
 import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.zookeeper.WatchedEvent;
@@ -65,14 +66,25 @@ class NamespaceWatcher implements Watcher, Closeable {
                 client.getWatcherRemovalManager().noteTriggeredWatcher(this);
             }
 
+            Runnable watchRunnable = null;
             if (actualWatcher != null) {
-                actualWatcher.process(new NamespaceWatchedEvent(client, event));
+                watchRunnable = () -> actualWatcher.process(new NamespaceWatchedEvent(client, event));
             } else if (curatorWatcher != null) {
-                try {
-                    curatorWatcher.process(new NamespaceWatchedEvent(client, event));
-                } catch (Exception e) {
-                    ThreadUtils.checkInterrupted(e);
-                    client.logError("Watcher exception", e);
+                watchRunnable = () -> {
+                    try {
+                        curatorWatcher.process(new NamespaceWatchedEvent(client, event));
+                    } catch (Exception e) {
+                        ThreadUtils.checkInterrupted(e);
+                        client.logError("Watcher exception", e);
+                    }
+                };
+            }
+            if (watchRunnable != null) {
+                Executor watchExecutor = client.getAsyncWatchService();
+                if (watchExecutor != null) {
+                    watchExecutor.execute(watchRunnable);
+                } else {
+                    watchRunnable.run();
                 }
             }
         }
