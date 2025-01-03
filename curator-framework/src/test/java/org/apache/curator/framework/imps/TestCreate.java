@@ -691,14 +691,15 @@ public class TestCreate extends BaseClassForTests {
 
             client.create().creatingParentsIfNeeded().forPath("/bat/bi/hiru");
             client.setACL()
-                    .withACL(Collections.singletonList(new ACL(0, ANYONE_ID_UNSAFE)))
+                    .withACL(Collections.singletonList(new ACL(ZooDefs.Perms.CREATE, ANYONE_ID_UNSAFE)))
                     .forPath("/bat");
 
             // In creation attempts where the parent ("/bat") has ACL that restricts read, creation request fails.
             try {
-                client.create().creatingParentsIfNeeded().forPath("/bat/bost");
+                client.create().creatingParentsIfNeeded().forPath("/bat/foo/bost");
                 fail("Expected NoAuthException when not authorized to read new node grandparent");
             } catch (KeeperException.NoAuthException noAuthException) {
+                assertEquals(noAuthException.getPath(), "/bat");
             }
 
             // But creating a node in the same subtree where its grandparent has read access is allowed and
