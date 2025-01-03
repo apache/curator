@@ -224,7 +224,7 @@
                         <dependency>org.apache.curator:curator-recipes</dependency>
                         <dependency>org.apache.curator:curator-client</dependency>
                     </dependenciesToScan>
-                    <excludedGroups>master</excludedGroups>
+                    <excludedGroups>master,ZOOKEEPER-2590</excludedGroups>
                 </configuration>
             </plugin>
         </plugins>

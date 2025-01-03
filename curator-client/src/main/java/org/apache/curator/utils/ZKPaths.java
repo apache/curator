@@ -282,28 +282,29 @@ public class ZKPaths {
      */
     public static void mkdirs(
             ZooKeeper zookeeper,
-            String path,
+            final String path,
             boolean makeLastNode,
             InternalACLProvider aclProvider,
             boolean asContainers)
             throws InterruptedException, KeeperException {
         PathUtils.validatePath(path);
 
-        int pos = path.length();
-        String subPath;
-
-        // This first loop locates the first parent that doesn't exist from leaf nodes towards root
+        // This first loop locates the first node that doesn't exist from leaf nodes towards root
         // this way, it is not required to have read access on all parents.
         // This is relevant after https://issues.apache.org/jira/browse/ZOOKEEPER-2590.
 
+        int pos = path.length();
         do {
+            String subPath = path.substring(0, pos);
+            if (zookeeper.exists(subPath, false) != null) {
+                break;
+            }
             pos = path.lastIndexOf(PATH_SEPARATOR_CHAR, pos - 1);
-            subPath = path.substring(0, pos);
-        } while (pos > 0 && zookeeper.exists(subPath, false) == null);
+        } while (pos > 0);
 
         // Start creating the subtree after the longest path that exists, assuming root always exists.
 
-        do {
+        while (pos < path.length()) {
             pos = path.indexOf(PATH_SEPARATOR_CHAR, pos + 1);
 
             if (pos == -1) {
@@ -314,7 +315,7 @@ public class ZKPaths {
                 }
             }
 
-            subPath = path.substring(0, pos);
+            String subPath = path.substring(0, pos);
 
             // All the paths from the initial `pos` do not exist.
             try {
@@ -332,8 +333,8 @@ public class ZKPaths {
             } catch (KeeperException.NodeExistsException ignore) {
                 // ignore... someone else has created it since we checked
             }
-
-        } while (pos < path.length());
+        }
+        ;
     }
 
     /**
