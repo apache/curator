@@ -70,6 +70,11 @@ public enum CreateOption {
     compress,
 
     /**
+     * Cause the data to be uncompressed
+     */
+    uncompress,
+
+    /**
      * If the ZNode already exists, Curator will instead call setData()
      */
     setDataIfExists

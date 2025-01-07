@@ -34,6 +34,14 @@ public interface AsyncSetDataBuilder extends AsyncPathAndBytesable<AsyncStage<St
     AsyncPathAndBytesable<AsyncStage<Stat>> compressed();
 
     /**
+     * Cause the data to be uncompressed, even if the {@link org.apache.curator.framework.CuratorFramework}
+     * has compressionEnabled
+     *
+     * @return this
+     */
+    AsyncPathAndBytesable<AsyncStage<Stat>> uncompressed();
+
+    /**
      * Cause the data to be compressed using the configured compression provider.
      * Only sets if the version matches. By default -1 is used
      * which matches all versions.
@@ -42,6 +50,16 @@ public interface AsyncSetDataBuilder extends AsyncPathAndBytesable<AsyncStage<St
      * @return this
      */
     AsyncPathAndBytesable<AsyncStage<Stat>> compressedWithVersion(int version);
+
+    /**
+     * Cause the data to be uncompressed, even if the {@link org.apache.curator.framework.CuratorFramework}
+     * has compressionEnabled. Only sets if the version matches. By default -1 is used
+     * which matches all versions.
+     *
+     * @param version version
+     * @return this
+     */
+    AsyncPathAndBytesable<AsyncStage<Stat>> uncompressedWithVersion(int version);
 
     /**
      * Only sets if the version matches. By default -1 is used

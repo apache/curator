@@ -39,14 +39,14 @@ public class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<S
     private Stat responseStat;
     private Watching watching;
     private Backgrounding backgrounding;
-    private boolean decompress;
+    private Boolean decompress;
 
     GetDataBuilderImpl(CuratorFrameworkImpl client) {
         this.client = client;
         responseStat = null;
         watching = new Watching(client);
         backgrounding = new Backgrounding();
-        decompress = client.globalCompressionEnabled();
+        decompress = client.compressionEnabled();
     }
 
     public GetDataBuilderImpl(
@@ -54,17 +54,26 @@ public class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<S
             Stat responseStat,
             Watcher watcher,
             Backgrounding backgrounding,
-            boolean decompress) {
+            Boolean decompress) {
         this.client = client;
         this.responseStat = responseStat;
         this.watching = new Watching(client, watcher);
         this.backgrounding = backgrounding;
-        this.decompress = client.globalCompressionEnabled() || decompress;
+        this.decompress = decompress != null ? decompress : client.compressionEnabled();
     }
 
     @Override
     public GetDataWatchBackgroundStatable decompressed() {
-        decompress = true;
+        return withDecompression(true);
+    }
+
+    @Override
+    public GetDataWatchBackgroundStatable undecompressed() {
+        return withDecompression(false);
+    }
+
+    private GetDataWatchBackgroundStatable withDecompression(boolean decompress) {
+        this.decompress = decompress;
         return new GetDataWatchBackgroundStatable() {
             @Override
             public ErrorListenerPathable<byte[]> inBackground() {
@@ -78,7 +87,7 @@ public class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<S
 
             @Override
             public ErrorListenerPathable<byte[]> inBackground(
-                    BackgroundCallback callback, Object context, Executor executor) {
+                BackgroundCallback callback, Object context, Executor executor) {
                 return GetDataBuilderImpl.this.inBackground(callback, context, executor);
             }
 

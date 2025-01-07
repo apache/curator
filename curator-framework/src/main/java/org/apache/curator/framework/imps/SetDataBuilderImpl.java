@@ -54,14 +54,14 @@ public class SetDataBuilderImpl
         this.client = client;
         backgrounding = new Backgrounding();
         version = -1;
-        compress = client.globalCompressionEnabled();
+        compress = client.compressionEnabled();
     }
 
     public SetDataBuilderImpl(CuratorFrameworkImpl client, Backgrounding backgrounding, int version, boolean compress) {
         this.client = client;
         this.backgrounding = backgrounding;
         this.version = version;
-        this.compress = client.globalCompressionEnabled() || compress;
+        this.compress = compress;
     }
 
     <T> TransactionSetDataBuilder<T> asTransactionSetDataBuilder(
@@ -94,12 +94,27 @@ public class SetDataBuilderImpl
                 compress = true;
                 return this;
             }
+
+            @Override
+            public VersionPathAndBytesable<T> uncompressed() {
+                compress = false;
+                return this;
+            }
         };
     }
 
     @Override
     public SetDataBackgroundVersionable compressed() {
-        compress = true;
+        return withCompression(true);
+    }
+
+    @Override
+    public SetDataBackgroundVersionable uncompressed() {
+        return withCompression(false);
+    }
+
+    public SetDataBackgroundVersionable withCompression(boolean compress) {
+        this.compress = compress;
         return new SetDataBackgroundVersionable() {
             @Override
             public ErrorListenerPathAndBytesable<Stat> inBackground() {
@@ -113,7 +128,7 @@ public class SetDataBuilderImpl
 
             @Override
             public ErrorListenerPathAndBytesable<Stat> inBackground(
-                    BackgroundCallback callback, Object context, Executor executor) {
+                BackgroundCallback callback, Object context, Executor executor) {
                 return SetDataBuilderImpl.this.inBackground(callback, context, executor);
             }
 

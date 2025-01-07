@@ -184,7 +184,7 @@ public class TestCompressionInTransactionOld extends BaseClassForTests {
         CuratorFramework client = CuratorFrameworkFactory.builder()
                 .connectString(server.getConnectString())
                 .retryPolicy(new RetryOneTime(1))
-                .enableGlobalCompression()
+                .enableCompression()
                 .build();
         try {
             client.start();

@@ -34,6 +34,14 @@ public interface AsyncGetDataBuilder extends AsyncPathable<AsyncStage<byte[]>> {
     AsyncPathable<AsyncStage<byte[]>> decompressed();
 
     /**
+     * Cause the data to not be de-compressed, even if the {@link org.apache.curator.framework.CuratorFramework}
+     * has compressionEnabled
+     *
+     * @return this
+     */
+    AsyncPathable<AsyncStage<byte[]>> undecompressed();
+
+    /**
      * Have the operation fill the provided stat object
      *
      * @param stat the stat to have filled in
@@ -50,4 +58,14 @@ public interface AsyncGetDataBuilder extends AsyncPathable<AsyncStage<byte[]>> {
      * @return this
      */
     AsyncPathable<AsyncStage<byte[]>> decompressedStoringStatIn(Stat stat);
+
+    /**
+     * Have the operation fill the provided stat object without the data being de-compressed
+     *
+     * @param stat the stat to have filled in
+     * @see #undecompressed()
+     * @see #storingStatIn(org.apache.zookeeper.data.Stat)
+     * @return this
+     */
+    AsyncPathable<AsyncStage<byte[]>> undecompressedStoringStatIn(Stat stat);
 }

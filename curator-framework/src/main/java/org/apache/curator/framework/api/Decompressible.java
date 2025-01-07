@@ -26,4 +26,12 @@ public interface Decompressible<T> {
      * @return this
      */
     public T decompressed();
+
+    /**
+     * Cause the data to not be de-compressed, even if the {@link org.apache.curator.framework.CuratorFramework}
+     * has compressionEnabled
+     *
+     * @return this
+     */
+    public T undecompressed();
 }

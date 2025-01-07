@@ -35,12 +35,19 @@ class TempGetDataBuilderImpl implements TempGetDataBuilder {
     TempGetDataBuilderImpl(CuratorFrameworkImpl client) {
         this.client = client;
         responseStat = null;
-        decompress = client.globalCompressionEnabled();
+        decompress = client.compressionEnabled();
     }
 
     @Override
     public StatPathable<byte[]> decompressed() {
         decompress = true;
+        return this;
+    }
+
+
+    @Override
+    public StatPathable<byte[]> undecompressed() {
+        decompress = false;
         return this;
     }
 

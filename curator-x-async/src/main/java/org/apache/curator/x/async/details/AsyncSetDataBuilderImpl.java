@@ -31,12 +31,13 @@ import org.apache.zookeeper.data.Stat;
 class AsyncSetDataBuilderImpl implements AsyncSetDataBuilder {
     private final CuratorFrameworkImpl client;
     private final Filters filters;
-    private boolean compressed = false;
+    private boolean compressed;
     private int version = -1;
 
     AsyncSetDataBuilderImpl(CuratorFrameworkImpl client, Filters filters) {
         this.client = client;
         this.filters = filters;
+        this.compressed = client.compressionEnabled();
     }
 
     @Override
@@ -56,8 +57,21 @@ class AsyncSetDataBuilderImpl implements AsyncSetDataBuilder {
     }
 
     @Override
+    public AsyncPathAndBytesable<AsyncStage<Stat>> uncompressed() {
+        compressed = false;
+        return this;
+    }
+
+    @Override
     public AsyncPathAndBytesable<AsyncStage<Stat>> compressedWithVersion(int version) {
         compressed = true;
+        this.version = version;
+        return this;
+    }
+
+    @Override
+    public AsyncPathAndBytesable<AsyncStage<Stat>> uncompressedWithVersion(int version) {
+        compressed = false;
         this.version = version;
         return this;
     }
