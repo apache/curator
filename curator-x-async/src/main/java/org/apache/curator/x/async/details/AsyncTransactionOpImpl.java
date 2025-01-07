@@ -117,8 +117,9 @@ class AsyncTransactionOpImpl implements AsyncTransactionOp {
                 TransactionCreateBuilder2<CuratorOp> builder1 = (ttl > 0)
                         ? client.transactionOp().create().withTtl(ttl)
                         : client.transactionOp().create();
-                ACLPathAndBytesable<CuratorOp> builder2 =
-                        compressed ? builder1.compressed().withMode(createMode) : builder1.uncompressed().withMode(createMode);
+                ACLPathAndBytesable<CuratorOp> builder2 = compressed
+                        ? builder1.compressed().withMode(createMode)
+                        : builder1.uncompressed().withMode(createMode);
                 PathAndBytesable<CuratorOp> builder3 = builder2.withACL(aclList);
                 try {
                     return useData ? builder3.forPath(path, data) : builder3.forPath(path);

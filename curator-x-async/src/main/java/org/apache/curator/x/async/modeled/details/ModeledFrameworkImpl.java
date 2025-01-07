@@ -359,11 +359,7 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T> {
     public CuratorOp createOp(T model) {
         return client.transactionOp()
                 .create()
-                .withOptions(
-                        modelSpec.createMode(),
-                        fixAclList(modelSpec.aclList()),
-                        isCompressed(),
-                        modelSpec.ttl())
+                .withOptions(modelSpec.createMode(), fixAclList(modelSpec.aclList()), isCompressed(), modelSpec.ttl())
                 .forPath(resolveForSet(model), modelSpec.serializer().serialize(model));
     }
 

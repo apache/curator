@@ -128,7 +128,7 @@ public class SetDataBuilderImpl
 
             @Override
             public ErrorListenerPathAndBytesable<Stat> inBackground(
-                BackgroundCallback callback, Object context, Executor executor) {
+                    BackgroundCallback callback, Object context, Executor executor) {
                 return SetDataBuilderImpl.this.inBackground(callback, context, executor);
             }
 

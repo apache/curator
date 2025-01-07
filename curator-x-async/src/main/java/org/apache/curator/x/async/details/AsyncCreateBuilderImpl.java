@@ -167,7 +167,9 @@ class AsyncCreateBuilderImpl implements AsyncCreateBuilder {
                         || options.contains(CreateOption.createParentsAsContainers),
                 options.contains(CreateOption.createParentsAsContainers),
                 options.contains(CreateOption.doProtected),
-                options.contains(CreateOption.compress) ? true : options.contains(CreateOption.uncompress) ? false : client.compressionEnabled(),
+                options.contains(CreateOption.compress)
+                        ? true
+                        : options.contains(CreateOption.uncompress) ? false : client.compressionEnabled(),
                 options.contains(CreateOption.setDataIfExists),
                 aclList,
                 stat,

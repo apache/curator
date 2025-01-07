@@ -87,7 +87,7 @@ public class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<S
 
             @Override
             public ErrorListenerPathable<byte[]> inBackground(
-                BackgroundCallback callback, Object context, Executor executor) {
+                    BackgroundCallback callback, Object context, Executor executor) {
                 return GetDataBuilderImpl.this.inBackground(callback, context, executor);
             }
 

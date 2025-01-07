@@ -44,7 +44,6 @@ class TempGetDataBuilderImpl implements TempGetDataBuilder {
         return this;
     }
 
-
     @Override
     public StatPathable<byte[]> undecompressed() {
         decompress = false;
