@@ -82,7 +82,7 @@ public interface AsyncTransactionCreateBuilder extends AsyncPathAndBytesable<Cur
      * @see #compressed()
      * @return this
      */
-    AsyncPathAndBytesable<CuratorOp> withOptions(CreateMode createMode, List<ACL> aclList, Boolean compressed);
+    AsyncPathAndBytesable<CuratorOp> withOptions(CreateMode createMode, List<ACL> aclList, boolean compressed);
 
     /**
      * Specify mode, acl list, compression and ttl
@@ -97,5 +97,5 @@ public interface AsyncTransactionCreateBuilder extends AsyncPathAndBytesable<Cur
      * @return this
      */
     AsyncPathAndBytesable<CuratorOp> withOptions(
-            CreateMode createMode, List<ACL> aclList, Boolean compressed, long ttl);
+            CreateMode createMode, List<ACL> aclList, boolean compressed, long ttl);
 }

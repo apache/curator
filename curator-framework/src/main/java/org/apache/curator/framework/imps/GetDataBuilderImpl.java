@@ -39,7 +39,7 @@ public class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<S
     private Stat responseStat;
     private Watching watching;
     private Backgrounding backgrounding;
-    private Boolean decompress;
+    private boolean decompress;
 
     GetDataBuilderImpl(CuratorFrameworkImpl client) {
         this.client = client;
@@ -54,12 +54,12 @@ public class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<S
             Stat responseStat,
             Watcher watcher,
             Backgrounding backgrounding,
-            Boolean decompress) {
+            boolean decompress) {
         this.client = client;
         this.responseStat = responseStat;
         this.watching = new Watching(client, watcher);
         this.backgrounding = backgrounding;
-        this.decompress = decompress != null ? decompress : client.compressionEnabled();
+        this.decompress = decompress;
     }
 
     @Override

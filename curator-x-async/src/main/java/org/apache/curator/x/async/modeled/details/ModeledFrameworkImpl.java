@@ -214,13 +214,10 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T> {
             byte[] bytes = modelSpec.serializer().serialize(item);
             AsyncSetDataBuilder dataBuilder = dslClient.setData();
             AsyncPathAndBytesable<AsyncStage<Stat>> next;
-            Boolean isCompressed = isCompressed();
-            if (isCompressed == Boolean.TRUE) {
+            if (isCompressed()) {
                 next = dataBuilder.compressedWithVersion(version);
-            } else if (isCompressed == Boolean.FALSE) {
-                next = dataBuilder.uncompressedWithVersion(version);
             } else {
-                next = dataBuilder.withVersion(version);
+                next = dataBuilder.uncompressedWithVersion(version);
             }
             return next.forPath(resolveForSet(item), bytes);
         } catch (Exception e) {
@@ -371,14 +368,11 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T> {
     @Override
     public CuratorOp updateOp(T model, int version) {
         AsyncTransactionSetDataBuilder builder = client.transactionOp().setData();
-        Boolean isCompressed = isCompressed();
         AsyncPathAndBytesable<CuratorOp> builder2;
-        if (isCompressed == Boolean.TRUE) {
+        if (isCompressed()) {
             builder2 = builder.withVersionCompressed(version);
-        } else if (isCompressed == Boolean.FALSE) {
-            builder2 = builder.withVersionUncompressed(version);
         } else {
-            builder2 = builder.withVersion(version);
+            builder2 = builder.withVersionUncompressed(version);
         }
         return builder2.forPath(resolveForSet(model), modelSpec.serializer().serialize(model));
     }
@@ -414,26 +408,23 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T> {
         return client.transaction().forOperations(operations);
     }
 
-    private Boolean isCompressed() {
+    private boolean isCompressed() {
         if (modelSpec.createOptions().contains(CreateOption.compress)) {
-            return Boolean.TRUE;
+            return true;
         } else if (modelSpec.createOptions().contains(CreateOption.uncompress)) {
-            return Boolean.FALSE;
+            return false;
         } else {
-            return null;
+            return client.unwrap().compressionEnabled();
         }
     }
 
     private <U> ModelStage<U> internalRead(Function<ZNode<T>, U> resolver, Stat storingStatIn) {
         Stat stat = (storingStatIn != null) ? storingStatIn : new Stat();
         AsyncPathable<AsyncStage<byte[]>> next;
-        Boolean isCompressed = isCompressed();
-        if (isCompressed == Boolean.TRUE) {
+        if (isCompressed()) {
             next = watchableClient.getData().decompressedStoringStatIn(stat);
-        } else if (isCompressed == Boolean.FALSE) {
-            next = watchableClient.getData().undecompressedStoringStatIn(stat);
         } else {
-            next = watchableClient.getData().storingStatIn(stat);
+            next = watchableClient.getData().undecompressedStoringStatIn(stat);
         }
         AsyncStage<byte[]> asyncStage = next.forPath(modelSpec.path().fullPath());
         ModelStage<U> modelStage = ModelStage.make(asyncStage.event());
