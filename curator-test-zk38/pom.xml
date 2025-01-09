@@ -31,7 +31,7 @@
     <artifactId>curator-test-zk38</artifactId>
 
     <properties>
-        <zookeeper-38-version>3.8.3</zookeeper-38-version>
+        <zookeeper-38-version>3.8.4</zookeeper-38-version>
     </properties>
 
     <dependencies>
