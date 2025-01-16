@@ -33,7 +33,6 @@ import org.apache.zookeeper.data.Stat;
 public class GetConfigBuilderImpl
         implements GetConfigBuilder, BackgroundOperation<Void>, ErrorListenerEnsembleable<byte[]> {
     private final CuratorFrameworkImpl client;
-    private final WatcherRemovalManager watcherRemovalManager;
 
     private Backgrounding backgrounding;
     private Watching watching;
@@ -45,14 +44,8 @@ public class GetConfigBuilderImpl
 
     public GetConfigBuilderImpl(CuratorFrameworkImpl client, Backgrounding backgrounding, Watcher watcher, Stat stat) {
         this.client = (CuratorFrameworkImpl) client.usingNamespace(null);
-        this.watcherRemovalManager = client.getWatcherRemovalManager();
         this.backgrounding = backgrounding;
-        // We are using `client.usingNamespace(null)` to avoid `unfixNamespace` for "/zookeeper/config"(CURATOR-667)
-        // events. But `client.usingNamespace(null)` will loss possible `WatcherRemovalManager`(CURATOR-710). So, let's
-        // reset it.
-        //
-        // See also `NamespaceWatchedEvent`.
-        this.watching = new Watching(this.client, watcher).setWatcherRemovalManager(watcherRemovalManager);
+        this.watching = new Watching(this.client, watcher);
         this.stat = stat;
     }
 
@@ -115,19 +108,19 @@ public class GetConfigBuilderImpl
 
     @Override
     public BackgroundEnsembleable<byte[]> watched() {
-        watching = new Watching(client, true).setWatcherRemovalManager(watcherRemovalManager);
+        watching = new Watching(client, true);
         return new InternalBackgroundEnsembleable();
     }
 
     @Override
     public BackgroundEnsembleable<byte[]> usingWatcher(Watcher watcher) {
-        watching = new Watching(client, watcher).setWatcherRemovalManager(watcherRemovalManager);
+        watching = new Watching(client, watcher);
         return new InternalBackgroundEnsembleable();
     }
 
     @Override
     public BackgroundEnsembleable<byte[]> usingWatcher(CuratorWatcher watcher) {
-        watching = new Watching(client, watcher).setWatcherRemovalManager(watcherRemovalManager);
+        watching = new Watching(client, watcher);
         return new InternalBackgroundEnsembleable();
     }
 
