@@ -37,9 +37,13 @@ class WatcherRemovalFacade extends CuratorFrameworkImpl implements WatcherRemove
     private final WatcherRemovalManager removalManager;
 
     WatcherRemovalFacade(CuratorFrameworkImpl client) {
+        this(client, new WatcherRemovalManager(client));
+    }
+
+    private WatcherRemovalFacade(CuratorFrameworkImpl client, WatcherRemovalManager removalManager) {
         super(client);
         this.client = client;
-        removalManager = new WatcherRemovalManager(client);
+        this.removalManager = removalManager;
     }
 
     @Override
@@ -73,7 +77,8 @@ class WatcherRemovalFacade extends CuratorFrameworkImpl implements WatcherRemove
 
     @Override
     public CuratorFramework usingNamespace(String newNamespace) {
-        return client.usingNamespace(newNamespace);
+        final CuratorFrameworkImpl newClient = (CuratorFrameworkImpl) client.usingNamespace(newNamespace);
+        return new WatcherRemovalFacade(newClient, removalManager);
     }
 
     @Override
