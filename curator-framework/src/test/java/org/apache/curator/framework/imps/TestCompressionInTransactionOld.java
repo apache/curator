@@ -20,8 +20,11 @@
 package org.apache.curator.framework.imps;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import java.util.zip.ZipException;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
@@ -180,6 +183,8 @@ public class TestCompressionInTransactionOld extends BaseClassForTests {
 
         final byte[] data1 = "here's a string".getBytes();
         final byte[] data2 = "here's another string".getBytes();
+        final byte[] gzipedData1 = GzipCompressionProvider.doCompress(data1);
+        final byte[] gzipedData2 = GzipCompressionProvider.doCompress(data2);
 
         CuratorFramework client = CuratorFrameworkFactory.builder()
                 .connectString(server.getConnectString())
@@ -189,40 +194,56 @@ public class TestCompressionInTransactionOld extends BaseClassForTests {
         try {
             client.start();
 
-            // Create the nodes
+            // Create the nodes in a transaction
+            // path1 is compressed (globally)
+            // path2 is uncompressed (override)
             client.inTransaction()
                     .create()
                     .forPath(path1, data1)
                     .and()
                     .create()
+                    .uncompressed()
                     .forPath(path2, data2)
                     .and()
                     .commit();
 
             // Check they exist
             assertNotNull(client.checkExists().forPath(path1));
-            assertNotEquals(data1.length, client.checkExists().forPath(path1).getDataLength());
+            assertEquals(gzipedData1.length, client.checkExists().forPath(path1).getDataLength());
             assertNotNull(client.checkExists().forPath(path2));
-            assertNotEquals(data2.length, client.checkExists().forPath(path2).getDataLength());
+            assertEquals(data2.length, client.checkExists().forPath(path2).getDataLength());
+            assertArrayEquals(data1, client.getData().forPath(path1));
             assertArrayEquals(data1, client.getData().decompressed().forPath(path1));
-            assertArrayEquals(data2, client.getData().decompressed().forPath(path2));
+            assertArrayEquals(gzipedData1, client.getData().undecompressed().forPath(path1));
+            assertArrayEquals(data2, client.getData().undecompressed().forPath(path2));
+            assertThrows(
+                    ZipException.class, () -> client.getData().decompressed().forPath(path2));
+            assertThrows(ZipException.class, () -> client.getData().forPath(path2));
 
-            // Set the nodes, path1 compressed, path2 uncompressed.
+            // Set data in transaction
+            // path1 is uncompressed (override)
+            // path2 is compressed (globally)
             client.inTransaction()
                     .setData()
-                    .forPath(path1, data2)
+                    .uncompressed()
+                    .forPath(path1, data1)
                     .and()
                     .setData()
-                    .forPath(path2, data1)
+                    .forPath(path2, data2)
                     .and()
                     .commit();
 
             assertNotNull(client.checkExists().forPath(path1));
-            assertNotEquals(data2.length, client.checkExists().forPath(path1).getDataLength());
+            assertEquals(data1.length, client.checkExists().forPath(path1).getDataLength());
             assertNotNull(client.checkExists().forPath(path2));
-            assertNotEquals(data1.length, client.checkExists().forPath(path2).getDataLength());
-            assertArrayEquals(data2, client.getData().decompressed().forPath(path1));
-            assertArrayEquals(data1, client.getData().decompressed().forPath(path2));
+            assertEquals(gzipedData2.length, client.checkExists().forPath(path2).getDataLength());
+            assertArrayEquals(data1, client.getData().undecompressed().forPath(path1));
+            assertThrows(
+                    ZipException.class, () -> client.getData().decompressed().forPath(path1));
+            assertThrows(ZipException.class, () -> client.getData().forPath(path1));
+            assertArrayEquals(data2, client.getData().decompressed().forPath(path2));
+            assertArrayEquals(data2, client.getData().forPath(path2));
+            assertArrayEquals(gzipedData2, client.getData().undecompressed().forPath(path2));
         } finally {
             CloseableUtils.closeQuietly(client);
         }

@@ -22,7 +22,9 @@ package org.apache.curator.framework.imps;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.zip.ZipException;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.CompressionProvider;
@@ -100,6 +102,7 @@ public class TestCompression extends BaseClassForTests {
     @Test
     public void testSetDataGlobalCompression() throws Exception {
         final byte[] data = "here's a string".getBytes();
+        final byte[] gzipedData = GzipCompressionProvider.doCompress(data);
 
         CuratorFramework client = CuratorFrameworkFactory.builder()
                 .connectString(server.getConnectString())
@@ -109,15 +112,55 @@ public class TestCompression extends BaseClassForTests {
         try {
             client.start();
 
-            // Write without explicit compression, read with explicit compression
+            // Create with explicit compression
+            client.create().compressed().creatingParentsIfNeeded().forPath("/a/b/c", data);
+            assertArrayEquals(data, client.getData().decompressed().forPath("/a/b/c"));
+            assertArrayEquals(data, client.getData().forPath("/a/b/c"));
+            assertArrayEquals(gzipedData, client.getData().undecompressed().forPath("/a/b/c"));
+            assertEquals(
+                    gzipedData.length, client.checkExists().forPath("/a/b/c").getDataLength());
+
+            // Create explicitly without compression
+            client.delete().forPath("/a/b/c");
+            client.create().uncompressed().creatingParentsIfNeeded().forPath("/a/b/c", data);
+            assertArrayEquals(data, client.getData().undecompressed().forPath("/a/b/c"));
+            assertThrows(
+                    ZipException.class, () -> client.getData().decompressed().forPath("/a/b/c"));
+            assertThrows(ZipException.class, () -> client.getData().forPath("/a/b/c"));
+            assertEquals(data.length, client.checkExists().forPath("/a/b/c").getDataLength());
+
+            // Create with implicit (global) compression
+            client.delete().forPath("/a/b/c");
             client.create().creatingParentsIfNeeded().forPath("/a/b/c", data);
             assertArrayEquals(data, client.getData().decompressed().forPath("/a/b/c"));
-            assertNotEquals(data.length, client.checkExists().forPath("/a/b/c").getDataLength());
+            assertArrayEquals(data, client.getData().forPath("/a/b/c"));
+            assertArrayEquals(gzipedData, client.getData().undecompressed().forPath("/a/b/c"));
+            assertEquals(
+                    gzipedData.length, client.checkExists().forPath("/a/b/c").getDataLength());
 
-            // Write with explicit compression, read without explicit compression
+            // SetData with explicit compression
             client.setData().compressed().forPath("/a/b/c", data);
-            assertEquals(data.length, client.getData().forPath("/a/b/c").length);
-            assertNotEquals(data.length, client.checkExists().forPath("/a/b/c").getDataLength());
+            assertArrayEquals(data, client.getData().forPath("/a/b/c"));
+            assertArrayEquals(data, client.getData().decompressed().forPath("/a/b/c"));
+            assertArrayEquals(gzipedData, client.getData().undecompressed().forPath("/a/b/c"));
+            assertEquals(
+                    gzipedData.length, client.checkExists().forPath("/a/b/c").getDataLength());
+
+            // SetData explicitly without compression
+            client.setData().uncompressed().forPath("/a/b/c", data);
+            assertArrayEquals(data, client.getData().undecompressed().forPath("/a/b/c"));
+            assertThrows(
+                    ZipException.class, () -> client.getData().decompressed().forPath("/a/b/c"));
+            assertThrows(ZipException.class, () -> client.getData().forPath("/a/b/c"));
+            assertEquals(data.length, client.checkExists().forPath("/a/b/c").getDataLength());
+
+            // SetData with implicit (global) compression
+            client.setData().forPath("/a/b/c", data);
+            assertArrayEquals(data, client.getData().forPath("/a/b/c"));
+            assertArrayEquals(data, client.getData().decompressed().forPath("/a/b/c"));
+            assertArrayEquals(gzipedData, client.getData().undecompressed().forPath("/a/b/c"));
+            assertEquals(
+                    gzipedData.length, client.checkExists().forPath("/a/b/c").getDataLength());
         } finally {
             CloseableUtils.closeQuietly(client);
         }

@@ -199,7 +199,8 @@ class AsyncTransactionOpImpl implements AsyncTransactionOp {
             private CuratorOp internalForPath(String path, byte[] data, boolean useData) {
                 TransactionSetDataBuilder<CuratorOp> builder1 =
                         client.transactionOp().setData();
-                VersionPathAndBytesable<CuratorOp> builder2 = compressed ? builder1.compressed() : builder1;
+                VersionPathAndBytesable<CuratorOp> builder2 =
+                        compressed ? builder1.compressed() : builder1.uncompressed();
                 PathAndBytesable<CuratorOp> builder3 = builder2.withVersion(version);
                 try {
                     return useData ? builder3.forPath(path, data) : builder3.forPath(path);
