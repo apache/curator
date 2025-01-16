@@ -336,9 +336,9 @@ public class TestModeledFramework extends TestModeledFrameworkBase {
                 assertNotNull(e);
                 assertEquals(RuntimeException.class, e.getClass());
             });
-            clientWithCompressedFramework.delete();
 
             // Create with compressedModel, read with all other clients
+            clientWithCompressedModel.delete();
             complete(clientWithCompressedModel.set(rawModel), (path, e) -> assertNull(e));
             complete(clientWithCompressedFramework.read(), (model, e) -> assertEquals(model, rawModel));
             complete(client.read(), (model, e) -> {
@@ -353,9 +353,9 @@ public class TestModeledFramework extends TestModeledFrameworkBase {
                 assertNotNull(e);
                 assertEquals(RuntimeException.class, e.getClass());
             });
-            clientWithCompressedModel.delete();
 
             // Create with regular (implicitly uncompressed) client, read with all other clients
+            client.delete();
             complete(client.set(rawModel), (path, e) -> assertNull(e));
             complete(clientWithUncompressedModel.read(), (model, e) -> assertEquals(model, rawModel));
             complete(
@@ -369,9 +369,9 @@ public class TestModeledFramework extends TestModeledFrameworkBase {
                 assertNotNull(e);
                 assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
             });
-            client.delete();
 
             // Create with uncompressedModel, read with all other clients
+            clientWithUncompressedModel.delete();
             complete(clientWithUncompressedModel.set(rawModel), (path, e) -> assertNull(e));
             complete(client.read(), (model, e) -> assertEquals(model, rawModel));
             complete(
@@ -385,9 +385,9 @@ public class TestModeledFramework extends TestModeledFrameworkBase {
                 assertNotNull(e);
                 assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
             });
-            clientWithUncompressedModel.delete();
 
             // Create with compressedFramework overriden by an uncompressedModel, read with all other clients
+            clientWithCompressedFrameworkAndUncompressedModel.delete();
             complete(clientWithCompressedFrameworkAndUncompressedModel.set(rawModel), (path, e) -> assertNull(e));
             complete(client.read(), (model, e) -> assertEquals(model, rawModel));
             complete(clientWithUncompressedModel.read(), (model, e) -> assertEquals(model, rawModel));
@@ -547,9 +547,9 @@ public class TestModeledFramework extends TestModeledFrameworkBase {
                 assertNotNull(e);
                 assertEquals(RuntimeException.class, e.getClass());
             });
-            clientWithCompressedFramework.delete();
 
             // Create with compressedModel, read with all other clients
+            clientWithCompressedModel.delete();
             complete(
                     clientWithCompressedModel.inTransaction(
                             Collections.singletonList(clientWithCompressedModel.createOp(rawModel))),
@@ -567,9 +567,9 @@ public class TestModeledFramework extends TestModeledFrameworkBase {
                 assertNotNull(e);
                 assertEquals(RuntimeException.class, e.getClass());
             });
-            clientWithCompressedModel.delete();
 
             // Create with regular (implicitly uncompressed) client, read with all other clients
+            client.delete();
             complete(
                     client.inTransaction(Collections.singletonList(client.createOp(rawModel))),
                     (results, e) -> assertNull(e));
@@ -585,9 +585,9 @@ public class TestModeledFramework extends TestModeledFrameworkBase {
                 assertNotNull(e);
                 assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
             });
-            client.delete();
 
             // Create with uncompressedModel, read with all other clients
+            clientWithUncompressedModel.delete();
             complete(
                     clientWithUncompressedModel.inTransaction(
                             Collections.singletonList(clientWithUncompressedModel.createOp(rawModel))),
@@ -604,9 +604,9 @@ public class TestModeledFramework extends TestModeledFrameworkBase {
                 assertNotNull(e);
                 assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
             });
-            clientWithUncompressedModel.delete();
 
             // Create with compressedFramework overriden by an uncompressedModel, read with all other clients
+            clientWithCompressedFrameworkAndUncompressedModel.delete();
             complete(
                     clientWithCompressedFrameworkAndUncompressedModel.inTransaction(Collections.singletonList(
                             clientWithCompressedFrameworkAndUncompressedModel.createOp(rawModel))),
