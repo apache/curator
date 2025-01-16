@@ -20,10 +20,12 @@
 package org.apache.curator.framework.recipes.watch;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.state.ConnectionState;
@@ -44,6 +46,53 @@ public class TestPersistentWatcher extends CuratorTestBase {
     @Test
     public void testConnectionLost() throws Exception {
         internalTest(false);
+    }
+
+    @Test
+    public void testConcurrentClientClose() throws Exception {
+        BlockingQueue<WatchedEvent> events = new LinkedBlockingQueue<>();
+
+        // given: started curator client
+        CuratorFramework client = CuratorFrameworkFactory.newClient(
+                server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        client.start();
+
+        // given: started persistent watcher
+        PersistentWatcher persistentWatcher = new PersistentWatcher(client, "/top/main", true);
+        persistentWatcher.getListenable().addListener(events::add);
+        persistentWatcher.start();
+
+        // when: curator client closed
+        client.close();
+
+        // then: listener get Closed notification
+        WatchedEvent event = events.poll(5, TimeUnit.SECONDS);
+        assertNotNull(event);
+        assertEquals(Watcher.Event.EventType.None, event.getType());
+        assertEquals(Watcher.Event.KeeperState.Closed, event.getState());
+    }
+
+    @Test
+    public void testAfterClientClose() throws Exception {
+        BlockingQueue<WatchedEvent> events = new LinkedBlockingQueue<>();
+
+        // given: closed client
+        CuratorFramework client = CuratorFrameworkFactory.newClient(
+                server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        client.start();
+        client.close();
+
+        // when: start persistent watcher
+        try (PersistentWatcher persistentWatcher = new PersistentWatcher(client, "/top/main", true)) {
+            persistentWatcher.getListenable().addListener(events::add);
+            persistentWatcher.start();
+        }
+
+        // then: listener get Closed notification
+        WatchedEvent event = events.poll(5, TimeUnit.SECONDS);
+        assertNotNull(event);
+        assertEquals(Watcher.Event.EventType.None, event.getType());
+        assertEquals(Watcher.Event.KeeperState.Closed, event.getState());
     }
 
     private void internalTest(boolean recursive) throws Exception {

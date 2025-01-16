@@ -51,6 +51,7 @@ import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.framework.api.CompressionProvider;
 import org.apache.curator.framework.api.CreateBuilder;
+import org.apache.curator.framework.api.CuratorClosedException;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.CuratorListener;
@@ -462,11 +463,15 @@ public class CuratorFrameworkImpl implements CuratorFramework {
 
     private void checkState() {
         CuratorFrameworkState state = getState();
-        Preconditions.checkState(
-                state == CuratorFrameworkState.STARTED,
-                "Expected state [%s] was [%s]",
-                CuratorFrameworkState.STARTED,
-                state);
+        switch (state) {
+            case STARTED:
+                return;
+            case STOPPED:
+                throw new CuratorClosedException();
+            default:
+                String msg = String.format("Expected state [%s] was [%s]", CuratorFrameworkState.STARTED, state);
+                throw new IllegalStateException(msg);
+        }
     }
 
     @Override
@@ -525,11 +530,13 @@ public class CuratorFrameworkImpl implements CuratorFramework {
 
     @Override
     public ReconfigBuilder reconfig() {
+        checkState();
         return new ReconfigBuilderImpl(this);
     }
 
     @Override
     public GetConfigBuilder getConfig() {
+        checkState();
         return new GetConfigBuilderImpl(this);
     }
 
@@ -577,11 +584,13 @@ public class CuratorFrameworkImpl implements CuratorFramework {
 
     @Override
     public SyncBuilder sync() {
+        checkState();
         return new SyncBuilderImpl(this);
     }
 
     @Override
     public RemoveWatchesBuilder watches() {
+        checkState();
         return new RemoveWatchesBuilderImpl(this);
     }
 
@@ -590,6 +599,7 @@ public class CuratorFrameworkImpl implements CuratorFramework {
         Preconditions.checkState(
                 zookeeperCompatibility.hasPersistentWatchers(),
                 "watchers() is not supported in the ZooKeeper library and/or server being used. Use watches() instead.");
+        checkState();
         return new WatchesBuilderImpl(this);
     }
 
