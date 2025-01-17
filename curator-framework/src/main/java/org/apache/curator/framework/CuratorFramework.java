@@ -346,6 +346,13 @@ public interface CuratorFramework extends Closeable {
     SchemaSet getSchemaSet();
 
     /**
+     * Return whether compression is enabled by default for all create, setData and getData operations.
+     *
+     * @return if compression is enabled
+     */
+    boolean compressionEnabled();
+
+    /**
      * Calls {@link #notifyAll()} on the given object after first synchronizing on it. This is
      * done from the {@link #runSafe(Runnable)} thread.
      *

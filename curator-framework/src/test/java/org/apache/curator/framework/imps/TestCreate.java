@@ -47,6 +47,7 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 public class TestCreate extends BaseClassForTests {
@@ -684,6 +685,7 @@ public class TestCreate extends BaseClassForTests {
      * but just to the first ancestor parent. (See https://issues.apache.org/jira/browse/ZOOKEEPER-2590)
      */
     @Test
+    @Tag("ZOOKEEPER-2590")
     public void testForbiddenAncestors() throws Exception {
         CuratorFramework client = createClient(testACLProvider);
         try {
@@ -696,9 +698,10 @@ public class TestCreate extends BaseClassForTests {
 
             // In creation attempts where the parent ("/bat") has ACL that restricts read, creation request fails.
             try {
-                client.create().creatingParentsIfNeeded().forPath("/bat/bost");
+                client.create().creatingParentsIfNeeded().forPath("/bat/foo/bost");
                 fail("Expected NoAuthException when not authorized to read new node grandparent");
             } catch (KeeperException.NoAuthException noAuthException) {
+                assertEquals(noAuthException.getPath(), "/bat");
             }
 
             // But creating a node in the same subtree where its grandparent has read access is allowed and

@@ -51,6 +51,7 @@ import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.framework.api.CompressionProvider;
 import org.apache.curator.framework.api.CreateBuilder;
+import org.apache.curator.framework.api.CuratorClosedException;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.api.CuratorListener;
@@ -108,6 +109,7 @@ public class CuratorFrameworkImpl implements CuratorFramework {
     private final FailedDeleteManager failedDeleteManager;
     private final FailedRemoveWatchManager failedRemoveWatcherManager;
     private final CompressionProvider compressionProvider;
+    private final boolean compressionEnabled;
     private final ACLProvider aclProvider;
     private final NamespaceFacadeCache namespaceFacadeCache;
     private final boolean useContainerParentsIfAvailable;
@@ -185,6 +187,7 @@ public class CuratorFrameworkImpl implements CuratorFramework {
                 builder.getSimulatedSessionExpirationPercent(),
                 builder.getConnectionStateListenerManagerFactory());
         compressionProvider = builder.getCompressionProvider();
+        compressionEnabled = builder.compressionEnabled();
         aclProvider = builder.getAclProvider();
         state = new AtomicReference<CuratorFrameworkState>(CuratorFrameworkState.LATENT);
         useContainerParentsIfAvailable = builder.useContainerParentsIfAvailable();
@@ -285,6 +288,7 @@ public class CuratorFrameworkImpl implements CuratorFramework {
         failedDeleteManager = parent.failedDeleteManager;
         failedRemoveWatcherManager = parent.failedRemoveWatcherManager;
         compressionProvider = parent.compressionProvider;
+        compressionEnabled = parent.compressionEnabled;
         aclProvider = parent.aclProvider;
         namespaceFacadeCache = parent.namespaceFacadeCache;
         namespace = parent.namespace;
@@ -476,11 +480,15 @@ public class CuratorFrameworkImpl implements CuratorFramework {
 
     private void checkState() {
         CuratorFrameworkState state = getState();
-        Preconditions.checkState(
-                state == CuratorFrameworkState.STARTED,
-                "Expected state [%s] was [%s]",
-                CuratorFrameworkState.STARTED,
-                state);
+        switch (state) {
+            case STARTED:
+                return;
+            case STOPPED:
+                throw new CuratorClosedException();
+            default:
+                String msg = String.format("Expected state [%s] was [%s]", CuratorFrameworkState.STARTED, state);
+                throw new IllegalStateException(msg);
+        }
     }
 
     @Override
@@ -539,11 +547,13 @@ public class CuratorFrameworkImpl implements CuratorFramework {
 
     @Override
     public ReconfigBuilder reconfig() {
+        checkState();
         return new ReconfigBuilderImpl(this);
     }
 
     @Override
     public GetConfigBuilder getConfig() {
+        checkState();
         return new GetConfigBuilderImpl(this);
     }
 
@@ -591,11 +601,13 @@ public class CuratorFrameworkImpl implements CuratorFramework {
 
     @Override
     public SyncBuilder sync() {
+        checkState();
         return new SyncBuilderImpl(this);
     }
 
     @Override
     public RemoveWatchesBuilder watches() {
+        checkState();
         return new RemoveWatchesBuilderImpl(this);
     }
 
@@ -604,6 +616,7 @@ public class CuratorFrameworkImpl implements CuratorFramework {
         Preconditions.checkState(
                 zookeeperCompatibility.hasPersistentWatchers(),
                 "watchers() is not supported in the ZooKeeper library and/or server being used. Use watches() instead.");
+        checkState();
         return new WatchesBuilderImpl(this);
     }
 
@@ -630,6 +643,11 @@ public class CuratorFrameworkImpl implements CuratorFramework {
     @Override
     public SchemaSet getSchemaSet() {
         return schemaSet;
+    }
+
+    @Override
+    public boolean compressionEnabled() {
+        return compressionEnabled;
     }
 
     ACLProvider getAclProvider() {

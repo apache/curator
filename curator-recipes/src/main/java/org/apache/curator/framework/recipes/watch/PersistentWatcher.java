@@ -25,12 +25,15 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
+import org.apache.curator.framework.api.CuratorClosedException;
+import org.apache.curator.framework.api.CuratorEventType;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.listen.StandardListenerManager;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.zookeeper.AddWatchMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,6 +80,11 @@ public class PersistentWatcher implements Closeable {
     public void start() {
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Already started");
         client.getConnectionStateListenable().addListener(connectionStateListener);
+        client.getCuratorListenable().addListener(((ignored, event) -> {
+            if (event.getType() == CuratorEventType.CLOSING) {
+                onClientClosed();
+            }
+        }));
         reset();
     }
 
@@ -94,6 +102,13 @@ public class PersistentWatcher implements Closeable {
                 ThreadUtils.checkInterrupted(e);
                 log.debug(String.format("Could not remove watcher for path: %s", basePath), e);
             }
+        }
+    }
+
+    private void onClientClosed() {
+        if (state.compareAndSet(State.STARTED, State.CLOSED)) {
+            WatchedEvent event = new WatchedEvent(Watcher.Event.EventType.None, Watcher.Event.KeeperState.Closed, null);
+            watcher.process(event);
         }
     }
 
@@ -135,6 +150,8 @@ public class PersistentWatcher implements Closeable {
                     .inBackground(callback)
                     .usingWatcher(watcher)
                     .forPath(basePath);
+        } catch (CuratorClosedException ignored) {
+            onClientClosed();
         } catch (Exception e) {
             log.error("Could not reset persistent watch at path: " + basePath, e);
         }

@@ -19,19 +19,8 @@
 
 package org.apache.curator.framework.api;
 
-public interface Compressible<T> {
-    /**
-     * Cause the data to be compressed using the configured compression provider
-     *
-     * @return this
-     */
-    public T compressed();
-
-    /**
-     * Cause the data to be uncompressed, even if the {@link org.apache.curator.framework.CuratorFramework}
-     * has compressionEnabled
-     *
-     * @return this
-     */
-    public T uncompressed();
+public class CuratorClosedException extends IllegalStateException {
+    public CuratorClosedException() {
+        super("Expected state [STARTED] was [STOPPED]");
+    }
 }

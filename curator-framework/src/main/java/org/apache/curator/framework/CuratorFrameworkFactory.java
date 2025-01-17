@@ -164,6 +164,7 @@ public class CuratorFrameworkFactory {
         private List<AuthInfo> authInfos = null;
         private byte[] defaultData = LOCAL_ADDRESS;
         private CompressionProvider compressionProvider = DEFAULT_COMPRESSION_PROVIDER;
+        private boolean compressionEnabled = false;
         private ZookeeperFactory zookeeperFactory = DEFAULT_ZOOKEEPER_FACTORY;
         private ACLProvider aclProvider = DEFAULT_ACL_PROVIDER;
         private boolean canBeReadOnly = false;
@@ -370,6 +371,18 @@ public class CuratorFrameworkFactory {
         }
 
         /**
+         * By default, each write or read call must explicitly use compression.
+         * Call this method to enable compression by default on all read and write calls.
+         * <p>
+         * In order to implement filtered compression, use this option and a custom {@link CompressionProvider} that only compresses and decompresses the zNodes that match the desired filter.
+         * @return this
+         */
+        public Builder enableCompression() {
+            this.compressionEnabled = true;
+            return this;
+        }
+
+        /**
          * @param zookeeperFactory the zookeeper factory to use
          * @return this
          */
@@ -559,6 +572,10 @@ public class CuratorFrameworkFactory {
 
         public CompressionProvider getCompressionProvider() {
             return compressionProvider;
+        }
+
+        public boolean compressionEnabled() {
+            return compressionEnabled;
         }
 
         public ThreadFactory getThreadFactory() {

@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import org.apache.curator.RetryLoop;
-import org.apache.curator.TimeTrace;
+import org.apache.curator.drivers.OperationTrace;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorEventType;
@@ -160,11 +160,13 @@ public class CuratorMultiTransactionImpl
     public void performBackgroundOperation(final OperationAndData<CuratorMultiTransactionRecord> operationAndData)
             throws Exception {
         try {
-            final TimeTrace trace = client.getZookeeperClient().startTracer("CuratorMultiTransactionImpl-Background");
+            final OperationTrace trace =
+                    client.getZookeeperClient().startAdvancedTracer("CuratorMultiTransactionImpl-Background");
             AsyncCallback.MultiCallback callback = new AsyncCallback.MultiCallback() {
                 @Override
                 public void processResult(int rc, String path, Object ctx, List<OpResult> opResults) {
-                    trace.commit();
+                    trace.setRequestTransactionCount(operationAndData.getData().size())
+                            .commit();
                     List<CuratorTransactionResult> curatorResults = (opResults != null)
                             ? CuratorTransactionImpl.wrapResults(client, opResults, operationAndData.getData())
                             : null;
@@ -192,7 +194,8 @@ public class CuratorMultiTransactionImpl
 
     private List<CuratorTransactionResult> forOperationsInForeground(final CuratorMultiTransactionRecord record)
             throws Exception {
-        TimeTrace trace = client.getZookeeperClient().startTracer("CuratorMultiTransactionImpl-Foreground");
+        OperationTrace trace =
+                client.getZookeeperClient().startAdvancedTracer("CuratorMultiTransactionImpl-Foreground");
         List<OpResult> responseData =
                 RetryLoop.callWithRetry(client.getZookeeperClient(), new Callable<List<OpResult>>() {
                     @Override
@@ -200,7 +203,7 @@ public class CuratorMultiTransactionImpl
                         return client.getZooKeeper().multi(record);
                     }
                 });
-        trace.commit();
+        trace.setRequestTransactionCount(record.size()).commit();
 
         return CuratorTransactionImpl.wrapResults(client, responseData, record);
     }

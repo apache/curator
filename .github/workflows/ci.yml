@@ -58,7 +58,7 @@ jobs:
       matrix:
         java: [8, 11, 17, 21]
     env:
-      DEVELOCITY_ACCESS_KEY: ${{ secrets.GE_ACCESS_TOKEN }}
+      DEVELOCITY_ACCESS_KEY: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
     steps:
       - uses: actions/checkout@v3
 
@@ -91,7 +91,7 @@ jobs:
       matrix:
         zookeeper: [curator-test-zk38, curator-test-zk37, curator-test-zk36, curator-test-zk35]
     env:
-      DEVELOCITY_ACCESS_KEY: ${{ secrets.GE_ACCESS_TOKEN }}
+      DEVELOCITY_ACCESS_KEY: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
     steps:
       - uses: actions/checkout@v3
 

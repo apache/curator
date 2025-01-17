@@ -41,6 +41,14 @@ public interface AsyncTransactionSetDataBuilder extends AsyncPathAndBytesable<Cu
     AsyncPathAndBytesable<CuratorOp> compressed();
 
     /**
+     * Cause the data to be uncompressed, even if the {@link org.apache.curator.framework.CuratorFramework}
+     * has compressionEnabled
+     *
+     * @return this
+     */
+    AsyncPathAndBytesable<CuratorOp> uncompressed();
+
+    /**
      * Cause the data to be compressed using the configured compression provider.
      * Also changes the version number used. By default, -1 is used
      *
@@ -48,4 +56,13 @@ public interface AsyncTransactionSetDataBuilder extends AsyncPathAndBytesable<Cu
      * @return this
      */
     AsyncPathAndBytesable<CuratorOp> withVersionCompressed(int version);
+
+    /**
+     * Cause the data to be uncompressed, even if the {@link org.apache.curator.framework.CuratorFramework}
+     * has compressionEnabled. Also changes the version number used. By default, -1 is used
+     *
+     * @param version version to use
+     * @return this
+     */
+    AsyncPathAndBytesable<CuratorOp> withVersionUncompressed(int version);
 }
