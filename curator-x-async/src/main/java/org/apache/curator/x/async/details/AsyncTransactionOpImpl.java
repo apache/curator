@@ -50,7 +50,7 @@ class AsyncTransactionOpImpl implements AsyncTransactionOp {
         return new AsyncTransactionCreateBuilder() {
             private List<ACL> aclList = null;
             private CreateMode createMode = CreateMode.PERSISTENT;
-            private boolean compressed = false;
+            private boolean compressed = client.compressionEnabled();
             private long ttl = -1;
 
             @Override
@@ -68,6 +68,12 @@ class AsyncTransactionOpImpl implements AsyncTransactionOp {
             @Override
             public AsyncPathAndBytesable<CuratorOp> compressed() {
                 compressed = true;
+                return this;
+            }
+
+            @Override
+            public AsyncPathAndBytesable<CuratorOp> uncompressed() {
+                compressed = false;
                 return this;
             }
 
@@ -107,8 +113,9 @@ class AsyncTransactionOpImpl implements AsyncTransactionOp {
                 TransactionCreateBuilder2<CuratorOp> builder1 = (ttl > 0)
                         ? client.transactionOp().create().withTtl(ttl)
                         : client.transactionOp().create();
-                ACLPathAndBytesable<CuratorOp> builder2 =
-                        compressed ? builder1.compressed().withMode(createMode) : builder1.withMode(createMode);
+                ACLPathAndBytesable<CuratorOp> builder2 = compressed
+                        ? builder1.compressed().withMode(createMode)
+                        : builder1.uncompressed().withMode(createMode);
                 PathAndBytesable<CuratorOp> builder3 = builder2.withACL(aclList);
                 try {
                     return useData ? builder3.forPath(path, data) : builder3.forPath(path);
@@ -145,7 +152,7 @@ class AsyncTransactionOpImpl implements AsyncTransactionOp {
     public AsyncTransactionSetDataBuilder setData() {
         return new AsyncTransactionSetDataBuilder() {
             private int version = -1;
-            private boolean compressed = false;
+            private boolean compressed = client.compressionEnabled();
 
             @Override
             public AsyncPathAndBytesable<CuratorOp> withVersion(int version) {
@@ -160,9 +167,22 @@ class AsyncTransactionOpImpl implements AsyncTransactionOp {
             }
 
             @Override
+            public AsyncPathAndBytesable<CuratorOp> uncompressed() {
+                compressed = false;
+                return this;
+            }
+
+            @Override
             public AsyncPathAndBytesable<CuratorOp> withVersionCompressed(int version) {
                 this.version = version;
                 compressed = true;
+                return this;
+            }
+
+            @Override
+            public AsyncPathAndBytesable<CuratorOp> withVersionUncompressed(int version) {
+                this.version = version;
+                compressed = false;
                 return this;
             }
 
@@ -179,7 +199,8 @@ class AsyncTransactionOpImpl implements AsyncTransactionOp {
             private CuratorOp internalForPath(String path, byte[] data, boolean useData) {
                 TransactionSetDataBuilder<CuratorOp> builder1 =
                         client.transactionOp().setData();
-                VersionPathAndBytesable<CuratorOp> builder2 = compressed ? builder1.compressed() : builder1;
+                VersionPathAndBytesable<CuratorOp> builder2 =
+                        compressed ? builder1.compressed() : builder1.uncompressed();
                 PathAndBytesable<CuratorOp> builder3 = builder2.withVersion(version);
                 try {
                     return useData ? builder3.forPath(path, data) : builder3.forPath(path);

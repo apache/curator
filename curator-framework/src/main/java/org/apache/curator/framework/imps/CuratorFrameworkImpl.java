@@ -109,6 +109,7 @@ public class CuratorFrameworkImpl implements CuratorFramework {
     private final FailedDeleteManager failedDeleteManager;
     private final FailedRemoveWatchManager failedRemoveWatcherManager;
     private final CompressionProvider compressionProvider;
+    private final boolean compressionEnabled;
     private final ACLProvider aclProvider;
     private final NamespaceFacadeCache namespaceFacadeCache;
     private final boolean useContainerParentsIfAvailable;
@@ -185,6 +186,7 @@ public class CuratorFrameworkImpl implements CuratorFramework {
                 builder.getSimulatedSessionExpirationPercent(),
                 builder.getConnectionStateListenerManagerFactory());
         compressionProvider = builder.getCompressionProvider();
+        compressionEnabled = builder.compressionEnabled();
         aclProvider = builder.getAclProvider();
         state = new AtomicReference<CuratorFrameworkState>(CuratorFrameworkState.LATENT);
         useContainerParentsIfAvailable = builder.useContainerParentsIfAvailable();
@@ -284,6 +286,7 @@ public class CuratorFrameworkImpl implements CuratorFramework {
         failedDeleteManager = parent.failedDeleteManager;
         failedRemoveWatcherManager = parent.failedRemoveWatcherManager;
         compressionProvider = parent.compressionProvider;
+        compressionEnabled = parent.compressionEnabled;
         aclProvider = parent.aclProvider;
         namespaceFacadeCache = parent.namespaceFacadeCache;
         namespace = parent.namespace;
@@ -626,6 +629,11 @@ public class CuratorFrameworkImpl implements CuratorFramework {
     @Override
     public SchemaSet getSchemaSet() {
         return schemaSet;
+    }
+
+    @Override
+    public boolean compressionEnabled() {
+        return compressionEnabled;
     }
 
     ACLProvider getAclProvider() {

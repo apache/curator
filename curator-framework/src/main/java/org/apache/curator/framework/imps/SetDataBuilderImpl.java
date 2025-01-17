@@ -54,7 +54,7 @@ public class SetDataBuilderImpl
         this.client = client;
         backgrounding = new Backgrounding();
         version = -1;
-        compress = false;
+        compress = client.compressionEnabled();
     }
 
     public SetDataBuilderImpl(CuratorFrameworkImpl client, Backgrounding backgrounding, int version, boolean compress) {
@@ -94,12 +94,27 @@ public class SetDataBuilderImpl
                 compress = true;
                 return this;
             }
+
+            @Override
+            public VersionPathAndBytesable<T> uncompressed() {
+                compress = false;
+                return this;
+            }
         };
     }
 
     @Override
     public SetDataBackgroundVersionable compressed() {
-        compress = true;
+        return withCompression(true);
+    }
+
+    @Override
+    public SetDataBackgroundVersionable uncompressed() {
+        return withCompression(false);
+    }
+
+    public SetDataBackgroundVersionable withCompression(boolean compress) {
+        this.compress = compress;
         return new SetDataBackgroundVersionable() {
             @Override
             public ErrorListenerPathAndBytesable<Stat> inBackground() {

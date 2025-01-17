@@ -33,18 +33,25 @@ class AsyncGetDataBuilderImpl implements AsyncGetDataBuilder {
     private final CuratorFrameworkImpl client;
     private final Filters filters;
     private final WatchMode watchMode;
-    private boolean decompressed = false;
+    private boolean decompressed;
     private Stat stat = null;
 
     AsyncGetDataBuilderImpl(CuratorFrameworkImpl client, Filters filters, WatchMode watchMode) {
         this.client = client;
         this.filters = filters;
         this.watchMode = watchMode;
+        this.decompressed = client.compressionEnabled();
     }
 
     @Override
     public AsyncPathable<AsyncStage<byte[]>> decompressed() {
         decompressed = true;
+        return this;
+    }
+
+    @Override
+    public AsyncPathable<AsyncStage<byte[]>> undecompressed() {
+        decompressed = false;
         return this;
     }
 
@@ -57,6 +64,13 @@ class AsyncGetDataBuilderImpl implements AsyncGetDataBuilder {
     @Override
     public AsyncPathable<AsyncStage<byte[]>> decompressedStoringStatIn(Stat stat) {
         decompressed = true;
+        this.stat = stat;
+        return this;
+    }
+
+    @Override
+    public AsyncPathable<AsyncStage<byte[]>> undecompressedStoringStatIn(Stat stat) {
+        decompressed = false;
         this.stat = stat;
         return this;
     }

@@ -46,7 +46,7 @@ public class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<S
         responseStat = null;
         watching = new Watching(client);
         backgrounding = new Backgrounding();
-        decompress = false;
+        decompress = client.compressionEnabled();
     }
 
     public GetDataBuilderImpl(
@@ -64,7 +64,16 @@ public class GetDataBuilderImpl implements GetDataBuilder, BackgroundOperation<S
 
     @Override
     public GetDataWatchBackgroundStatable decompressed() {
-        decompress = true;
+        return withDecompression(true);
+    }
+
+    @Override
+    public GetDataWatchBackgroundStatable undecompressed() {
+        return withDecompression(false);
+    }
+
+    private GetDataWatchBackgroundStatable withDecompression(boolean decompress) {
+        this.decompress = decompress;
         return new GetDataWatchBackgroundStatable() {
             @Override
             public ErrorListenerPathable<byte[]> inBackground() {

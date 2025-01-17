@@ -300,4 +300,442 @@ public class TestModeledFramework extends TestModeledFrameworkBase {
             assertTrue(e.getCause() instanceof KeeperException.NoAuthException);
         }
     }
+
+    @Test
+    public void testCompressedCreateAndRead() throws Exception {
+        try (CuratorFramework compressedRawClient =
+                createRawClientBuilder().enableCompression().build()) {
+            compressedRawClient.start();
+            AsyncCuratorFramework compressedAsync = AsyncCuratorFramework.wrap(compressedRawClient);
+            TestModel rawModel = new TestModel("John", "Galt", "1 Galt's Gulch", 42, BigInteger.valueOf(1));
+
+            // These should be compressed
+            ModeledFramework<TestModel> clientWithCompressedFramework =
+                    ModeledFramework.wrap(compressedAsync, modelSpec);
+            ModeledFramework<TestModel> clientWithCompressedModel = ModeledFramework.wrap(async, compressedModelSpec);
+
+            // These should be uncompressed
+            ModeledFramework<TestModel> client = ModeledFramework.wrap(async, modelSpec);
+            ModeledFramework<TestModel> clientWithUncompressedModel =
+                    ModeledFramework.wrap(async, uncompressedModelSpec);
+            ModeledFramework<TestModel> clientWithCompressedFrameworkAndUncompressedModel =
+                    ModeledFramework.wrap(compressedAsync, uncompressedModelSpec);
+
+            // Create with compressedFramework, read with all other clients
+            complete(clientWithCompressedFramework.set(rawModel), (path, e) -> assertNull(e));
+            complete(clientWithCompressedModel.read(), (model, e) -> assertEquals(model, rawModel));
+            complete(client.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(RuntimeException.class, e.getClass());
+            });
+            complete(clientWithUncompressedModel.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(RuntimeException.class, e.getClass());
+            });
+            complete(clientWithCompressedFrameworkAndUncompressedModel.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(RuntimeException.class, e.getClass());
+            });
+
+            // Create with compressedModel, read with all other clients
+            clientWithCompressedModel.delete();
+            complete(clientWithCompressedModel.set(rawModel), (path, e) -> assertNull(e));
+            complete(clientWithCompressedFramework.read(), (model, e) -> assertEquals(model, rawModel));
+            complete(client.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(RuntimeException.class, e.getClass());
+            });
+            complete(clientWithUncompressedModel.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(RuntimeException.class, e.getClass());
+            });
+            complete(clientWithCompressedFrameworkAndUncompressedModel.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(RuntimeException.class, e.getClass());
+            });
+
+            // Create with regular (implicitly uncompressed) client, read with all other clients
+            client.delete();
+            complete(client.set(rawModel), (path, e) -> assertNull(e));
+            complete(clientWithUncompressedModel.read(), (model, e) -> assertEquals(model, rawModel));
+            complete(
+                    clientWithCompressedFrameworkAndUncompressedModel.read(),
+                    (model, e) -> assertEquals(model, rawModel));
+            complete(clientWithCompressedModel.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
+            });
+            complete(clientWithCompressedFramework.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
+            });
+
+            // Create with uncompressedModel, read with all other clients
+            clientWithUncompressedModel.delete();
+            complete(clientWithUncompressedModel.set(rawModel), (path, e) -> assertNull(e));
+            complete(client.read(), (model, e) -> assertEquals(model, rawModel));
+            complete(
+                    clientWithCompressedFrameworkAndUncompressedModel.read(),
+                    (model, e) -> assertEquals(model, rawModel));
+            complete(clientWithCompressedModel.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
+            });
+            complete(clientWithCompressedFramework.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
+            });
+
+            // Create with compressedFramework overriden by an uncompressedModel, read with all other clients
+            clientWithCompressedFrameworkAndUncompressedModel.delete();
+            complete(clientWithCompressedFrameworkAndUncompressedModel.set(rawModel), (path, e) -> assertNull(e));
+            complete(client.read(), (model, e) -> assertEquals(model, rawModel));
+            complete(clientWithUncompressedModel.read(), (model, e) -> assertEquals(model, rawModel));
+            complete(clientWithCompressedModel.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
+            });
+            complete(clientWithCompressedFramework.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
+            });
+            clientWithCompressedFrameworkAndUncompressedModel.delete();
+        }
+    }
+
+    @Test
+    public void testCompressedUpdateAndRead() throws Exception {
+        try (CuratorFramework compressedRawClient =
+                createRawClientBuilder().enableCompression().build()) {
+            compressedRawClient.start();
+            AsyncCuratorFramework compressedAsync = AsyncCuratorFramework.wrap(compressedRawClient);
+            TestModel rawModel = new TestModel("John", "Galt", "1 Galt's Gulch", 42, BigInteger.valueOf(1));
+
+            // These should be compressed
+            ModeledFramework<TestModel> clientWithCompressedFramework =
+                    ModeledFramework.wrap(compressedAsync, modelSpec);
+            ModeledFramework<TestModel> clientWithCompressedModel = ModeledFramework.wrap(async, compressedModelSpec);
+
+            // These should be uncompressed
+            ModeledFramework<TestModel> client = ModeledFramework.wrap(async, modelSpec);
+            ModeledFramework<TestModel> clientWithUncompressedModel =
+                    ModeledFramework.wrap(async, uncompressedModelSpec);
+            ModeledFramework<TestModel> clientWithCompressedFrameworkAndUncompressedModel =
+                    ModeledFramework.wrap(compressedAsync, uncompressedModelSpec);
+
+            // Create the node - so we can update in each command
+            complete(client.set(rawModel), (model, e) -> assertNull(e));
+
+            // Update with compressedFramework, read with all other clients
+            complete(clientWithCompressedFramework.update(rawModel), (stat, e) -> assertNull(e));
+            complete(clientWithCompressedModel.read(), (model, e) -> assertEquals(model, rawModel));
+            complete(client.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(RuntimeException.class, e.getClass());
+            });
+            complete(clientWithUncompressedModel.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(RuntimeException.class, e.getClass());
+            });
+            complete(clientWithCompressedFrameworkAndUncompressedModel.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(RuntimeException.class, e.getClass());
+            });
+
+            // Update with compressedModel, read with all other clients
+            complete(clientWithCompressedModel.update(rawModel), (stat, e) -> assertNull(e));
+            complete(clientWithCompressedFramework.read(), (model, e) -> assertEquals(model, rawModel));
+            complete(client.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(RuntimeException.class, e.getClass());
+            });
+            complete(clientWithUncompressedModel.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(RuntimeException.class, e.getClass());
+            });
+            complete(clientWithCompressedFrameworkAndUncompressedModel.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(RuntimeException.class, e.getClass());
+            });
+
+            // Update with regular (implicitly uncompressed) client, read with all other clients
+            complete(client.update(rawModel), (stat, e) -> assertNull(e));
+            complete(clientWithUncompressedModel.read(), (model, e) -> assertEquals(model, rawModel));
+            complete(
+                    clientWithCompressedFrameworkAndUncompressedModel.read(),
+                    (model, e) -> assertEquals(model, rawModel));
+            complete(clientWithCompressedModel.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
+            });
+            complete(clientWithCompressedFramework.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
+            });
+
+            // Update with uncompressedModel, read with all other clients
+            complete(clientWithUncompressedModel.update(rawModel), (stat, e) -> assertNull(e));
+            complete(client.read(), (model, e) -> assertEquals(model, rawModel));
+            complete(
+                    clientWithCompressedFrameworkAndUncompressedModel.read(),
+                    (model, e) -> assertEquals(model, rawModel));
+            complete(clientWithCompressedModel.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
+            });
+            complete(clientWithCompressedFramework.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
+            });
+
+            // Update with compressedFramework overriden by an uncompressedModel, read with all other clients
+            complete(clientWithCompressedFrameworkAndUncompressedModel.update(rawModel), (stat, e) -> assertNull(e));
+            complete(client.read(), (model, e) -> assertEquals(model, rawModel));
+            complete(clientWithUncompressedModel.read(), (model, e) -> assertEquals(model, rawModel));
+            complete(clientWithCompressedModel.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
+            });
+            complete(clientWithCompressedFramework.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
+            });
+        }
+    }
+
+    @Test
+    public void testCompressedCreateOp() throws Exception {
+        try (CuratorFramework compressedRawClient =
+                createRawClientBuilder().enableCompression().build()) {
+            compressedRawClient.start();
+            AsyncCuratorFramework compressedAsync = AsyncCuratorFramework.wrap(compressedRawClient);
+            TestModel rawModel = new TestModel("John", "Galt", "1 Galt's Gulch", 42, BigInteger.valueOf(1));
+
+            // These should be compressed
+            ModeledFramework<TestModel> clientWithCompressedFramework =
+                    ModeledFramework.wrap(compressedAsync, modelSpec);
+            ModeledFramework<TestModel> clientWithCompressedModel = ModeledFramework.wrap(async, compressedModelSpec);
+
+            // These should be uncompressed
+            ModeledFramework<TestModel> client = ModeledFramework.wrap(async, modelSpec);
+            ModeledFramework<TestModel> clientWithUncompressedModel =
+                    ModeledFramework.wrap(async, uncompressedModelSpec);
+            ModeledFramework<TestModel> clientWithCompressedFrameworkAndUncompressedModel =
+                    ModeledFramework.wrap(compressedAsync, uncompressedModelSpec);
+
+            // Make sure the parent node(s) exist
+            rawClient
+                    .create()
+                    .creatingParentsIfNeeded()
+                    .forPath(modelSpec.path().parent().fullPath());
+
+            // Create with compressedFramework, read with all other clients
+            complete(
+                    clientWithCompressedFramework.inTransaction(
+                            Collections.singletonList(clientWithCompressedFramework.createOp(rawModel))),
+                    (results, e) -> assertNull(e));
+            complete(clientWithCompressedModel.read(), (model, e) -> assertEquals(model, rawModel));
+            complete(client.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(RuntimeException.class, e.getClass());
+            });
+            complete(clientWithUncompressedModel.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(RuntimeException.class, e.getClass());
+            });
+            complete(clientWithCompressedFrameworkAndUncompressedModel.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(RuntimeException.class, e.getClass());
+            });
+
+            // Create with compressedModel, read with all other clients
+            clientWithCompressedModel.delete();
+            complete(
+                    clientWithCompressedModel.inTransaction(
+                            Collections.singletonList(clientWithCompressedModel.createOp(rawModel))),
+                    (results, e) -> assertNull(e));
+            complete(clientWithCompressedFramework.read(), (model, e) -> assertEquals(model, rawModel));
+            complete(client.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(RuntimeException.class, e.getClass());
+            });
+            complete(clientWithUncompressedModel.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(RuntimeException.class, e.getClass());
+            });
+            complete(clientWithCompressedFrameworkAndUncompressedModel.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(RuntimeException.class, e.getClass());
+            });
+
+            // Create with regular (implicitly uncompressed) client, read with all other clients
+            client.delete();
+            complete(
+                    client.inTransaction(Collections.singletonList(client.createOp(rawModel))),
+                    (results, e) -> assertNull(e));
+            complete(clientWithUncompressedModel.read(), (model, e) -> assertEquals(model, rawModel));
+            complete(
+                    clientWithCompressedFrameworkAndUncompressedModel.read(),
+                    (model, e) -> assertEquals(model, rawModel));
+            complete(clientWithCompressedModel.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
+            });
+            complete(clientWithCompressedFramework.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
+            });
+
+            // Create with uncompressedModel, read with all other clients
+            clientWithUncompressedModel.delete();
+            complete(
+                    clientWithUncompressedModel.inTransaction(
+                            Collections.singletonList(clientWithUncompressedModel.createOp(rawModel))),
+                    (results, e) -> assertNull(e));
+            complete(client.read(), (model, e) -> assertEquals(model, rawModel));
+            complete(
+                    clientWithCompressedFrameworkAndUncompressedModel.read(),
+                    (model, e) -> assertEquals(model, rawModel));
+            complete(clientWithCompressedModel.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
+            });
+            complete(clientWithCompressedFramework.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
+            });
+
+            // Create with compressedFramework overriden by an uncompressedModel, read with all other clients
+            clientWithCompressedFrameworkAndUncompressedModel.delete();
+            complete(
+                    clientWithCompressedFrameworkAndUncompressedModel.inTransaction(Collections.singletonList(
+                            clientWithCompressedFrameworkAndUncompressedModel.createOp(rawModel))),
+                    (results, e) -> assertNull(e));
+            complete(client.read(), (model, e) -> assertEquals(model, rawModel));
+            complete(clientWithUncompressedModel.read(), (model, e) -> assertEquals(model, rawModel));
+            complete(clientWithCompressedModel.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
+            });
+            complete(clientWithCompressedFramework.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
+            });
+            clientWithCompressedFrameworkAndUncompressedModel.delete();
+        }
+    }
+
+    @Test
+    public void testCompressedUpdateOp() throws Exception {
+        try (CuratorFramework compressedRawClient =
+                createRawClientBuilder().enableCompression().build()) {
+            compressedRawClient.start();
+            AsyncCuratorFramework compressedAsync = AsyncCuratorFramework.wrap(compressedRawClient);
+            TestModel rawModel = new TestModel("John", "Galt", "1 Galt's Gulch", 42, BigInteger.valueOf(1));
+
+            // These should be compressed
+            ModeledFramework<TestModel> clientWithCompressedFramework =
+                    ModeledFramework.wrap(compressedAsync, modelSpec);
+            ModeledFramework<TestModel> clientWithCompressedModel = ModeledFramework.wrap(async, compressedModelSpec);
+
+            // These should be uncompressed
+            ModeledFramework<TestModel> client = ModeledFramework.wrap(async, modelSpec);
+            ModeledFramework<TestModel> clientWithUncompressedModel =
+                    ModeledFramework.wrap(async, uncompressedModelSpec);
+            ModeledFramework<TestModel> clientWithCompressedFrameworkAndUncompressedModel =
+                    ModeledFramework.wrap(compressedAsync, uncompressedModelSpec);
+
+            // Create the node - so we can update in each command
+            complete(client.set(rawModel), (model, e) -> assertNull(e));
+
+            // Update with compressedFramework, read with all other clients
+            complete(
+                    clientWithCompressedFramework.inTransaction(
+                            Collections.singletonList(clientWithCompressedFramework.updateOp(rawModel))),
+                    (results, e) -> assertNull(e));
+            complete(clientWithCompressedModel.read(), (model, e) -> assertEquals(model, rawModel));
+            complete(client.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(RuntimeException.class, e.getClass());
+            });
+            complete(clientWithUncompressedModel.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(RuntimeException.class, e.getClass());
+            });
+            complete(clientWithCompressedFrameworkAndUncompressedModel.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(RuntimeException.class, e.getClass());
+            });
+
+            // Update with compressedModel, read with all other clients
+            complete(
+                    clientWithCompressedModel.inTransaction(
+                            Collections.singletonList(clientWithCompressedModel.updateOp(rawModel))),
+                    (results, e) -> assertNull(e));
+            complete(clientWithCompressedFramework.read(), (model, e) -> assertEquals(model, rawModel));
+            complete(client.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(RuntimeException.class, e.getClass());
+            });
+            complete(clientWithUncompressedModel.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(RuntimeException.class, e.getClass());
+            });
+            complete(clientWithCompressedFrameworkAndUncompressedModel.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(RuntimeException.class, e.getClass());
+            });
+
+            // Update with regular (implicitly uncompressed) client, read with all other clients
+            complete(
+                    client.inTransaction(Collections.singletonList(client.updateOp(rawModel))),
+                    (results, e) -> assertNull(e));
+            complete(clientWithUncompressedModel.read(), (model, e) -> assertEquals(model, rawModel));
+            complete(
+                    clientWithCompressedFrameworkAndUncompressedModel.read(),
+                    (model, e) -> assertEquals(model, rawModel));
+            complete(clientWithCompressedModel.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
+            });
+            complete(clientWithCompressedFramework.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
+            });
+
+            // Update with uncompressedModel, read with all other clients
+            complete(
+                    clientWithUncompressedModel.inTransaction(
+                            Collections.singletonList(clientWithUncompressedModel.updateOp(rawModel))),
+                    (results, e) -> assertNull(e));
+            complete(client.read(), (model, e) -> assertEquals(model, rawModel));
+            complete(
+                    clientWithCompressedFrameworkAndUncompressedModel.read(),
+                    (model, e) -> assertEquals(model, rawModel));
+            complete(clientWithCompressedModel.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
+            });
+            complete(clientWithCompressedFramework.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
+            });
+
+            // Update with compressedFramework overriden by an uncompressedModel, read with all other clients
+            complete(
+                    clientWithCompressedFrameworkAndUncompressedModel.inTransaction(Collections.singletonList(
+                            clientWithCompressedFrameworkAndUncompressedModel.updateOp(rawModel))),
+                    (results, e) -> assertNull(e));
+            complete(client.read(), (model, e) -> assertEquals(model, rawModel));
+            complete(clientWithUncompressedModel.read(), (model, e) -> assertEquals(model, rawModel));
+            complete(clientWithCompressedModel.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
+            });
+            complete(clientWithCompressedFramework.read(), (model, e) -> {
+                assertNotNull(e);
+                assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
+            });
+        }
+    }
 }

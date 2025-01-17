@@ -213,8 +213,12 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T> {
         try {
             byte[] bytes = modelSpec.serializer().serialize(item);
             AsyncSetDataBuilder dataBuilder = dslClient.setData();
-            AsyncPathAndBytesable<AsyncStage<Stat>> next =
-                    isCompressed() ? dataBuilder.compressedWithVersion(version) : dataBuilder.withVersion(version);
+            AsyncPathAndBytesable<AsyncStage<Stat>> next;
+            if (isCompressed()) {
+                next = dataBuilder.compressedWithVersion(version);
+            } else {
+                next = dataBuilder.uncompressedWithVersion(version);
+            }
             return next.forPath(resolveForSet(item), bytes);
         } catch (Exception e) {
             return ModelStage.exceptionally(e);
@@ -352,11 +356,7 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T> {
     public CuratorOp createOp(T model) {
         return client.transactionOp()
                 .create()
-                .withOptions(
-                        modelSpec.createMode(),
-                        fixAclList(modelSpec.aclList()),
-                        modelSpec.createOptions().contains(CreateOption.compress),
-                        modelSpec.ttl())
+                .withOptions(modelSpec.createMode(), fixAclList(modelSpec.aclList()), isCompressed(), modelSpec.ttl())
                 .forPath(resolveForSet(model), modelSpec.serializer().serialize(model));
     }
 
@@ -368,12 +368,13 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T> {
     @Override
     public CuratorOp updateOp(T model, int version) {
         AsyncTransactionSetDataBuilder builder = client.transactionOp().setData();
+        AsyncPathAndBytesable<CuratorOp> builder2;
         if (isCompressed()) {
-            return builder.withVersionCompressed(version)
-                    .forPath(resolveForSet(model), modelSpec.serializer().serialize(model));
+            builder2 = builder.withVersionCompressed(version);
+        } else {
+            builder2 = builder.withVersionUncompressed(version);
         }
-        return builder.withVersion(version)
-                .forPath(resolveForSet(model), modelSpec.serializer().serialize(model));
+        return builder2.forPath(resolveForSet(model), modelSpec.serializer().serialize(model));
     }
 
     @Override
@@ -408,14 +409,23 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T> {
     }
 
     private boolean isCompressed() {
-        return modelSpec.createOptions().contains(CreateOption.compress);
+        if (modelSpec.createOptions().contains(CreateOption.compress)) {
+            return true;
+        } else if (modelSpec.createOptions().contains(CreateOption.uncompress)) {
+            return false;
+        } else {
+            return client.unwrap().compressionEnabled();
+        }
     }
 
     private <U> ModelStage<U> internalRead(Function<ZNode<T>, U> resolver, Stat storingStatIn) {
         Stat stat = (storingStatIn != null) ? storingStatIn : new Stat();
-        AsyncPathable<AsyncStage<byte[]>> next = isCompressed()
-                ? watchableClient.getData().decompressedStoringStatIn(stat)
-                : watchableClient.getData().storingStatIn(stat);
+        AsyncPathable<AsyncStage<byte[]>> next;
+        if (isCompressed()) {
+            next = watchableClient.getData().decompressedStoringStatIn(stat);
+        } else {
+            next = watchableClient.getData().undecompressedStoringStatIn(stat);
+        }
         AsyncStage<byte[]> asyncStage = next.forPath(modelSpec.path().fullPath());
         ModelStage<U> modelStage = ModelStage.make(asyncStage.event());
         asyncStage.whenComplete((value, e) -> {

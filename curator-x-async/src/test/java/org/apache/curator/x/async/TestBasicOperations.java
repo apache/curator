@@ -26,11 +26,13 @@ import static org.apache.zookeeper.CreateMode.EPHEMERAL_SEQUENTIAL;
 import static org.apache.zookeeper.CreateMode.PERSISTENT_SEQUENTIAL;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
 import org.apache.curator.framework.CuratorFramework;
@@ -38,6 +40,7 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.utils.CloseableUtils;
+import org.apache.curator.x.async.api.CreateOption;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
@@ -199,5 +202,186 @@ public class TestBasicOperations extends CompletableBaseClassForTests {
         Stat stat = new Stat();
         complete(client.getData().storingStatIn(stat).forPath("/test"));
         assertEquals(stat.getDataLength(), "hey".length());
+    }
+
+    @Test
+    public void testCompression() {
+        // Test create
+        byte[] data = "hey".getBytes();
+        complete(client.create().withOptions(Collections.singleton(compress)).forPath("/test", data));
+
+        Stat stat = new Stat();
+        complete(client.getData().decompressedStoringStatIn(stat).forPath("/test"), (v, e) -> {
+            assertNull(e);
+            assertEquals(data.length, v.length);
+        });
+        assertNotEquals(data.length, stat.getDataLength());
+        complete(client.getData().storingStatIn(stat).forPath("/test"), (v, e) -> {
+            assertNull(e);
+            assertNotEquals(data.length, v.length);
+        });
+        assertNotEquals(data.length, stat.getDataLength());
+        complete(client.getData().undecompressedStoringStatIn(stat).forPath("/test"), (v, e) -> {
+            assertNull(e);
+            assertNotEquals(data.length, v.length);
+        });
+        assertNotEquals(data.length, stat.getDataLength());
+
+        // Test setData
+        byte[] data2 = "hey2".getBytes();
+        complete(client.setData().compressed().forPath("/test", data2));
+
+        stat = new Stat();
+        complete(client.getData().decompressedStoringStatIn(stat).forPath("/test"), (v, e) -> {
+            assertNull(e);
+            assertEquals(data2.length, v.length);
+        });
+        assertNotEquals(data2.length, stat.getDataLength());
+        complete(client.getData().storingStatIn(stat).forPath("/test"), (v, e) -> {
+            assertNull(e);
+            assertNotEquals(data2.length, v.length);
+        });
+        assertNotEquals(data2.length, stat.getDataLength());
+        complete(client.getData().undecompressedStoringStatIn(stat).forPath("/test"), (v, e) -> {
+            assertNull(e);
+            assertNotEquals(data2.length, v.length);
+        });
+        assertNotEquals(data2.length, stat.getDataLength());
+    }
+
+    @Test
+    public void testGlobalCompression() throws Exception {
+        try (CuratorFramework syncClient = CuratorFrameworkFactory.builder()
+                .connectString(server.getConnectString())
+                .retryPolicy(new RetryOneTime(timing.forSleepingABit().milliseconds()))
+                .enableCompression()
+                .build()) {
+            syncClient.start();
+            AsyncCuratorFramework client = AsyncCuratorFramework.wrap(syncClient);
+
+            Stat stat = new Stat();
+            byte[] data = "hey".getBytes();
+            byte[] data2 = "hey2".getBytes();
+            String path = "/test";
+
+            // Test create with explicit compression
+            complete(
+                    client.create().withOptions(Collections.singleton(compress)).forPath(path, data));
+
+            complete(client.getData().decompressedStoringStatIn(stat).forPath(path), (v, e) -> {
+                assertNull(e);
+                assertEquals(data.length, v.length);
+            });
+            assertNotEquals(data.length, stat.getDataLength());
+            complete(client.getData().storingStatIn(stat).forPath(path), (v, e) -> {
+                assertNull(e);
+                assertEquals(data.length, v.length);
+            });
+            assertNotEquals(data.length, stat.getDataLength());
+            complete(client.getData().undecompressedStoringStatIn(stat).forPath(path), (v, e) -> {
+                assertNull(e);
+                assertNotEquals(data.length, v.length);
+            });
+            assertNotEquals(data.length, stat.getDataLength());
+
+            // Test create explicitly without compression
+            syncClient.delete().forPath(path);
+            complete(client.create()
+                    .withOptions(Collections.singleton(CreateOption.uncompress))
+                    .forPath(path, data));
+
+            complete(client.getData().decompressedStoringStatIn(stat).forPath(path), (v, e) -> {
+                assertNotNull(e);
+                assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
+            });
+            assertEquals(data.length, stat.getDataLength());
+            complete(client.getData().storingStatIn(stat).forPath(path), (v, e) -> {
+                assertNotNull(e);
+                assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
+            });
+            assertEquals(data.length, stat.getDataLength());
+            complete(client.getData().undecompressedStoringStatIn(stat).forPath(path), (v, e) -> {
+                assertNull(e);
+                assertEquals(data.length, v.length);
+            });
+            assertEquals(data.length, stat.getDataLength());
+
+            // Test create with implicit (global) compression
+            syncClient.delete().forPath(path);
+            complete(client.create().forPath(path, data));
+
+            complete(client.getData().decompressedStoringStatIn(stat).forPath(path), (v, e) -> {
+                assertNull(e);
+                assertEquals(data.length, v.length);
+            });
+            assertNotEquals(data.length, stat.getDataLength());
+            complete(client.getData().storingStatIn(stat).forPath(path), (v, e) -> {
+                assertNull(e);
+                assertEquals(data.length, v.length);
+            });
+            assertNotEquals(data.length, stat.getDataLength());
+            complete(client.getData().undecompressedStoringStatIn(stat).forPath(path), (v, e) -> {
+                assertNull(e);
+                assertNotEquals(data.length, v.length);
+            });
+            assertNotEquals(data.length, stat.getDataLength());
+
+            // Test setData with explicit compression
+            complete(client.setData().compressed().forPath(path, data));
+
+            complete(client.getData().decompressedStoringStatIn(stat).forPath(path), (v, e) -> {
+                assertNull(e);
+                assertEquals(data.length, v.length);
+            });
+            assertNotEquals(data.length, stat.getDataLength());
+            complete(client.getData().storingStatIn(stat).forPath(path), (v, e) -> {
+                assertNull(e);
+                assertEquals(data.length, v.length);
+            });
+            assertNotEquals(data.length, stat.getDataLength());
+            complete(client.getData().undecompressedStoringStatIn(stat).forPath(path), (v, e) -> {
+                assertNull(e);
+                assertNotEquals(data.length, v.length);
+            });
+            assertNotEquals(data.length, stat.getDataLength());
+
+            // Test setData explicitly without compression
+            complete(client.setData().uncompressed().forPath(path, data));
+
+            complete(client.getData().decompressedStoringStatIn(stat).forPath(path), (v, e) -> {
+                assertNotNull(e);
+                assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
+            });
+            assertEquals(data.length, stat.getDataLength());
+            complete(client.getData().storingStatIn(stat).forPath(path), (v, e) -> {
+                assertNotNull(e);
+                assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
+            });
+            assertEquals(data.length, stat.getDataLength());
+            complete(client.getData().undecompressedStoringStatIn(stat).forPath(path), (v, e) -> {
+                assertNull(e);
+                assertEquals(data.length, v.length);
+            });
+            assertEquals(data.length, stat.getDataLength());
+
+            // Test setData with implicit (global) compression
+            complete(client.setData().forPath(path, data));
+
+            complete(client.getData().decompressedStoringStatIn(stat).forPath(path), (v, e) -> {
+                assertNull(e);
+                assertEquals(data.length, v.length);
+            });
+            assertNotEquals(data.length, stat.getDataLength());
+            complete(client.getData().storingStatIn(stat).forPath(path), (v, e) -> {
+                assertNull(e);
+                assertEquals(data.length, v.length);
+            });
+            assertNotEquals(data.length, stat.getDataLength());
+            complete(client.getData().undecompressedStoringStatIn(stat).forPath(path), (v, e) -> {
+                assertNull(e);
+                assertNotEquals(data.length, v.length);
+            });
+            assertNotEquals(data.length, stat.getDataLength());
+        }
     }
 }

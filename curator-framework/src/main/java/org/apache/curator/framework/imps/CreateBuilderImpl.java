@@ -100,7 +100,7 @@ public class CreateBuilderImpl
         acling = new ACLing(client.getAclProvider());
         createParentsIfNeeded = false;
         createParentsAsContainers = false;
-        compress = false;
+        compress = client.compressionEnabled();
         setDataIfExists = false;
         storingStat = null;
         ttl = -1;
@@ -194,6 +194,12 @@ public class CreateBuilderImpl
             }
 
             @Override
+            public ACLCreateModePathAndBytesable<T> uncompressed() {
+                CreateBuilderImpl.this.uncompressed();
+                return this;
+            }
+
+            @Override
             public T forPath(String path) throws Exception {
                 return forPath(path, client.getDefaultData());
             }
@@ -216,7 +222,16 @@ public class CreateBuilderImpl
 
     @Override
     public CreateBackgroundModeStatACLable compressed() {
-        compress = true;
+        return withCompression(true);
+    }
+
+    @Override
+    public CreateBackgroundModeStatACLable uncompressed() {
+        return withCompression(false);
+    }
+
+    private CreateBackgroundModeStatACLable withCompression(boolean compress) {
+        this.compress = compress;
         return new CreateBackgroundModeStatACLable() {
             @Override
             public CreateBackgroundModeACLable storingStatIn(Stat stat) {

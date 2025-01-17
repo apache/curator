@@ -52,6 +52,14 @@ public interface AsyncTransactionCreateBuilder extends AsyncPathAndBytesable<Cur
     AsyncPathAndBytesable<CuratorOp> compressed();
 
     /**
+     * Cause the data to be uncompressed, even if the {@link org.apache.curator.framework.CuratorFramework}
+     * has compressionEnabled
+     *
+     * @return this
+     */
+    AsyncPathAndBytesable<CuratorOp> uncompressed();
+
+    /**
      * Specify a TTL when mode is {@link org.apache.zookeeper.CreateMode#PERSISTENT_WITH_TTL} or
      * {@link org.apache.zookeeper.CreateMode#PERSISTENT_SEQUENTIAL_WITH_TTL}. If
      * the znode has not been modified within the given TTL, it will be deleted once it has no
