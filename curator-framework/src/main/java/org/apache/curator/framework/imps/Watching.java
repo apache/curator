@@ -85,10 +85,8 @@ public class Watching {
             doCommit = (rc == KeeperException.Code.OK.intValue());
         }
 
-        if (doCommit && (namespaceWatcher != null)) {
-            if (client.getWatcherRemovalManager() != null) {
-                client.getWatcherRemovalManager().add(namespaceWatcher);
-            }
+        if (doCommit && namespaceWatcher != null && client.getWatcherRemovalManager() != null) {
+            client.getWatcherRemovalManager().add(namespaceWatcher);
         }
     }
 }
