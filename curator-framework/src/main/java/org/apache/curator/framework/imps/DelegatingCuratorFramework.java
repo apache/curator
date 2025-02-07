@@ -36,21 +36,15 @@ import org.apache.curator.utils.ZookeeperCompatibility;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
 
-public class DelegatingCuratorFramework extends InternalCuratorFramework {
-    protected final InternalCuratorFramework client;
+/**
+ * Delegates methods to shadowed {@link CuratorFrameworkBase} so subclasses can override only methods that need
+ * additional cares.
+ */
+abstract class DelegatingCuratorFramework extends CuratorFrameworkBase {
+    protected final CuratorFrameworkBase client;
 
-    public DelegatingCuratorFramework(InternalCuratorFramework client) {
+    public DelegatingCuratorFramework(CuratorFrameworkBase client) {
         this.client = client;
-    }
-
-    @Override
-    public void start() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void close() {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -201,8 +195,7 @@ public class DelegatingCuratorFramework extends InternalCuratorFramework {
     }
 
     @Override
-    public <DATA_TYPE> void processBackgroundOperation(
-            OperationAndData<DATA_TYPE> operationAndData, CuratorEvent event) {
+    <DATA_TYPE> void processBackgroundOperation(OperationAndData<DATA_TYPE> operationAndData, CuratorEvent event) {
         client.processBackgroundOperation(operationAndData, event);
     }
 

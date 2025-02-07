@@ -36,7 +36,7 @@ public class CuratorTempFrameworkImpl implements CuratorTempFramework {
     private final long inactiveThresholdMs;
 
     // guarded by sync
-    private InternalCuratorFramework client;
+    private CuratorFrameworkBase client;
 
     // guarded by sync
     private ScheduledExecutorService cleanup;
@@ -67,7 +67,7 @@ public class CuratorTempFrameworkImpl implements CuratorTempFramework {
     }
 
     @VisibleForTesting
-    synchronized InternalCuratorFramework getClient() {
+    synchronized CuratorFrameworkBase getClient() {
         return client;
     }
 
@@ -83,7 +83,7 @@ public class CuratorTempFrameworkImpl implements CuratorTempFramework {
 
     private synchronized void openConnectionIfNeeded() throws Exception {
         if (client == null) {
-            client = (InternalCuratorFramework) factory.build(); // cast is safe - we control both sides of this
+            client = (CuratorFrameworkBase) factory.build(); // cast is safe - we control both sides of this
             client.start();
         }
 

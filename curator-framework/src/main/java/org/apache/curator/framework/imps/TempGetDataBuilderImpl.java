@@ -28,11 +28,11 @@ import org.apache.curator.framework.api.TempGetDataBuilder;
 import org.apache.zookeeper.data.Stat;
 
 class TempGetDataBuilderImpl implements TempGetDataBuilder {
-    private final InternalCuratorFramework client;
+    private final CuratorFrameworkBase client;
     private Stat responseStat;
     private boolean decompress;
 
-    TempGetDataBuilderImpl(InternalCuratorFramework client) {
+    TempGetDataBuilderImpl(CuratorFrameworkBase client) {
         this.client = client;
         responseStat = null;
         decompress = client.compressionEnabled();

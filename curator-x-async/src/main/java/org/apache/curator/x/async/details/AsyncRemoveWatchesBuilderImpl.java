@@ -25,7 +25,7 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 import org.apache.curator.framework.api.CuratorWatcher;
-import org.apache.curator.framework.imps.InternalCuratorFramework;
+import org.apache.curator.framework.imps.CuratorFrameworkBase;
 import org.apache.curator.framework.imps.RemoveWatchesBuilderImpl;
 import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.api.AsyncPathable;
@@ -34,14 +34,14 @@ import org.apache.curator.x.async.api.RemoveWatcherOption;
 import org.apache.zookeeper.Watcher;
 
 class AsyncRemoveWatchesBuilderImpl implements AsyncRemoveWatchesBuilder, AsyncPathable<AsyncStage<Void>> {
-    private final InternalCuratorFramework client;
+    private final CuratorFrameworkBase client;
     private final Filters filters;
     private Watcher.WatcherType watcherType = Watcher.WatcherType.Any;
     private Set<RemoveWatcherOption> options = Collections.emptySet();
     private Watcher watcher = null;
     private CuratorWatcher curatorWatcher = null;
 
-    AsyncRemoveWatchesBuilderImpl(InternalCuratorFramework client, Filters filters) {
+    AsyncRemoveWatchesBuilderImpl(CuratorFrameworkBase client, Filters filters) {
         this.client = client;
         this.filters = filters;
     }

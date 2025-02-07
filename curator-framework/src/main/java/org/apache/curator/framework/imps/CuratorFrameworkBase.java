@@ -48,14 +48,14 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 
 /**
- * This is the internal version of {@link CuratorFramework}.
+ * This is the base class of all {@link CuratorFramework}s, it is public for private usages (a.k.a. impls/details package).
  *
- * <p>Most internal codes should use {@link InternalCuratorFramework} instead of {@link CuratorFrameworkImpl}, so
+ * <p>Most internal codes should use {@link CuratorFrameworkBase} instead of {@link CuratorFrameworkImpl}, so
  * functionalities could be added additively by overriding methods in {@link DelegatingCuratorFramework}.
  *
- * <p>An instance of {@link CuratorFramework} MUST BE an instance of {@link InternalCuratorFramework}.
+ * <p>An instance of {@link CuratorFramework} MUST BE an instance of {@link CuratorFrameworkBase}.
  */
-public abstract class InternalCuratorFramework implements CuratorFramework {
+public abstract class CuratorFrameworkBase implements CuratorFramework {
     abstract NamespaceImpl getNamespaceImpl();
 
     @Override
@@ -111,7 +111,7 @@ public abstract class InternalCuratorFramework implements CuratorFramework {
         return getZookeeperClient().getZooKeeper();
     }
 
-    protected final void internalSync(InternalCuratorFramework impl, String path, Object context) {
+    protected final void internalSync(CuratorFrameworkBase impl, String path, Object context) {
         BackgroundOperation<String> operation = new BackgroundSyncImpl(impl, context);
         processBackgroundOperation(new OperationAndData(operation, path, null, null, context, null), null);
     }

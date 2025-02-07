@@ -26,12 +26,12 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.WatcherType;
 
 public class WatchesBuilderImpl extends RemoveWatchesBuilderImpl implements WatchesBuilder {
-    public WatchesBuilderImpl(InternalCuratorFramework client) {
+    public WatchesBuilderImpl(CuratorFrameworkBase client) {
         super(client);
     }
 
     public WatchesBuilderImpl(
-            InternalCuratorFramework client,
+            CuratorFrameworkBase client,
             Watcher watcher,
             CuratorWatcher curatorWatcher,
             WatcherType watcherType,

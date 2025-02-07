@@ -37,7 +37,7 @@ public class RemoveWatchesBuilderImpl
                 RemoveWatchesLocal,
                 BackgroundOperation<String>,
                 ErrorListenerPathable<Void> {
-    private InternalCuratorFramework client;
+    private CuratorFrameworkBase client;
     private Watcher watcher;
     private CuratorWatcher curatorWatcher;
     private WatcherType watcherType;
@@ -46,7 +46,7 @@ public class RemoveWatchesBuilderImpl
     private boolean quietly;
     private Backgrounding backgrounding;
 
-    public RemoveWatchesBuilderImpl(InternalCuratorFramework client) {
+    public RemoveWatchesBuilderImpl(CuratorFrameworkBase client) {
         this.client = client;
         this.watcher = null;
         this.curatorWatcher = null;
@@ -58,7 +58,7 @@ public class RemoveWatchesBuilderImpl
     }
 
     public RemoveWatchesBuilderImpl(
-            InternalCuratorFramework client,
+            CuratorFrameworkBase client,
             Watcher watcher,
             CuratorWatcher curatorWatcher,
             WatcherType watcherType,
@@ -191,7 +191,7 @@ public class RemoveWatchesBuilderImpl
         return null;
     }
 
-    protected InternalCuratorFramework getClient() {
+    protected CuratorFrameworkBase getClient() {
         return client;
     }
 

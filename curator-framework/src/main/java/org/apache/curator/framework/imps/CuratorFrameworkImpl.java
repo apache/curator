@@ -74,7 +74,7 @@ import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class CuratorFrameworkImpl extends InternalCuratorFramework {
+public final class CuratorFrameworkImpl extends CuratorFrameworkBase {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final CuratorZookeeperClient client;
     private final StandardListenerManager<CuratorListener> listeners;

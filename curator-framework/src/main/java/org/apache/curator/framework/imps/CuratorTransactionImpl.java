@@ -35,12 +35,12 @@ import org.apache.zookeeper.data.Stat;
 
 @SuppressWarnings("deprecation")
 class CuratorTransactionImpl implements CuratorTransaction, CuratorTransactionBridge, CuratorTransactionFinal {
-    private final InternalCuratorFramework client;
+    private final CuratorFrameworkBase client;
     private final CuratorMultiTransactionRecord transaction;
 
     private boolean isCommitted = false;
 
-    CuratorTransactionImpl(InternalCuratorFramework client) {
+    CuratorTransactionImpl(CuratorFrameworkBase client) {
         this.client = client;
         transaction = new CuratorMultiTransactionRecord();
     }
@@ -83,7 +83,7 @@ class CuratorTransactionImpl implements CuratorTransaction, CuratorTransactionBr
     }
 
     static <T> TransactionCheckBuilder<T> makeTransactionCheckBuilder(
-            final InternalCuratorFramework client, final T context, final CuratorMultiTransactionRecord transaction) {
+            final CuratorFrameworkBase client, final T context, final CuratorMultiTransactionRecord transaction) {
         return new TransactionCheckBuilder<T>() {
             private int version = -1;
 
@@ -125,7 +125,7 @@ class CuratorTransactionImpl implements CuratorTransaction, CuratorTransactionBr
     }
 
     static List<CuratorTransactionResult> wrapResults(
-            InternalCuratorFramework client, List<OpResult> resultList, CuratorMultiTransactionRecord transaction) {
+            CuratorFrameworkBase client, List<OpResult> resultList, CuratorMultiTransactionRecord transaction) {
         ImmutableList.Builder<CuratorTransactionResult> builder = ImmutableList.builder();
         for (int i = 0; i < resultList.size(); ++i) {
             OpResult opResult = resultList.get(i);
@@ -138,7 +138,7 @@ class CuratorTransactionImpl implements CuratorTransaction, CuratorTransactionBr
     }
 
     static CuratorTransactionResult makeCuratorResult(
-            InternalCuratorFramework client, OpResult opResult, TypeAndPath metadata) {
+            CuratorFrameworkBase client, OpResult opResult, TypeAndPath metadata) {
         String resultPath = null;
         Stat resultStat = null;
         int error = 0;

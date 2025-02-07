@@ -50,14 +50,14 @@ public class CuratorMultiTransactionImpl
                 CuratorMultiTransactionMain,
                 BackgroundOperation<CuratorMultiTransactionRecord>,
                 ErrorListenerMultiTransactionMain {
-    private final InternalCuratorFramework client;
+    private final CuratorFrameworkBase client;
     private Backgrounding backgrounding = new Backgrounding();
 
-    public CuratorMultiTransactionImpl(InternalCuratorFramework client) {
+    public CuratorMultiTransactionImpl(CuratorFrameworkBase client) {
         this.client = client;
     }
 
-    public CuratorMultiTransactionImpl(InternalCuratorFramework client, Backgrounding backgrounding) {
+    public CuratorMultiTransactionImpl(CuratorFrameworkBase client, Backgrounding backgrounding) {
         this.client = client;
         this.backgrounding = backgrounding;
     }

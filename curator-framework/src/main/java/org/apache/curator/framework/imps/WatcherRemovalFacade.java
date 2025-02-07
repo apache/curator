@@ -25,14 +25,24 @@ import org.apache.curator.framework.WatcherRemoveCuratorFramework;
 class WatcherRemovalFacade extends DelegatingCuratorFramework implements WatcherRemoveCuratorFramework {
     private final WatcherRemovalManager removalManager;
 
-    WatcherRemovalFacade(InternalCuratorFramework client) {
+    WatcherRemovalFacade(CuratorFrameworkBase client) {
         super(client);
         removalManager = new WatcherRemovalManager(client);
     }
 
-    private WatcherRemovalFacade(InternalCuratorFramework client, WatcherRemovalManager removalManager) {
+    private WatcherRemovalFacade(CuratorFrameworkBase client, WatcherRemovalManager removalManager) {
         super(client);
         this.removalManager = removalManager;
+    }
+
+    @Override
+    public void start() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void close() {
+        throw new UnsupportedOperationException();
     }
 
     WatcherRemovalManager getRemovalManager() {
@@ -51,7 +61,7 @@ class WatcherRemovalFacade extends DelegatingCuratorFramework implements Watcher
 
     @Override
     public CuratorFramework usingNamespace(String newNamespace) {
-        final InternalCuratorFramework newClient = (InternalCuratorFramework) client.usingNamespace(newNamespace);
+        final CuratorFrameworkBase newClient = (CuratorFrameworkBase) client.usingNamespace(newNamespace);
         return new WatcherRemovalFacade(newClient, removalManager);
     }
 }

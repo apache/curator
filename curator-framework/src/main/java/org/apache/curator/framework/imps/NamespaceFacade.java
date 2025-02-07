@@ -32,6 +32,16 @@ class NamespaceFacade extends DelegatingCuratorFramework {
     }
 
     @Override
+    public void start() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void close() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     NamespaceImpl getNamespaceImpl() {
         return namespace;
     }

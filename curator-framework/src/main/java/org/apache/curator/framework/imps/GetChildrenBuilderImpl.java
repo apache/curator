@@ -41,12 +41,12 @@ import org.apache.zookeeper.data.Stat;
 
 public class GetChildrenBuilderImpl
         implements GetChildrenBuilder, BackgroundOperation<String>, ErrorListenerPathable<List<String>> {
-    private final InternalCuratorFramework client;
+    private final CuratorFrameworkBase client;
     private Watching watching;
     private Backgrounding backgrounding;
     private Stat responseStat;
 
-    GetChildrenBuilderImpl(InternalCuratorFramework client) {
+    GetChildrenBuilderImpl(CuratorFrameworkBase client) {
         this.client = client;
         watching = new Watching(client);
         backgrounding = new Backgrounding();
@@ -54,7 +54,7 @@ public class GetChildrenBuilderImpl
     }
 
     public GetChildrenBuilderImpl(
-            InternalCuratorFramework client, Watcher watcher, Backgrounding backgrounding, Stat responseStat) {
+            CuratorFrameworkBase client, Watcher watcher, Backgrounding backgrounding, Stat responseStat) {
         this.client = client;
         this.watching = new Watching(client, watcher);
         this.backgrounding = backgrounding;

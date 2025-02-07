@@ -35,7 +35,7 @@ import org.apache.zookeeper.data.Stat;
 
 public class SetDataBuilderImpl
         implements SetDataBuilder, BackgroundOperation<PathAndBytes>, ErrorListenerPathAndBytesable<Stat> {
-    private final InternalCuratorFramework client;
+    private final CuratorFrameworkBase client;
     private Backgrounding backgrounding;
     private int version;
     private boolean compress;
@@ -50,15 +50,14 @@ public class SetDataBuilderImpl
     @VisibleForTesting
     boolean failNextIdempotentCheckForTesting = false;
 
-    SetDataBuilderImpl(InternalCuratorFramework client) {
+    SetDataBuilderImpl(CuratorFrameworkBase client) {
         this.client = client;
         backgrounding = new Backgrounding();
         version = -1;
         compress = client.compressionEnabled();
     }
 
-    public SetDataBuilderImpl(
-            InternalCuratorFramework client, Backgrounding backgrounding, int version, boolean compress) {
+    public SetDataBuilderImpl(CuratorFrameworkBase client, Backgrounding backgrounding, int version, boolean compress) {
         this.client = client;
         this.backgrounding = backgrounding;
         this.version = version;
@@ -221,7 +220,7 @@ public class SetDataBuilderImpl
     }
 
     private void backgroundCheckIdempotent(
-            final InternalCuratorFramework client,
+            final CuratorFrameworkBase client,
             final OperationAndData<PathAndBytes> mainOperationAndData,
             final String path,
             final Backgrounding backgrounding) {

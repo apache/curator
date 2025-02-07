@@ -250,7 +250,7 @@ public class TestFailedDeleteManager extends BaseClassForTests {
 
         final AtomicBoolean pathAdded = new AtomicBoolean(false);
 
-        ((InternalCuratorFramework) client).getFailedDeleteManager().debugListener =
+        ((CuratorFrameworkBase) client).getFailedDeleteManager().debugListener =
                 new FailedOperationManager.FailedOperationManagerListener<String>() {
 
                     @Override
@@ -277,7 +277,7 @@ public class TestFailedDeleteManager extends BaseClassForTests {
 
         final AtomicBoolean pathAdded = new AtomicBoolean(false);
 
-        ((InternalCuratorFramework) client).getFailedDeleteManager().debugListener =
+        ((CuratorFrameworkBase) client).getFailedDeleteManager().debugListener =
                 new FailedOperationManager.FailedOperationManagerListener<String>() {
 
                     @Override

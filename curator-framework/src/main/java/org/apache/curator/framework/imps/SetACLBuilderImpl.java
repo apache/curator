@@ -35,21 +35,20 @@ import org.apache.zookeeper.data.Stat;
 
 public class SetACLBuilderImpl
         implements SetACLBuilder, BackgroundPathable<Stat>, BackgroundOperation<String>, ErrorListenerPathable<Stat> {
-    private final InternalCuratorFramework client;
+    private final CuratorFrameworkBase client;
 
     private ACLing acling;
     private Backgrounding backgrounding;
     private int version;
 
-    SetACLBuilderImpl(InternalCuratorFramework client) {
+    SetACLBuilderImpl(CuratorFrameworkBase client) {
         this.client = client;
         backgrounding = new Backgrounding();
         acling = new ACLing(client.getAclProvider());
         version = -1;
     }
 
-    public SetACLBuilderImpl(
-            InternalCuratorFramework client, Backgrounding backgrounding, List<ACL> aclList, int version) {
+    public SetACLBuilderImpl(CuratorFrameworkBase client, Backgrounding backgrounding, List<ACL> aclList, int version) {
         this.client = client;
         this.acling = new ACLing(client.getAclProvider(), aclList);
         this.version = version;

@@ -62,11 +62,11 @@ public class Backgrounding {
         errorListener = null;
     }
 
-    Backgrounding(InternalCuratorFramework client, BackgroundCallback callback, Object context, Executor executor) {
+    Backgrounding(CuratorFrameworkBase client, BackgroundCallback callback, Object context, Executor executor) {
         this(wrapCallback(client, callback, executor), context);
     }
 
-    Backgrounding(InternalCuratorFramework client, BackgroundCallback callback, Executor executor) {
+    Backgrounding(CuratorFrameworkBase client, BackgroundCallback callback, Executor executor) {
         this(wrapCallback(client, callback, executor));
     }
 
@@ -119,7 +119,7 @@ public class Backgrounding {
     }
 
     private static BackgroundCallback wrapCallback(
-            final InternalCuratorFramework client, final BackgroundCallback callback, final Executor executor) {
+            final CuratorFrameworkBase client, final BackgroundCallback callback, final Executor executor) {
         return new BackgroundCallback() {
             @Override
             public void processResult(CuratorFramework dummy, final CuratorEvent event) throws Exception {

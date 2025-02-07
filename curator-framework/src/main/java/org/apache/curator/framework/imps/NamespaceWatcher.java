@@ -28,19 +28,19 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 
 class NamespaceWatcher implements Watcher, Closeable {
-    private volatile InternalCuratorFramework client;
+    private volatile CuratorFrameworkBase client;
     private volatile Watcher actualWatcher;
     private final String unfixedPath;
     private volatile CuratorWatcher curatorWatcher;
 
-    NamespaceWatcher(InternalCuratorFramework client, Watcher actualWatcher, String unfixedPath) {
+    NamespaceWatcher(CuratorFrameworkBase client, Watcher actualWatcher, String unfixedPath) {
         this.client = client;
         this.actualWatcher = actualWatcher;
         this.unfixedPath = Preconditions.checkNotNull(unfixedPath, "unfixedPath cannot be null");
         this.curatorWatcher = null;
     }
 
-    NamespaceWatcher(InternalCuratorFramework client, CuratorWatcher curatorWatcher, String unfixedPath) {
+    NamespaceWatcher(CuratorFrameworkBase client, CuratorWatcher curatorWatcher, String unfixedPath) {
         this.client = client;
         this.actualWatcher = null;
         this.curatorWatcher = curatorWatcher;

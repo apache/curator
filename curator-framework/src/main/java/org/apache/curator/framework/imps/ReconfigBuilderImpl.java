@@ -34,7 +34,7 @@ import org.apache.zookeeper.server.DataTree;
 
 public class ReconfigBuilderImpl
         implements ReconfigBuilder, BackgroundOperation<Void>, ErrorListenerReconfigBuilderMain {
-    private final InternalCuratorFramework client;
+    private final CuratorFrameworkBase client;
 
     private Backgrounding backgrounding = new Backgrounding();
     private Stat responseStat;
@@ -43,12 +43,12 @@ public class ReconfigBuilderImpl
     private List<String> joining;
     private List<String> leaving;
 
-    public ReconfigBuilderImpl(InternalCuratorFramework client) {
+    public ReconfigBuilderImpl(CuratorFrameworkBase client) {
         this.client = client;
     }
 
     public ReconfigBuilderImpl(
-            InternalCuratorFramework client,
+            CuratorFrameworkBase client,
             Backgrounding backgrounding,
             Stat responseStat,
             long fromConfig,

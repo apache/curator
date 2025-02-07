@@ -218,7 +218,7 @@ public class TestNamespaceFacade extends BaseClassForTests {
                 .connectString("foo")
                 .build();
 
-        assertEquals(((InternalCuratorFramework) client).unfixForNamespace("/foo/bar"), "/foo/bar");
+        assertEquals(((CuratorFrameworkBase) client).unfixForNamespace("/foo/bar"), "/foo/bar");
 
         CloseableUtils.closeQuietly(client);
     }

@@ -22,7 +22,7 @@ package org.apache.curator.x.async.details;
 import static org.apache.curator.x.async.details.BackgroundProcs.safeCall;
 import static org.apache.curator.x.async.details.BackgroundProcs.statProc;
 import java.util.List;
-import org.apache.curator.framework.imps.InternalCuratorFramework;
+import org.apache.curator.framework.imps.CuratorFrameworkBase;
 import org.apache.curator.framework.imps.SetACLBuilderImpl;
 import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.api.AsyncPathable;
@@ -31,12 +31,12 @@ import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 
 class AsyncSetACLBuilderImpl implements AsyncSetACLBuilder, AsyncPathable<AsyncStage<Stat>> {
-    private final InternalCuratorFramework client;
+    private final CuratorFrameworkBase client;
     private final Filters filters;
     private int version = -1;
     private List<ACL> aclList = null;
 
-    AsyncSetACLBuilderImpl(InternalCuratorFramework client, Filters filters) {
+    AsyncSetACLBuilderImpl(CuratorFrameworkBase client, Filters filters) {
         this.client = client;
         this.filters = filters;
     }

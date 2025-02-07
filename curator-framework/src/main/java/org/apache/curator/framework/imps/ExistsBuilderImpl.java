@@ -34,19 +34,19 @@ import org.apache.zookeeper.data.Stat;
 
 public class ExistsBuilderImpl
         implements ExistsBuilder, BackgroundOperation<String>, ErrorListenerPathable<Stat>, ACLableExistBuilderMain {
-    private final InternalCuratorFramework client;
+    private final CuratorFrameworkBase client;
     private Backgrounding backgrounding;
     private Watching watching;
     private boolean createParentsIfNeeded;
     private boolean createParentContainersIfNeeded;
     private ACLing acling;
 
-    ExistsBuilderImpl(InternalCuratorFramework client) {
+    ExistsBuilderImpl(CuratorFrameworkBase client) {
         this(client, new Backgrounding(), null, false, false);
     }
 
     public ExistsBuilderImpl(
-            InternalCuratorFramework client,
+            CuratorFrameworkBase client,
             Backgrounding backgrounding,
             Watcher watcher,
             boolean createParentsIfNeeded,

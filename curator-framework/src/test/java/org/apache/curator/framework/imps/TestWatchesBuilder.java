@@ -510,7 +510,7 @@ public class TestWatchesBuilder extends CuratorTestBase {
 
             final CountDownLatch guaranteeAddedLatch = new CountDownLatch(1);
 
-            ((InternalCuratorFramework) client).getFailedRemoveWatcherManager().debugListener =
+            ((CuratorFrameworkBase) client).getFailedRemoveWatcherManager().debugListener =
                     new FailedOperationManager.FailedOperationManagerListener<
                             FailedRemoveWatchManager.FailedRemoveWatchDetails>() {
 
