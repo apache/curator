@@ -119,6 +119,7 @@ public class CuratorFrameworkImpl implements CuratorFramework {
     private final EnsembleTracker ensembleTracker;
     private final SchemaSet schemaSet;
     private final Executor runSafeService;
+    private final ExecutorService asyncWatchService;
     private final ZookeeperCompatibility zookeeperCompatibility;
 
     private volatile ExecutorService executorService;
@@ -208,6 +209,7 @@ public class CuratorFrameworkImpl implements CuratorFramework {
                 builder.withEnsembleTracker() ? new EnsembleTracker(this, builder.getEnsembleProvider()) : null;
 
         runSafeService = makeRunSafeService(builder);
+        asyncWatchService = builder.getAsyncWatchService();
         zookeeperCompatibility = builder.getZookeeperCompatibility();
     }
 
@@ -298,6 +300,7 @@ public class CuratorFrameworkImpl implements CuratorFramework {
         schemaSet = parent.schemaSet;
         ensembleTracker = parent.ensembleTracker;
         runSafeService = parent.runSafeService;
+        asyncWatchService = parent.asyncWatchService;
         zookeeperCompatibility = parent.zookeeperCompatibility;
     }
 
@@ -434,7 +437,6 @@ public class CuratorFrameworkImpl implements CuratorFramework {
                     Thread.currentThread().interrupt();
                 }
             }
-
             if (ensembleTracker != null) {
                 ensembleTracker.close();
             }
@@ -449,6 +451,18 @@ public class CuratorFrameworkImpl implements CuratorFramework {
             unhandledErrorListeners.clear();
             connectionStateManager.close();
             client.close();
+
+            if (asyncWatchService != null) {
+                asyncWatchService.shutdown();
+                try {
+                    if (!asyncWatchService.awaitTermination(maxCloseWaitMs, TimeUnit.MILLISECONDS)) {
+                        asyncWatchService.shutdownNow();
+                    }
+                } catch (InterruptedException e) {
+                    // Interrupted while interrupting; I give up.
+                    Thread.currentThread().interrupt();
+                }
+            }
         }
     }
 
@@ -646,6 +660,10 @@ public class CuratorFrameworkImpl implements CuratorFramework {
 
     FailedRemoveWatchManager getFailedRemoveWatcherManager() {
         return failedRemoveWatcherManager;
+    }
+
+    ExecutorService getAsyncWatchService() {
+        return asyncWatchService;
     }
 
     RetryLoop newRetryLoop() {

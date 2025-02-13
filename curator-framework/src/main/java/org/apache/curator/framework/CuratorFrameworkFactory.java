@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import org.apache.curator.CuratorZookeeperClient;
@@ -172,6 +173,7 @@ public class CuratorFrameworkFactory {
         private SchemaSet schemaSet = SchemaSet.getDefaultSchemaSet();
         private int waitForShutdownTimeoutMs = 0;
         private Executor runSafeService = null;
+        private ExecutorService asyncWatchService = null;
         private ConnectionStateListenerManagerFactory connectionStateListenerManagerFactory =
                 ConnectionStateListenerManagerFactory.standard;
         private int simulatedSessionExpirationPercent = 100;
@@ -520,6 +522,19 @@ public class CuratorFrameworkFactory {
         }
 
         /**
+         * By default, watches are run sequentially.
+         * If an executor is provided here, then all watch calls will be run asynchronously via this executor.
+         * This executor service will be closed when the CuratorFramework is closed.
+         *
+         * @param asyncWatchService executorService to use for all watch calls
+         * @return this
+         */
+        public Builder asyncWatchService(ExecutorService asyncWatchService) {
+            this.asyncWatchService = asyncWatchService;
+            return this;
+        }
+
+        /**
          * Sets the connection state listener manager factory. For example,
          * you can set {@link org.apache.curator.framework.state.ConnectionStateListenerManagerFactory#circuitBreaking(org.apache.curator.RetryPolicy)}
          *
@@ -541,6 +556,10 @@ public class CuratorFrameworkFactory {
 
         public Executor getRunSafeService() {
             return runSafeService;
+        }
+
+        public ExecutorService getAsyncWatchService() {
+            return asyncWatchService;
         }
 
         public ACLProvider getAclProvider() {
