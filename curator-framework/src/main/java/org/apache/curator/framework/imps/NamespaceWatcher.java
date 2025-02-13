@@ -23,6 +23,9 @@ import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import java.io.Closeable;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
+
 import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.zookeeper.WatchedEvent;
@@ -80,9 +83,13 @@ class NamespaceWatcher implements Watcher, Closeable {
                 };
             }
             if (watchRunnable != null) {
-                Executor watchExecutor = client.getAsyncWatchService();
-                if (watchExecutor != null) {
-                    watchExecutor.execute(watchRunnable);
+                ExecutorService watchExecutor = client.getAsyncWatchService();
+                if (watchExecutor != null && !watchExecutor.isShutdown()) {
+                    try {
+                        watchExecutor.execute(watchRunnable);
+                    } catch (RejectedExecutionException e) {
+                        watchRunnable.run();
+                    }
                 } else {
                     watchRunnable.run();
                 }
