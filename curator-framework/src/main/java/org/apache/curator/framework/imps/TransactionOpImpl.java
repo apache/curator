@@ -27,9 +27,9 @@ import org.apache.curator.framework.api.transaction.TransactionOp;
 import org.apache.curator.framework.api.transaction.TransactionSetDataBuilder;
 
 public class TransactionOpImpl implements TransactionOp {
-    private final CuratorFrameworkImpl client;
+    private final CuratorFrameworkBase client;
 
-    public TransactionOpImpl(CuratorFrameworkImpl client) {
+    public TransactionOpImpl(CuratorFrameworkBase client) {
         this.client = client;
     }
 

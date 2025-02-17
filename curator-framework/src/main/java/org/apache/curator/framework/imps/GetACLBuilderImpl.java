@@ -35,18 +35,18 @@ import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 
 public class GetACLBuilderImpl implements GetACLBuilder, BackgroundOperation<String>, ErrorListenerPathable<List<ACL>> {
-    private final CuratorFrameworkImpl client;
+    private final CuratorFrameworkBase client;
 
     private Backgrounding backgrounding;
     private Stat responseStat;
 
-    GetACLBuilderImpl(CuratorFrameworkImpl client) {
+    GetACLBuilderImpl(CuratorFrameworkBase client) {
         this.client = client;
         backgrounding = new Backgrounding();
         responseStat = new Stat();
     }
 
-    public GetACLBuilderImpl(CuratorFrameworkImpl client, Backgrounding backgrounding, Stat responseStat) {
+    public GetACLBuilderImpl(CuratorFrameworkBase client, Backgrounding backgrounding, Stat responseStat) {
         this.client = client;
         this.backgrounding = backgrounding;
         this.responseStat = responseStat;

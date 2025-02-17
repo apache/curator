@@ -126,7 +126,7 @@ public class TestWatchesBuilder extends CuratorTestBase {
     @Test
     public void testRemoveCuratorWatch() throws Exception {
         Timing timing = new Timing();
-        CuratorFrameworkImpl client = (CuratorFrameworkImpl) CuratorFrameworkFactory.builder()
+        CuratorFramework client = CuratorFrameworkFactory.builder()
                 .connectString(server.getConnectString())
                 .retryPolicy(new RetryOneTime(1))
                 .build();
@@ -159,7 +159,7 @@ public class TestWatchesBuilder extends CuratorTestBase {
     @Test
     public void testRemoveWatch() throws Exception {
         Timing timing = new Timing();
-        CuratorFrameworkImpl client = (CuratorFrameworkImpl) CuratorFrameworkFactory.builder()
+        CuratorFramework client = CuratorFrameworkFactory.builder()
                 .connectString(server.getConnectString())
                 .retryPolicy(new RetryOneTime(1))
                 .build();
@@ -184,7 +184,7 @@ public class TestWatchesBuilder extends CuratorTestBase {
     @Test
     public void testRemoveWatchInBackgroundWithCallback() throws Exception {
         Timing timing = new Timing();
-        CuratorFrameworkImpl client = (CuratorFrameworkImpl) CuratorFrameworkFactory.builder()
+        CuratorFramework client = CuratorFrameworkFactory.builder()
                 .connectString(server.getConnectString())
                 .retryPolicy(new RetryOneTime(1))
                 .build();
@@ -225,7 +225,7 @@ public class TestWatchesBuilder extends CuratorTestBase {
     @Test
     public void testRemoveWatchInBackgroundWithNoCallback() throws Exception {
         Timing timing = new Timing();
-        CuratorFrameworkImpl client = (CuratorFrameworkImpl) CuratorFrameworkFactory.builder()
+        CuratorFramework client = CuratorFrameworkFactory.builder()
                 .connectString(server.getConnectString())
                 .retryPolicy(new RetryOneTime(1))
                 .build();
@@ -250,7 +250,7 @@ public class TestWatchesBuilder extends CuratorTestBase {
     @Test
     public void testRemoveAllWatches() throws Exception {
         Timing timing = new Timing();
-        CuratorFrameworkImpl client = (CuratorFrameworkImpl) CuratorFrameworkFactory.builder()
+        CuratorFramework client = CuratorFrameworkFactory.builder()
                 .connectString(server.getConnectString())
                 .retryPolicy(new RetryOneTime(1))
                 .build();
@@ -335,7 +335,7 @@ public class TestWatchesBuilder extends CuratorTestBase {
     @Test
     public void testRemoveLocalWatch() throws Exception {
         Timing timing = new Timing();
-        CuratorFrameworkImpl client = (CuratorFrameworkImpl) CuratorFrameworkFactory.builder()
+        CuratorFramework client = CuratorFrameworkFactory.builder()
                 .connectString(server.getConnectString())
                 .retryPolicy(new RetryOneTime(1))
                 .build();
@@ -368,7 +368,7 @@ public class TestWatchesBuilder extends CuratorTestBase {
     @Test
     public void testRemoveLocalWatchInBackground() throws Exception {
         Timing timing = new Timing();
-        CuratorFrameworkImpl client = (CuratorFrameworkImpl) CuratorFrameworkFactory.builder()
+        CuratorFramework client = CuratorFrameworkFactory.builder()
                 .connectString(server.getConnectString())
                 .retryPolicy(new RetryOneTime(1))
                 .build();
@@ -510,7 +510,7 @@ public class TestWatchesBuilder extends CuratorTestBase {
 
             final CountDownLatch guaranteeAddedLatch = new CountDownLatch(1);
 
-            ((CuratorFrameworkImpl) client).getFailedRemoveWatcherManager().debugListener =
+            ((CuratorFrameworkBase) client).getFailedRemoveWatcherManager().debugListener =
                     new FailedOperationManager.FailedOperationManagerListener<
                             FailedRemoveWatchManager.FailedRemoveWatchDetails>() {
 

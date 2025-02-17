@@ -67,7 +67,7 @@ class ProtectedMode {
      * @param createMode create mode in use
      * @throws Exception errors
      */
-    void checkSetSessionId(CuratorFrameworkImpl client, CreateMode createMode) throws Exception {
+    void checkSetSessionId(CuratorFrameworkBase client, CreateMode createMode) throws Exception {
         if (doProtected() && (sessionId == 0) && createMode.isEphemeral()) {
             sessionId = client.getZooKeeper().getSessionId();
         }
@@ -82,7 +82,7 @@ class ProtectedMode {
      * @return either the found node or null - client should always use the returned value
      * @throws Exception errors
      */
-    String validateFoundNode(CuratorFrameworkImpl client, CreateMode createMode, String foundNode) throws Exception {
+    String validateFoundNode(CuratorFrameworkBase client, CreateMode createMode, String foundNode) throws Exception {
         if (doProtected() && createMode.isEphemeral()) {
             long clientSessionId = client.getZooKeeper().getSessionId();
             if (this.sessionId != clientSessionId) {

@@ -745,7 +745,7 @@ public class TestFramework extends BaseClassForTests {
 
         client.start();
 
-        CuratorFrameworkImpl nullNamespace = (CuratorFrameworkImpl) client.usingNamespace(null);
+        CuratorFrameworkBase nullNamespace = (CuratorFrameworkBase) client.usingNamespace(null);
 
         assertNotNull(nullNamespace.getEnsembleTracker());
         assertNotNull(nullNamespace.getNamespaceFacadeCache());

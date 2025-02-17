@@ -70,7 +70,7 @@ public class CreateBuilderImpl
                 BackgroundOperation<PathAndBytes>,
                 ErrorListenerPathAndBytesable<String> {
     private final Logger log = LoggerFactory.getLogger(getClass());
-    private final CuratorFrameworkImpl client;
+    private final CuratorFrameworkBase client;
     private final ProtectedMode protectedMode = new ProtectedMode();
     private CreateMode createMode;
     private Backgrounding backgrounding;
@@ -93,7 +93,7 @@ public class CreateBuilderImpl
     @VisibleForTesting
     boolean failNextIdempotentCheckForTesting = false;
 
-    CreateBuilderImpl(CuratorFrameworkImpl client) {
+    CreateBuilderImpl(CuratorFrameworkBase client) {
         this.client = client;
         createMode = CreateMode.PERSISTENT;
         backgrounding = new Backgrounding();
@@ -107,7 +107,7 @@ public class CreateBuilderImpl
     }
 
     public CreateBuilderImpl(
-            CuratorFrameworkImpl client,
+            CuratorFrameworkBase client,
             CreateMode createMode,
             Backgrounding backgrounding,
             boolean createParentsIfNeeded,
@@ -737,7 +737,7 @@ public class CreateBuilderImpl
     }
 
     static <T> void backgroundCreateParentsThenNode(
-            final CuratorFrameworkImpl client,
+            final CuratorFrameworkBase client,
             final OperationAndData<T> mainOperationAndData,
             final String path,
             final InternalACLProvider aclProvider,
@@ -766,7 +766,7 @@ public class CreateBuilderImpl
     }
 
     private void backgroundSetData(
-            final CuratorFrameworkImpl client,
+            final CuratorFrameworkBase client,
             final OperationAndData<PathAndBytes> mainOperationAndData,
             final String path,
             final Backgrounding backgrounding) {
@@ -801,7 +801,7 @@ public class CreateBuilderImpl
     }
 
     private void backgroundCheckIdempotent(
-            final CuratorFrameworkImpl client,
+            final CuratorFrameworkBase client,
             final OperationAndData<PathAndBytes> mainOperationAndData,
             final String path,
             final Backgrounding backgrounding) {
@@ -844,7 +844,7 @@ public class CreateBuilderImpl
     }
 
     private static <T> void sendBackgroundResponse(
-            CuratorFrameworkImpl client,
+            CuratorFrameworkBase client,
             int rc,
             String path,
             Object ctx,

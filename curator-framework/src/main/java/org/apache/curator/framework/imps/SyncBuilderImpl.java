@@ -31,15 +31,15 @@ import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.zookeeper.AsyncCallback;
 
 public class SyncBuilderImpl implements SyncBuilder, BackgroundOperation<String>, ErrorListenerPathable<Void> {
-    private final CuratorFrameworkImpl client;
+    private final CuratorFrameworkBase client;
     private Backgrounding backgrounding = new Backgrounding();
 
-    public SyncBuilderImpl(CuratorFrameworkImpl client) {
+    public SyncBuilderImpl(CuratorFrameworkBase client) {
         // To change body of created methods use File | Settings | File Templates.
         this.client = client;
     }
 
-    public SyncBuilderImpl(CuratorFrameworkImpl client, Backgrounding backgrounding) {
+    public SyncBuilderImpl(CuratorFrameworkBase client, Backgrounding backgrounding) {
         this.client = client;
         this.backgrounding = backgrounding;
     }

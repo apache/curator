@@ -19,10 +19,31 @@
 
 package org.apache.curator.framework.imps;
 
-import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.Watcher;
 
-class NamespaceWatchedEvent extends WatchedEvent {
-    NamespaceWatchedEvent(CuratorFrameworkBase client, WatchedEvent event) {
-        super(event.getType(), event.getState(), client.unfixForNamespace(event.getPath()));
+class FrameworkUtils {
+    static Watcher.Event.KeeperState codeToState(KeeperException.Code code) {
+        switch (code) {
+            case AUTHFAILED:
+            case NOAUTH: {
+                return Watcher.Event.KeeperState.AuthFailed;
+            }
+
+            case CONNECTIONLOSS:
+            case OPERATIONTIMEOUT: {
+                return Watcher.Event.KeeperState.Disconnected;
+            }
+
+            case SESSIONEXPIRED: {
+                return Watcher.Event.KeeperState.Expired;
+            }
+
+            case OK:
+            case SESSIONMOVED: {
+                return Watcher.Event.KeeperState.SyncConnected;
+            }
+        }
+        return Watcher.Event.KeeperState.fromInt(-1);
     }
 }

@@ -62,11 +62,11 @@ public class Backgrounding {
         errorListener = null;
     }
 
-    Backgrounding(CuratorFrameworkImpl client, BackgroundCallback callback, Object context, Executor executor) {
+    Backgrounding(CuratorFrameworkBase client, BackgroundCallback callback, Object context, Executor executor) {
         this(wrapCallback(client, callback, executor), context);
     }
 
-    Backgrounding(CuratorFrameworkImpl client, BackgroundCallback callback, Executor executor) {
+    Backgrounding(CuratorFrameworkBase client, BackgroundCallback callback, Executor executor) {
         this(wrapCallback(client, callback, executor));
     }
 
@@ -119,7 +119,7 @@ public class Backgrounding {
     }
 
     private static BackgroundCallback wrapCallback(
-            final CuratorFrameworkImpl client, final BackgroundCallback callback, final Executor executor) {
+            final CuratorFrameworkBase client, final BackgroundCallback callback, final Executor executor) {
         return new BackgroundCallback() {
             @Override
             public void processResult(CuratorFramework dummy, final CuratorEvent event) throws Exception {
@@ -131,7 +131,7 @@ public class Backgrounding {
                         } catch (Exception e) {
                             ThreadUtils.checkInterrupted(e);
                             if (e instanceof KeeperException) {
-                                client.validateConnection(client.codeToState(((KeeperException) e).code()));
+                                client.validateConnection(FrameworkUtils.codeToState(((KeeperException) e).code()));
                             }
                             client.logError("Background operation result handling threw exception", e);
                         }

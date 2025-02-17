@@ -21,7 +21,7 @@ package org.apache.curator.x.async.details;
 
 import static org.apache.curator.x.async.details.BackgroundProcs.dataProc;
 import static org.apache.curator.x.async.details.BackgroundProcs.safeCall;
-import org.apache.curator.framework.imps.CuratorFrameworkImpl;
+import org.apache.curator.framework.imps.CuratorFrameworkBase;
 import org.apache.curator.framework.imps.GetConfigBuilderImpl;
 import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.WatchMode;
@@ -30,12 +30,12 @@ import org.apache.curator.x.async.api.AsyncGetConfigBuilder;
 import org.apache.zookeeper.data.Stat;
 
 class AsyncGetConfigBuilderImpl implements AsyncGetConfigBuilder {
-    private final CuratorFrameworkImpl client;
+    private final CuratorFrameworkBase client;
     private final Filters filters;
     private final WatchMode watchMode;
     private Stat stat = null;
 
-    AsyncGetConfigBuilderImpl(CuratorFrameworkImpl client, Filters filters, WatchMode watchMode) {
+    AsyncGetConfigBuilderImpl(CuratorFrameworkBase client, Filters filters, WatchMode watchMode) {
         this.client = client;
         this.filters = filters;
         this.watchMode = watchMode;
