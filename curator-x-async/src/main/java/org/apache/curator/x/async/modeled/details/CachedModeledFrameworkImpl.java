@@ -185,6 +185,11 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T> {
     }
 
     @Override
+    public CachedModeledFramework<T> initialized() {
+        return new InitializedCachedModeledFramework<>(this);
+    }
+
+    @Override
     public AsyncStage<Stat> update(T model) {
         return client.update(model);
     }

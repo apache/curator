@@ -32,7 +32,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -41,22 +43,30 @@ import java.util.stream.Stream;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.test.Timing;
 import org.apache.curator.test.compatibility.CuratorTestBase;
+import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.modeled.cached.CachedModeledFramework;
 import org.apache.curator.x.async.modeled.cached.ModeledCacheListener;
 import org.apache.curator.x.async.modeled.models.TestModel;
 import org.apache.zookeeper.data.Stat;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 @Tag(CuratorTestBase.zk35TestCompatibilityGroup)
 public class TestCachedModeledFramework extends TestModeledFrameworkBase {
-    @Test
-    public void testDownServer() throws IOException {
+    enum CachedModeledFrameworkType {
+        UNINITIALIZED,
+        INITIALIZED
+    }
+
+    @ParameterizedTest
+    @EnumSource(CachedModeledFrameworkType.class)
+    void testDownServer(CachedModeledFrameworkType type) throws IOException {
         Timing timing = new Timing();
 
         TestModel model = new TestModel("a", "b", "c", 1, BigInteger.ONE);
-        CachedModeledFramework<TestModel> client =
-                ModeledFramework.wrap(async, modelSpec).cached();
+        CachedModeledFramework<TestModel> client = build(type, modelSpec);
         Semaphore semaphore = new Semaphore(0);
         client.listenable().addListener((t, p, s, m) -> semaphore.release());
 
@@ -83,12 +93,12 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase {
         }
     }
 
-    @Test
-    public void testPostInitializedFilter() {
+    @ParameterizedTest
+    @EnumSource(CachedModeledFrameworkType.class)
+    void testPostInitializedFilter(CachedModeledFrameworkType type) {
         TestModel model1 = new TestModel("a", "b", "c", 1, BigInteger.ONE);
         TestModel model2 = new TestModel("d", "e", "f", 1, BigInteger.ONE);
-        CachedModeledFramework<TestModel> client =
-                ModeledFramework.wrap(async, modelSpec).cached();
+        CachedModeledFramework<TestModel> client = build(type, modelSpec);
         Semaphore semaphore = new Semaphore(0);
         ModeledCacheListener<TestModel> listener = (t, p, s, m) -> semaphore.release();
         client.listenable().addListener(listener.postInitializedOnly());
@@ -105,16 +115,16 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase {
         }
     }
 
-    @Test
-    public void testChildren() {
+    @ParameterizedTest
+    @EnumSource(CachedModeledFrameworkType.class)
+    void testChildren(CachedModeledFrameworkType type) {
         TestModel parent = new TestModel("a", "b", "c", 20, BigInteger.ONE);
         TestModel child1 = new TestModel("d", "e", "f", 1, BigInteger.ONE);
         TestModel child2 = new TestModel("g", "h", "i", 1, BigInteger.ONE);
         TestModel grandChild1 = new TestModel("j", "k", "l", 10, BigInteger.ONE);
         TestModel grandChild2 = new TestModel("m", "n", "0", 5, BigInteger.ONE);
 
-        try (CachedModeledFramework<TestModel> client =
-                ModeledFramework.wrap(async, modelSpec).cached()) {
+        try (CachedModeledFramework<TestModel> client = build(type, modelSpec)) {
             CountDownLatch latch = new CountDownLatch(5);
             client.listenable().addListener((t, p, s, m) -> latch.countDown());
 
@@ -154,11 +164,11 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase {
     }
 
     // note: CURATOR-546
-    @Test
-    public void testAccessCacheDirectly() {
+    @ParameterizedTest
+    @EnumSource(CachedModeledFrameworkType.class)
+    void testAccessCacheDirectly(CachedModeledFrameworkType type) {
         TestModel model = new TestModel("a", "b", "c", 20, BigInteger.ONE);
-        try (CachedModeledFramework<TestModel> client =
-                ModeledFramework.wrap(async, modelSpec).cached()) {
+        try (CachedModeledFramework<TestModel> client = build(type, modelSpec)) {
             CountDownLatch latch = new CountDownLatch(1);
             client.listenable().addListener((t, p, s, m) -> latch.countDown());
 
@@ -184,24 +194,26 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase {
     // Verify the CachedModeledFramework does not attempt to deserialize empty ZNodes on deletion using the Jackson
     // model serializer.
     // See: CURATOR-609
-    @Test
-    public void testEmptyNodeJacksonDeserialization() {
+    @ParameterizedTest
+    @EnumSource(CachedModeledFrameworkType.class)
+    void testEmptyNodeJacksonDeserialization(CachedModeledFrameworkType type) {
         final TestModel model = new TestModel("a", "b", "c", 20, BigInteger.ONE);
-        verifyEmptyNodeDeserialization(model, modelSpec);
+        verifyEmptyNodeDeserialization(model, modelSpec, type);
     }
 
     // Verify the CachedModeledFramework does not attempt to deserialize empty ZNodes on deletion using the raw
     // model serializer.
     // See: CURATOR-609
-    @Test
-    public void testEmptyNodeRawDeserialization() {
+    @ParameterizedTest
+    @EnumSource(CachedModeledFrameworkType.class)
+    void testEmptyNodeRawDeserialization(CachedModeledFrameworkType type) {
         final byte[] byteModel = {0x01, 0x02, 0x03};
         final ModelSpec<byte[]> byteModelSpec =
                 ModelSpec.builder(path, ModelSerializer.raw).build();
-        verifyEmptyNodeDeserialization(byteModel, byteModelSpec);
+        verifyEmptyNodeDeserialization(byteModel, byteModelSpec, type);
     }
 
-    private <T> void verifyEmptyNodeDeserialization(T model, ModelSpec<T> parentModelSpec) {
+    private <T> void verifyEmptyNodeDeserialization(T model, ModelSpec<T> parentModelSpec, CachedModeledFrameworkType type) {
         // The sub-path is the ZNode that will be removed that does not contain any model data. Their should be no
         // attempt to deserialize this empty ZNode.
         final String subPath = parentModelSpec.path().toString() + "/sub";
@@ -236,8 +248,7 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase {
         final ModelSerializer<T> serializer = parentModelSpec.serializer();
 
         // Create a cache client to watch the parent path.
-        try (CachedModeledFramework<T> cacheClient =
-                ModeledFramework.wrap(async, parentModelSpec).cached()) {
+        try (CachedModeledFramework<T> cacheClient = build(type, parentModelSpec)) {
             cacheClient.listenable().addListener(listener);
 
             ModelSpec<T> testModelSpec =
@@ -268,7 +279,26 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase {
         }
     }
 
+    @Test
+    void testInitializedCachedModeledFramework() throws ExecutionException, InterruptedException, TimeoutException {
+        try (CachedModeledFramework<TestModel> client = build(CachedModeledFrameworkType.INITIALIZED, modelSpec)) {
+            TestModel model = new TestModel("a", "b", "c", 1, BigInteger.ONE);
+            client.set(model);
+            AsyncStage<TestModel> asyncModel = client.read();
+            client.start();
+            assertEquals(model, timing.getFuture(asyncModel.toCompletableFuture()));
+        }
+    }
+
     private <T, R> Set<R> toSet(Stream<T> stream, Function<? super T, ? extends R> mapper) {
         return stream.map(mapper).collect(Collectors.toSet());
+    }
+
+    private <T> CachedModeledFramework<T> build(CachedModeledFrameworkType type, ModelSpec<T> modelSpec) {
+        if (type == CachedModeledFrameworkType.INITIALIZED) {
+            return ModeledFramework.wrap(async, modelSpec).initialized();
+        } else {
+            return ModeledFramework.wrap(async, modelSpec).cached();
+        }
     }
 }
