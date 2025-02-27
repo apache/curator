@@ -213,7 +213,8 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase {
         verifyEmptyNodeDeserialization(byteModel, byteModelSpec, type);
     }
 
-    private <T> void verifyEmptyNodeDeserialization(T model, ModelSpec<T> parentModelSpec, CachedModeledFrameworkType type) {
+    private <T> void verifyEmptyNodeDeserialization(
+            T model, ModelSpec<T> parentModelSpec, CachedModeledFrameworkType type) {
         // The sub-path is the ZNode that will be removed that does not contain any model data. Their should be no
         // attempt to deserialize this empty ZNode.
         final String subPath = parentModelSpec.path().toString() + "/sub";
