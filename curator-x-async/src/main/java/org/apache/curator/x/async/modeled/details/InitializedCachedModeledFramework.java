@@ -39,16 +39,16 @@ import org.apache.zookeeper.data.Stat;
 
 public class InitializedCachedModeledFramework<T> implements CachedModeledFramework<T> {
 
-    private final CachedModeledFramework<T> framework;
+    private final CachedModeledFramework<T> client;
     private final ModelStage<Void> init;
 
-    private InitializedCachedModeledFramework(CachedModeledFramework<T> framework, ModelStage<Void> init) {
-        this.framework = framework;
+    private InitializedCachedModeledFramework(CachedModeledFramework<T> client, ModelStage<Void> init) {
+        this.client = client;
         this.init = init;
     }
 
-    InitializedCachedModeledFramework(CachedModeledFramework<T> framework) {
-        this.framework = framework;
+    InitializedCachedModeledFramework(CachedModeledFramework<T> client) {
+        this.client = client;
         init = ModelStage.make();
         listenable().addListener(new ModeledCacheListener<T>() {
 
@@ -73,67 +73,67 @@ public class InitializedCachedModeledFramework<T> implements CachedModeledFramew
 
     @Override
     public ModeledCache<T> cache() {
-        return framework.cache();
+        return client.cache();
     }
 
     @Override
     public void start() {
-        framework.start();
+        client.start();
     }
 
     @Override
     public void close() {
-        framework.close();
+        client.close();
     }
 
     @Override
     public Listenable<ModeledCacheListener<T>> listenable() {
-        return framework.listenable();
+        return client.listenable();
     }
 
     @Override
     public AsyncStage<List<ZNode<T>>> childrenAsZNodes() {
-        return internalRead(framework::childrenAsZNodes);
+        return internalRead(client::childrenAsZNodes);
     }
 
     @Override
     public CuratorOp createOp(T model) {
-        return framework.createOp(model);
+        return client.createOp(model);
     }
 
     @Override
     public CuratorOp updateOp(T model) {
-        return framework.updateOp(model);
+        return client.updateOp(model);
     }
 
     @Override
     public CuratorOp updateOp(T model, int version) {
-        return framework.updateOp(model, version);
+        return client.updateOp(model, version);
     }
 
     @Override
     public CuratorOp deleteOp() {
-        return framework.deleteOp();
+        return client.deleteOp();
     }
 
     @Override
     public CuratorOp deleteOp(int version) {
-        return framework.deleteOp(version);
+        return client.deleteOp(version);
     }
 
     @Override
     public CuratorOp checkExistsOp() {
-        return framework.checkExistsOp();
+        return client.checkExistsOp();
     }
 
     @Override
     public CuratorOp checkExistsOp(int version) {
-        return framework.checkExistsOp(version);
+        return client.checkExistsOp(version);
     }
 
     @Override
     public AsyncStage<List<CuratorTransactionResult>> inTransaction(List<CuratorOp> operations) {
-        return framework.inTransaction(operations);
+        return client.inTransaction(operations);
     }
 
     @Override
@@ -153,17 +153,17 @@ public class InitializedCachedModeledFramework<T> implements CachedModeledFramew
 
     @Override
     public AsyncCuratorFramework unwrap() {
-        return framework.unwrap();
+        return client.unwrap();
     }
 
     @Override
     public ModelSpec<T> modelSpec() {
-        return framework.modelSpec();
+        return client.modelSpec();
     }
 
     @Override
     public CachedModeledFramework<T> child(Object child) {
-        return new InitializedCachedModeledFramework<>(framework.child(child), init);
+        return new InitializedCachedModeledFramework<>(client.child(child), init);
     }
 
     @Override
@@ -174,92 +174,92 @@ public class InitializedCachedModeledFramework<T> implements CachedModeledFramew
 
     @Override
     public CachedModeledFramework<T> withPath(ZPath path) {
-        return new InitializedCachedModeledFramework<>(framework.withPath(path), init);
+        return new InitializedCachedModeledFramework<>(client.withPath(path), init);
     }
 
     @Override
     public AsyncStage<String> set(T model) {
-        return framework.set(model);
+        return client.set(model);
     }
 
     @Override
     public AsyncStage<String> set(T model, int version) {
-        return framework.set(model, version);
+        return client.set(model, version);
     }
 
     @Override
     public AsyncStage<String> set(T model, Stat storingStatIn) {
-        return framework.set(model, storingStatIn);
+        return client.set(model, storingStatIn);
     }
 
     @Override
     public AsyncStage<String> set(T model, Stat storingStatIn, int version) {
-        return framework.set(model, storingStatIn, version);
+        return client.set(model, storingStatIn, version);
     }
 
     @Override
     public AsyncStage<T> read() {
-        return internalRead(framework::read);
+        return internalRead(client::read);
     }
 
     @Override
     public AsyncStage<T> read(Stat storingStatIn) {
-        return internalRead(() -> framework.read(storingStatIn));
+        return internalRead(() -> client.read(storingStatIn));
     }
 
     @Override
     public AsyncStage<ZNode<T>> readAsZNode() {
-        return internalRead(framework::readAsZNode);
+        return internalRead(client::readAsZNode);
     }
 
     @Override
     public AsyncStage<Stat> update(T model) {
-        return framework.update(model);
+        return client.update(model);
     }
 
     @Override
     public AsyncStage<Stat> update(T model, int version) {
-        return framework.update(model, version);
+        return client.update(model, version);
     }
 
     @Override
     public AsyncStage<Void> delete() {
-        return framework.delete();
+        return client.delete();
     }
 
     @Override
     public AsyncStage<Void> delete(int version) {
-        return framework.delete(version);
+        return client.delete(version);
     }
 
     @Override
     public AsyncStage<Stat> checkExists() {
-        return framework.checkExists();
+        return client.checkExists();
     }
 
     @Override
     public AsyncStage<List<ZPath>> children() {
-        return internalRead(framework::children);
+        return internalRead(client::children);
     }
 
     @Override
     public AsyncStage<T> readThrough() {
-        return internalRead(framework::readThrough);
+        return internalRead(client::readThrough);
     }
 
     @Override
     public AsyncStage<T> readThrough(Stat storingStatIn) {
-        return internalRead(() -> framework.readThrough(storingStatIn));
+        return internalRead(() -> client.readThrough(storingStatIn));
     }
 
     @Override
     public AsyncStage<ZNode<T>> readThroughAsZNode() {
-        return internalRead(framework::readThroughAsZNode);
+        return internalRead(client::readThroughAsZNode);
     }
 
     @Override
     public AsyncStage<List<T>> list() {
-        return internalRead(framework::list);
+        return internalRead(client::list);
     }
 
     @Override
