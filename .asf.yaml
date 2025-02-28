@@ -39,5 +39,6 @@ github:
 
 notifications:
   commits:      commits@curator.apache.org
+  issues:       commits@curator.apache.org
   pullrequests: commits@curator.apache.org
   jira_options: link label
