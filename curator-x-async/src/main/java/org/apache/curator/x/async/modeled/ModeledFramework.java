@@ -94,6 +94,13 @@ public interface ModeledFramework<T> {
     CachedModeledFramework<T> cached(ExecutorService executor);
 
     /**
+     * Return a cached framework which waits for cache to be initialized before accessing it.
+     *
+     * @return wrapped cached framework that waits for initialization.
+     */
+    CachedModeledFramework<T> initialized();
+
+    /**
      * Return mutator APIs that work with {@link org.apache.curator.x.async.modeled.versioned.Versioned} containers
      *
      * @return wrapped instance

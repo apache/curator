@@ -132,6 +132,11 @@ public class ModeledFrameworkImpl<T> implements ModeledFramework<T> {
     }
 
     @Override
+    public CachedModeledFramework<T> initialized() {
+        return new InitializedCachedModeledFramework<>(cached());
+    }
+
+    @Override
     public CachedModeledFramework<T> cached(ExecutorService executor) {
         Preconditions.checkState(
                 !isWatched,
