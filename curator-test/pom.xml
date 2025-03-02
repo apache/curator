@@ -26,11 +26,11 @@
     <parent>
         <groupId>org.apache.curator</groupId>
         <artifactId>apache-curator</artifactId>
-        <version>5.7.2-SNAPSHOT</version>
+        <version>5.8.0</version>
     </parent>
 
     <artifactId>curator-test</artifactId>
-    <version>5.7.2-SNAPSHOT</version>
+    <version>5.8.0</version>
 
     <name>Curator Testing</name>
     <description>Unit testing utilities.</description>
