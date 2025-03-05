@@ -32,7 +32,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -41,6 +43,7 @@ import java.util.stream.Stream;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.test.Timing;
 import org.apache.curator.test.compatibility.CuratorTestBase;
+import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.modeled.cached.CachedModeledFramework;
 import org.apache.curator.x.async.modeled.cached.ModeledCacheListener;
 import org.apache.curator.x.async.modeled.models.TestModel;
@@ -75,6 +78,10 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase {
             assertTrue(timing.awaitLatch(latch));
 
             complete(client.child(model).read().whenComplete((value, e) -> {
+                assertNotNull(value);
+                assertNull(e);
+            }));
+            complete(client.child(model).checkExists().whenComplete((value, e) -> {
                 assertNotNull(value);
                 assertNull(e);
             }));
@@ -150,6 +157,13 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase {
             complete(
                     client.child("p").child("c2").childrenAsZNodes(),
                     (v, e) -> assertEquals(toSet(v.stream(), ZNode::model), Sets.newHashSet(grandChild2)));
+
+            complete(
+                    client.child("p").child("c1").list(),
+                    (v, e) -> assertEquals(toSet(v.stream(), Function.identity()), Sets.newHashSet(grandChild1)));
+            complete(
+                    client.child("p").child("c2").list(),
+                    (v, e) -> assertEquals(toSet(v.stream(), Function.identity()), Sets.newHashSet(grandChild2)));
         }
     }
 
@@ -199,6 +213,18 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase {
         final ModelSpec<byte[]> byteModelSpec =
                 ModelSpec.builder(path, ModelSerializer.raw).build();
         verifyEmptyNodeDeserialization(byteModel, byteModelSpec);
+    }
+
+    @Test
+    void testInitializedCachedModeledFramework() throws ExecutionException, InterruptedException, TimeoutException {
+        try (CachedModeledFramework<TestModel> client =
+                ModeledFramework.wrap(async, modelSpec).cached()) {
+            TestModel model = new TestModel("a", "b", "c", 1, BigInteger.ONE);
+            assertNotNull(timing.getFuture(client.set(model).toCompletableFuture()));
+            AsyncStage<TestModel> asyncModel = client.read();
+            client.start();
+            assertEquals(model, timing.getFuture(asyncModel.toCompletableFuture()));
+        }
     }
 
     private <T> void verifyEmptyNodeDeserialization(T model, ModelSpec<T> parentModelSpec) {
