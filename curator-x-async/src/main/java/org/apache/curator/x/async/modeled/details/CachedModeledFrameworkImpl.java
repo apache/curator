@@ -226,17 +226,7 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T> {
 
     @Override
     public AsyncStage<Stat> checkExists() {
-        ModelStage<Stat> stage = ModelStage.make();
-        init.whenComplete((__, throwable) -> {
-            if (throwable == null) {
-                ZPath path = client.modelSpec().path();
-                Stat stat = cache.currentData(path).map(ZNode::stat).orElse(null);
-                stage.complete(stat);
-            } else {
-                stage.completeExceptionally(throwable);
-            }
-        });
-        return stage;
+        return internalRead(ZNode::stat, () -> ModelStage.completed(null));
     }
 
     @Override

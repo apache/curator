@@ -236,6 +236,11 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase {
             } catch (ExecutionException e) {
                 assertTrue(e.getCause() instanceof KeeperException.NoNodeException);
             }
+
+            complete(client.child(asyncModel).checkExists().whenComplete((value, e) -> {
+                assertNull(value);
+                assertNull(e);
+            }));
         }
     }
 
