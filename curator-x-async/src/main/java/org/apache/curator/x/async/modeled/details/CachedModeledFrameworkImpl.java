@@ -166,24 +166,22 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T> {
 
     @Override
     public AsyncStage<T> read() {
-        return internalRead(ZNode::model, this::exceptionally);
+        return internalRead(ZNode::model);
     }
 
     @Override
     public AsyncStage<T> read(Stat storingStatIn) {
-        return internalRead(
-                n -> {
-                    if (storingStatIn != null) {
-                        DataTree.copyStat(n.stat(), storingStatIn);
-                    }
-                    return n.model();
-                },
-                this::exceptionally);
+        return internalRead(n -> {
+            if (storingStatIn != null) {
+                DataTree.copyStat(n.stat(), storingStatIn);
+            }
+            return n.model();
+        });
     }
 
     @Override
     public AsyncStage<ZNode<T>> readAsZNode() {
-        return internalRead(Function.identity(), this::exceptionally);
+        return internalRead(Function.identity());
     }
 
     @Override
@@ -291,20 +289,29 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T> {
         return client.inTransaction(operations);
     }
 
-    private <U> AsyncStage<U> exceptionally() {
-        KeeperException.NoNodeException exception =
-                new KeeperException.NoNodeException(client.modelSpec().path().fullPath());
-        return ModelStage.exceptionally(exception);
+    private <U> AsyncStage<U> internalRead(Function<ZNode<T>, U> resolver) {
+        return internalRead(resolver, null);
     }
 
-    private <U> AsyncStage<U> internalRead(Function<ZNode<T>, U> resolver, Supplier<AsyncStage<U>> elseProc) {
+    private <U> AsyncStage<U> internalRead(Function<ZNode<T>, U> resolver, Supplier<AsyncStage<U>> defaultSupplier) {
         ModelStage<U> stage = ModelStage.make();
         init.whenComplete((__, throwable) -> {
             if (throwable == null) {
                 ZPath path = client.modelSpec().path();
                 ZNode<T> zNode = cache.currentData(path).orElse(null);
                 if (zNode == null) {
-                    stage.acceptEitherAsync(elseProc.get(), stage::complete);
+                    if (defaultSupplier == null) {
+                        stage.completeExceptionally(new KeeperException.NoNodeException(
+                                client.modelSpec().path().fullPath()));
+                    } else {
+                        defaultSupplier.get().whenComplete((elseData, elseThrowable) -> {
+                            if (elseThrowable == null) {
+                                stage.complete(elseData);
+                            } else {
+                                stage.completeExceptionally(elseThrowable);
+                            }
+                        });
+                    }
                 } else {
                     stage.complete(resolver.apply(zNode));
                 }

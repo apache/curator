@@ -19,11 +19,7 @@
 
 package org.apache.curator.x.async.modeled;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import com.google.common.collect.Sets;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -47,6 +43,7 @@ import org.apache.curator.x.async.AsyncStage;
 import org.apache.curator.x.async.modeled.cached.CachedModeledFramework;
 import org.apache.curator.x.async.modeled.cached.ModeledCacheListener;
 import org.apache.curator.x.async.modeled.models.TestModel;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -224,6 +221,45 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase {
             AsyncStage<TestModel> asyncModel = client.read();
             client.start();
             assertEquals(model, timing.getFuture(asyncModel.toCompletableFuture()));
+        }
+    }
+
+    @Test
+    void testNoNodeException() throws InterruptedException, TimeoutException {
+        try (CachedModeledFramework<TestModel> client =
+                ModeledFramework.wrap(async, modelSpec).cached()) {
+            AsyncStage<TestModel> asyncModel = client.read();
+            client.start();
+            try {
+                timing.getFuture(asyncModel.toCompletableFuture());
+                fail("This test should result in a NoNodeException");
+            } catch (ExecutionException e) {
+                assertTrue(e.getCause() instanceof KeeperException.NoNodeException);
+            }
+        }
+    }
+
+    @Test
+    void testReadThrough() throws InterruptedException, TimeoutException, ExecutionException {
+        try (CachedModeledFramework<TestModel> client =
+                ModeledFramework.wrap(async, modelSpec).cached()) {
+            TestModel model = new TestModel("a", "b", "c", 1, BigInteger.ONE);
+            Semaphore semaphore = new Semaphore(0);
+            client.listenable().addListener(new ModeledCacheListener<TestModel>() {
+                @Override
+                public void accept(Type type, ZPath path, Stat stat, TestModel model) {
+                    // NOP
+                }
+
+                @Override
+                public void initialized() {
+                    semaphore.release();
+                }
+            });
+            client.start();
+            assertTrue(timing.acquireSemaphore(semaphore));
+            assertNotNull(timing.getFuture(client.set(model).toCompletableFuture()));
+            assertEquals(model, timing.getFuture(client.readThrough().toCompletableFuture()));
         }
     }
 
