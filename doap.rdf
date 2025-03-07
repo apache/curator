@@ -31,7 +31,7 @@
     <description>Apache Curator is a Java/JVM client library for Apache ZooKeeper, a distributed coordination service. 
     It includes a highlevel API framework and utilities to make using Apache ZooKeeper much easier and more reliable. It also 
     includes recipes for common use cases and extensions such as service discovery and a Java 8 asynchronous DSL.</description>
-    <bug-database rdf:resource="http://issues.apache.org/jira/browse/CURATOR" />
+    <bug-database rdf:resource="https://github.com/apache/curator/issues" />
     <mailing-list rdf:resource="http://curator.apache.org/mailing-lists.html" />
     <download-page rdf:resource="http://www.apache.org/dyn/closer.cgi/curator/" />
     <programming-language>Java</programming-language>
