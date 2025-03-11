@@ -264,6 +264,15 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace {
             }
         }
 
+        public synchronized void customShutdown() {
+            super.shutdown();
+            try {
+                txnLog.close();
+            } catch (IOException e) {
+                // ignore
+            }
+        }
+
         private final AtomicBoolean isRunning = new AtomicBoolean(false);
 
         public RequestProcessor getFirstProcessor() {
