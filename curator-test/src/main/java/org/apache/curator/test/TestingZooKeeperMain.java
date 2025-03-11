@@ -255,8 +255,7 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace {
             this.setMaxSessionTimeout(config.getMaxSessionTimeout());
         }
 
-        @Override
-        public synchronized void shutdown(boolean fullyShutDown) {
+        public synchronized void customShutdown(boolean fullyShutDown) {
             super.shutdown(fullyShutDown);
             try {
                 txnLog.close();
