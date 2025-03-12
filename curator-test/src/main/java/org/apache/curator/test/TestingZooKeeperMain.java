@@ -165,7 +165,7 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace {
 
         try {
             if (zkServer != null) {
-                zkServer.customShutdown();
+                zkServer.customShutdown(false);
                 ZKDatabase zkDb = zkServer.getZKDatabase();
                 if (zkDb != null) {
                     // make ZK server close its log files
@@ -209,7 +209,7 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace {
             latch.countDown();
             cnxnFactory.join();
             if ((zkServer != null) && zkServer.isRunning()) {
-                zkServer.customShutdown();
+                zkServer.customShutdown(false);
             }
         } catch (InterruptedException e) {
             // warn, but generally this is ok
@@ -257,15 +257,6 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace {
 
         public synchronized void customShutdown(boolean fullyShutDown) {
             super.shutdown(fullyShutDown);
-            try {
-                txnLog.close();
-            } catch (IOException e) {
-                // ignore
-            }
-        }
-
-        public synchronized void customShutdown() {
-            super.shutdown();
             try {
                 txnLog.close();
             } catch (IOException e) {
