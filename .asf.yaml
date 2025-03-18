@@ -25,6 +25,7 @@ github:
     - zookeeper
     - consensus
   features:
+    discussions: true
     wiki: false
     issues: true
     projects: false
@@ -39,6 +40,7 @@ github:
 
 notifications:
   commits:      commits@curator.apache.org
+  discussions:  dev@curator.apache.org 
   issues:       commits@curator.apache.org
   pullrequests: commits@curator.apache.org
   jira_options: link label
