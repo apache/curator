@@ -77,32 +77,28 @@ public abstract class TestEventOrdering<T extends Closeable> extends BaseClassFo
             cache = newCache(client, "/root", events);
 
             final Random random = new Random();
-            final Callable<Void> task = new Callable<Void>() {
-                @Override
-                public Void call() throws Exception {
-                    for (int i = 0; i < ITERATIONS; ++i) {
-                        String node = "/root/" + random.nextInt(NODE_QTY);
-                        try {
-                            switch (random.nextInt(3)) {
-                                default:
-                                case 0:
-                                    client.create().forPath(node);
-                                    break;
+            final Callable<Void> task = () -> {
+                for (int i = 0; i < ITERATIONS; ++i) {
+                    String node = "/root/" + random.nextInt(NODE_QTY);
+                    try {
+                        switch (random.nextInt(3)) {
+                            case 0:
+                                client.create().forPath(node);
+                                break;
 
-                                case 1:
-                                    client.setData().forPath(node, "new".getBytes());
-                                    break;
+                            case 1:
+                                client.setData().forPath(node, "new".getBytes());
+                                break;
 
-                                case 2:
-                                    client.delete().forPath(node);
-                                    break;
-                            }
-                        } catch (KeeperException ignore) {
-                            // ignore
+                            case 2:
+                                client.delete().forPath(node);
+                                break;
                         }
+                    } catch (KeeperException ignore) {
+                        // ignore
                     }
-                    return null;
                 }
+                return null;
             };
 
             final CountDownLatch latch = new CountDownLatch(THREAD_QTY);
@@ -125,7 +121,7 @@ public abstract class TestEventOrdering<T extends Closeable> extends BaseClassFo
 
             List<Event> localEvents = Lists.newArrayList();
             int eventSuggestedQty = 0;
-            while (events.size() > 0) {
+            while (!events.isEmpty()) {
                 Event event = timing.takeFromQueue(events);
                 localEvents.add(event);
                 eventSuggestedQty += (event.eventType == EventType.ADDED) ? 1 : -1;
@@ -137,7 +133,6 @@ public abstract class TestEventOrdering<T extends Closeable> extends BaseClassFo
                     String.format("actual %s expected %s:\n %s", actualQty, eventSuggestedQty, asString(localEvents)));
         } finally {
             executorService.shutdownNow();
-            //noinspection ThrowFromFinallyBlock
             executorService.awaitTermination(timing.milliseconds(), TimeUnit.MILLISECONDS);
             CloseableUtils.closeQuietly(cache);
             CloseableUtils.closeQuietly(client);

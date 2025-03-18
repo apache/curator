@@ -81,7 +81,7 @@ public class DistributedAtomicValue {
      * @throws Exception ZooKeeper errors
      */
     public AtomicValue<byte[]> get() throws Exception {
-        MutableAtomicValue<byte[]> result = new MutableAtomicValue<byte[]>(null, null, false);
+        MutableAtomicValue<byte[]> result = new MutableAtomicValue<>(null, null, false);
         getCurrentValue(result, new Stat());
         result.postValue = result.preValue;
         result.succeeded = true;
@@ -119,16 +119,14 @@ public class DistributedAtomicValue {
      */
     public AtomicValue<byte[]> compareAndSet(byte[] expectedValue, byte[] newValue) throws Exception {
         Stat stat = new Stat();
-        MutableAtomicValue<byte[]> result = new MutableAtomicValue<byte[]>(null, null, false);
+        MutableAtomicValue<byte[]> result = new MutableAtomicValue<>(null, null, false);
         boolean createIt = getCurrentValue(result, stat);
         if (!createIt && Arrays.equals(expectedValue, result.preValue)) {
             try {
                 client.setData().withVersion(stat.getVersion()).forPath(path, newValue);
                 result.succeeded = true;
                 result.postValue = newValue;
-            } catch (KeeperException.BadVersionException dummy) {
-                result.succeeded = false;
-            } catch (KeeperException.NoNodeException dummy) {
+            } catch (KeeperException.BadVersionException | KeeperException.NoNodeException dummy) {
                 result.succeeded = false;
             }
         } else {
@@ -146,14 +144,9 @@ public class DistributedAtomicValue {
      * @throws Exception ZooKeeper errors
      */
     public AtomicValue<byte[]> trySet(final byte[] newValue) throws Exception {
-        MutableAtomicValue<byte[]> result = new MutableAtomicValue<byte[]>(null, null, false);
+        MutableAtomicValue<byte[]> result = new MutableAtomicValue<>(null, null, false);
 
-        MakeValue makeValue = new MakeValue() {
-            @Override
-            public byte[] makeFrom(byte[] previous) {
-                return newValue;
-            }
-        };
+        MakeValue makeValue = previous -> newValue;
         tryOptimistic(result, makeValue);
         if (!result.succeeded() && (mutex != null)) {
             tryWithMutex(result, makeValue);
@@ -181,7 +174,7 @@ public class DistributedAtomicValue {
     }
 
     AtomicValue<byte[]> trySet(MakeValue makeValue) throws Exception {
-        MutableAtomicValue<byte[]> result = new MutableAtomicValue<byte[]>(null, null, false);
+        MutableAtomicValue<byte[]> result = new MutableAtomicValue<>(null, null, false);
 
         tryOptimistic(result, makeValue);
         if (!result.succeeded() && (mutex != null)) {
@@ -204,7 +197,7 @@ public class DistributedAtomicValue {
             str.append("0x").append(Integer.toHexString((b & 0xff)));
         }
         str.append(']');
-        return new RuntimeException(String.format("Corrupted data for node \"%s\": %s", path, str.toString()));
+        return new RuntimeException(String.format("Corrupted data for node \"%s\": %s", path, str));
     }
 
     private boolean getCurrentValue(MutableAtomicValue<byte[]> result, Stat stat) throws Exception {
@@ -284,11 +277,9 @@ public class DistributedAtomicValue {
             }
             result.postValue = Arrays.copyOf(newValue, newValue.length);
             success = true;
-        } catch (KeeperException.NodeExistsException e) {
-            // do Retry
-        } catch (KeeperException.BadVersionException e) {
-            // do Retry
-        } catch (KeeperException.NoNodeException e) {
+        } catch (KeeperException.NodeExistsException
+                | KeeperException.BadVersionException
+                | KeeperException.NoNodeException e) {
             // do Retry
         }
 

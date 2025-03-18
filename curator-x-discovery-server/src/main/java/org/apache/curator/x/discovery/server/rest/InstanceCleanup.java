@@ -61,16 +61,7 @@ public class InstanceCleanup implements Closeable {
     public void start() {
         Preconditions.checkArgument(!service.isShutdown(), "already started");
 
-        service.scheduleWithFixedDelay(
-                new Runnable() {
-                    @Override
-                    public void run() {
-                        doWork();
-                    }
-                },
-                instanceRefreshMs,
-                instanceRefreshMs,
-                TimeUnit.MILLISECONDS);
+        service.scheduleWithFixedDelay(this::doWork, instanceRefreshMs, instanceRefreshMs, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -102,7 +93,7 @@ public class InstanceCleanup implements Closeable {
             }
         } catch (Exception e) {
             ThreadUtils.checkInterrupted(e);
-            log.error(String.format("GC for service: %s", name), e);
+            log.error("GC for service: {}", name, e);
         }
     }
 }

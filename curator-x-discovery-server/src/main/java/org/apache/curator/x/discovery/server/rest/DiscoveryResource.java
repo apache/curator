@@ -34,7 +34,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.x.discovery.ServiceInstance;
-import org.apache.curator.x.discovery.details.InstanceProvider;
 import org.apache.curator.x.discovery.server.entity.ServiceInstances;
 import org.apache.curator.x.discovery.server.entity.ServiceNames;
 import org.slf4j.Logger;
@@ -109,7 +108,6 @@ public abstract class DiscoveryResource<T> {
         try {
             ServiceInstance<T> instance = context.getServiceDiscovery().queryForInstance(name, id);
             if (instance != null) {
-                //noinspection unchecked
                 context.getServiceDiscovery().unregisterService(instance);
             }
         } catch (Exception e) {
@@ -157,10 +155,10 @@ public abstract class DiscoveryResource<T> {
         try {
             Collection<ServiceInstance<T>> instances =
                     context.getServiceDiscovery().queryForInstances(name);
-            return Response.ok(new ServiceInstances<T>(instances)).build();
+            return Response.ok(new ServiceInstances<>(instances)).build();
         } catch (Exception e) {
             ThreadUtils.checkInterrupted(e);
-            log.error(String.format("Trying to get instances from service (%s)", name), e);
+            log.error("Trying to get instances from service ({})", name, e);
             return Response.serverError().build();
         }
     }
@@ -172,19 +170,14 @@ public abstract class DiscoveryResource<T> {
         try {
             final List<ServiceInstance<T>> instances =
                     Lists.newArrayList(context.getServiceDiscovery().queryForInstances(name));
-            ServiceInstance<?> randomInstance = context.getProviderStrategy().getInstance(new InstanceProvider<T>() {
-                @Override
-                public List<ServiceInstance<T>> getInstances() throws Exception {
-                    return instances;
-                }
-            });
+            ServiceInstance<?> randomInstance = context.getProviderStrategy().getInstance(() -> instances);
             if (randomInstance == null) {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
             return Response.ok(randomInstance).build();
         } catch (Exception e) {
             ThreadUtils.checkInterrupted(e);
-            log.error(String.format("Trying to get any instance from service (%s)", name), e);
+            log.error("Trying to get any instance from service ({})", name, e);
             return Response.serverError().build();
         }
     }
@@ -204,7 +197,7 @@ public abstract class DiscoveryResource<T> {
             return builder.build();
         } catch (Exception e) {
             ThreadUtils.checkInterrupted(e);
-            log.error(String.format("Trying to get instance (%s) from service (%s)", id, name), e);
+            log.error("Trying to get instance ({}) from service ({})", id, name, e);
             return Response.serverError().build();
         }
     }

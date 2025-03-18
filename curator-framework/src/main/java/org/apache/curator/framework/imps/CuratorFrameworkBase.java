@@ -113,7 +113,7 @@ public abstract class CuratorFrameworkBase implements CuratorFramework {
 
     protected final void internalSync(CuratorFrameworkBase impl, String path, Object context) {
         BackgroundOperation<String> operation = new BackgroundSyncImpl(impl, context);
-        processBackgroundOperation(new OperationAndData(operation, path, null, null, context, null), null);
+        processBackgroundOperation(new OperationAndData<>(operation, path, null, null, context, null), null);
     }
 
     abstract byte[] getDefaultData();

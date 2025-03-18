@@ -177,8 +177,7 @@ public class TestTreeCacheRandomTree extends BaseTestTreeCache {
 
         // Typical stats for this test: maxDepth: 10, adds: 349, removals: 198, updates: 320
         // We get more adds than removals because removals only happen if we're at a leaf.
-        System.out.println(
-                String.format("maxDepth: %s, adds: %s, removals: %s, updates: %s", maxDepth, adds, removals, updates));
+        System.out.printf("maxDepth: %s, adds: %s, removals: %s, updates: %s%n", maxDepth, adds, removals, updates);
         assertNoMoreEvents();
     }
 

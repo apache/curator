@@ -34,7 +34,6 @@ import org.apache.curator.utils.DefaultTracerDriver;
 import org.apache.curator.utils.DefaultZookeeperFactory;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZookeeperFactory;
-import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
@@ -47,11 +46,11 @@ import org.slf4j.LoggerFactory;
 public class CuratorZookeeperClient implements Closeable {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final ConnectionState state;
-    private final AtomicReference<RetryPolicy> retryPolicy = new AtomicReference<RetryPolicy>();
+    private final AtomicReference<RetryPolicy> retryPolicy = new AtomicReference<>();
     private final int connectionTimeoutMs;
     private final int waitForShutdownTimeoutMs;
     private final AtomicBoolean started = new AtomicBoolean(false);
-    private final AtomicReference<TracerDriver> tracer = new AtomicReference<TracerDriver>(new DefaultTracerDriver());
+    private final AtomicReference<TracerDriver> tracer = new AtomicReference<>(new DefaultTracerDriver());
 
     /**
      *
@@ -155,13 +154,12 @@ public class CuratorZookeeperClient implements Closeable {
             RetryPolicy retryPolicy,
             boolean canBeReadOnly) {
         if (sessionTimeoutMs < connectionTimeoutMs) {
-            log.warn(String.format(
-                    "session timeout [%d] is less than connection timeout [%d]",
-                    sessionTimeoutMs, connectionTimeoutMs));
+            log.warn(
+                    "session timeout [{}] is less than connection timeout [{}]", sessionTimeoutMs, connectionTimeoutMs);
         }
 
-        retryPolicy = Preconditions.checkNotNull(retryPolicy, "retryPolicy cannot be null");
-        ensembleProvider = Preconditions.checkNotNull(ensembleProvider, "ensembleProvider cannot be null");
+        Preconditions.checkNotNull(retryPolicy, "retryPolicy cannot be null");
+        Preconditions.checkNotNull(ensembleProvider, "ensembleProvider cannot be null");
 
         this.connectionTimeoutMs = connectionTimeoutMs;
         this.waitForShutdownTimeoutMs = waitForShutdownTimeoutMs;
@@ -213,7 +211,7 @@ public class CuratorZookeeperClient implements Closeable {
 
     /**
      * This method blocks until the connection to ZK succeeds. Use with caution. The block
-     * will timeout after the connection timeout (as passed to the constructor) has elapsed
+     * will time out after the connection timeout (as passed to the constructor) has elapsed
      *
      * @return true if the connection succeeded, false if not
      * @throws InterruptedException interrupted while waiting
@@ -229,7 +227,7 @@ public class CuratorZookeeperClient implements Closeable {
         trace.commit();
 
         boolean localIsConnected = state.isConnected();
-        log.debug("blockUntilConnectedOrTimedOut() end. isConnected: " + localIsConnected);
+        log.debug("blockUntilConnectedOrTimedOut() end. isConnected: {}", localIsConnected);
 
         return localIsConnected;
     }
@@ -252,7 +250,7 @@ public class CuratorZookeeperClient implements Closeable {
     /**
      * Close the client.
      *
-     * Same as {@link #close(int) } using the timeout set at construction time.
+     * <p>Same as {@link #close(int) } using the timeout set at construction time.</p>
      *
      * @see #close(int)
      */
@@ -403,12 +401,7 @@ public class CuratorZookeeperClient implements Closeable {
                 throw new IllegalStateException("Client is not started or has been closed");
             }
             final CountDownLatch latch = new CountDownLatch(1);
-            Watcher tempWatcher = new Watcher() {
-                @Override
-                public void process(WatchedEvent event) {
-                    latch.countDown();
-                }
-            };
+            final Watcher tempWatcher = event -> latch.countDown();
 
             state.addParentWatcher(tempWatcher);
             long startTimeMs = System.currentTimeMillis();
