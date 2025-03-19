@@ -268,6 +268,22 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase {
         }
     }
 
+    @Test
+    void testReadThroughFailure() throws InterruptedException, TimeoutException, ExecutionException {
+        try (CachedModeledFramework<TestModel> client =
+                ModeledFramework.wrap(async, modelSpec).cached()) {
+            client.start();
+            assertNull(timing.getFuture(client.delete().toCompletableFuture()));
+            complete(client.readThrough(), (d, e) -> {
+                if (e == null) {
+                    fail("This test should result in a NoNodeException");
+                } else {
+                    assertEquals(KeeperException.NoNodeException.class, e.getClass());
+                }
+            });
+        }
+    }
+
     private <T> void verifyEmptyNodeDeserialization(T model, ModelSpec<T> parentModelSpec) {
         // The sub-path is the ZNode that will be removed that does not contain any model data. Their should be no
         // attempt to deserialize this empty ZNode.
