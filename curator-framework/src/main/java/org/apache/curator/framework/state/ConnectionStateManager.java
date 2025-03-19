@@ -23,7 +23,6 @@ import com.google.common.base.Preconditions;
 import java.io.Closeable;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -57,13 +56,13 @@ public class ConnectionStateManager implements Closeable {
     }
 
     private final Logger log = LoggerFactory.getLogger(getClass());
-    private final BlockingQueue<ConnectionState> eventQueue = new ArrayBlockingQueue<ConnectionState>(QUEUE_SIZE);
+    private final BlockingQueue<ConnectionState> eventQueue = new ArrayBlockingQueue<>(QUEUE_SIZE);
     private final CuratorFramework client;
     private final int sessionTimeoutMs;
     private final int sessionExpirationPercent;
     private final AtomicBoolean initialConnectMessageSent = new AtomicBoolean(false);
     private final ExecutorService service;
-    private final AtomicReference<State> state = new AtomicReference<State>(State.LATENT);
+    private final AtomicReference<State> state = new AtomicReference<>(State.LATENT);
     private final UnaryListenerManager<ConnectionStateListener> listeners;
 
     // guarded by sync
@@ -80,9 +79,9 @@ public class ConnectionStateManager implements Closeable {
     }
 
     /**
-     * @param client        the client
-     * @param threadFactory thread factory to use or null for a default
-     * @param sessionTimeoutMs the ZK session timeout in milliseconds
+     * @param client                   the client
+     * @param threadFactory            thread factory to use or null for a default
+     * @param sessionTimeoutMs         the ZK session timeout in milliseconds
      * @param sessionExpirationPercent percentage of negotiated session timeout to use when simulating a session timeout. 0 means don't simulate at all
      */
     public ConnectionStateManager(
@@ -96,11 +95,11 @@ public class ConnectionStateManager implements Closeable {
     }
 
     /**
-     * @param client        the client
-     * @param threadFactory thread factory to use or null for a default
-     * @param sessionTimeoutMs the ZK session timeout in milliseconds
+     * @param client                   the client
+     * @param threadFactory            thread factory to use or null for a default
+     * @param sessionTimeoutMs         the ZK session timeout in milliseconds
      * @param sessionExpirationPercent percentage of negotiated session timeout to use when simulating a session timeout. 0 means don't simulate at all
-     * @param managerFactory manager factory to use
+     * @param managerFactory           manager factory to use
      */
     public ConnectionStateManager(
             CuratorFramework client,
@@ -124,12 +123,9 @@ public class ConnectionStateManager implements Closeable {
     public void start() {
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Cannot be started more than once");
 
-        service.submit(new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
-                processEvents();
-                return null;
-            }
+        service.submit(() -> {
+            processEvents();
+            return null;
         });
     }
 
@@ -173,7 +169,7 @@ public class ConnectionStateManager implements Closeable {
 
     /**
      * Post a state change. If the manager is already in that state the change
-     * is ignored. Otherwise the change is queued for listeners.
+     * is ignored. Otherwise, the change is queued for listeners.
      *
      * @param newConnectionState new state
      * @return true if the state actually changed, false if it was already at that state
@@ -228,7 +224,7 @@ public class ConnectionStateManager implements Closeable {
     }
 
     private void postState(ConnectionState state) {
-        log.info("State change: " + state);
+        log.info("State change: {}", state);
 
         notifyAll();
 
@@ -265,7 +261,7 @@ public class ConnectionStateManager implements Closeable {
                             && client.getZookeeperClient().isConnected()) {
                         // CURATOR-525 - there is a race whereby LOST is sometimes set after the connection has been
                         // repaired
-                        // this "hack" fixes it by forcing the state to RECONNECTED
+                        // this "hack" fixes it by forcing the state to "RECONNECTED"
                         log.warn("ConnectionState is LOST but isConnected() is true. Forcing RECONNECTED.");
                         addStateChange(ConnectionState.RECONNECTED);
                     }
@@ -286,9 +282,10 @@ public class ConnectionStateManager implements Closeable {
                 startOfSuspendedEpoch =
                         System.currentTimeMillis(); // reset startOfSuspendedEpoch to avoid spinning on this session
                 // expiration injection CURATOR-405
-                log.warn(String.format(
-                        "Session timeout has elapsed while SUSPENDED. Injecting a session expiration. Elapsed ms: %d. Adjusted session timeout ms: %d",
-                        elapsedMs, useSessionTimeoutMs));
+                log.warn(
+                        "Session timeout has elapsed while SUSPENDED. Injecting a session expiration. Elapsed ms: {}. Adjusted session timeout ms: {}",
+                        elapsedMs,
+                        useSessionTimeoutMs);
                 try {
                     if (lastExpiredInstanceIndex == client.getZookeeperClient().getInstanceIndex()) {
                         // last expiration didn't work for this instance, so event thread is dead and a reset is needed.

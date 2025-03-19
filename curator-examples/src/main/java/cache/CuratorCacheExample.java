@@ -44,11 +44,10 @@ public class CuratorCacheExample {
                     // there are several ways to set a listener on a CuratorCache. You can watch for individual events
                     // or for all events. Here, we'll use the builder to log individual cache actions
                     CuratorCacheListener listener = CuratorCacheListener.builder()
-                            .forCreates(node -> System.out.println(String.format("Node created: [%s]", node)))
-                            .forChanges((oldNode, node) -> System.out.println(
-                                    String.format("Node changed. Old: [%s] New: [%s]", oldNode, node)))
-                            .forDeletes(oldNode ->
-                                    System.out.println(String.format("Node deleted. Old value: [%s]", oldNode)))
+                            .forCreates(node -> System.out.printf("Node created: [%s]%n", node))
+                            .forChanges((oldNode, node) ->
+                                    System.out.printf("Node changed. Old: [%s] New: [%s]%n", oldNode, node))
+                            .forDeletes(oldNode -> System.out.printf("Node deleted. Old value: [%s]%n", oldNode))
                             .forInitialized(() -> System.out.println("Cache initialized"))
                             .build();
 

@@ -226,9 +226,9 @@ public class TestingZooKeeperMain implements ZooKeeperMainFace {
                                 runFromConfig(configBuilder.buildConfig());
                             } catch (Exception e) {
                                 log.error(
-                                        String.format(
-                                                "From testing server (random state: %s) for instance: %s",
-                                                configBuilder.isFromRandom(), configBuilder.getInstanceSpec()),
+                                        "From testing server (random state: {}) for instance: {}",
+                                        configBuilder.isFromRandom(),
+                                        configBuilder.getInstanceSpec(),
                                         e);
                             }
                         },

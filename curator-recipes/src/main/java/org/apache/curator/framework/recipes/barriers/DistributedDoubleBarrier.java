@@ -21,7 +21,6 @@ package org.apache.curator.framework.recipes.barriers;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
@@ -30,6 +29,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.annotation.Nonnull;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.PathUtils;
 import org.apache.curator.utils.ZKPaths;
@@ -162,14 +162,9 @@ public class DistributedDoubleBarrier {
         return client.getChildren().forPath(barrierPath);
     }
 
+    @Nonnull
     private List<String> filterAndSortChildren(List<String> children) {
-        Iterable<String> filtered = Iterables.filter(children, new Predicate<String>() {
-            @Override
-            public boolean apply(String name) {
-                return !name.equals(READY_NODE);
-            }
-        });
-
+        Iterable<String> filtered = Iterables.filter(children, name -> !name.equals(READY_NODE));
         ArrayList<String> filteredList = Lists.newArrayList(filtered);
         Collections.sort(filteredList);
         return filteredList;
@@ -191,7 +186,7 @@ public class DistributedDoubleBarrier {
                 children = Lists.newArrayList();
             }
             children = filterAndSortChildren(children);
-            if ((children == null) || (children.size() == 0)) {
+            if (children.isEmpty()) {
                 break;
             }
 

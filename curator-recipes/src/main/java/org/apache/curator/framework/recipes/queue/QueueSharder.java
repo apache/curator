@@ -238,15 +238,15 @@ public class QueueSharder<U, T extends QueueBase<U>> implements Closeable {
 
             if (addAQueueIfLeader && leaderLatch.hasLeadership()) {
                 if (queues.size() < policies.getMaxQueues()) {
-                    log.info(String.format(
-                            "Adding a queue due to exceeded threshold. Queue Size: %d - Threshold: %d",
-                            size, policies.getNewQueueThreshold()));
+                    log.info(
+                            "Adding a queue due to exceeded threshold. Queue Size: {} - Threshold: {}",
+                            size,
+                            policies.getNewQueueThreshold());
 
                     addNewQueueIfNeeded(null);
                 } else {
-                    log.warn(String.format(
-                            "Max number of queues (%d) reached. Consider increasing the max.",
-                            policies.getMaxQueues()));
+                    log.warn(
+                            "Max number of queues ({}) reached. Consider increasing the max.", policies.getMaxQueues());
                 }
             }
         } catch (Exception e) {

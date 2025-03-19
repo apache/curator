@@ -143,7 +143,7 @@ public class SubPubTest implements Closeable {
                         .mapToObj(__ ->
                                 new Instance(nextId(), random(InstanceType.values()), random(hostnames), random(ports)))
                         .collect(Collectors.toList());
-                System.out.println(String.format("Publishing %d instances", instances.size()));
+                System.out.printf("Publishing %d instances%n", instances.size());
                 publisher.publishInstances(instances);
                 break;
             }
@@ -161,7 +161,7 @@ public class SubPubTest implements Closeable {
                         .mapToObj(__ -> new LocationAvailable(
                                 nextId(), random(Priority.values()), random(locations), random(durations)))
                         .collect(Collectors.toList());
-                System.out.println(String.format("Publishing %d locationsAvailable", locationsAvailable.size()));
+                System.out.printf("Publishing %d locationsAvailable%n", locationsAvailable.size());
                 publisher.publishLocationsAvailable(random(groups), locationsAvailable);
                 break;
             }
@@ -179,7 +179,7 @@ public class SubPubTest implements Closeable {
                         .mapToObj(__ -> new UserCreated(
                                 nextId(), random(Priority.values()), random(locations), random(positions)))
                         .collect(Collectors.toList());
-                System.out.println(String.format("Publishing %d usersCreated", usersCreated.size()));
+                System.out.printf("Publishing %d usersCreated%n", usersCreated.size());
                 publisher.publishUsersCreated(random(groups), usersCreated);
                 break;
             }
@@ -187,8 +187,8 @@ public class SubPubTest implements Closeable {
     }
 
     private <T> ModeledCacheListener<T> generalListener() {
-        return (type, path, stat, model) -> System.out.println(
-                String.format("Subscribed %s @ %s", model.getClass().getSimpleName(), path));
+        return (type, path, stat, model) ->
+                System.out.printf("Subscribed %s @ %s%n", model.getClass().getSimpleName(), path);
     }
 
     @SafeVarargs

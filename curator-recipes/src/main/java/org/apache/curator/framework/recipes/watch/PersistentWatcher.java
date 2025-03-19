@@ -100,7 +100,7 @@ public class PersistentWatcher implements Closeable {
                 client.watchers().remove(watcher).guaranteed().inBackground().forPath(basePath);
             } catch (Exception e) {
                 ThreadUtils.checkInterrupted(e);
-                log.debug(String.format("Could not remove watcher for path: %s", basePath), e);
+                log.debug("Could not remove watcher for path: {}", basePath, e);
             }
         }
     }
