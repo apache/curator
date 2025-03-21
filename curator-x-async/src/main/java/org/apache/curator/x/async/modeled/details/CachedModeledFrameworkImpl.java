@@ -197,7 +197,7 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T> {
 
     @Override
     public AsyncStage<List<T>> list() {
-        return this.allCacheChildren(entry -> entry.getValue().model());
+        return this.filteredCacheChildren(entry -> entry.getValue().model(), __ -> true);
     }
 
     @Override
@@ -313,10 +313,6 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T> {
             }
         });
         return stage;
-    }
-
-    private <U> ModelStage<List<U>> allCacheChildren(Function<Map.Entry<ZPath, ZNode<T>>, U> resolver) {
-        return filteredCacheChildren(resolver, __ -> true);
     }
 
     private <U> ModelStage<List<U>> clientPathDirectChildren(Function<Map.Entry<ZPath, ZNode<T>>, U> resolver) {
