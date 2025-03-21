@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.curator.framework.api.transaction.CuratorOp;
@@ -171,12 +172,7 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T> {
 
     @Override
     public AsyncStage<T> read(Stat storingStatIn) {
-        return internalRead(n -> {
-            if (storingStatIn != null) {
-                DataTree.copyStat(n.stat(), storingStatIn);
-            }
-            return n.model();
-        });
+        return internalRead(n -> this.toModelWithStat(n, storingStatIn));
     }
 
     @Override
@@ -191,7 +187,7 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T> {
 
     @Override
     public AsyncStage<T> readThrough(Stat storingStatIn) {
-        return internalRead(ZNode::model, () -> client.read(storingStatIn));
+        return internalRead(n -> this.toModelWithStat(n, storingStatIn), () -> client.read(storingStatIn));
     }
 
     @Override
@@ -201,7 +197,7 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T> {
 
     @Override
     public AsyncStage<List<T>> list() {
-        return internalChildren(entry -> entry.getValue().model());
+        return this.filteredCacheChildren(entry -> entry.getValue().model(), __ -> true);
     }
 
     @Override
@@ -231,12 +227,12 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T> {
 
     @Override
     public AsyncStage<List<ZPath>> children() {
-        return internalChildren(Map.Entry::getKey);
+        return this.clientPathDirectChildren(Map.Entry::getKey);
     }
 
     @Override
     public AsyncStage<List<ZNode<T>>> childrenAsZNodes() {
-        return internalChildren(Map.Entry::getValue);
+        return this.clientPathDirectChildren(Map.Entry::getValue);
     }
 
     @Override
@@ -279,6 +275,13 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T> {
         return client.inTransaction(operations);
     }
 
+    private T toModelWithStat(ZNode<T> n, Stat storingStatIn) {
+        if (storingStatIn != null) {
+            DataTree.copyStat(n.stat(), storingStatIn);
+        }
+        return n.model();
+    }
+
     private <U> AsyncStage<U> internalRead(Function<ZNode<T>, U> resolver) {
         return internalRead(resolver, null);
     }
@@ -312,13 +315,18 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T> {
         return stage;
     }
 
-    private <U> ModelStage<List<U>> internalChildren(Function<Map.Entry<ZPath, ZNode<T>>, U> resolver) {
+    private <U> ModelStage<List<U>> clientPathDirectChildren(Function<Map.Entry<ZPath, ZNode<T>>, U> resolver) {
+        return filteredCacheChildren(
+                resolver, e -> e.getKey().parent().equals(client.modelSpec().path()));
+    }
+
+    private <U> ModelStage<List<U>> filteredCacheChildren(
+            Function<Map.Entry<ZPath, ZNode<T>>, U> resolver, Predicate<Map.Entry<ZPath, ZNode<T>>> filter) {
         ModelStage<List<U>> stage = ModelStage.make();
         init.whenComplete((__, throwable) -> {
             if (throwable == null) {
-                stage.complete(cache.currentChildren(client.modelSpec().path()).entrySet().stream()
-                        .filter(e -> !e.getKey().isRoot()
-                                && e.getKey().parent().equals(client.modelSpec().path()))
+                stage.complete(cache.currentChildren().entrySet().stream()
+                        .filter(filter)
                         .map(resolver)
                         .collect(Collectors.toList()));
             } else {
