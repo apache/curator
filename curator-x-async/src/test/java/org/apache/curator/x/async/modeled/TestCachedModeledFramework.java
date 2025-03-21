@@ -280,20 +280,7 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase {
                 ModeledFramework.wrap(async, modelSpec).cached()) {
             TestModel model = new TestModel("a", "b", "c", 1, BigInteger.ONE);
             assertNotNull(timing.getFuture(client.set(model).toCompletableFuture()));
-            Semaphore semaphore = new Semaphore(0);
-            client.listenable().addListener(new ModeledCacheListener<TestModel>() {
-                @Override
-                public void accept(Type type, ZPath path, Stat stat, TestModel model) {
-                    // NOP
-                }
-
-                @Override
-                public void initialized() {
-                    semaphore.release();
-                }
-            });
             client.start();
-            assertTrue(timing.acquireSemaphore(semaphore));
             assertEquals(model, timing.getFuture(client.read().toCompletableFuture()));
             assertEquals(
                     model,
