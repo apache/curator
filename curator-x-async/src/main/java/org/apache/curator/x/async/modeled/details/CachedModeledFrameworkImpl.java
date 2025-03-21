@@ -21,7 +21,6 @@ package org.apache.curator.x.async.modeled.details;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
@@ -48,15 +47,40 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T> {
     private final ModeledFramework<T> client;
     private final ModeledCacheImpl<T> cache;
     private final Executor executor;
+    private final ModelStage<Void> init;
 
     CachedModeledFrameworkImpl(ModeledFramework<T> client, ExecutorService executor) {
-        this(client, new ModeledCacheImpl<>(client.unwrap().unwrap(), client.modelSpec(), executor), executor);
+        this(
+                client,
+                new ModeledCacheImpl<>(client.unwrap().unwrap(), client.modelSpec(), executor),
+                executor,
+                ModelStage.make());
+        listenable().addListener(new ModeledCacheListener<T>() {
+            @Override
+            public void accept(Type type, ZPath path, Stat stat, Object model) {
+                // NOP
+            }
+
+            @Override
+            public void initialized() {
+                init.complete(null);
+                ModeledCacheListener.super.initialized();
+            }
+
+            @Override
+            public void handleException(Exception e) {
+                init.completeExceptionally(e);
+                ModeledCacheListener.super.handleException(e);
+            }
+        });
     }
 
-    private CachedModeledFrameworkImpl(ModeledFramework<T> client, ModeledCacheImpl<T> cache, Executor executor) {
+    private CachedModeledFrameworkImpl(
+            ModeledFramework<T> client, ModeledCacheImpl<T> cache, Executor executor, ModelStage<Void> init) {
         this.client = client;
         this.cache = cache;
         this.executor = executor;
+        this.init = init;
     }
 
     @Override
@@ -106,7 +130,7 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T> {
 
     @Override
     public CachedModeledFramework<T> child(Object child) {
-        return new CachedModeledFrameworkImpl<>(client.child(child), cache, executor);
+        return new CachedModeledFrameworkImpl<>(client.child(child), cache, executor, init);
     }
 
     @Override
@@ -117,7 +141,7 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T> {
 
     @Override
     public CachedModeledFramework<T> withPath(ZPath path) {
-        return new CachedModeledFrameworkImpl<>(client.withPath(path), cache, executor);
+        return new CachedModeledFrameworkImpl<>(client.withPath(path), cache, executor, init);
     }
 
     @Override
@@ -142,24 +166,22 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T> {
 
     @Override
     public AsyncStage<T> read() {
-        return internalRead(ZNode::model, this::exceptionally);
+        return internalRead(ZNode::model);
     }
 
     @Override
     public AsyncStage<T> read(Stat storingStatIn) {
-        return internalRead(
-                n -> {
-                    if (storingStatIn != null) {
-                        DataTree.copyStat(n.stat(), storingStatIn);
-                    }
-                    return n.model();
-                },
-                this::exceptionally);
+        return internalRead(n -> {
+            if (storingStatIn != null) {
+                DataTree.copyStat(n.stat(), storingStatIn);
+            }
+            return n.model();
+        });
     }
 
     @Override
     public AsyncStage<ZNode<T>> readAsZNode() {
-        return internalRead(Function.identity(), this::exceptionally);
+        return internalRead(Function.identity());
     }
 
     @Override
@@ -179,9 +201,7 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T> {
 
     @Override
     public AsyncStage<List<T>> list() {
-        List<T> children =
-                cache.currentChildren().values().stream().map(ZNode::model).collect(Collectors.toList());
-        return ModelStage.completed(children);
+        return internalChildren(entry -> entry.getValue().model());
     }
 
     @Override
@@ -206,28 +226,17 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T> {
 
     @Override
     public AsyncStage<Stat> checkExists() {
-        ZPath path = client.modelSpec().path();
-        Optional<ZNode<T>> data = cache.currentData(path);
-        return data.map(node -> completed(node.stat())).orElseGet(() -> completed(null));
+        return internalRead(ZNode::stat, () -> ModelStage.completed(null));
     }
 
     @Override
     public AsyncStage<List<ZPath>> children() {
-        List<ZPath> paths = cache.currentChildren(client.modelSpec().path()).keySet().stream()
-                .filter(path -> !path.isRoot()
-                        && path.parent().equals(client.modelSpec().path()))
-                .collect(Collectors.toList());
-        return completed(paths);
+        return internalChildren(Map.Entry::getKey);
     }
 
     @Override
     public AsyncStage<List<ZNode<T>>> childrenAsZNodes() {
-        List<ZNode<T>> nodes = cache.currentChildren(client.modelSpec().path()).entrySet().stream()
-                .filter(e -> !e.getKey().isRoot()
-                        && e.getKey().parent().equals(client.modelSpec().path()))
-                .map(Map.Entry::getValue)
-                .collect(Collectors.toList());
-        return completed(nodes);
+        return internalChildren(Map.Entry::getValue);
     }
 
     @Override
@@ -270,19 +279,52 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T> {
         return client.inTransaction(operations);
     }
 
-    private <U> AsyncStage<U> completed(U value) {
-        return ModelStage.completed(value);
+    private <U> AsyncStage<U> internalRead(Function<ZNode<T>, U> resolver) {
+        return internalRead(resolver, null);
     }
 
-    private <U> AsyncStage<U> exceptionally() {
-        KeeperException.NoNodeException exception =
-                new KeeperException.NoNodeException(client.modelSpec().path().fullPath());
-        return ModelStage.exceptionally(exception);
+    private <U> AsyncStage<U> internalRead(Function<ZNode<T>, U> resolver, Supplier<AsyncStage<U>> defaultSupplier) {
+        ModelStage<U> stage = ModelStage.make();
+        init.whenComplete((__, throwable) -> {
+            if (throwable == null) {
+                ZPath path = client.modelSpec().path();
+                ZNode<T> zNode = cache.currentData(path).orElse(null);
+                if (zNode == null) {
+                    if (defaultSupplier == null) {
+                        stage.completeExceptionally(new KeeperException.NoNodeException(
+                                client.modelSpec().path().fullPath()));
+                    } else {
+                        defaultSupplier.get().whenComplete((elseData, elseThrowable) -> {
+                            if (elseThrowable == null) {
+                                stage.complete(elseData);
+                            } else {
+                                stage.completeExceptionally(elseThrowable);
+                            }
+                        });
+                    }
+                } else {
+                    stage.complete(resolver.apply(zNode));
+                }
+            } else {
+                stage.completeExceptionally(throwable);
+            }
+        });
+        return stage;
     }
 
-    private <U> AsyncStage<U> internalRead(Function<ZNode<T>, U> resolver, Supplier<AsyncStage<U>> elseProc) {
-        ZPath path = client.modelSpec().path();
-        Optional<ZNode<T>> data = cache.currentData(path);
-        return data.map(node -> completed(resolver.apply(node))).orElseGet(elseProc);
+    private <U> ModelStage<List<U>> internalChildren(Function<Map.Entry<ZPath, ZNode<T>>, U> resolver) {
+        ModelStage<List<U>> stage = ModelStage.make();
+        init.whenComplete((__, throwable) -> {
+            if (throwable == null) {
+                stage.complete(cache.currentChildren(client.modelSpec().path()).entrySet().stream()
+                        .filter(e -> !e.getKey().isRoot()
+                                && e.getKey().parent().equals(client.modelSpec().path()))
+                        .map(resolver)
+                        .collect(Collectors.toList()));
+            } else {
+                stage.completeExceptionally(throwable);
+            }
+        });
+        return stage;
     }
 }
