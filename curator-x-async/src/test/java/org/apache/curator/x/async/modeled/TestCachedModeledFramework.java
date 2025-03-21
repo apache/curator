@@ -148,6 +148,10 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase {
                 });
             });
 
+
+            complete(
+                client.child("p").childrenAsZNodes(),
+                (v, e) -> assertEquals(toSet(v.stream(), ZNode::model), Sets.newHashSet(child1, child2)));
             complete(
                     client.child("p").child("c1").childrenAsZNodes(),
                     (v, e) -> assertEquals(toSet(v.stream(), ZNode::model), Sets.newHashSet(grandChild1)));
@@ -157,10 +161,16 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase {
 
             complete(
                     client.child("p").child("c1").list(),
-                    (v, e) -> assertEquals(toSet(v.stream(), Function.identity()), Sets.newHashSet(grandChild1)));
+                    (v, e) -> assertEquals(toSet(v.stream(), Function.identity()), Sets.newHashSet(parent, child1, child2, grandChild1, grandChild2)));
             complete(
                     client.child("p").child("c2").list(),
-                    (v, e) -> assertEquals(toSet(v.stream(), Function.identity()), Sets.newHashSet(grandChild2)));
+                    (v, e) -> assertEquals(toSet(v.stream(), Function.identity()), Sets.newHashSet(parent, child1, child2, grandChild1, grandChild2)));
+            complete(
+                client.child("p").list(),
+                (v, e) -> assertEquals(toSet(v.stream(), Function.identity()), Sets.newHashSet(parent, child1, child2, grandChild1, grandChild2)));
+            complete(
+                client.child("p").child("c2").child("g2").list(),
+                (v, e) -> assertEquals(toSet(v.stream(), Function.identity()), Sets.newHashSet(parent, child1, child2, grandChild1, grandChild2)));
         }
     }
 

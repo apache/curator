@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.curator.framework.api.transaction.CuratorOp;
@@ -201,7 +202,7 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T> {
 
     @Override
     public AsyncStage<List<T>> list() {
-        return internalChildren(entry -> entry.getValue().model());
+        return this.internalList(entry -> entry.getValue().model());
     }
 
     @Override
@@ -231,12 +232,12 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T> {
 
     @Override
     public AsyncStage<List<ZPath>> children() {
-        return internalChildren(Map.Entry::getKey);
+        return this.internalChildren(Map.Entry::getKey);
     }
 
     @Override
     public AsyncStage<List<ZNode<T>>> childrenAsZNodes() {
-        return internalChildren(Map.Entry::getValue);
+        return this.internalChildren(Map.Entry::getValue);
     }
 
     @Override
@@ -312,13 +313,21 @@ class CachedModeledFrameworkImpl<T> implements CachedModeledFramework<T> {
         return stage;
     }
 
+    private <U> ModelStage<List<U>> internalList(Function<Map.Entry<ZPath, ZNode<T>>, U> resolver) {
+        return internalChildren(resolver, __ -> true);
+    }
+
     private <U> ModelStage<List<U>> internalChildren(Function<Map.Entry<ZPath, ZNode<T>>, U> resolver) {
+        return internalChildren(resolver, e -> e.getKey().parent().equals(client.modelSpec().path()));
+    }
+
+    private <U> ModelStage<List<U>> internalChildren(Function<Map.Entry<ZPath, ZNode<T>>, U> resolver,
+                                                     Predicate<Map.Entry<ZPath, ZNode<T>>> filter) {
         ModelStage<List<U>> stage = ModelStage.make();
         init.whenComplete((__, throwable) -> {
             if (throwable == null) {
-                stage.complete(cache.currentChildren(client.modelSpec().path()).entrySet().stream()
-                        .filter(e -> !e.getKey().isRoot()
-                                && e.getKey().parent().equals(client.modelSpec().path()))
+                stage.complete(cache.currentChildren().entrySet().stream()
+                        .filter(filter)
                         .map(resolver)
                         .collect(Collectors.toList()));
             } else {
