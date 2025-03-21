@@ -148,10 +148,12 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase {
                 });
             });
 
-
             complete(
-                client.child("p").childrenAsZNodes(),
-                (v, e) -> assertEquals(toSet(v.stream(), ZNode::model), Sets.newHashSet(child1, child2)));
+                    client.child("p").childrenAsZNodes(),
+                    (v, e) -> assertEquals(toSet(v.stream(), ZNode::model), Sets.newHashSet(child1, child2)));
+            complete(
+                    client.withPath(ZPath.from(path, "p")).childrenAsZNodes(),
+                    (v, e) -> assertEquals(toSet(v.stream(), ZNode::model), Sets.newHashSet(child1, child2)));
             complete(
                     client.child("p").child("c1").childrenAsZNodes(),
                     (v, e) -> assertEquals(toSet(v.stream(), ZNode::model), Sets.newHashSet(grandChild1)));
@@ -161,16 +163,34 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase {
 
             complete(
                     client.child("p").child("c1").list(),
-                    (v, e) -> assertEquals(toSet(v.stream(), Function.identity()), Sets.newHashSet(parent, child1, child2, grandChild1, grandChild2)));
+                    (v, e) -> assertEquals(
+                            toSet(v.stream(), Function.identity()),
+                            Sets.newHashSet(parent, child1, child2, grandChild1, grandChild2)));
             complete(
                     client.child("p").child("c2").list(),
-                    (v, e) -> assertEquals(toSet(v.stream(), Function.identity()), Sets.newHashSet(parent, child1, child2, grandChild1, grandChild2)));
+                    (v, e) -> assertEquals(
+                            toSet(v.stream(), Function.identity()),
+                            Sets.newHashSet(parent, child1, child2, grandChild1, grandChild2)));
             complete(
-                client.child("p").list(),
-                (v, e) -> assertEquals(toSet(v.stream(), Function.identity()), Sets.newHashSet(parent, child1, child2, grandChild1, grandChild2)));
+                    client.child("p").list(),
+                    (v, e) -> assertEquals(
+                            toSet(v.stream(), Function.identity()),
+                            Sets.newHashSet(parent, child1, child2, grandChild1, grandChild2)));
             complete(
-                client.child("p").child("c2").child("g2").list(),
-                (v, e) -> assertEquals(toSet(v.stream(), Function.identity()), Sets.newHashSet(parent, child1, child2, grandChild1, grandChild2)));
+                    client.child("p").child("c2").child("g2").list(),
+                    (v, e) -> assertEquals(
+                            toSet(v.stream(), Function.identity()),
+                            Sets.newHashSet(parent, child1, child2, grandChild1, grandChild2)));
+        }
+
+        try (CachedModeledFramework<TestModel> client =
+                ModeledFramework.wrap(async, modelSpec.withPath(ZPath.root)).cached()) {
+            client.start();
+            complete(
+                    client.list(),
+                    (v, e) -> assertEquals(
+                            toSet(v.stream(), Function.identity()),
+                            Sets.newHashSet(parent, child1, child2, grandChild1, grandChild2)));
         }
     }
 
@@ -255,6 +275,36 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase {
     }
 
     @Test
+    void testRead() throws InterruptedException, TimeoutException, ExecutionException {
+        try (CachedModeledFramework<TestModel> client =
+                ModeledFramework.wrap(async, modelSpec).cached()) {
+            TestModel model = new TestModel("a", "b", "c", 1, BigInteger.ONE);
+            assertNotNull(timing.getFuture(client.set(model).toCompletableFuture()));
+            Semaphore semaphore = new Semaphore(0);
+            client.listenable().addListener(new ModeledCacheListener<TestModel>() {
+                @Override
+                public void accept(Type type, ZPath path, Stat stat, TestModel model) {
+                    // NOP
+                }
+
+                @Override
+                public void initialized() {
+                    semaphore.release();
+                }
+            });
+            client.start();
+            assertTrue(timing.acquireSemaphore(semaphore));
+            assertEquals(model, timing.getFuture(client.read().toCompletableFuture()));
+            assertEquals(
+                    model,
+                    timing.getFuture(client.readAsZNode().toCompletableFuture()).model());
+            Stat stat = new Stat();
+            assertEquals(model, timing.getFuture(client.read(stat).toCompletableFuture()));
+            assertTrue(stat.getDataLength() > 0);
+        }
+    }
+
+    @Test
     void testReadThrough() throws InterruptedException, TimeoutException, ExecutionException {
         try (CachedModeledFramework<TestModel> client =
                 ModeledFramework.wrap(async, modelSpec).cached()) {
@@ -274,6 +324,13 @@ public class TestCachedModeledFramework extends TestModeledFrameworkBase {
             client.start();
             assertTrue(timing.acquireSemaphore(semaphore));
             assertNotNull(timing.getFuture(client.set(model).toCompletableFuture()));
+            Stat stat = new Stat();
+            assertEquals(model, timing.getFuture(client.readThrough(stat).toCompletableFuture()));
+            assertTrue(stat.getDataLength() > 0);
+            assertEquals(
+                    model,
+                    timing.getFuture(client.readThroughAsZNode().toCompletableFuture())
+                            .model());
             assertEquals(model, timing.getFuture(client.readThrough().toCompletableFuture()));
         }
     }
