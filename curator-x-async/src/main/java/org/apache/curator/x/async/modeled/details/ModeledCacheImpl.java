@@ -118,10 +118,6 @@ class ModeledCacheImpl<T> implements TreeCacheListener, ModeledCache<T> {
         return Optional.empty();
     }
 
-    ZPath basePath() {
-        return basePath;
-    }
-
     Map<ZPath, ZNode<T>> currentChildren() {
         return currentChildren(basePath);
     }
