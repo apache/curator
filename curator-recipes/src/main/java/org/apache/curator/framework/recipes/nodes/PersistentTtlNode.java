@@ -159,12 +159,14 @@ public class PersistentTtlNode implements Closeable {
         this.client = Objects.requireNonNull(client, "client cannot be null");
         this.ttlMs = ttlMs;
         this.touchScheduleFactor = touchScheduleFactor;
-        node = new PersistentNode(client, CreateMode.CONTAINER, false, path, initData, useParentCreation) {
-            @Override
-            protected void deleteNode() {
-                // NOP
-            }
-        };
+        node =
+                new PersistentNode(
+                        client, CreateMode.PERSISTENT_WITH_TTL, false, path, initData, ttlMs, useParentCreation) {
+                    @Override
+                    protected void deleteNode() {
+                        // NOP
+                    }
+                };
         this.executorService = Objects.requireNonNull(executorService, "executorService cannot be null");
         childPath = ZKPaths.makePath(Objects.requireNonNull(path, "path cannot be null"), childNodeName);
     }
@@ -239,8 +241,8 @@ public class PersistentTtlNode implements Closeable {
 
     /**
      * Call when you are done with the PersistentTtlNode. Note: the ZNode is <em>not</em> immediately
-     * deleted. However, if no other PersistentTtlNode with the same path is running the node will get deleted
-     * based on the ttl.
+     * deleted. However, if no other PersistentTtlNode with the same path is running the node will get
+     * deleted based on the ttl.
      */
     @Override
     public void close() {

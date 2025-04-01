@@ -134,8 +134,8 @@ public class TestPersistentTtlNode extends CuratorTestBase {
                 client.delete().deletingChildrenIfNeeded().forPath("/test/one");
                 timing.sleepABit();
 
-                // The underlying persistent node should not be able to recreate itself as the lazy parent creation is
-                // disabled
+                // The underlying persistent node should not be able to recreate itself as the lazy parent
+                // creation is disabled
                 assertNull(client.checkExists().forPath(containerPath));
                 assertNull(client.checkExists().forPath(childPath));
 
@@ -185,6 +185,36 @@ public class TestPersistentTtlNode extends CuratorTestBase {
             timing.sleepABit();
 
             assertNull(client.checkExists().forPath("/test"));
+        }
+    }
+
+    @Test
+    public void testTouchNodeNotCreated() throws Exception {
+        try (CuratorFramework client =
+                CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1))) {
+            client.start();
+            final long ttlMs = 1_000L;
+            try (PersistentTtlNode node = new PersistentTtlNode(client, "/test", ttlMs, new byte[0])) {
+                node.start();
+                assertTrue(node.waitForInitialCreate(timing.session(), TimeUnit.MILLISECONDS));
+                // Give some minor time for touch node to be created. Will worked after patch
+                for (int i = 1; i <= 5; i++) {
+                    if (client.checkExists().forPath("/test") != null) {
+                        break;
+                    }
+                    Thread.sleep(10L);
+                }
+            }
+        }
+        try (CuratorFramework client1 =
+                CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1))) {
+            client1.start();
+            assertTrue(client1.blockUntilConnected(2, TimeUnit.SECONDS));
+            Thread.sleep(3_000L);
+            assertNull(client1.checkExists().forPath("/test/touch"));
+            assertNull(
+                    client1.checkExists().forPath("/test"),
+                    "Persistent TTL node NOT removed. The reason is that '/test/touch' was NOT create on time to make PerssistentTTLNode recipe to work");
         }
     }
 }
