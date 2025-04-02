@@ -197,8 +197,8 @@ public class TestPersistentTtlNode extends CuratorTestBase {
     @Test
     public void testTouchNodeNotCreated() throws Exception {
         final String mainPath = "/parent/main";
-        final String touchPath = mainPath + "/touch";
-        final long ttlMs = 500L;
+        final String touchPath = ZKPaths.makePath(mainPath, PersistentTtlNode.DEFAULT_CHILD_NODE_NAME);
+        final long testTtlMs = 500L;
         final CountDownLatch mainCreatedLatch = new CountDownLatch(1);
         final CountDownLatch mainDeletedLatch = new CountDownLatch(1);
         final AtomicBoolean touchCreated = new AtomicBoolean();
@@ -222,12 +222,12 @@ public class TestPersistentTtlNode extends CuratorTestBase {
                 };
                 watcher.getListenable().addListener(listener);
                 watcher.start();
-                try (PersistentTtlNode node = new PersistentTtlNode(client, mainPath, ttlMs, new byte[0]); ) {
+                try (PersistentTtlNode node = new PersistentTtlNode(client, mainPath, testTtlMs, new byte[0]); ) {
                     node.start();
                     assertTrue(mainCreatedLatch.await(1L, TimeUnit.SECONDS));
                 }
                 assertNull(client.checkExists().forPath(touchPath));
-                assertTrue(mainDeletedLatch.await(3L * ttlMs, TimeUnit.MILLISECONDS));
+                assertTrue(mainDeletedLatch.await(3L * testTtlMs, TimeUnit.MILLISECONDS));
                 assertFalse(touchCreated.get()); // Just to control that touch ZNode never created
             }
         }
