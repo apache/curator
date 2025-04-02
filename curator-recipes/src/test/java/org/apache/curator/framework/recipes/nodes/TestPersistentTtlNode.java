@@ -22,22 +22,28 @@ package org.apache.curator.framework.recipes.nodes;
 import static org.apache.curator.framework.recipes.cache.PathChildrenCache.StartMode.BUILD_INITIAL_CACHE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
+import org.apache.curator.framework.recipes.watch.PersistentWatcher;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.Timing;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.ZKPaths;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.Watcher.Event.EventType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -190,31 +196,40 @@ public class TestPersistentTtlNode extends CuratorTestBase {
 
     @Test
     public void testTouchNodeNotCreated() throws Exception {
+        final String mainPath = "/parent/main";
+        final String touchPath = mainPath + "/touch";
+        final long ttlMs = 500L;
+        final CountDownLatch mainCreatedLatch = new CountDownLatch(1);
+        final CountDownLatch mainDeletedLatch = new CountDownLatch(1);
+        final AtomicBoolean touchCreated = new AtomicBoolean();
         try (CuratorFramework client =
                 CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1))) {
             client.start();
-            final long ttlMs = 1_000L;
-            try (PersistentTtlNode node = new PersistentTtlNode(client, "/test", ttlMs, new byte[0])) {
-                node.start();
-                assertTrue(node.waitForInitialCreate(timing.session(), TimeUnit.MILLISECONDS));
-                // Give some minor time for touch node to be created. Will worked after patch
-                for (int i = 1; i <= 5; i++) {
-                    if (client.checkExists().forPath("/test") != null) {
-                        break;
+            assertTrue(client.blockUntilConnected(1, TimeUnit.SECONDS));
+            try (PersistentWatcher watcher = new PersistentWatcher(client, mainPath, true)) {
+                final Watcher listener = event -> {
+                    final String path = event.getPath();
+                    if (mainPath.equals(path)) {
+                        final EventType type = event.getType();
+                        if (EventType.NodeCreated.equals(type)) {
+                            mainCreatedLatch.countDown();
+                        } else if (EventType.NodeDeleted.equals(type)) {
+                            mainDeletedLatch.countDown();
+                        }
+                    } else if (touchPath.equals(path)) {
+                        touchCreated.set(true);
                     }
-                    Thread.sleep(10L);
+                };
+                watcher.getListenable().addListener(listener);
+                watcher.start();
+                try (PersistentTtlNode node = new PersistentTtlNode(client, mainPath, ttlMs, new byte[0]); ) {
+                    node.start();
+                    assertTrue(mainCreatedLatch.await(1L, TimeUnit.SECONDS));
+                    assertNull(client.checkExists().forPath(touchPath));
                 }
+                assertTrue(mainDeletedLatch.await(3L * ttlMs, TimeUnit.MILLISECONDS));
+                assertFalse(touchCreated.get()); // Just to control that touch ZNode never created
             }
-        }
-        try (CuratorFramework client1 =
-                CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1))) {
-            client1.start();
-            assertTrue(client1.blockUntilConnected(2, TimeUnit.SECONDS));
-            Thread.sleep(3_000L);
-            assertNull(client1.checkExists().forPath("/test/touch"));
-            assertNull(
-                    client1.checkExists().forPath("/test"),
-                    "Persistent TTL node NOT removed. The reason is that '/test/touch' was NOT create on time to make PerssistentTTLNode recipe to work");
         }
     }
 }

@@ -241,8 +241,8 @@ public class PersistentTtlNode implements Closeable {
 
     /**
      * Call when you are done with the PersistentTtlNode. Note: the ZNode is <em>not</em> immediately
-     * deleted. However, if no other PersistentTtlNode with the same path is running the node will get
-     * deleted based on the ttl.
+     * deleted. However, if no other PersistentTtlNode with the same path is running the node will get deleted
+     * based on the ttl.
      */
     @Override
     public void close() {
