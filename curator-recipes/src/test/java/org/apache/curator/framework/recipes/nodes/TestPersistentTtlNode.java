@@ -140,8 +140,8 @@ public class TestPersistentTtlNode extends CuratorTestBase {
                 client.delete().deletingChildrenIfNeeded().forPath("/test/one");
                 timing.sleepABit();
 
-                // The underlying persistent node should not be able to recreate itself as the lazy parent
-                // creation is disabled
+                // The underlying persistent node should not be able to recreate itself as the lazy parent creation is
+                // disabled
                 assertNull(client.checkExists().forPath(containerPath));
                 assertNull(client.checkExists().forPath(childPath));
 
@@ -225,8 +225,8 @@ public class TestPersistentTtlNode extends CuratorTestBase {
                 try (PersistentTtlNode node = new PersistentTtlNode(client, mainPath, ttlMs, new byte[0]); ) {
                     node.start();
                     assertTrue(mainCreatedLatch.await(1L, TimeUnit.SECONDS));
-                    assertNull(client.checkExists().forPath(touchPath));
                 }
+                assertNull(client.checkExists().forPath(touchPath));
                 assertTrue(mainDeletedLatch.await(3L * ttlMs, TimeUnit.MILLISECONDS));
                 assertFalse(touchCreated.get()); // Just to control that touch ZNode never created
             }

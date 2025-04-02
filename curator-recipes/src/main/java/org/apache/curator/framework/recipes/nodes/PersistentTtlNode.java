@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * <p>
- *     Manages a {@link PersistentNode} that uses {@link CreateMode#CONTAINER}. Asynchronously
+ *     Manages a {@link PersistentNode} that uses {@link CreateMode#PERSISTENT_WITH_TTL}. Asynchronously
  *     it creates or updates a child on the persistent node that is marked with a provided TTL.
  * </p>
  *
@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
  *     a method of having the parent node deleted if the TTL expires. i.e. if the process
  *     that is running the PersistentTtlNode crashes and the TTL elapses, first the child node
  *     will be deleted due to the TTL expiration and then the parent node will be deleted as it's
- *     a container node with no children.
+ *     a TTL node with no children.
  * </p>
  *
  * <p>
