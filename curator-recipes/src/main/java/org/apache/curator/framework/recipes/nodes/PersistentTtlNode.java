@@ -19,6 +19,7 @@
 
 package org.apache.curator.framework.recipes.nodes;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Objects;
@@ -68,6 +69,7 @@ public class PersistentTtlNode implements Closeable {
     private final ScheduledExecutorService executorService;
     private final AtomicReference<Future<?>> futureRef = new AtomicReference<>();
     private final String childPath;
+    private volatile boolean skipTouch; // Just for testing
 
     /**
      * @param client the client
@@ -172,6 +174,14 @@ public class PersistentTtlNode implements Closeable {
     }
 
     /**
+     * Allows to control if subsequent touch scheduled activities needs to be skipped
+     */
+    @VisibleForTesting
+    void skipTouch(boolean skip) {
+        skipTouch = skip;
+    }
+
+    /**
      * You must call start() to initiate the persistent ttl node
      */
     public void start() {
@@ -180,6 +190,10 @@ public class PersistentTtlNode implements Closeable {
         Runnable touchTask = new Runnable() {
             @Override
             public void run() {
+                if (skipTouch) {
+                    log.debug("Skipping touch child node");
+                    return;
+                }
                 try {
                     try {
                         client.setData().forPath(childPath);
