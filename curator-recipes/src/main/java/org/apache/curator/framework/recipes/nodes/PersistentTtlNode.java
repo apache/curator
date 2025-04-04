@@ -198,9 +198,9 @@ public class PersistentTtlNode implements Closeable {
      */
     public void start() {
         node.start();
-        final Runnable runnable = () -> touch();
+        final Runnable touchTask = () -> touch();
         Future<?> future = executorService.scheduleAtFixedRate(
-                runnable, ttlMs / touchScheduleFactor, ttlMs / touchScheduleFactor, TimeUnit.MILLISECONDS);
+        		touchTask, ttlMs / touchScheduleFactor, ttlMs / touchScheduleFactor, TimeUnit.MILLISECONDS);
         futureRef.set(future);
     }
 
