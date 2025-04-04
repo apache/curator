@@ -222,8 +222,12 @@ public class TestPersistentTtlNode extends CuratorTestBase {
                 };
                 watcher.getListenable().addListener(listener);
                 watcher.start();
-                try (PersistentTtlNode node = new PersistentTtlNode(client, mainPath, testTtlMs, new byte[0])) {
-                    node.skipTouch(true);
+                try (PersistentTtlNode node = new PersistentTtlNode(client, mainPath, testTtlMs, new byte[0]) {
+                    @Override
+                    void touch() {
+                        // NOP
+                    }
+                }) {
                     node.start();
                     assertTrue(mainCreatedLatch.await(1L, TimeUnit.SECONDS));
                 }

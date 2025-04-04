@@ -69,7 +69,6 @@ public class PersistentTtlNode implements Closeable {
     private final ScheduledExecutorService executorService;
     private final AtomicReference<Future<?>> futureRef = new AtomicReference<>();
     private final String childPath;
-    private volatile boolean skipTouch; // Just for testing
 
     /**
      * @param client the client
@@ -173,12 +172,25 @@ public class PersistentTtlNode implements Closeable {
         childPath = ZKPaths.makePath(Objects.requireNonNull(path, "path cannot be null"), childNodeName);
     }
 
-    /**
-     * Allows to control if subsequent touch scheduled activities needs to be skipped
-     */
     @VisibleForTesting
-    void skipTouch(boolean skip) {
-        skipTouch = skip;
+    void touch() {
+        try {
+            try {
+                client.setData().forPath(childPath);
+            } catch (KeeperException.NoNodeException e) {
+                client.create()
+                        .orSetData()
+                        .withTtl(ttlMs)
+                        .withMode(CreateMode.PERSISTENT_WITH_TTL)
+                        .forPath(childPath);
+            }
+        } catch (KeeperException.NoNodeException ignore) {
+            // ignore
+        } catch (Exception e) {
+            if (!ThreadUtils.checkInterrupted(e)) {
+                log.debug("Could not touch child node", e);
+            }
+        }
     }
 
     /**
@@ -186,35 +198,9 @@ public class PersistentTtlNode implements Closeable {
      */
     public void start() {
         node.start();
-
-        Runnable touchTask = new Runnable() {
-            @Override
-            public void run() {
-                if (skipTouch) {
-                    log.debug("Skipping touch child node");
-                    return;
-                }
-                try {
-                    try {
-                        client.setData().forPath(childPath);
-                    } catch (KeeperException.NoNodeException e) {
-                        client.create()
-                                .orSetData()
-                                .withTtl(ttlMs)
-                                .withMode(CreateMode.PERSISTENT_WITH_TTL)
-                                .forPath(childPath);
-                    }
-                } catch (KeeperException.NoNodeException ignore) {
-                    // ignore
-                } catch (Exception e) {
-                    if (!ThreadUtils.checkInterrupted(e)) {
-                        log.debug("Could not touch child node", e);
-                    }
-                }
-            }
-        };
+        final Runnable runnable = () -> touch();
         Future<?> future = executorService.scheduleAtFixedRate(
-                touchTask, ttlMs / touchScheduleFactor, ttlMs / touchScheduleFactor, TimeUnit.MILLISECONDS);
+                runnable, ttlMs / touchScheduleFactor, ttlMs / touchScheduleFactor, TimeUnit.MILLISECONDS);
         futureRef.set(future);
     }
 
