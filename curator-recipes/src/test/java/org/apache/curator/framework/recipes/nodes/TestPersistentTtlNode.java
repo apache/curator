@@ -22,22 +22,28 @@ package org.apache.curator.framework.recipes.nodes;
 import static org.apache.curator.framework.recipes.cache.PathChildrenCache.StartMode.BUILD_INITIAL_CACHE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
+import org.apache.curator.framework.recipes.watch.PersistentWatcher;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.Timing;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.test.compatibility.Timing2;
 import org.apache.curator.utils.ZKPaths;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.Watcher.Event.EventType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -185,6 +191,50 @@ public class TestPersistentTtlNode extends CuratorTestBase {
             timing.sleepABit();
 
             assertNull(client.checkExists().forPath("/test"));
+        }
+    }
+
+    @Test
+    public void testTouchNodeNotCreated() throws Exception {
+        final String mainPath = "/parent/main";
+        final String touchPath = ZKPaths.makePath(mainPath, PersistentTtlNode.DEFAULT_CHILD_NODE_NAME);
+        final long testTtlMs = 500L;
+        final CountDownLatch mainCreatedLatch = new CountDownLatch(1);
+        final CountDownLatch mainDeletedLatch = new CountDownLatch(1);
+        final AtomicBoolean touchCreated = new AtomicBoolean();
+        try (CuratorFramework client =
+                CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1))) {
+            client.start();
+            assertTrue(client.blockUntilConnected(1, TimeUnit.SECONDS));
+            try (PersistentWatcher watcher = new PersistentWatcher(client, mainPath, true)) {
+                final Watcher listener = event -> {
+                    final String path = event.getPath();
+                    if (mainPath.equals(path)) {
+                        final EventType type = event.getType();
+                        if (EventType.NodeCreated.equals(type)) {
+                            mainCreatedLatch.countDown();
+                        } else if (EventType.NodeDeleted.equals(type)) {
+                            mainDeletedLatch.countDown();
+                        }
+                    } else if (touchPath.equals(path)) {
+                        touchCreated.set(true);
+                    }
+                };
+                watcher.getListenable().addListener(listener);
+                watcher.start();
+                try (PersistentTtlNode node = new PersistentTtlNode(client, mainPath, testTtlMs, new byte[0]) {
+                    @Override
+                    void touch() {
+                        // NOP
+                    }
+                }) {
+                    node.start();
+                    assertTrue(mainCreatedLatch.await(1L, TimeUnit.SECONDS));
+                }
+                assertNull(client.checkExists().forPath(touchPath));
+                assertTrue(mainDeletedLatch.await(3L * testTtlMs, TimeUnit.MILLISECONDS));
+                assertFalse(touchCreated.get()); // Just to control that touch ZNode never created
+            }
         }
     }
 }
