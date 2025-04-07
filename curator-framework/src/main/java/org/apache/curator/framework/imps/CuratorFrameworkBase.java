@@ -58,6 +58,11 @@ import org.apache.zookeeper.ZooKeeper;
 public abstract class CuratorFrameworkBase implements CuratorFramework {
     abstract NamespaceImpl getNamespaceImpl();
 
+    /**
+     * Return the underlying client which is the one constructed from {@link org.apache.curator.framework.CuratorFrameworkFactory}.
+     */
+    public abstract CuratorFramework client();
+
     @Override
     public final CuratorFramework nonNamespaceView() {
         return usingNamespace(null);
