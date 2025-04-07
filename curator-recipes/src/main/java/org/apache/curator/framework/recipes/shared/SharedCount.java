@@ -65,7 +65,10 @@ public class SharedCount implements Closeable, SharedCountReader, Listenable<Sha
     }
 
     /**
-     * Change the shared count value irrespective of its previous state
+     * Change the shared count value irrespective of its previous state.
+     *
+     * <p>Later {@link #getCount()} will get some more updated value, whether that value is set
+     * by this session or a different one cannot be guaranteed though.
      *
      * @param newCount new value
      * @throws Exception ZK errors, interruptions, etc.
@@ -99,6 +102,9 @@ public class SharedCount implements Closeable, SharedCountReader, Listenable<Sha
      * newCount. If the count has changed, the value is not set and this client's view of the
      * value is updated. i.e. if the count is not successful you can get the updated value
      * by calling {@link #getCount()}.
+     *
+     * <p>Later {@link #getCount()} will get some more updated value, whether that value is set
+     * by this session or a different one cannot be guaranteed though.
      *
      * @param newCount the new value to attempt
      * @return true if the change attempt was successful, false if not. If the change

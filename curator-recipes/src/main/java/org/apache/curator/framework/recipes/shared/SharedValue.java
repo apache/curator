@@ -130,7 +130,10 @@ public class SharedValue implements Closeable, SharedValueReader {
     }
 
     /**
-     * Change the shared value irrespective of its previous state
+     * Change the shared value irrespective of its previous state.
+     *
+     * <p>Later {@link #getValue()} will get some more updated value, whether that value is set
+     * by this session or a different one cannot be guaranteed though.
      *
      * @param newValue new value
      * @throws Exception ZK errors, interruptions, etc.
@@ -167,6 +170,9 @@ public class SharedValue implements Closeable, SharedValueReader {
      * newValue. If the value has changed, the value is not set and this client's view of the
      * value is updated. i.e. if the value is not successful you can get the updated value
      * by calling {@link #getValue()}.
+     *
+     * <p>Later {@link #getValue()} will get some more updated value, whether that value is set
+     * by this session or a different one cannot be guaranteed though.
      *
      * @param newValue the new value to attempt
      * @return true if the change attempt was successful, false if not. If the change
