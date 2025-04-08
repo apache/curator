@@ -61,12 +61,15 @@ public class PersistentTtlNode implements Closeable {
     public static final int DEFAULT_TOUCH_SCHEDULE_FACTOR = 2;
     public static final boolean DEFAULT_USE_PARENT_CREATION = true;
 
+    private static final boolean SHUTDOWN_EXECUTOR = true;
+
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final PersistentNode node;
     private final CuratorFramework client;
     private final long ttlMs;
     private final int touchScheduleFactor;
     private final ScheduledExecutorService executorService;
+    private final boolean shutdownExecutor; // If needed to shut down executorService when closing
     private final AtomicReference<Future<?>> futureRef = new AtomicReference<>();
     private final String childPath;
 
@@ -77,15 +80,7 @@ public class PersistentTtlNode implements Closeable {
      * @param initData data for the node
      */
     public PersistentTtlNode(CuratorFramework client, String path, long ttlMs, byte[] initData) {
-        this(
-                client,
-                Executors.newSingleThreadScheduledExecutor(ThreadUtils.newThreadFactory("PersistentTtlNode")),
-                path,
-                ttlMs,
-                initData,
-                DEFAULT_CHILD_NODE_NAME,
-                DEFAULT_TOUCH_SCHEDULE_FACTOR,
-                DEFAULT_USE_PARENT_CREATION);
+        this(client, path, ttlMs, initData, DEFAULT_USE_PARENT_CREATION);
     }
 
     /**
@@ -105,12 +100,14 @@ public class PersistentTtlNode implements Closeable {
                 initData,
                 DEFAULT_CHILD_NODE_NAME,
                 DEFAULT_TOUCH_SCHEDULE_FACTOR,
-                useParentCreation);
+                useParentCreation,
+                SHUTDOWN_EXECUTOR);
     }
 
     /**
      * @param client the client
      * @param executorService  ExecutorService to use for background thread. This service should be single threaded, otherwise you may see inconsistent results.
+     *                         Recipe will NOT shut down the executor when closing.
      * @param path path for the parent ZNode
      * @param ttlMs max ttl for the node in milliseconds
      * @param initData data for the node
@@ -140,6 +137,7 @@ public class PersistentTtlNode implements Closeable {
     /**
      * @param client the client
      * @param executorService  ExecutorService to use for background thread. This service should be single threaded, otherwise you may see inconsistent results.
+     *                         Recipe will NOT shut down the executor when closing.
      * @param path path for the parent ZNode
      * @param ttlMs max ttl for the node in milliseconds
      * @param initData data for the node
@@ -157,6 +155,31 @@ public class PersistentTtlNode implements Closeable {
             String childNodeName,
             int touchScheduleFactor,
             boolean useParentCreation) {
+        this(
+                client,
+                executorService,
+                path,
+                ttlMs,
+                initData,
+                childNodeName,
+                touchScheduleFactor,
+                useParentCreation,
+                !SHUTDOWN_EXECUTOR);
+    }
+
+    /**
+     * Private constructor to distinguish when the executorService is externally provided
+     */
+    private PersistentTtlNode(
+            CuratorFramework client,
+            ScheduledExecutorService executorService,
+            String path,
+            long ttlMs,
+            byte[] initData,
+            String childNodeName,
+            int touchScheduleFactor,
+            boolean useParentCreation,
+            boolean shutdownExecutor) {
         this.client = Objects.requireNonNull(client, "client cannot be null");
         this.ttlMs = ttlMs;
         this.touchScheduleFactor = touchScheduleFactor;
@@ -170,6 +193,12 @@ public class PersistentTtlNode implements Closeable {
                 };
         this.executorService = Objects.requireNonNull(executorService, "executorService cannot be null");
         childPath = ZKPaths.makePath(Objects.requireNonNull(path, "path cannot be null"), childNodeName);
+        this.shutdownExecutor = shutdownExecutor;
+    }
+
+    @VisibleForTesting
+    boolean isExecutorShutdown() {
+        return executorService.isShutdown();
     }
 
     @VisibleForTesting
@@ -248,6 +277,9 @@ public class PersistentTtlNode implements Closeable {
         Future<?> future = futureRef.getAndSet(null);
         if (future != null) {
             future.cancel(true);
+        }
+        if (shutdownExecutor) {
+            executorService.shutdown();
         }
         try {
             node.close();

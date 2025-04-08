@@ -28,6 +28,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -234,6 +236,56 @@ public class TestPersistentTtlNode extends CuratorTestBase {
                 assertNull(client.checkExists().forPath(touchPath));
                 assertTrue(mainDeletedLatch.await(3L * testTtlMs, TimeUnit.MILLISECONDS));
                 assertFalse(touchCreated.get()); // Just to control that touch ZNode never created
+            }
+        }
+    }
+
+    @Test
+    public void testExecutorShutdown() throws InterruptedException {
+        final String mainPath = "/parent/main";
+        final long testTtlMs = 500L;
+        PersistentTtlNode nodeUnderTest = null;
+
+        try (CuratorFramework client =
+                CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1))) {
+            client.start();
+            assertTrue(client.blockUntilConnected(1, TimeUnit.SECONDS));
+
+            try (PersistentTtlNode node = new PersistentTtlNode(client, mainPath, testTtlMs, new byte[0])) {
+                node.start();
+                nodeUnderTest = node;
+            }
+            assertTrue(nodeUnderTest.isExecutorShutdown());
+
+            try (PersistentTtlNode node = new PersistentTtlNode(client, mainPath, testTtlMs, new byte[0], true)) {
+                node.start();
+                nodeUnderTest = node;
+            }
+            assertTrue(nodeUnderTest.isExecutorShutdown());
+
+            final ScheduledExecutorService providedExecutor = Executors.newSingleThreadScheduledExecutor();
+            try (PersistentTtlNode node =
+                    new PersistentTtlNode(client, providedExecutor, mainPath, testTtlMs, new byte[0], "touch", 2)) {
+                node.start();
+                nodeUnderTest = node;
+            }
+            assertFalse(nodeUnderTest.isExecutorShutdown());
+            assertFalse(providedExecutor.isShutdown());
+
+            try (PersistentTtlNode node = new PersistentTtlNode(
+                    client, providedExecutor, mainPath, testTtlMs, new byte[0], "touch", 2, true)) {
+                node.start();
+                nodeUnderTest = node;
+            }
+            assertFalse(nodeUnderTest.isExecutorShutdown());
+            assertFalse(providedExecutor.isShutdown());
+
+        } finally {
+            if (nodeUnderTest != null) {
+                nodeUnderTest.close();
+                // Test multiple close is NOT problematic
+                nodeUnderTest.close();
+                nodeUnderTest.close();
             }
         }
     }
