@@ -19,6 +19,7 @@
 
 package org.apache.curator.framework.recipes.nodes;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Objects;
@@ -37,7 +38,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * <p>
- *     Manages a {@link PersistentNode} that uses {@link CreateMode#CONTAINER}. Asynchronously
+ *     Manages a {@link PersistentNode} that uses {@link CreateMode#PERSISTENT_WITH_TTL}. Asynchronously
  *     it creates or updates a child on the persistent node that is marked with a provided TTL.
  * </p>
  *
@@ -46,7 +47,7 @@ import org.slf4j.LoggerFactory;
  *     a method of having the parent node deleted if the TTL expires. i.e. if the process
  *     that is running the PersistentTtlNode crashes and the TTL elapses, first the child node
  *     will be deleted due to the TTL expiration and then the parent node will be deleted as it's
- *     a container node with no children.
+ *     a TTL node with no children.
  * </p>
  *
  * <p>
@@ -159,14 +160,37 @@ public class PersistentTtlNode implements Closeable {
         this.client = Objects.requireNonNull(client, "client cannot be null");
         this.ttlMs = ttlMs;
         this.touchScheduleFactor = touchScheduleFactor;
-        node = new PersistentNode(client, CreateMode.CONTAINER, false, path, initData, useParentCreation) {
-            @Override
-            protected void deleteNode() {
-                // NOP
-            }
-        };
+        node =
+                new PersistentNode(
+                        client, CreateMode.PERSISTENT_WITH_TTL, false, path, initData, ttlMs, useParentCreation) {
+                    @Override
+                    protected void deleteNode() {
+                        // NOP
+                    }
+                };
         this.executorService = Objects.requireNonNull(executorService, "executorService cannot be null");
         childPath = ZKPaths.makePath(Objects.requireNonNull(path, "path cannot be null"), childNodeName);
+    }
+
+    @VisibleForTesting
+    void touch() {
+        try {
+            try {
+                client.setData().forPath(childPath);
+            } catch (KeeperException.NoNodeException e) {
+                client.create()
+                        .orSetData()
+                        .withTtl(ttlMs)
+                        .withMode(CreateMode.PERSISTENT_WITH_TTL)
+                        .forPath(childPath);
+            }
+        } catch (KeeperException.NoNodeException ignore) {
+            // ignore
+        } catch (Exception e) {
+            if (!ThreadUtils.checkInterrupted(e)) {
+                log.debug("Could not touch child node", e);
+            }
+        }
     }
 
     /**
@@ -174,31 +198,8 @@ public class PersistentTtlNode implements Closeable {
      */
     public void start() {
         node.start();
-
-        Runnable touchTask = new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    try {
-                        client.setData().forPath(childPath);
-                    } catch (KeeperException.NoNodeException e) {
-                        client.create()
-                                .orSetData()
-                                .withTtl(ttlMs)
-                                .withMode(CreateMode.PERSISTENT_WITH_TTL)
-                                .forPath(childPath);
-                    }
-                } catch (KeeperException.NoNodeException ignore) {
-                    // ignore
-                } catch (Exception e) {
-                    if (!ThreadUtils.checkInterrupted(e)) {
-                        log.debug("Could not touch child node", e);
-                    }
-                }
-            }
-        };
         Future<?> future = executorService.scheduleAtFixedRate(
-                touchTask, ttlMs / touchScheduleFactor, ttlMs / touchScheduleFactor, TimeUnit.MILLISECONDS);
+                this::touch, ttlMs / touchScheduleFactor, ttlMs / touchScheduleFactor, TimeUnit.MILLISECONDS);
         futureRef.set(future);
     }
 
