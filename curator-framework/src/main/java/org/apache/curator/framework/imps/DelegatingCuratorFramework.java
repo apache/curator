@@ -48,6 +48,11 @@ abstract class DelegatingCuratorFramework extends CuratorFrameworkBase {
     }
 
     @Override
+    public final CuratorFramework client() {
+        return client.client();
+    }
+
+    @Override
     public CuratorFrameworkState getState() {
         return client.getState();
     }

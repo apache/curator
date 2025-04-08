@@ -49,6 +49,45 @@ public class TestPersistentWatcher extends CuratorTestBase {
     }
 
     @Test
+    public void testNamespacedWatching() throws Exception {
+        BlockingQueue<WatchedEvent> events = new LinkedBlockingQueue<>();
+
+        try (CuratorFramework client = CuratorFrameworkFactory.newClient(
+                server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1))) {
+            client.start();
+            // given: connected curator client
+            client.blockUntilConnected();
+
+            // given: started persistent watcher under namespaced facade
+            PersistentWatcher persistentWatcher = new PersistentWatcher(client.usingNamespace("top"), "/main", true);
+            persistentWatcher.getListenable().addListener(events::add);
+            persistentWatcher.start();
+
+            // when: create paths
+            client.create().forPath("/top/main");
+            client.create().forPath("/top/main/a");
+
+            // then: receive node watch events
+            WatchedEvent event1 = events.poll(5, TimeUnit.SECONDS);
+            assertNotNull(event1);
+            assertEquals(Watcher.Event.EventType.NodeCreated, event1.getType());
+            assertEquals("/main", event1.getPath());
+
+            WatchedEvent event2 = events.poll(5, TimeUnit.SECONDS);
+            assertNotNull(event2);
+            assertEquals(Watcher.Event.EventType.NodeCreated, event2.getType());
+            assertEquals("/main/a", event2.getPath());
+        }
+
+        // when: curator client closed
+        // then: listener get Closed notification
+        WatchedEvent event = events.poll(5, TimeUnit.SECONDS);
+        assertNotNull(event);
+        assertEquals(Watcher.Event.EventType.None, event.getType());
+        assertEquals(Watcher.Event.KeeperState.Closed, event.getState());
+    }
+
+    @Test
     public void testConcurrentClientClose() throws Exception {
         BlockingQueue<WatchedEvent> events = new LinkedBlockingQueue<>();
 
