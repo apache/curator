@@ -255,6 +255,11 @@ public final class CuratorFrameworkImpl extends CuratorFrameworkBase {
     }
 
     @Override
+    public CuratorFramework client() {
+        return this;
+    }
+
+    @Override
     public CuratorFrameworkState getState() {
         return state.get();
     }

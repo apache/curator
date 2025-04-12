@@ -27,6 +27,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorClosedException;
 import org.apache.curator.framework.api.CuratorEventType;
+import org.apache.curator.framework.imps.CuratorFrameworkBase;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.listen.StandardListenerManager;
 import org.apache.curator.framework.state.ConnectionStateListener;
@@ -80,7 +81,8 @@ public class PersistentWatcher implements Closeable {
     public void start() {
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Already started");
         client.getConnectionStateListenable().addListener(connectionStateListener);
-        client.getCuratorListenable().addListener(((ignored, event) -> {
+        // This could be a namespaced facade which does not support getCuratorListenable.
+        ((CuratorFrameworkBase) client).client().getCuratorListenable().addListener(((ignored, event) -> {
             if (event.getType() == CuratorEventType.CLOSING) {
                 onClientClosed();
             }
