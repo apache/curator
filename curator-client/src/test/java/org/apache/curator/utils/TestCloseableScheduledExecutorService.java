@@ -160,7 +160,7 @@ public class TestCloseableScheduledExecutorService {
     public void testCloseWithoutShutdown() throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
         try (CloseableScheduledExecutorService service = new CloseableScheduledExecutorService(executorService)) {
-            service.submit(() -> latch.countDown());
+            service.submit(latch::countDown);
             assertTrue(latch.await(1, TimeUnit.SECONDS));
         }
         assertFalse(executorService.isShutdown());
@@ -170,7 +170,7 @@ public class TestCloseableScheduledExecutorService {
     public void testCloseWithShutdown() throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
         try (CloseableScheduledExecutorService service = new CloseableScheduledExecutorService(executorService, true)) {
-            service.submit(() -> latch.countDown());
+            service.submit(latch::countDown);
             assertTrue(latch.await(1, TimeUnit.SECONDS));
         }
         assertTrue(executorService.isShutdown());
@@ -183,7 +183,7 @@ public class TestCloseableScheduledExecutorService {
         CloseableScheduledExecutorService service = null;
         try {
             service = new CloseableScheduledExecutorService(executorService, true);
-            service.submit(() -> latch.countDown());
+            service.submit(latch::countDown);
             assertTrue(latch.await(1, TimeUnit.SECONDS));
         } finally {
             if (service != null) {
