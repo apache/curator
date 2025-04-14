@@ -20,9 +20,12 @@
 package org.apache.curator.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -109,5 +112,85 @@ public class TestCloseableScheduledExecutorService {
         newValue = outerCounter.get();
         assertTrue(newValue > value);
         assertEquals(innerValue, innerCounter.get());
+    }
+
+    @Test
+    public void testCloseableScheduleAtFixedRate() throws InterruptedException {
+        CloseableScheduledExecutorService service = new CloseableScheduledExecutorService(executorService);
+
+        final CountDownLatch latch = new CountDownLatch(QTY);
+        final AtomicInteger fixedDelayCounter = new AtomicInteger();
+        service.scheduleAtFixedRate(
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        latch.countDown();
+                        // This delay is almost NOT impacting when using scheduleAtFixedRate
+                        try {
+                            Thread.sleep(DELAY_MS);
+                        } catch (InterruptedException e) {
+                            // Do nothing
+                        }
+                    }
+                },
+                DELAY_MS,
+                DELAY_MS,
+                TimeUnit.MILLISECONDS);
+        service.scheduleWithFixedDelay(
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        fixedDelayCounter.incrementAndGet();
+                        // This delay is impacting when using scheduleWithFixedDelay
+                        try {
+                            Thread.sleep(DELAY_MS);
+                        } catch (InterruptedException e) {
+                            // Do nothing
+                        }
+                    }
+                },
+                DELAY_MS,
+                DELAY_MS,
+                TimeUnit.MILLISECONDS);
+        assertTrue(latch.await((QTY * 2) * DELAY_MS, TimeUnit.MILLISECONDS));
+        assertTrue(fixedDelayCounter.get() <= (QTY / 2 + 1));
+    }
+
+    @Test
+    public void testCloseWithoutShutdown() throws InterruptedException {
+        final CountDownLatch latch = new CountDownLatch(1);
+        try (CloseableScheduledExecutorService service = new CloseableScheduledExecutorService(executorService)) {
+            service.submit(() -> latch.countDown());
+            assertTrue(latch.await(1, TimeUnit.SECONDS));
+        }
+        assertFalse(executorService.isShutdown());
+    }
+
+    @Test
+    public void testCloseWithShutdown() throws InterruptedException {
+        final CountDownLatch latch = new CountDownLatch(1);
+        try (CloseableScheduledExecutorService service = new CloseableScheduledExecutorService(executorService, true)) {
+            service.submit(() -> latch.countDown());
+            assertTrue(latch.await(1, TimeUnit.SECONDS));
+        }
+        assertTrue(executorService.isShutdown());
+        assertThrows(RejectedExecutionException.class, () -> executorService.submit(() -> System.out.println("Hello")));
+    }
+
+    @Test
+    public void testCloseMultipleTimes() throws InterruptedException {
+        final CountDownLatch latch = new CountDownLatch(1);
+        CloseableScheduledExecutorService service = null;
+        try {
+            service = new CloseableScheduledExecutorService(executorService, true);
+            service.submit(() -> latch.countDown());
+            assertTrue(latch.await(1, TimeUnit.SECONDS));
+        } finally {
+            if (service != null) {
+                service.close();
+                service.close();
+                service.close();
+            }
+        }
     }
 }

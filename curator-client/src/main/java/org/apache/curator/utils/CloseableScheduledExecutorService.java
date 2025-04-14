@@ -95,4 +95,28 @@ public class CloseableScheduledExecutorService extends CloseableExecutorService 
                 scheduledExecutorService.scheduleWithFixedDelay(task, initialDelay, delay, unit);
         return new InternalScheduledFutureTask(scheduledFuture);
     }
+
+    /**
+     * Creates and executes a periodic action that becomes enabled first after the given initial
+     * delay, and subsequently with the given period; that is executions will commence after {@code
+     * initialDelay} then {@code initialDelay+period}, then {@code initialDelay + 2 * period}, and so
+     * on. If any execution of the task encounters an exception, subsequent executions are suppressed.
+     * Otherwise, the task will only terminate via cancellation or termination of the executor. If any
+     * execution of this task takes longer than its period, then subsequent executions may start late,
+     * but will not concurrently execute.
+     *
+     * @param task the task to execute
+     * @param initialDelay the time to delay first execution
+     * @param period the period between successive executions
+     * @param unit the time unit of the initialDelay and delay parameters
+     * @return a Future representing pending completion of the task, and whose <tt>get()</tt> method
+     *     will throw an exception upon cancellation
+     */
+    public Future<?> scheduleAtFixedRate(Runnable task, long initialDelay, long period, TimeUnit unit) {
+        Preconditions.checkState(isOpen.get(), "CloseableExecutorService is closed");
+
+        ScheduledFuture<?> scheduledFuture =
+                scheduledExecutorService.scheduleAtFixedRate(task, initialDelay, period, unit);
+        return new InternalScheduledFutureTask(scheduledFuture);
+    }
 }
