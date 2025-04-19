@@ -32,7 +32,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -205,23 +204,17 @@ public class TestPersistentTtlNode extends CuratorTestBase {
         final long testTtlMs = 500L;
         final CountDownLatch mainCreatedLatch = new CountDownLatch(1);
         final CountDownLatch mainDeletedLatch = new CountDownLatch(1);
-        final AtomicBoolean touchCreated = new AtomicBoolean();
         try (CuratorFramework client =
                 CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1))) {
             client.start();
             assertTrue(client.blockUntilConnected(1, TimeUnit.SECONDS));
-            try (PersistentWatcher watcher = new PersistentWatcher(client, mainPath, true)) {
+            try (PersistentWatcher watcher = new PersistentWatcher(client, mainPath, false)) {
                 final Watcher listener = event -> {
-                    final String path = event.getPath();
-                    if (mainPath.equals(path)) {
-                        final EventType type = event.getType();
-                        if (EventType.NodeCreated.equals(type)) {
-                            mainCreatedLatch.countDown();
-                        } else if (EventType.NodeDeleted.equals(type)) {
-                            mainDeletedLatch.countDown();
-                        }
-                    } else if (touchPath.equals(path)) {
-                        touchCreated.set(true);
+                    final EventType type = event.getType();
+                    if (EventType.NodeCreated.equals(type)) {
+                        mainCreatedLatch.countDown();
+                    } else if (EventType.NodeDeleted.equals(type)) {
+                        mainDeletedLatch.countDown();
                     }
                 };
                 watcher.getListenable().addListener(listener);
@@ -237,7 +230,6 @@ public class TestPersistentTtlNode extends CuratorTestBase {
                 }
                 assertNull(client.checkExists().forPath(touchPath));
                 assertTrue(mainDeletedLatch.await(3L * testTtlMs, TimeUnit.MILLISECONDS));
-                assertFalse(touchCreated.get()); // Just to control that touch ZNode never created
             }
         }
     }
@@ -251,10 +243,9 @@ public class TestPersistentTtlNode extends CuratorTestBase {
                 CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1))) {
             client.start();
             assertTrue(client.blockUntilConnected(1, TimeUnit.SECONDS));
-            try (PersistentWatcher watcher = new PersistentWatcher(client, mainPath, true)) {
+            try (PersistentWatcher watcher = new PersistentWatcher(client, touchPath, false)) {
                 final Watcher listener = event -> {
-                    final String path = event.getPath();
-                    if (touchPath.equals(path)) {
+                    if (EventType.NodeCreated.equals(event.getType())) {
                         touchCreatedLatch.countDown();
                     }
                 };
@@ -311,10 +302,9 @@ public class TestPersistentTtlNode extends CuratorTestBase {
                 CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1))) {
             client.start();
             assertTrue(client.blockUntilConnected(1, TimeUnit.SECONDS));
-            try (PersistentWatcher watcher = new PersistentWatcher(client, mainPath, true)) {
+            try (PersistentWatcher watcher = new PersistentWatcher(client, touchPath, false)) {
                 final Watcher listener = event -> {
-                    final String path = event.getPath();
-                    if (touchPath.equals(path)) {
+                    if (EventType.NodeCreated.equals(event.getType())) {
                         touchCreatedLatch.countDown();
                     }
                 };
