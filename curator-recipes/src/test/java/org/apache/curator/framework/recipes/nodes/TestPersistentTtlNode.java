@@ -28,9 +28,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
@@ -41,6 +43,7 @@ import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.Timing;
 import org.apache.curator.test.compatibility.CuratorTestBase;
 import org.apache.curator.test.compatibility.Timing2;
+import org.apache.curator.utils.CloseableScheduledExecutorService;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.EventType;
@@ -201,23 +204,17 @@ public class TestPersistentTtlNode extends CuratorTestBase {
         final long testTtlMs = 500L;
         final CountDownLatch mainCreatedLatch = new CountDownLatch(1);
         final CountDownLatch mainDeletedLatch = new CountDownLatch(1);
-        final AtomicBoolean touchCreated = new AtomicBoolean();
         try (CuratorFramework client =
                 CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1))) {
             client.start();
             assertTrue(client.blockUntilConnected(1, TimeUnit.SECONDS));
-            try (PersistentWatcher watcher = new PersistentWatcher(client, mainPath, true)) {
+            try (PersistentWatcher watcher = new PersistentWatcher(client, mainPath, false)) {
                 final Watcher listener = event -> {
-                    final String path = event.getPath();
-                    if (mainPath.equals(path)) {
-                        final EventType type = event.getType();
-                        if (EventType.NodeCreated.equals(type)) {
-                            mainCreatedLatch.countDown();
-                        } else if (EventType.NodeDeleted.equals(type)) {
-                            mainDeletedLatch.countDown();
-                        }
-                    } else if (touchPath.equals(path)) {
-                        touchCreated.set(true);
+                    final EventType type = event.getType();
+                    if (EventType.NodeCreated.equals(type)) {
+                        mainCreatedLatch.countDown();
+                    } else if (EventType.NodeDeleted.equals(type)) {
+                        mainDeletedLatch.countDown();
                     }
                 };
                 watcher.getListenable().addListener(listener);
@@ -233,8 +230,110 @@ public class TestPersistentTtlNode extends CuratorTestBase {
                 }
                 assertNull(client.checkExists().forPath(touchPath));
                 assertTrue(mainDeletedLatch.await(3L * testTtlMs, TimeUnit.MILLISECONDS));
-                assertFalse(touchCreated.get()); // Just to control that touch ZNode never created
             }
+        }
+    }
+
+    @Test
+    public void testInternalExecutorClose() throws Exception {
+        final String mainPath = "/parent/main";
+        final String touchPath = ZKPaths.makePath(mainPath, PersistentTtlNode.DEFAULT_CHILD_NODE_NAME);
+        final CountDownLatch touchCreatedLatch = new CountDownLatch(1);
+        try (CuratorFramework client =
+                CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1))) {
+            client.start();
+            assertTrue(client.blockUntilConnected(1, TimeUnit.SECONDS));
+            try (PersistentWatcher watcher = new PersistentWatcher(client, touchPath, false)) {
+                final Watcher listener = event -> {
+                    if (EventType.NodeCreated.equals(event.getType())) {
+                        touchCreatedLatch.countDown();
+                    }
+                };
+                watcher.getListenable().addListener(listener);
+                watcher.start();
+                final AtomicLong executorThreadId = new AtomicLong();
+                CloseableScheduledExecutorService executor;
+                try (PersistentTtlNode node = new PersistentTtlNode(client, mainPath, ttlMs, new byte[0])) {
+                    node.start();
+                    assertTrue(touchCreatedLatch.await(5 * ttlMs, TimeUnit.MILLISECONDS));
+                    executor = node.getCloseableScheduledExecutorService();
+                    assertNotNull(executor);
+                    executor.submit(() ->
+                                    executorThreadId.set(Thread.currentThread().getId()))
+                            .get();
+                    assertNotNull(getThreadWithIdAndName(executorThreadId, PersistentTtlNode.TOUCH_THREAD_NAME));
+                }
+                assertTrue(executor.isShutdown());
+                // Here we know the executor has been shutdown, so the thread should NOT be there eventually
+                boolean executorThreadDestroyed = false;
+                final long maxTimeExecutorThreadDestroyedMs = 1_000L;
+                final long checkIntervalMs = 10L;
+                for (long i = 0; i <= maxTimeExecutorThreadDestroyedMs / checkIntervalMs; i++) {
+                    Thread.sleep(checkIntervalMs);
+                    if (getThreadWithIdAndName(executorThreadId, PersistentTtlNode.TOUCH_THREAD_NAME) == null) {
+                        executorThreadDestroyed = true;
+                        break;
+                    }
+                }
+                assertTrue(executorThreadDestroyed);
+            }
+        }
+    }
+
+    /**
+     * @return thread with given id and name or <code>null</code> if NOT exist
+     */
+    private Thread getThreadWithIdAndName(final AtomicLong executorThreadId, final String name) {
+        return Thread.getAllStackTraces().keySet().stream()
+                .filter(t -> t.getId() == executorThreadId.get() && t.getName().contains(name))
+                .findFirst()
+                .orElse(null);
+    }
+
+    @Test
+    public void testExternalExecutorClose() throws Exception {
+        final String mainPath = "/parent/main";
+        final String touchPath = ZKPaths.makePath(mainPath, PersistentTtlNode.DEFAULT_CHILD_NODE_NAME);
+        final CountDownLatch touchCreatedLatch = new CountDownLatch(1);
+        final String threadName = "testThreadName";
+        final ScheduledExecutorService executor =
+                Executors.newSingleThreadScheduledExecutor(task -> new Thread(task, threadName));
+        try (CuratorFramework client =
+                CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1))) {
+            client.start();
+            assertTrue(client.blockUntilConnected(1, TimeUnit.SECONDS));
+            try (PersistentWatcher watcher = new PersistentWatcher(client, touchPath, false)) {
+                final Watcher listener = event -> {
+                    if (EventType.NodeCreated.equals(event.getType())) {
+                        touchCreatedLatch.countDown();
+                    }
+                };
+                watcher.getListenable().addListener(listener);
+                watcher.start();
+                final AtomicLong executorThreadId = new AtomicLong();
+                try (PersistentTtlNode node = new PersistentTtlNode(
+                        client,
+                        executor,
+                        mainPath,
+                        ttlMs,
+                        new byte[0],
+                        PersistentTtlNode.DEFAULT_CHILD_NODE_NAME,
+                        PersistentTtlNode.DEFAULT_TOUCH_SCHEDULE_FACTOR)) {
+                    node.start();
+                    assertTrue(touchCreatedLatch.await(5 * ttlMs, TimeUnit.MILLISECONDS));
+                    node.getCloseableScheduledExecutorService()
+                            .submit(() ->
+                                    executorThreadId.set(Thread.currentThread().getId()))
+                            .get();
+                    assertNotNull(getThreadWithIdAndName(executorThreadId, threadName));
+                }
+                // Here PersistentTtlNode tasks have been cancelled (BUT executor NOT shutdown)
+                Thread.sleep(100L);
+                assertFalse(executor.isShutdown());
+                assertNotNull(getThreadWithIdAndName(executorThreadId, threadName));
+            }
+        } finally {
+            executor.shutdownNow();
         }
     }
 }
