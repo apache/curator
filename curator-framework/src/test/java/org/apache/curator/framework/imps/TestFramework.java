@@ -479,7 +479,7 @@ public class TestFramework extends BaseClassForTests {
             try {
                 client.checkExists().forPath("/");
                 fail("Connection should be down");
-            } catch (KeeperException.ConnectionLossException e) {
+            } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
                 // expected
             }
 
