@@ -256,13 +256,14 @@ public class TestReconfiguration extends CuratorTestBase {
 
     @Test
     public void testAdd() throws Exception {
-        try (CuratorFramework client = newClient()) {
+        CountDownLatch ensembleLatch = new CountDownLatch(1);
+        try (CuratorFramework client = newClient(cluster.getConnectString(), ensembleLatch)) {
             client.start();
 
             QuorumVerifier oldConfig = toQuorumVerifier(client.getConfig().forEnsemble());
             assertConfig(oldConfig, cluster.getInstances());
 
-            CountDownLatch latch = setChangeWaiter(client);
+            CountDownLatch eventLatch = setChangeWaiter(client);
             try (TestingCluster newCluster = new TestingCluster(TestingCluster.makeSpecs(1, false))) {
                 newCluster.start();
 
@@ -271,7 +272,8 @@ public class TestReconfiguration extends CuratorTestBase {
                         .fromConfig(oldConfig.getVersion())
                         .forEnsemble();
 
-                assertTrue(timing.awaitLatch(latch));
+                assertTrue(timing.awaitLatch(eventLatch));
+                assertTrue(timing.awaitLatch(ensembleLatch));
 
                 byte[] newConfigData = client.getConfig().forEnsemble();
                 QuorumVerifier newConfig = toQuorumVerifier(newConfigData);
@@ -286,13 +288,14 @@ public class TestReconfiguration extends CuratorTestBase {
 
     @Test
     public void testAddAsync() throws Exception {
-        try (CuratorFramework client = newClient()) {
+        CountDownLatch ensembleLatch = new CountDownLatch(1);
+        try (CuratorFramework client = newClient(cluster.getConnectString(), ensembleLatch)) {
             client.start();
 
             QuorumVerifier oldConfig = toQuorumVerifier(client.getConfig().forEnsemble());
             assertConfig(oldConfig, cluster.getInstances());
 
-            CountDownLatch latch = setChangeWaiter(client);
+            CountDownLatch eventLatch = setChangeWaiter(client);
             try (TestingCluster newCluster = new TestingCluster(TestingCluster.makeSpecs(1, false))) {
                 newCluster.start();
 
@@ -312,7 +315,8 @@ public class TestReconfiguration extends CuratorTestBase {
                         .forEnsemble();
 
                 assertTrue(timing.awaitLatch(callbackLatch));
-                assertTrue(timing.awaitLatch(latch));
+                assertTrue(timing.awaitLatch(eventLatch));
+                assertTrue(timing.awaitLatch(ensembleLatch));
 
                 byte[] newConfigData = client.getConfig().forEnsemble();
                 QuorumVerifier newConfig = toQuorumVerifier(newConfigData);
@@ -327,13 +331,14 @@ public class TestReconfiguration extends CuratorTestBase {
 
     @Test
     public void testAddAndRemove() throws Exception {
-        try (CuratorFramework client = newClient()) {
+        CountDownLatch ensembleLatch = new CountDownLatch(1);
+        try (CuratorFramework client = newClient(cluster.getConnectString(), ensembleLatch)) {
             client.start();
 
             QuorumVerifier oldConfig = toQuorumVerifier(client.getConfig().forEnsemble());
             assertConfig(oldConfig, cluster.getInstances());
 
-            CountDownLatch latch = setChangeWaiter(client);
+            CountDownLatch eventLatch = setChangeWaiter(client);
 
             try (TestingCluster newCluster = new TestingCluster(TestingCluster.makeSpecs(1, false))) {
                 newCluster.start();
@@ -355,7 +360,8 @@ public class TestReconfiguration extends CuratorTestBase {
                         .fromConfig(oldConfig.getVersion())
                         .forEnsemble();
 
-                assertTrue(timing.awaitLatch(latch));
+                assertTrue(timing.awaitLatch(eventLatch));
+                assertTrue(timing.awaitLatch(ensembleLatch));
 
                 byte[] newConfigData = client.getConfig().forEnsemble();
                 QuorumVerifier newConfig = toQuorumVerifier(newConfigData);
