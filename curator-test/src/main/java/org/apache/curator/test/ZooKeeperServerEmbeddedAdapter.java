@@ -100,7 +100,7 @@ public class ZooKeeperServerEmbeddedAdapter implements ZooKeeperMainFace {
             }
         } catch (Exception e) {
             // swallow hijack failure to accommodate possible upstream changes
-            log.debug("Failed to hijack client port configuration, this may be due to upstream changes", e);
+            log.debug("Failed to hijack client port configuration. This may be due to upstream changes", e);
         }
         return false;
     }
