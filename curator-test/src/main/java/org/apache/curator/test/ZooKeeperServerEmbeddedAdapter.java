@@ -98,8 +98,9 @@ public class ZooKeeperServerEmbeddedAdapter implements ZooKeeperMainFace {
                 addressField.set(peerConfig, new InetSocketAddress(port));
                 return true;
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
             // swallow hijack failure to accommodate possible upstream changes
+            log.debug("Failed to hijack client port configuration. This may be due to upstream changes", e);
         }
         return false;
     }
