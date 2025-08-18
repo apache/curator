@@ -209,9 +209,19 @@ public class InstanceSpec {
         this.tickTime = (tickTime > 0 ? tickTime : -1); // -1 to set default value
         this.maxClientCnxns = (maxClientCnxns >= 0 ? maxClientCnxns : -1); // -1 to set default value
         this.customProperties = customProperties != null
-                ? Collections.<String, Object>unmodifiableMap(customProperties)
-                : Collections.<String, Object>emptyMap();
+                ? Collections.unmodifiableMap(enforceStringMap(customProperties))
+                : Collections.emptyMap();
         this.hostname = hostname == null ? localhost : hostname;
+    }
+
+    private static Map<String, Object> enforceStringMap(Map<String, Object> properties) {
+        for (Map.Entry<String, Object> entry : properties.entrySet()) {
+            if (!(entry.getValue() instanceof String)) {
+                String msg = String.format("property %s has non string value %s", entry.getKey(), entry.getValue());
+                throw new IllegalArgumentException(msg);
+            }
+        }
+        return properties;
     }
 
     public int getServerId() {
