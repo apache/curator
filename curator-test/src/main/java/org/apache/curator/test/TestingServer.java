@@ -94,7 +94,12 @@ public class TestingServer implements Closeable {
      * @throws Exception errors
      */
     public TestingServer(int port, File tempDirectory, boolean start) throws Exception {
-        this(new InstanceSpec(tempDirectory, Math.max(0, port), -1, -1, true, -1), start);
+        this(
+                InstanceSpec.builder()
+                        .withPort(Math.max(0, port))
+                        .withDataDirectory(tempDirectory)
+                        .build(),
+                start);
     }
 
     /**

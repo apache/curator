@@ -41,7 +41,11 @@ public class TestTestingServer {
         } else {
             customTickMs = 100;
         }
-        final InstanceSpec spec = new InstanceSpec(zkTmpDir, -1, -1, -1, true, -1, customTickMs, -1);
+        final InstanceSpec spec = InstanceSpec.builder()
+                .withDataDirectory(zkTmpDir)
+                .withTickTime(customTickMs)
+                .build();
+        ;
         final int zkTickTime;
         try (TestingServer testingServer = new TestingServer(spec, true)) {
             TestingZooKeeperMain main = (TestingZooKeeperMain)

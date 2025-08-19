@@ -31,11 +31,14 @@ public class TestQuorumConfigBuilder {
 
     @Test
     public void testCustomProperties() throws Exception {
-        Map<String, Object> customProperties = new HashMap<String, Object>();
+        Map<String, String> customProperties = new HashMap();
         customProperties.put("authProvider.1", "org.apache.zookeeper.server.auth.SASLAuthenticationProvider");
         customProperties.put("kerberos.removeHostFromPrincipal", "true");
         customProperties.put("kerberos.removeRealmFromPrincipal", "true");
-        InstanceSpec spec = new InstanceSpec(null, -1, -1, -1, true, 1, -1, -1, customProperties);
+        InstanceSpec spec = InstanceSpec.builder()
+                .withServerId(1)
+                .withCustomProperties(customProperties)
+                .build();
         TestingServer server = new TestingServer(spec, true);
         try {
             assertEquals(
