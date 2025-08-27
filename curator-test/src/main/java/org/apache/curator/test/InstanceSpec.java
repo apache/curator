@@ -70,8 +70,15 @@ public class InstanceSpec {
         nextServerId.set(1);
     }
 
+    /**
+     * Create a builder to construct {@link InstanceSpec}.
+     */
+    public static InstanceSpecBuilder builder() {
+        return new InstanceSpecBuilder();
+    }
+
     public static InstanceSpec newInstanceSpec() {
-        return new InstanceSpec(null, -1, -1, -1, true, -1, -1, -1);
+        return builder().build();
     }
 
     public static int getRandomPort() {
@@ -94,6 +101,8 @@ public class InstanceSpec {
     }
 
     /**
+     * @deprecated Use {@link #builder()} instead.
+     *
      * @param dataDirectory              where to store data/logs/etc.
      * @param port                       the port to listen on - each server in the ensemble must use a unique port
      * @param electionPort               the electionPort to listen on - each server in the ensemble must use a unique electionPort
@@ -101,6 +110,7 @@ public class InstanceSpec {
      * @param deleteDataDirectoryOnClose if true, the data directory will be deleted when {@link TestingCluster#close()} is called
      * @param serverId                   the server ID for the instance
      */
+    @Deprecated
     public InstanceSpec(
             File dataDirectory,
             int port,
@@ -112,6 +122,8 @@ public class InstanceSpec {
     }
 
     /**
+     * @deprecated Use {@link #builder()} instead.
+     *
      * @param dataDirectory              where to store data/logs/etc.
      * @param port                       the port to listen on - each server in the ensemble must use a unique port
      * @param electionPort               the electionPort to listen on - each server in the ensemble must use a unique electionPort
@@ -121,6 +133,7 @@ public class InstanceSpec {
      * @param tickTime                   tickTime. Set -1 to used fault server configuration
      * @param maxClientCnxns             max number of client connections from the same IP. Set -1 to use default server configuration
      */
+    @Deprecated
     public InstanceSpec(
             File dataDirectory,
             int port,
@@ -144,6 +157,8 @@ public class InstanceSpec {
     }
 
     /**
+     * @deprecated Use {@link #builder()} instead.
+     *
      * @param dataDirectory              where to store data/logs/etc.
      * @param port                       the port to listen on - each server in the ensemble must use a unique port
      * @param electionPort               the electionPort to listen on - each server in the ensemble must use a unique electionPort
@@ -154,6 +169,7 @@ public class InstanceSpec {
      * @param maxClientCnxns             max number of client connections from the same IP. Set -1 to use default server configuration
      * @param customProperties           other properties to be passed to the server
      */
+    @Deprecated
     public InstanceSpec(
             File dataDirectory,
             int port,
@@ -178,6 +194,8 @@ public class InstanceSpec {
     }
 
     /**
+     * @deprecated Use {@link #builder()} instead.
+     *
      * @param dataDirectory              where to store data/logs/etc.
      * @param port                       the port to listen on - each server in the ensemble must use a unique port
      * @param electionPort               the electionPort to listen on - each server in the ensemble must use a unique electionPort
@@ -189,6 +207,7 @@ public class InstanceSpec {
      * @param customProperties           other properties to be passed to the server
      * @param hostname                   Hostname or IP if the cluster is intending to be bounded into external interfaces
      */
+    @Deprecated
     public InstanceSpec(
             File dataDirectory,
             int port,
@@ -200,6 +219,32 @@ public class InstanceSpec {
             int maxClientCnxns,
             Map<String, Object> customProperties,
             String hostname) {
+        this(
+                dataDirectory,
+                port,
+                electionPort,
+                quorumPort,
+                deleteDataDirectoryOnClose,
+                serverId,
+                tickTime,
+                maxClientCnxns,
+                customProperties != null ? enforceStringMap(customProperties) : null,
+                hostname,
+                false);
+    }
+
+    InstanceSpec(
+            File dataDirectory,
+            int port,
+            int electionPort,
+            int quorumPort,
+            boolean deleteDataDirectoryOnClose,
+            int serverId,
+            int tickTime,
+            int maxClientCnxns,
+            Map<String, Object> customProperties,
+            String hostname,
+            boolean ignored) {
         this.dataDirectory = (dataDirectory != null) ? dataDirectory : DirectoryUtils.createTempDirectory();
         this.port = (port >= 0) ? port : getRandomPort();
         this.electionPort = (electionPort >= 0) ? electionPort : getRandomPort();
@@ -208,9 +253,8 @@ public class InstanceSpec {
         this.serverId = (serverId >= 0) ? serverId : nextServerId.getAndIncrement();
         this.tickTime = (tickTime > 0 ? tickTime : -1); // -1 to set default value
         this.maxClientCnxns = (maxClientCnxns >= 0 ? maxClientCnxns : -1); // -1 to set default value
-        this.customProperties = customProperties != null
-                ? Collections.unmodifiableMap(enforceStringMap(customProperties))
-                : Collections.emptyMap();
+        this.customProperties =
+                customProperties != null ? Collections.unmodifiableMap(customProperties) : Collections.emptyMap();
         this.hostname = hostname == null ? localhost : hostname;
     }
 
