@@ -100,6 +100,7 @@ public final class CuratorFrameworkImpl extends CuratorFrameworkBase {
     private final EnsembleTracker ensembleTracker;
     private final SchemaSet schemaSet;
     private final Executor runSafeService;
+    private boolean isExternalRunSafeService = false;
     private final ZookeeperCompatibility zookeeperCompatibility;
 
     private volatile ExecutorService executorService;
@@ -194,6 +195,7 @@ public final class CuratorFrameworkImpl extends CuratorFrameworkBase {
 
     private Executor makeRunSafeService(CuratorFrameworkFactory.Builder builder) {
         if (builder.getRunSafeService() != null) {
+            isExternalRunSafeService = true;
             return builder.getRunSafeService();
         }
         ThreadFactory threadFactory = builder.getThreadFactory();
@@ -377,6 +379,16 @@ public final class CuratorFrameworkImpl extends CuratorFrameworkBase {
                 executorService.shutdownNow();
                 try {
                     executorService.awaitTermination(maxCloseWaitMs, TimeUnit.MILLISECONDS);
+                } catch (InterruptedException e) {
+                    // Interrupted while interrupting; I give up.
+                    Thread.currentThread().interrupt();
+                }
+            }
+
+            if (!isExternalRunSafeService) {
+                ((ExecutorService) runSafeService).shutdownNow();
+                try {
+                    ((ExecutorService) runSafeService).awaitTermination(maxCloseWaitMs, TimeUnit.MILLISECONDS);
                 } catch (InterruptedException e) {
                     // Interrupted while interrupting; I give up.
                     Thread.currentThread().interrupt();
