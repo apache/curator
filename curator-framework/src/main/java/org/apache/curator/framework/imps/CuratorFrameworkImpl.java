@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -100,6 +101,7 @@ public final class CuratorFrameworkImpl extends CuratorFrameworkBase {
     private final EnsembleTracker ensembleTracker;
     private final SchemaSet schemaSet;
     private final Executor runSafeService;
+    private boolean isExternalRunSafeService = false;
     private final ZookeeperCompatibility zookeeperCompatibility;
 
     private volatile ExecutorService executorService;
@@ -194,6 +196,7 @@ public final class CuratorFrameworkImpl extends CuratorFrameworkBase {
 
     private Executor makeRunSafeService(CuratorFrameworkFactory.Builder builder) {
         if (builder.getRunSafeService() != null) {
+            isExternalRunSafeService = true;
             return builder.getRunSafeService();
         }
         ThreadFactory threadFactory = builder.getThreadFactory();
@@ -373,15 +376,18 @@ public final class CuratorFrameworkImpl extends CuratorFrameworkBase {
                 }
             });
 
+            Optional<CompletableFuture<Void>> executorServiceClosure = Optional.empty();
             if (executorService != null) {
-                executorService.shutdownNow();
-                try {
-                    executorService.awaitTermination(maxCloseWaitMs, TimeUnit.MILLISECONDS);
-                } catch (InterruptedException e) {
-                    // Interrupted while interrupting; I give up.
-                    Thread.currentThread().interrupt();
-                }
+                executorServiceClosure = Optional.of(shutdownAndAwaitTerminationAsync(executorService));
             }
+
+            Optional<CompletableFuture<Void>> runSafeServiceClosure = Optional.empty();
+            if (!isExternalRunSafeService && runSafeService != null) {
+                runSafeServiceClosure =
+                        Optional.of(shutdownAndAwaitTerminationAsync(((ExecutorService) runSafeService)));
+            }
+            executorServiceClosure.ifPresent(CompletableFuture::join);
+            runSafeServiceClosure.ifPresent(CompletableFuture::join);
 
             if (ensembleTracker != null) {
                 ensembleTracker.close();
@@ -398,6 +404,26 @@ public final class CuratorFrameworkImpl extends CuratorFrameworkBase {
             connectionStateManager.close();
             client.close();
         }
+    }
+
+    /**
+     * Utility method to run the executor service shutdown in a background thread.
+     * This is in order to ensure we don't extend the wait time above maxCloseWaitMs by waiting on multiple
+     * executors to terminate.
+     *
+     * @param service the ExecutorService to shut down.
+     * @return the future represents the job closing the executor service and waits on its termination.
+     */
+    private CompletableFuture<Void> shutdownAndAwaitTerminationAsync(final ExecutorService service) {
+        return CompletableFuture.runAsync(() -> {
+            service.shutdownNow();
+            try {
+                service.awaitTermination(maxCloseWaitMs, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+                // Interrupted while interrupting; I give up.
+                Thread.currentThread().interrupt();
+            }
+        });
     }
 
     NamespaceImpl getNamespaceImpl() {

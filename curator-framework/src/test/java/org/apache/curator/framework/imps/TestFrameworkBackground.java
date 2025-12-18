@@ -25,13 +25,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.ACLProvider;
@@ -45,6 +49,7 @@ import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.test.Timing;
 import org.apache.curator.utils.CloseableUtils;
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.zookeeper.KeeperException.Code;
 import org.apache.zookeeper.data.ACL;
 import org.junit.jupiter.api.Test;
@@ -305,5 +310,50 @@ public class TestFrameworkBackground extends BaseClassForTests {
         } finally {
             CloseableUtils.closeQuietly(client);
         }
+    }
+
+    @Test
+    public void testCloseShutsDownInternalRunSafeService() {
+        Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.newClient(
+                server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        client.start();
+        client.runSafe(() -> {});
+        assertTrue(enumerateThreads().anyMatch(t -> t.getName().contains("SafeNotifyService")));
+
+        client.close();
+
+        assertTrue(enumerateThreads().noneMatch(t -> t.getName().contains("SafeNotifyService")));
+    }
+
+    @Test
+    public void testCloseLeavesExternalRunSafeServiceRunning() throws Exception {
+        Timing timing = new Timing();
+        ExecutorService externalRunner =
+                Executors.newSingleThreadScheduledExecutor(ThreadUtils.newThreadFactory("ExternalSafeNotifyService"));
+        CuratorFramework client = CuratorFrameworkFactory.builder()
+                .connectString(server.getConnectString())
+                .sessionTimeoutMs(timing.session())
+                .connectionTimeoutMs(timing.connection())
+                .retryPolicy(new RetryOneTime(1))
+                .maxCloseWaitMs(timing.forWaiting().milliseconds())
+                .runSafeService(externalRunner)
+                .build();
+        client.start();
+        client.runSafe(() -> {});
+        assertTrue(enumerateThreads().anyMatch(t -> t.getName().contains("ExternalSafeNotifyService")));
+
+        client.close();
+
+        assertTrue(enumerateThreads().anyMatch(t -> t.getName().contains("ExternalSafeNotifyService")));
+
+        externalRunner.shutdownNow();
+        assertTrue(externalRunner.awaitTermination(10, TimeUnit.SECONDS));
+    }
+
+    private static Stream<Thread> enumerateThreads() {
+        Thread[] threads = new Thread[Thread.activeCount()];
+        Thread.enumerate(threads);
+        return Arrays.stream(threads);
     }
 }

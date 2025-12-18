@@ -509,6 +509,9 @@ public class CuratorFrameworkFactory {
          * By default, an executor is allocated internally using the provided (or default)
          * {@link #threadFactory(java.util.concurrent.ThreadFactory)}. Use this method
          * to set a custom executor.
+         * Whenever a custom executor is set, it is the caller's responsibility to close the
+         * executor after the CuratorFramework closure.
+         * The internally created executor is closed when CuratorFramework is closed.
          *
          * @param runSafeService executor to use for calls to notifyAll from Watcher callbacks etc
          * @return this
