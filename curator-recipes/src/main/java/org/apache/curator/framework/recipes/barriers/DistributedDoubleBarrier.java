@@ -57,7 +57,6 @@ public class DistributedDoubleBarrier {
     private final int memberQty;
     private final String ourPath;
     private final String readyPath;
-    private final AtomicBoolean hasBeenNotified = new AtomicBoolean(false);
     private final AtomicBoolean connectionLost = new AtomicBoolean(false);
     private final Watcher watcher = new Watcher() {
         @Override
@@ -65,7 +64,6 @@ public class DistributedDoubleBarrier {
             connectionLost.set(event.getState() != Event.KeeperState.SyncConnected);
             client.runSafe(() -> {
                 synchronized (DistributedDoubleBarrier.this) {
-                    hasBeenNotified.set(true);
                     DistributedDoubleBarrier.this.notifyAll();
                 }
             });
@@ -253,8 +251,7 @@ public class DistributedDoubleBarrier {
     }
 
     private synchronized boolean internalEnter(long startMs, boolean hasMaxWait, long maxWaitMs) throws Exception {
-        boolean result = true;
-        do {
+        while (true) {
             List<String> children = getChildrenForEntering();
             int count = (children != null) ? children.size() : 0;
             if (count >= memberQty) {
@@ -263,26 +260,19 @@ public class DistributedDoubleBarrier {
                 } catch (KeeperException.NodeExistsException ignore) {
                     // ignore
                 }
-                break;
+                return true;
             }
 
-            if (hasMaxWait && !hasBeenNotified.get()) {
+            if (hasMaxWait) {
                 long elapsed = System.currentTimeMillis() - startMs;
                 long thisWaitMs = maxWaitMs - elapsed;
                 if (thisWaitMs <= 0) {
-                    result = false;
-                } else {
-                    wait(thisWaitMs);
+                    return false;
                 }
-
-                if (!hasBeenNotified.get()) {
-                    result = false;
-                }
+                wait(thisWaitMs);
             } else {
                 wait();
             }
-        } while (false);
-
-        return result;
+        }
     }
 }
