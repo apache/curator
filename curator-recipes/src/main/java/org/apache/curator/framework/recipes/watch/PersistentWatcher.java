@@ -27,6 +27,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorClosedException;
 import org.apache.curator.framework.api.CuratorEventType;
+import org.apache.curator.framework.api.CuratorListener;
 import org.apache.curator.framework.imps.CuratorFrameworkBase;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.listen.StandardListenerManager;
@@ -51,6 +52,11 @@ public class PersistentWatcher implements Closeable {
     private final ConnectionStateListener connectionStateListener = (client, newState) -> {
         if (newState.isConnected()) {
             reset();
+        }
+    };
+    private final CuratorListener clientCloseListener = (ignored, event) -> {
+        if (event.getType() == CuratorEventType.CLOSING) {
+            onClientClosed();
         }
     };
     private final Watcher watcher = event -> listeners.forEach(w -> w.process(event));
@@ -82,11 +88,7 @@ public class PersistentWatcher implements Closeable {
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Already started");
         client.getConnectionStateListenable().addListener(connectionStateListener);
         // This could be a namespaced facade which does not support getCuratorListenable.
-        ((CuratorFrameworkBase) client).client().getCuratorListenable().addListener(((ignored, event) -> {
-            if (event.getType() == CuratorEventType.CLOSING) {
-                onClientClosed();
-            }
-        }));
+        ((CuratorFrameworkBase) client).client().getCuratorListenable().addListener(clientCloseListener);
         reset();
     }
 
@@ -97,6 +99,7 @@ public class PersistentWatcher implements Closeable {
     public void close() {
         if (state.compareAndSet(State.STARTED, State.CLOSED)) {
             listeners.clear();
+            ((CuratorFrameworkBase) client).client().getCuratorListenable().removeListener(clientCloseListener);
             client.getConnectionStateListenable().removeListener(connectionStateListener);
             try {
                 client.watchers().remove(watcher).guaranteed().inBackground().forPath(basePath);
