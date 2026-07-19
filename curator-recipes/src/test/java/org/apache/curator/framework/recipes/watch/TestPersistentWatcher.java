@@ -148,7 +148,9 @@ public class TestPersistentWatcher extends CuratorTestBase {
                 }
             }
 
-            assertEquals(0, ((StandardListenerManager<?>) client.getCuratorListenable()).size(),
+            assertEquals(
+                    0,
+                    ((StandardListenerManager<?>) client.getCuratorListenable()).size(),
                     "Curator listeners set up by the now closed PersistentWatchers should have been de-registered");
         }
     }
