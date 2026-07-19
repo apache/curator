@@ -100,6 +100,51 @@ public class TestDistributedDoubleBarrier extends BaseClassForTests {
     }
 
     @Test
+    public void testSpuriousWakeup() throws Exception {
+        final Timing timing = new Timing();
+        final CountDownLatch waitLatch = new CountDownLatch(1);
+
+        // given: client1 waiting on barrior
+        CuratorFramework client1 = CuratorFrameworkFactory.newClient(
+                server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        client1.start();
+        DistributedDoubleBarrier barrier1 = new DistributedDoubleBarrier(client1, "/barrier", 2);
+
+        Thread thread = new Thread(() -> {
+            waitLatch.countDown();
+            try {
+                assertTrue(barrier1.enter(timing.seconds(), TimeUnit.SECONDS));
+            } catch (Exception ignored) {
+            } finally {
+                CloseableUtils.closeQuietly(client1);
+            }
+        });
+        thread.setDaemon(true);
+        thread.start();
+
+        waitLatch.await();
+        Thread.sleep(200);
+
+        // when: wakup spuriously
+        for (int i = 0; i < 10; i++) {
+            Thread.sleep(20);
+            synchronized (barrier1) {
+                barrier1.notifyAll();
+            }
+        }
+
+        // then: barrior should behave normally
+        try (CuratorFramework client2 = CuratorFrameworkFactory.newClient(
+                server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1))) {
+            client2.start();
+            DistributedDoubleBarrier barrier2 = new DistributedDoubleBarrier(client2, "/barrier", 2);
+            assertTrue(barrier2.enter(timing.seconds(), TimeUnit.SECONDS));
+        }
+
+        thread.join();
+    }
+
+    @Test
     public void testOverSubscribed() throws Exception {
         final Timing timing = new Timing();
         final CuratorFramework client = CuratorFrameworkFactory.newClient(
