@@ -28,6 +28,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.listen.StandardListenerManager;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.compatibility.CuratorTestBase;
@@ -132,6 +133,24 @@ public class TestPersistentWatcher extends CuratorTestBase {
         assertNotNull(event);
         assertEquals(Watcher.Event.EventType.None, event.getType());
         assertEquals(Watcher.Event.KeeperState.Closed, event.getState());
+    }
+
+    // GH-1292 Curator listener Leak in PersistentWatcher
+    @Test
+    public void testCuratorListenersNotLeaking() {
+        try (CuratorFramework client = CuratorFrameworkFactory.newClient(
+                server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1))) {
+            client.start();
+
+            for (int i = 0; i < 100; i++) {
+                try (PersistentWatcher persistentWatcher = new PersistentWatcher(client, "/top/main", true)) {
+                    persistentWatcher.start();
+                }
+            }
+
+            assertEquals(0, ((StandardListenerManager<?>) client.getCuratorListenable()).size(),
+                    "Curator listeners set up by the now closed PersistentWatchers should have been de-registered");
+        }
     }
 
     private void internalTest(boolean recursive) throws Exception {
