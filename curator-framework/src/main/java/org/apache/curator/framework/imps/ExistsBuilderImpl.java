@@ -68,8 +68,8 @@ public class ExistsBuilderImpl
 
     @Override
     public ACLableExistBuilderMain creatingParentContainersIfNeeded() {
-        createParentContainersIfNeeded = true;
-        createParentsIfNeeded = false;
+        createParentContainersIfNeeded = client.useContainerParentsIfAvailable();
+        createParentsIfNeeded = true;
         return this;
     }
 
@@ -194,7 +194,7 @@ public class ExistsBuilderImpl
                         operationAndData,
                         operationAndData.getData(),
                         acling.getACLProviderForParents(),
-                        createParentContainersIfNeeded);
+                        createParentsAsContainers());
             } else {
                 client.processBackgroundOperation(operationAndData, null);
             }
@@ -203,6 +203,10 @@ public class ExistsBuilderImpl
         }
 
         return returnStat;
+    }
+
+    private boolean createParentsAsContainers() {
+        return createParentContainersIfNeeded && client.useContainerParentsIfAvailable();
     }
 
     private Stat pathInForeground(final String path) throws Exception {
@@ -220,7 +224,7 @@ public class ExistsBuilderImpl
                                     parent,
                                     true,
                                     acling.getACLProviderForParents(),
-                                    createParentContainersIfNeeded);
+                                    createParentsAsContainers());
                         } catch (KeeperException.NodeExistsException e) {
                             // ignore
                         } catch (KeeperException.NoNodeException e) {
