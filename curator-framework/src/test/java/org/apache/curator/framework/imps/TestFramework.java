@@ -616,6 +616,61 @@ public class TestFramework extends BaseClassForTests {
     }
 
     @Test
+    public void testExistsOverrideCreateParentContainers() throws Exception {
+        if (!checkForContainers()) {
+            return;
+        }
+
+        CuratorFramework client = CuratorFrameworkFactory.builder()
+                .connectString(server.getConnectString())
+                .retryPolicy(new RetryOneTime(1))
+                .dontUseContainerParents()
+                .build();
+        try {
+            client.start();
+            assertNull(client.checkExists().creatingParentContainersIfNeeded().forPath("/one/two/three"));
+            client.create().forPath("/one/two/three", "foo".getBytes());
+            byte[] data = client.getData().forPath("/one/two/three");
+            assertArrayEquals(data, "foo".getBytes());
+
+            client.delete().forPath("/one/two/three");
+            new Timing().sleepABit();
+
+            assertNotNull(client.checkExists().forPath("/one/two"));
+            new Timing().sleepABit();
+            assertNotNull(client.checkExists().forPath("/one"));
+        } finally {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
+    public void testNamespaceOverrideCreateParentContainers() throws Exception {
+        if (!checkForContainers()) {
+            return;
+        }
+
+        CuratorFramework client = CuratorFrameworkFactory.builder()
+                .connectString(server.getConnectString())
+                .retryPolicy(new RetryOneTime(1))
+                .namespace("one")
+                .dontUseContainerParents()
+                .build();
+        try {
+            client.start();
+            client.create().forPath("/two");
+            assertNotNull(client.getZookeeperClient().getZooKeeper().exists("/one/two", false));
+
+            client.delete().forPath("/two");
+            new Timing().sleepABit();
+
+            assertNotNull(client.getZookeeperClient().getZooKeeper().exists("/one", false));
+        } finally {
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
     public void testExistsCreatingParentsInBackground() throws Exception {
         CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
         try {
