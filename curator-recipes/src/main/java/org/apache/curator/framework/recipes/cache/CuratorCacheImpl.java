@@ -77,9 +77,9 @@ class CuratorCacheImpl implements CuratorCache, CuratorCacheBridge {
             Consumer<Exception> exceptionHandler) {
         Set<Options> options = (optionsArg != null) ? Sets.newHashSet(optionsArg) : Collections.emptySet();
         this.client = client;
-        this.storage = (storage != null) ? storage : CuratorCacheStorage.standard();
-        this.path = path;
         recursive = !options.contains(Options.SINGLE_NODE_CACHE);
+        this.storage = (storage != null) ? storage : (recursive ? CuratorCacheStorage.standard() : CuratorCacheStorage.singleNode());
+        this.path = path;
         compressedData = options.contains(Options.COMPRESSED_DATA);
         clearOnClose = !options.contains(Options.DO_NOT_CLEAR_ON_CLOSE);
         persistentWatcher = new PersistentWatcher(client, path, recursive);
