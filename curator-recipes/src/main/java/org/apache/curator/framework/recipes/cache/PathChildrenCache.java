@@ -774,7 +774,7 @@ public class PathChildrenCache implements Closeable {
      * there is a race condition with the dataWatchers that get set.  Even after this object is closed() it can still be
      * called by those watchers, because the close() method cannot actually disable the watcher.
      * <p>
-     * The synchronization overhead should be minimal if non-existant as this is generally only called from the
+     * The synchronization overhead should be minimal if non-existent as this is generally only called from the
      * ZK client thread and will only contend if close() is called in parallel with an update, and that's the exact state
      * we want to protect from.
      *
