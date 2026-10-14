@@ -20,8 +20,12 @@
 package org.apache.curator.x.discovery;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.exc.InvalidTypeIdException;
+import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -155,6 +159,107 @@ public class TestJsonInstanceSerializer {
         assertEquals(instance.getSslPort(), rhs.getSslPort());
         assertEquals(instance.getUriSpec(), rhs.getUriSpec());
         assertEquals(instance.isEnabled(), rhs.isEnabled());
+    }
+
+    @Test
+    public void testDisallowedPayloadClass() throws Exception {
+        JsonInstanceSerializer<Object> objectSerializer = new JsonInstanceSerializer<Object>(Object.class);
+        byte[] bytes = objectSerializer.serialize(new ServiceInstance<Object>(
+                "name",
+                "id",
+                "address",
+                10,
+                20,
+                new OtherPayload("other"),
+                0,
+                ServiceType.DYNAMIC,
+                new UriSpec("{a}/b/{c}"),
+                true));
+
+        JsonInstanceSerializer<Payload> serializer = new JsonInstanceSerializer<Payload>(Payload.class);
+        assertThrows(InvalidTypeIdException.class, () -> serializer.deserialize(bytes));
+    }
+
+    @Test
+    public void testCustomPolymorphicTypeValidator() throws Exception {
+        JsonInstanceSerializer<Object> serializer = new JsonInstanceSerializer<Object>(
+                Object.class,
+                false,
+                BasicPolymorphicTypeValidator.builder()
+                        .allowIfSubType(Payload.class)
+                        .build());
+
+        ServiceInstance<Object> allowed = new ServiceInstance<Object>(
+                "name",
+                "id",
+                "address",
+                10,
+                20,
+                new Payload("test"),
+                0,
+                ServiceType.DYNAMIC,
+                new UriSpec("{a}/b/{c}"),
+                true);
+        assertEquals(
+                allowed.getPayload(),
+                serializer.deserialize(serializer.serialize(allowed)).getPayload());
+
+        byte[] disallowedBytes = serializer.serialize(new ServiceInstance<Object>(
+                "name",
+                "id",
+                "address",
+                10,
+                20,
+                new OtherPayload("other"),
+                0,
+                ServiceType.DYNAMIC,
+                new UriSpec("{a}/b/{c}"),
+                true));
+        assertThrows(InvalidTypeIdException.class, () -> serializer.deserialize(disallowedBytes));
+    }
+
+    @Test
+    public void testPayloadWithNestedPolymorphicField() throws Exception {
+        JsonInstanceSerializer<NestedPayload> serializer =
+                new JsonInstanceSerializer<NestedPayload>(NestedPayload.class);
+        NestedPayload payload = new NestedPayload();
+        payload.setNested(new Payload("nested"));
+        ServiceInstance<NestedPayload> instance = new ServiceInstance<NestedPayload>(
+                "name", "id", "address", 10, 20, payload, 0, ServiceType.DYNAMIC, new UriSpec("{a}/b/{c}"), true);
+
+        ServiceInstance<NestedPayload> rhs = serializer.deserialize(serializer.serialize(instance));
+        assertEquals(payload.getNested(), rhs.getPayload().getNested());
+    }
+
+    public static class NestedPayload {
+        private Payload nested;
+
+        @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
+        public Payload getNested() {
+            return nested;
+        }
+
+        public void setNested(Payload nested) {
+            this.nested = nested;
+        }
+    }
+
+    public static class OtherPayload {
+        private String val;
+
+        public OtherPayload() {}
+
+        public OtherPayload(String val) {
+            this.val = val;
+        }
+
+        public String getVal() {
+            return val;
+        }
+
+        public void setVal(String val) {
+            this.val = val;
+        }
     }
 
     public static class Payload {
