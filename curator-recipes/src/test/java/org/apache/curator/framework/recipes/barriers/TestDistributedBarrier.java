@@ -19,9 +19,11 @@
 
 package org.apache.curator.framework.recipes.barriers;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import com.google.common.collect.Lists;
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -34,6 +36,7 @@ import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.BaseClassForTests;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.Watcher;
 import org.junit.jupiter.api.Test;
 
 public class TestDistributedBarrier extends BaseClassForTests {
@@ -151,6 +154,41 @@ public class TestDistributedBarrier extends BaseClassForTests {
         } finally {
             client.close();
         }
+    }
+
+    /*
+     * GH-1170: waitOnBarrier() registers a new exists-watch (via usingWatcher()) on every loop
+     * iteration. When the barrier node doesn't exist, waitOnBarrier() returns immediately without
+     * that watch ever firing, leaving it dangling. In a system that creates and waits on many
+     * barriers, those dangling watches accumulate without bound. waitOnBarrier() must clean up
+     * the watch it just registered before returning.
+     */
+    @Test
+    public void testNoBarrierDoesNotLeakWatch() throws Exception {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1));
+        try {
+            client.start();
+
+            DistributedBarrier barrier = new DistributedBarrier(client, "/barrier-no-leak");
+            assertTrue(barrier.waitOnBarrier(10, TimeUnit.SECONDS));
+
+            Watcher watcher = getBarrierWatcher(barrier);
+
+            // If waitOnBarrier() already removed the watch it registered, trying to remove it
+            // again must fail with NoWatcherException because there is nothing left to remove.
+            // Before the fix, the watch was still registered, so this removal would succeed.
+            assertThrows(
+                    KeeperException.NoWatcherException.class,
+                    () -> client.watches().remove(watcher).forPath("/barrier-no-leak"));
+        } finally {
+            client.close();
+        }
+    }
+
+    private static Watcher getBarrierWatcher(DistributedBarrier barrier) throws Exception {
+        Field watcherField = DistributedBarrier.class.getDeclaredField("watcher");
+        watcherField.setAccessible(true);
+        return (Watcher) watcherField.get(barrier);
     }
 
     @Test

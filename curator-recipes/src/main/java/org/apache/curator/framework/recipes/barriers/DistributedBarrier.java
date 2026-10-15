@@ -22,9 +22,12 @@ package org.apache.curator.framework.recipes.barriers;
 import java.util.concurrent.TimeUnit;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.PathUtils;
+import org.apache.curator.utils.ThreadUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -37,6 +40,8 @@ import org.apache.zookeeper.Watcher;
  * </blockquote>
  */
 public class DistributedBarrier {
+    private static final Logger log = LoggerFactory.getLogger(DistributedBarrier.class);
+
     private final CuratorFramework client;
     private final String barrierPath;
     private final Watcher watcher = new Watcher() {
@@ -104,23 +109,45 @@ public class DistributedBarrier {
         long maxWaitMs = hasMaxWait ? TimeUnit.MILLISECONDS.convert(maxWait, unit) : Long.MAX_VALUE;
 
         boolean result;
-        for (; ; ) {
-            result = (client.checkExists().usingWatcher(watcher).forPath(barrierPath) == null);
-            if (result) {
-                break;
-            }
-
-            if (hasMaxWait) {
-                long elapsed = System.currentTimeMillis() - startMs;
-                long thisWaitMs = maxWaitMs - elapsed;
-                if (thisWaitMs <= 0) {
+        try {
+            for (; ; ) {
+                result = (client.checkExists().usingWatcher(watcher).forPath(barrierPath) == null);
+                if (result) {
                     break;
                 }
-                wait(thisWaitMs);
-            } else {
-                wait();
+
+                if (hasMaxWait) {
+                    long elapsed = System.currentTimeMillis() - startMs;
+                    long thisWaitMs = maxWaitMs - elapsed;
+                    if (thisWaitMs <= 0) {
+                        break;
+                    }
+                    wait(thisWaitMs);
+                } else {
+                    wait();
+                }
             }
+        } finally {
+            // Each loop iteration above registers a new exists-watch via usingWatcher(). If we
+            // return before that watch has actually fired (e.g. the barrier node didn't exist yet,
+            // or we gave up after maxWait elapsed), the watch is left dangling on both the client
+            // and the server until the node is eventually created - or forever, in a system where
+            // barriers are created and waited-on repeatedly but the node happens to never appear
+            // again. Proactively remove it here so repeated use of a DistributedBarrier doesn't
+            // leak watches. If the watch already fired (the common/successful case), removal is a
+            // no-op handled quietly.
+            removeDanglingWatcher();
         }
         return result;
+    }
+
+    private void removeDanglingWatcher() {
+        try {
+            client.watches().remove(watcher).quietly().forPath(barrierPath);
+        } catch (Exception e) {
+            if (!ThreadUtils.checkInterrupted(e)) {
+                log.debug("Could not remove barrier watcher for path: {}", barrierPath, e);
+            }
+        }
     }
 }
