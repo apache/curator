@@ -178,6 +178,11 @@ class CuratorCacheImpl implements CuratorCache, CuratorCacheBridge {
             return; // children haven't changed
         }
 
+        if (newStat.getNumChildren() == 0) {
+            // The persistent recursive watcher reports children created after this stat was read.
+            return;
+        }
+
         try {
             BackgroundCallback callback = (__, event) -> {
                 if (event.getResultCode() == OK.intValue()) {

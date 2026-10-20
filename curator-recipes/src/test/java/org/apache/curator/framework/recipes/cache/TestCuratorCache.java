@@ -109,6 +109,41 @@ public class TestCuratorCache extends CuratorTestBase {
     }
 
     @Test
+    public void testEmptyNodesAreCachedAndNewChildrenAreObserved() throws Exception {
+        try (CuratorFramework client = CuratorFrameworkFactory.newClient(
+                server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1))) {
+            client.start();
+            client.create().creatingParentsIfNeeded().forPath("/test/empty-one");
+            client.create().forPath("/test/empty-two");
+
+            CountDownLatch initializedLatch = new CountDownLatch(1);
+            CountDownLatch childCreatedLatch = new CountDownLatch(1);
+            try (CuratorCache cache = CuratorCache.build(client, "/test")) {
+                cache.listenable()
+                        .addListener(builder()
+                                .forInitialized(initializedLatch::countDown)
+                                .forCreates(data -> {
+                                    if ("/test/empty-one/child".equals(data.getPath())) {
+                                        childCreatedLatch.countDown();
+                                    }
+                                })
+                                .build());
+                cache.start();
+
+                assertTrue(timing.awaitLatch(initializedLatch));
+                assertEquals(3, cache.size());
+                assertTrue(cache.get("/test/empty-one").isPresent());
+                assertTrue(cache.get("/test/empty-two").isPresent());
+
+                client.create().forPath("/test/empty-one/child");
+                assertTrue(timing.awaitLatch(childCreatedLatch));
+                assertTrue(cache.get("/test/empty-one/child").isPresent());
+                assertEquals(4, cache.size());
+            }
+        }
+    }
+
+    @Test
     public void testListenerBuilder() throws Exception {
         try (CuratorFramework client = CuratorFrameworkFactory.newClient(
                 server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1))) {
