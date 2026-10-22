@@ -534,9 +534,6 @@ public final class CuratorFrameworkImpl extends CuratorFrameworkBase {
     }
 
     private void abortOperation(OperationAndData<?> operation, Throwable e) {
-        if (operation.getCallback() == null) {
-            return;
-        }
         CuratorEvent event;
         if (e instanceof KeeperException) {
             event = new CuratorEventImpl(
@@ -580,6 +577,11 @@ public final class CuratorFrameworkImpl extends CuratorFrameworkBase {
                     null,
                     null,
                     null);
+        }
+        if (operation.getCallback() == null) {
+            // CURATOR-676: Notify CuratorListener when no callback is specified
+            processEvent(event);
+            return;
         }
         sendToBackgroundCallback(operation, event);
     }
