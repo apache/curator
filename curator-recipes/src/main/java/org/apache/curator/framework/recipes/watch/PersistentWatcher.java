@@ -87,9 +87,16 @@ public class PersistentWatcher implements Closeable {
     public void start() {
         Preconditions.checkState(state.compareAndSet(State.LATENT, State.STARTED), "Already started");
         client.getConnectionStateListenable().addListener(connectionStateListener);
-        // This could be a namespaced facade which does not support getCuratorListenable.
-        ((CuratorFrameworkBase) client).client().getCuratorListenable().addListener(clientCloseListener);
+        curatorListenable().addListener(clientCloseListener);
         reset();
+    }
+
+    private Listenable<CuratorListener> curatorListenable() {
+        // A namespaced facade does not support getCuratorListenable(), so use the underlying client (#1259).
+        // Other CuratorFramework implementations are handled through the public API.
+        return client instanceof CuratorFrameworkBase
+                ? ((CuratorFrameworkBase) client).client().getCuratorListenable()
+                : client.getCuratorListenable();
     }
 
     /**
@@ -99,7 +106,7 @@ public class PersistentWatcher implements Closeable {
     public void close() {
         if (state.compareAndSet(State.STARTED, State.CLOSED)) {
             listeners.clear();
-            ((CuratorFrameworkBase) client).client().getCuratorListenable().removeListener(clientCloseListener);
+            curatorListenable().removeListener(clientCloseListener);
             client.getConnectionStateListenable().removeListener(connectionStateListener);
             try {
                 client.watchers().remove(watcher).guaranteed().inBackground().forPath(basePath);
