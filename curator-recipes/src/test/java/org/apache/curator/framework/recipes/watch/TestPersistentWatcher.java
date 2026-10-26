@@ -22,6 +22,8 @@ package org.apache.curator.framework.recipes.watch;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Proxy;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -153,6 +155,83 @@ public class TestPersistentWatcher extends CuratorTestBase {
                     ((StandardListenerManager<?>) client.getCuratorListenable()).size(),
                     "Curator listeners set up by the now closed PersistentWatchers should have been de-registered");
         }
+    }
+
+    // GH-1314 PersistentWatcher with a CuratorFramework that is not a CuratorFrameworkBase
+    @Test
+    public void testDelegatingClientWatching() throws Exception {
+        BlockingQueue<WatchedEvent> events = new LinkedBlockingQueue<>();
+
+        try (CuratorFramework client = CuratorFrameworkFactory.newClient(
+                server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1))) {
+            client.start();
+            // given: connected curator client
+            client.blockUntilConnected();
+
+            // given: started persistent watcher with a delegating client
+            PersistentWatcher persistentWatcher = new PersistentWatcher(delegatingClient(client), "/top/main", true);
+            persistentWatcher.getListenable().addListener(events::add);
+            persistentWatcher.start();
+
+            // when: create paths
+            client.create().creatingParentsIfNeeded().forPath("/top/main/a");
+
+            // then: receive node watch events
+            WatchedEvent event1 = events.poll(5, TimeUnit.SECONDS);
+            assertNotNull(event1);
+            assertEquals(Watcher.Event.EventType.NodeCreated, event1.getType());
+            assertEquals("/top/main", event1.getPath());
+
+            WatchedEvent event2 = events.poll(5, TimeUnit.SECONDS);
+            assertNotNull(event2);
+            assertEquals(Watcher.Event.EventType.NodeCreated, event2.getType());
+            assertEquals("/top/main/a", event2.getPath());
+        }
+
+        // when: curator client closed
+        // then: listener get Closed notification
+        WatchedEvent event = events.poll(5, TimeUnit.SECONDS);
+        assertNotNull(event);
+        assertEquals(Watcher.Event.EventType.None, event.getType());
+        assertEquals(Watcher.Event.KeeperState.Closed, event.getState());
+    }
+
+    // GH-1314 Curator listeners set up through a delegating client are de-registered on close
+    @Test
+    public void testDelegatingClientCuratorListenersNotLeaking() {
+        try (CuratorFramework client = CuratorFrameworkFactory.newClient(
+                server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1))) {
+            client.start();
+            CuratorFramework delegatingClient = delegatingClient(client);
+
+            for (int i = 0; i < 100; i++) {
+                try (PersistentWatcher persistentWatcher = new PersistentWatcher(delegatingClient, "/top/main", true)) {
+                    persistentWatcher.start();
+                }
+            }
+
+            assertEquals(
+                    0,
+                    ((StandardListenerManager<?>) client.getCuratorListenable()).size(),
+                    "Curator listeners set up by the now closed PersistentWatchers should have been de-registered");
+        }
+    }
+
+    /**
+     * A {@link CuratorFramework} implemented outside of Curator: it forwards every call to the given client
+     * and is not a {@link org.apache.curator.framework.imps.CuratorFrameworkBase}.
+     */
+    private static CuratorFramework delegatingClient(CuratorFramework client) {
+        return (CuratorFramework) Proxy.newProxyInstance(
+                CuratorFramework.class.getClassLoader(),
+                new Class<?>[] {CuratorFramework.class},
+                (proxy, method, args) -> {
+                    try {
+                        return method.invoke(client, args);
+                    } catch (InvocationTargetException e) {
+                        throw e.getCause();
+                    }
+                });
     }
 
     private void internalTest(boolean recursive) throws Exception {
