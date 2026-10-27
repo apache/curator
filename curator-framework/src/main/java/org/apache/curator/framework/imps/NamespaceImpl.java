@@ -73,7 +73,7 @@ class NamespaceImpl {
                                 ZKPaths.makePath("/", namespace),
                                 true,
                                 client.getAclProvider(),
-                                true);
+                                client.useContainerParentsIfAvailable());
                         return null;
                     }
                 });
