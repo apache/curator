@@ -36,6 +36,28 @@ public interface CuratorCacheStorage extends CuratorCacheAccessor {
     }
 
     /**
+     * Return a new storage instance optimized for a single-node cache
+     * (i.e. a {@link CuratorCache} built with {@link CuratorCache.Options#SINGLE_NODE_CACHE}).
+     * Only a single node is stored, so a lightweight {@link java.util.concurrent.atomic.AtomicReference}
+     * is used instead of a concurrent map.
+     *
+     * @return single-node storage instance
+     */
+    static CuratorCacheStorage singleNode() {
+        return new SingleNodeCuratorCacheStorage(true);
+    }
+
+    /**
+     * Return a new single-node storage instance that does not retain the data bytes, i.e. ChildData
+     * objects returned by this storage will always return {@code null} for {@link ChildData#getData()}.
+     *
+     * @return single-node storage instance that does not retain data bytes
+     */
+    static CuratorCacheStorage singleNodeDataNotCached() {
+        return new SingleNodeCuratorCacheStorage(false);
+    }
+
+    /**
      * Return a new storage instance that does not retain the data bytes. i.e. ChildData objects
      * returned by this storage will always return {@code null} for {@link ChildData#getData()}.
      *
