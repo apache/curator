@@ -68,19 +68,25 @@ class TreeCacheIterator implements Iterator<ChildData> {
 
     private void setNext() {
         if (current.node.children != null) {
-            stack.push(current);
-            current = new Current(current.node.children.values().iterator());
-        } else
-            while (true) {
-                if (current.iterator.hasNext()) {
-                    current.node = current.iterator.next();
-                    break;
-                } else if (stack.size() > 0) {
-                    current = stack.pop();
-                } else {
-                    current = null; // done
-                    break;
-                }
+            Iterator<TreeCache.TreeNode> childIterator =
+                    current.node.children.values().iterator();
+            if (childIterator.hasNext()) {
+                stack.push(current);
+                current = new Current(childIterator);
+                return;
             }
+        }
+
+        while (true) {
+            if (current.iterator.hasNext()) {
+                current.node = current.iterator.next();
+                break;
+            } else if (stack.size() > 0) {
+                current = stack.pop();
+            } else {
+                current = null; // done
+                break;
+            }
+        }
     }
 }

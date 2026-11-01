@@ -30,6 +30,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
@@ -189,5 +190,82 @@ public class TestTreeCacheIteratorAndSize extends CuratorTestBase {
                 assertEquals(treeCache.size(), 6);
             }
         }
+    }
+
+    /**
+     * TreeCache retains a non-null empty children map after a node's last child is deleted.
+     * iterator() must still work.
+     */
+    @Test
+    public void testIteratorAfterLastChildRemoved() throws Exception {
+        try (CuratorFramework client =
+                CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1))) {
+            client.start();
+
+            try (TreeCache treeCache = new TreeCache(client, "/foo")) {
+                treeCache.start();
+
+                client.create().forPath("/foo");
+                client.create().forPath("/foo/a");
+                client.create().forPath("/foo/a/a1");
+                client.create().forPath("/foo/a/a2");
+                client.create().forPath("/foo/b");
+                timing.sleepABit();
+
+                client.delete().forPath("/foo/a/a2");
+                client.delete().forPath("/foo/a/a1");
+                timing.sleepABit();
+
+                assertEquals(collectPaths(treeCache.iterator()), Sets.newHashSet("/foo", "/foo/a", "/foo/b"));
+                assertEquals(treeCache.size(), 3);
+
+                client.delete().forPath("/foo/a");
+                client.delete().forPath("/foo/b");
+                timing.sleepABit();
+
+                assertEquals(collectPaths(treeCache.iterator()), Sets.newHashSet("/foo"));
+                assertEquals(treeCache.size(), 1);
+
+                client.create().forPath("/foo/c");
+                timing.sleepABit();
+
+                assertEquals(collectPaths(treeCache.iterator()), Sets.newHashSet("/foo", "/foo/c"));
+                assertEquals(treeCache.size(), 2);
+            }
+        }
+    }
+
+    @Test
+    public void testCuratorCacheBridgeStreamAfterLastChildRemoved() throws Exception {
+        System.setProperty("curator-cache-bridge-force-tree-cache", "true");
+        try (CuratorFramework client =
+                CuratorFrameworkFactory.newClient(server.getConnectString(), new RetryOneTime(1))) {
+            client.start();
+            client.create().forPath("/foo");
+            client.create().forPath("/foo/child");
+
+            try (CuratorCacheBridge cache =
+                    CuratorCache.bridgeBuilder(client, "/foo").build()) {
+                cache.start();
+                timing.sleepABit();
+
+                client.delete().forPath("/foo/child");
+                timing.sleepABit();
+
+                assertEquals(
+                        cache.stream().map(ChildData::getPath).collect(Collectors.toSet()), Sets.newHashSet("/foo"));
+                assertEquals(cache.size(), 1);
+            }
+        } finally {
+            System.clearProperty("curator-cache-bridge-force-tree-cache");
+        }
+    }
+
+    private static Set<String> collectPaths(Iterator<ChildData> iterator) {
+        Set<String> paths = new HashSet<>();
+        while (iterator.hasNext()) {
+            paths.add(iterator.next().getPath());
+        }
+        return paths;
     }
 }
