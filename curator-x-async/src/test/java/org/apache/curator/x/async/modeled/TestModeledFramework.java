@@ -386,7 +386,7 @@ public class TestModeledFramework extends TestModeledFrameworkBase {
                 assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
             });
 
-            // Create with compressedFramework overriden by an uncompressedModel, read with all other clients
+            // Create with compressedFramework overridden by an uncompressedModel, read with all other clients
             clientWithCompressedFrameworkAndUncompressedModel.delete();
             complete(clientWithCompressedFrameworkAndUncompressedModel.set(rawModel), (path, e) -> assertNull(e));
             complete(client.read(), (model, e) -> assertEquals(model, rawModel));
@@ -488,7 +488,7 @@ public class TestModeledFramework extends TestModeledFrameworkBase {
                 assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
             });
 
-            // Update with compressedFramework overriden by an uncompressedModel, read with all other clients
+            // Update with compressedFramework overridden by an uncompressedModel, read with all other clients
             complete(clientWithCompressedFrameworkAndUncompressedModel.update(rawModel), (stat, e) -> assertNull(e));
             complete(client.read(), (model, e) -> assertEquals(model, rawModel));
             complete(clientWithUncompressedModel.read(), (model, e) -> assertEquals(model, rawModel));
@@ -605,7 +605,7 @@ public class TestModeledFramework extends TestModeledFrameworkBase {
                 assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
             });
 
-            // Create with compressedFramework overriden by an uncompressedModel, read with all other clients
+            // Create with compressedFramework overridden by an uncompressedModel, read with all other clients
             clientWithCompressedFrameworkAndUncompressedModel.delete();
             complete(
                     clientWithCompressedFrameworkAndUncompressedModel.inTransaction(Collections.singletonList(
@@ -721,7 +721,7 @@ public class TestModeledFramework extends TestModeledFrameworkBase {
                 assertEquals(KeeperException.DataInconsistencyException.class, e.getClass());
             });
 
-            // Update with compressedFramework overriden by an uncompressedModel, read with all other clients
+            // Update with compressedFramework overridden by an uncompressedModel, read with all other clients
             complete(
                     clientWithCompressedFrameworkAndUncompressedModel.inTransaction(Collections.singletonList(
                             clientWithCompressedFrameworkAndUncompressedModel.updateOp(rawModel))),
