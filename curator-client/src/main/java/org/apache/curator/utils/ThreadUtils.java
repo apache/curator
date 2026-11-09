@@ -23,12 +23,16 @@ import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ThreadUtils {
+    static final int DEFAULT_THREAD_POOL_QUEUE_SIZE = 10000;
     private static final Logger log = LoggerFactory.getLogger(ThreadUtils.class);
 
     public static boolean checkInterrupted(Throwable e) {
@@ -44,7 +48,14 @@ public class ThreadUtils {
     }
 
     public static ExecutorService newFixedThreadPool(int qty, String processName) {
-        return Executors.newFixedThreadPool(qty, newThreadFactory(processName));
+        return new ThreadPoolExecutor(
+                qty,
+                qty,
+                0L,
+                TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<>(DEFAULT_THREAD_POOL_QUEUE_SIZE),
+                newThreadFactory(processName),
+                new ThreadPoolExecutor.CallerRunsPolicy());
     }
 
     public static ScheduledExecutorService newSingleThreadScheduledExecutor(String processName) {
