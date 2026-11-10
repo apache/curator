@@ -112,6 +112,42 @@ public class TestCuratorCacheWrappers extends CuratorTestBase {
     }
 
     @Test
+    public void testPathChildrenCacheIgnoresGrandchildren() throws Exception {
+        try (CuratorFramework client = CuratorFrameworkFactory.newClient(
+                server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1))) {
+            client.start();
+            client.create().forPath("/test");
+
+            final BlockingQueue<PathChildrenCacheEvent> events = new LinkedBlockingQueue<>();
+            try (CuratorCache cache = CuratorCache.build(client, "/test")) {
+                cache.listenable()
+                        .addListener(builder()
+                                .forPathChildrenCache("/test", client, (__, event) -> events.offer(event))
+                                .build());
+                cache.start();
+                assertEquals(
+                        PathChildrenCacheEvent.Type.INITIALIZED,
+                        events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS)
+                                .getType());
+
+                client.create().forPath("/test/one");
+                client.create().forPath("/test/one/two", "hey there".getBytes());
+                client.setData().forPath("/test/one/two", "sup!".getBytes());
+                client.delete().forPath("/test/one/two");
+                client.delete().forPath("/test/one");
+
+                // like PathChildrenCache, only /test/one is reported, never its child
+                PathChildrenCacheEvent event = events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS);
+                assertEquals(PathChildrenCacheEvent.Type.CHILD_ADDED, event.getType());
+                assertEquals("/test/one", event.getData().getPath());
+                event = events.poll(timing.forWaiting().seconds(), TimeUnit.SECONDS);
+                assertEquals(PathChildrenCacheEvent.Type.CHILD_REMOVED, event.getType());
+                assertEquals("/test/one", event.getData().getPath());
+            }
+        }
+    }
+
+    @Test
     public void testTreeCache() throws Exception // copied from TestTreeCache#testBasics()
             {
         BaseTestTreeCache treeCacheBase = new BaseTestTreeCache();

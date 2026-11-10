@@ -21,6 +21,7 @@ package org.apache.curator.framework.recipes.cache;
 
 import java.util.Objects;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.utils.ZKPaths;
 
 class PathChildrenCacheListenerWrapper implements CuratorCacheListener {
     private final PathChildrenCacheListener listener;
@@ -38,7 +39,7 @@ class PathChildrenCacheListenerWrapper implements CuratorCacheListener {
     public void event(Type type, ChildData oldData, ChildData data) {
         switch (type) {
             case NODE_CREATED: {
-                if (rootPath.equals(data.getPath())) {
+                if (!isChildOfRoot(data.getPath())) {
                     return;
                 }
                 sendEvent(data, PathChildrenCacheEvent.Type.CHILD_ADDED);
@@ -46,7 +47,7 @@ class PathChildrenCacheListenerWrapper implements CuratorCacheListener {
             }
 
             case NODE_CHANGED: {
-                if (rootPath.equals(data.getPath())) {
+                if (!isChildOfRoot(data.getPath())) {
                     return;
                 }
                 sendEvent(data, PathChildrenCacheEvent.Type.CHILD_UPDATED);
@@ -54,13 +55,19 @@ class PathChildrenCacheListenerWrapper implements CuratorCacheListener {
             }
 
             case NODE_DELETED: {
-                if (rootPath.equals(oldData.getPath())) {
+                if (!isChildOfRoot(oldData.getPath())) {
                     return;
                 }
                 sendEvent(oldData, PathChildrenCacheEvent.Type.CHILD_REMOVED);
                 break;
             }
         }
+    }
+
+    private boolean isChildOfRoot(String path) {
+        // CuratorCache reports the whole tree, PathChildrenCache only reports direct children of the root
+        return !rootPath.equals(path)
+                && rootPath.equals(ZKPaths.getPathAndNode(path).getPath());
     }
 
     @Override
