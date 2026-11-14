@@ -785,6 +785,54 @@ public class TestLeaderLatch extends BaseClassForTests {
     }
 
     @Test
+    public void testNoResetAfterCloseWhileCheckLeadershipIsOutstanding() throws Exception {
+        // GH-1320: an outstanding getChildren callback that resumes after close()
+        // must not reset the election against a stopped client.
+        final String latchPath = "/testNoResetAfterCloseWhileCheckLeadershipIsOutstanding";
+        Timing timing = new Timing();
+        CuratorFramework client = CuratorFrameworkFactory.newClient(
+                server.getConnectString(), timing.session(), timing.connection(), new RetryOneTime(1));
+        final AtomicInteger resetCount = new AtomicInteger(0);
+        final CountDownLatch checkLeadershipLatch = new CountDownLatch(1);
+        LeaderLatch latch = null;
+        try {
+            client.start();
+            latch = new LeaderLatch(client, latchPath) {
+                @Override
+                void reset() throws Exception {
+                    resetCount.incrementAndGet();
+                    super.reset();
+                }
+            };
+            latch.debugCheckLeaderShipLatch = checkLeadershipLatch;
+            latch.start();
+
+            // wait until the election node exists: reset() has run and the
+            // getChildren callback is now blocked on the debug latch
+            Awaitility.await("election node should be created")
+                    .pollInterval(Duration.ofMillis(100))
+                    .pollInSameThread()
+                    .until(() -> client.getChildren().forPath(latchPath).size() == 1);
+            timing.sleepABit();
+
+            latch.close();
+            latch = null;
+            client.close();
+
+            checkLeadershipLatch.countDown();
+            timing.sleepABit();
+
+            // only the initial reset() from start(); the outstanding callback
+            // must not trigger a second reset after close
+            assertEquals(1, resetCount.get());
+        } finally {
+            checkLeadershipLatch.countDown();
+            CloseableUtils.closeQuietly(latch);
+            CloseableUtils.closeQuietly(client);
+        }
+    }
+
+    @Test
     public void testCreateDeleteRace() throws Exception {
         Timing timing = new Timing();
         CuratorFramework client = CuratorFrameworkFactory.newClient(
