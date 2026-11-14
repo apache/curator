@@ -487,6 +487,11 @@ public class LeaderLatch implements Closeable {
 
     @VisibleForTesting
     void reset() throws Exception {
+        if (state.get() == State.CLOSED) {
+            // The latch was closed while an election callback was outstanding.
+            // Do not recreate the election node against a closing/stopped client.
+            return;
+        }
         setLeadership(false);
         if (debugResetWaitBeforeNodeDeleteLatch != null) {
             debugResetWaitBeforeNodeDeleteLatch.await();
@@ -539,6 +544,13 @@ public class LeaderLatch implements Closeable {
     private void checkLeadership(List<String> children) throws Exception {
         if (debugCheckLeaderShipLatch != null) {
             debugCheckLeaderShipLatch.await();
+        }
+
+        if (state.get() == State.CLOSED) {
+            // Closed while this callback was outstanding; close() cleared ourPath.
+            // Do not log a spurious "failed to find our node" error nor reset
+            // against a closing/stopped client.
+            return;
         }
 
         final String localOurPath = ourPath.get();
