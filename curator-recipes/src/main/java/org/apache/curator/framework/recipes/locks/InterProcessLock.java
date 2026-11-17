@@ -57,4 +57,15 @@ public interface InterProcessLock {
      * @return true/false
      */
     boolean isAcquiredInThisProcess();
+
+    /**
+     * Returns the full path of the ZooKeeper node backing this lock while it is held. For thread-owned
+     * locks such as {@link InterProcessMutex} this is the node held by the calling thread.
+     *
+     * @return the lock node path, or null if the lock is not held (by the calling thread, where
+     *         applicable) or the implementation has no single lock node
+     */
+    default String getLockNodePath() {
+        return null;
+    }
 }

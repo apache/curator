@@ -130,4 +130,57 @@ public class TestInterProcessMultiMutex extends TestInterProcessMutexBase {
             TestCleanState.closeAndTestClean(client);
         }
     }
+
+    @Test
+    public void testStopsAcquiringAfterFailure() throws Exception {
+        final AtomicBoolean secondLockAttempted = new AtomicBoolean(false);
+        InterProcessLock failingLock = new InterProcessLock() {
+            @Override
+            public void acquire() throws Exception {
+                throw new Exception("foo");
+            }
+
+            @Override
+            public boolean acquire(long time, TimeUnit unit) throws Exception {
+                throw new Exception("foo");
+            }
+
+            @Override
+            public void release() {}
+
+            @Override
+            public boolean isAcquiredInThisProcess() {
+                return false;
+            }
+        };
+        InterProcessLock neverLock = new InterProcessLock() {
+            @Override
+            public void acquire() {
+                secondLockAttempted.set(true);
+            }
+
+            @Override
+            public boolean acquire(long time, TimeUnit unit) {
+                secondLockAttempted.set(true);
+                return true;
+            }
+
+            @Override
+            public void release() {}
+
+            @Override
+            public boolean isAcquiredInThisProcess() {
+                return false;
+            }
+        };
+
+        InterProcessMultiLock lock = new InterProcessMultiLock(Arrays.asList(failingLock, neverLock));
+        try {
+            lock.acquire();
+            fail();
+        } catch (Exception e) {
+            // expected
+        }
+        assertFalse(secondLockAttempted.get());
+    }
 }

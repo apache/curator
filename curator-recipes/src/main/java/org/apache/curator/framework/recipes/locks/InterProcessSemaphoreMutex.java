@@ -23,6 +23,7 @@ import com.google.common.base.Preconditions;
 import java.util.concurrent.TimeUnit;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.WatcherRemoveCuratorFramework;
+import org.apache.curator.utils.ZKPaths;
 
 /**
  * A NON re-entrant mutex that works across JVMs. Uses Zookeeper to hold the lock. All processes in all JVMs that
@@ -77,5 +78,11 @@ public class InterProcessSemaphoreMutex implements InterProcessLock {
     @Override
     public boolean isAcquiredInThisProcess() {
         return (lease != null);
+    }
+
+    @Override
+    public String getLockNodePath() {
+        Lease lease = this.lease;
+        return (lease != null) ? ZKPaths.makePath(semaphore.getLeasesPath(), lease.getNodeName()) : null;
     }
 }
