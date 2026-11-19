@@ -58,8 +58,8 @@ public class InterProcessReadWriteLock {
     private final WriteLock writeMutex;
 
     // must be the same length. LockInternals depends on it
-    private static final String READ_LOCK_NAME = "__READ__";
-    private static final String WRITE_LOCK_NAME = "__WRIT__";
+    static final String READ_LOCK_NAME = "__READ__";
+    static final String WRITE_LOCK_NAME = "__WRIT__";
 
     private static class SortingLockInternalsDriver extends StandardLockInternalsDriver {
         @Override

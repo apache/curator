@@ -392,6 +392,10 @@ public class InterProcessSemaphoreV2 {
         return waitMs - elapsedMs;
     }
 
+    String getLeasesPath() {
+        return leasesPath;
+    }
+
     private Lease makeLease(final String path) {
         return new Lease() {
             @Override
