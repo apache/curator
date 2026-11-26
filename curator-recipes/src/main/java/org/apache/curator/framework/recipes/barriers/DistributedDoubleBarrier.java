@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.annotation.Nonnull;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.PathUtils;
 import org.apache.curator.utils.ZKPaths;
@@ -38,6 +37,7 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
+import org.jspecify.annotations.NonNull;
 
 /**
  * <p>
@@ -160,8 +160,7 @@ public class DistributedDoubleBarrier {
         return client.getChildren().forPath(barrierPath);
     }
 
-    @Nonnull
-    private List<String> filterAndSortChildren(List<String> children) {
+    private @NonNull List<String> filterAndSortChildren(List<String> children) {
         Iterable<String> filtered = Iterables.filter(children, name -> !name.equals(READY_NODE));
         ArrayList<String> filteredList = Lists.newArrayList(filtered);
         Collections.sort(filteredList);
