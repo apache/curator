@@ -118,6 +118,13 @@
                                         <exclude>META-INF/**</exclude>
                                     </excludes>
                                 </filter>
+                                <filter>
+                                    <!-- failureaccess 1.0.2+ ships a Java 9 module-info, which must not end up in the shaded jar -->
+                                    <artifact>com.google.guava:failureaccess</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/versions/**</exclude>
+                                    </excludes>
+                                </filter>
                             </filters>
                         </configuration>
                     </execution>
